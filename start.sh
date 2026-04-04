@@ -209,16 +209,16 @@ show_status() {
     echo ""
     
     # 检查前端
-    if check_port $FRONTEND_PORT; then
+    if ! check_port $FRONTEND_PORT; then
         print_success "前端服务: 运行中 ✓"
         print_info "   http://localhost:$FRONTEND_PORT"
     else
-        print_warning "前端服务: 未运行（可直接用浏览器打开 HTML 文件）"
+        print_warning "前端服务: 未运行（推荐直接访问后端首页）"
     fi
     
     echo ""
     print_info "快速访问链接："
-    echo "  - 看板首页: http://localhost:$FRONTEND_PORT"
+    echo "  - 看板首页: http://localhost:$API_PORT/"
     echo "  - API 根路径: http://localhost:$API_PORT/"
     echo "  - 智能体列表: http://localhost:$API_PORT/api/agents"
     echo "  - 任务列表: http://localhost:$API_PORT/api/tasks"
@@ -264,8 +264,8 @@ main() {
             print_success "🎉 服务启动完成！"
             echo ""
             print_info "访问方式:"
-            echo "  1. 直接用浏览器打开: $FRONTEND_DIR/index.html"
-            echo "  2. 或访问: http://localhost:$FRONTEND_PORT"
+            echo "  1. 看板首页: http://localhost:$API_PORT/"
+            echo "  2. API 文档: http://localhost:$API_PORT/docs"
             echo ""
             print_info "API 端点:"
             echo "  - http://localhost:$API_PORT/api/agents"

@@ -2126,9 +2126,17 @@
   <script>
     const API_BASE = (function() {
       const u = window.location;
-      const host = u.hostname || 'localhost';
-      const port = '3020';
-      return u.protocol + '//' + host + ':' + port;
+      const override = localStorage.getItem('TEAM_DASHBOARD_API_BASE');
+      if (override && /^https?:\/\//.test(override)) {
+        return override.replace(/\/$/, '');
+      }
+
+      // If frontend is served by a standalone static server on 8080, use backend 3020.
+      if (u.port === '8080') {
+        return u.protocol + '//' + (u.hostname || 'localhost') + ':3020';
+      }
+
+      return u.origin;
     })();
 
     const { createApp } = Vue;

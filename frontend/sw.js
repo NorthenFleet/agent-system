@@ -1,12 +1,11 @@
 // Service Worker for OpenClaw Team Dashboard - 离线缓存策略
-const CACHE_NAME = 'team-dashboard-v1';
-const STATIC_CACHE = 'static-v1';
-const DYNAMIC_CACHE = 'dynamic-v1';
+const CACHE_NAME = 'team-dashboard-v2';
+const STATIC_CACHE = 'static-v2';
+const DYNAMIC_CACHE = 'dynamic-v2';
 
 // 静态资源缓存 (安装时缓存)
 const STATIC_ASSETS = [
   '/',
-  '/index.html',
   '/manifest.json',
   'https://unpkg.com/vue@3',
   'https://unpkg.com/element-plus/dist/index.css',
@@ -123,7 +122,7 @@ async function cacheFirstStrategy(request) {
   } catch (error) {
     console.error('[SW] Fetch failed:', error);
     // 返回离线页面
-    return caches.match('/index.html');
+    return caches.match('/');
   }
 }
 
@@ -149,7 +148,7 @@ async function networkFirstStrategy(request) {
         { status: 503, headers: { 'Content-Type': 'application/json' } }
       );
     }
-    return caches.match('/index.html');
+    return caches.match('/');
   }
 }
 

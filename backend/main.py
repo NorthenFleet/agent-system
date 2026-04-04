@@ -56,15 +56,21 @@ init_sample_tasks()
 # API 接口
 @app.get("/")
 def root():
-    return FileResponse(os.path.join(FRONTEND_DIR, "complete-full.html"))
+    return FileResponse(os.path.join(FRONTEND_DIR, "index-old.html"))
 
 # 模块化版
 @app.get("/modular")
 def modular_page():
-    return FileResponse(os.path.join(FRONTEND_DIR, "complete-full.html"))
+    return FileResponse(os.path.join(FRONTEND_DIR, "index-old.html"))
 
 # 挂载静态文件目录
 app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
+app.mount("/js", StaticFiles(directory=os.path.join(FRONTEND_DIR, "js")), name="js")
+app.mount("/views", StaticFiles(directory=os.path.join(FRONTEND_DIR, "views")), name="views")
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok", "port": 3020}
 
 @app.get("/api/agents")
 def get_agents():
@@ -287,31 +293,21 @@ def simple_page():
     return FileResponse(os.path.join(FRONTEND_DIR, "simple-index.html"))
 
 @app.get("/step2")
+def step2_page():
+    return FileResponse(os.path.join(FRONTEND_DIR, "step2.html"))
 
 # 步骤 3 测试页面
 @app.get("/step3")
+def step3_page():
+    return FileResponse(os.path.join(FRONTEND_DIR, "step3.html"))
 
 # 步骤 4 测试页面
 @app.get("/step4")
 def step4_page():
     return FileResponse(os.path.join(FRONTEND_DIR, "step4.html"))
-def step3_page():
-    return FileResponse(os.path.join(FRONTEND_DIR, "step3.html"))
-def step2_page():
-    return FileResponse(os.path.join(FRONTEND_DIR, "step2.html"))
 # ===================================
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=3020)
-
-
-# 模块化版
-@app.get("/modular")
-def modular_page():
-    return FileResponse(os.path.join(FRONTEND_DIR, "complete-full.html"))
-
-# 挂载静态文件目录
-app.mount("/js", StaticFiles(directory=os.path.join(FRONTEND_DIR, "js")), name="js")
-app.mount("/views", StaticFiles(directory=os.path.join(FRONTEND_DIR, "views")), name="views")
 
