@@ -1,0 +1,2708 @@
+{
+  "mac-pro-1": [
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:26:10.905322",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:26:44.942783",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:27:18.987490",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:27:53.022639",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:28:27.056698",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:29:01.110120",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:29:35.135323",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:30:09.166600",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:30:43.203516",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:31:17.230246",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:31:51.268213",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:32:25.309717",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:32:59.341136",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:33:33.369307",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:34:07.387229",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:34:41.413742",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:35:15.452509",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:35:49.484004",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:36:23.526158",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:36:57.550699",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:37:31.574486",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:38:05.602548",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:38:39.630124",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:39:13.654935",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:39:47.693109",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:40:21.728916",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:40:55.774225",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:41:29.809519",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:42:03.846835",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:42:37.891750",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:43:11.929223",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:43:45.958653",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:44:20.001984",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:44:54.017548",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:45:28.038989",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:46:02.070975",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:46:36.103642",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:47:10.144943",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:47:44.178094",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:48:18.200158",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:48:52.222847",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:49:26.248984",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:50:00.274978",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:50:34.287814",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:51:08.325778",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:51:42.371336",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:52:16.399090",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:52:50.432878",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:53:24.462142",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:53:58.499807",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:54:32.534473",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:55:06.568059",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:55:40.597395",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:56:14.643129",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:56:48.673419",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:57:22.710414",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:57:56.744140",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:58:30.786614",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:59:04.821879",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:59:38.873895",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:00:12.910548",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:00:46.933122",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:01:20.968613",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:01:54.994787",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:02:29.021939",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:03:03.066709",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:03:37.108034",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:04:11.141023",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:04:45.190874",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:05:19.229979",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:05:53.259793",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:06:27.302210",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:07:01.319390",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:07:35.356130",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:08:09.394886",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:08:43.424438",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:09:17.464525",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:09:51.501067",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:10:25.536208",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:10:59.584051",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:11:33.620231",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:12:07.638186",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:12:41.663984",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:13:15.698374",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:13:49.732916",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:14:23.762822",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:14:57.784883",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:15:31.803552",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:16:05.839118",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:16:39.871184",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:17:13.906459",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:17:47.939265",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:18:21.983813",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:18:56.018529",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:19:30.045957",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:20:04.090543",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:20:38.113113",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:21:12.162375",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:21:21.563504",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "mac-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:21:40.183992",
+      "response_time_ms": null
+    }
+  ],
+  "macbook-pro-1": [
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:26:12.924290",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:26:46.968370",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:27:20.994643",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:27:55.028787",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:28:29.082418",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:29:03.126081",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:29:37.150749",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:30:11.191645",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:30:45.212627",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:31:19.248531",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:31:53.293708",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:32:27.330579",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:33:01.358029",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:33:35.375937",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:34:09.395145",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:34:43.431589",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:35:17.464896",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:35:51.499858",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:36:25.532378",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:36:59.557053",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:37:33.582862",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:38:07.608971",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:38:41.637174",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:39:15.679653",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:39:49.699498",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:40:23.751837",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:40:57.796782",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:41:31.830846",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:42:05.871668",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:42:39.899373",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:43:13.942085",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:43:47.983300",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:44:22.008768",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:44:56.029429",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:45:30.059234",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:46:04.087625",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:46:38.117592",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:47:12.151876",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:47:46.187883",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:48:20.209451",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:48:54.230945",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:49:28.260667",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:50:02.280525",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:50:36.303799",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:51:10.351127",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:51:44.386336",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:52:18.413821",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:52:52.447243",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:53:26.473929",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:54:00.516213",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:54:34.550446",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:55:08.575346",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:55:42.613635",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:56:16.655576",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:56:50.691523",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:57:24.724632",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:57:58.767244",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:58:32.802272",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:59:06.846903",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T16:59:40.889749",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:00:14.923710",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:00:48.949785",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:01:22.984188",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:01:57.004555",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:02:31.047839",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:03:05.091778",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:03:39.124555",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:04:13.166467",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:04:47.215906",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:05:21.236460",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:05:55.275519",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:06:29.307497",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:07:03.331145",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:07:37.372893",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:08:11.412941",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:08:45.448074",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:09:19.479965",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:09:53.516930",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:10:27.555388",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:11:01.600787",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:11:35.627445",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:12:09.644401",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:12:43.688041",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:13:17.722357",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:13:51.743253",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:14:25.777277",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:14:59.793112",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:15:33.819940",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:16:07.845059",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:16:41.889038",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:17:15.922044",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:17:49.963153",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:18:23.990276",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:18:58.026565",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:19:32.071028",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:20:06.099370",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:20:40.138308",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:21:14.169006",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:21:23.574752",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "macbook-pro-1",
+      "ip": "192.168.31.41",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T17:21:42.190902",
+      "response_time_ms": null
+    }
+  ],
+  "linux-workstation-1": [
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T03:59:13.996550",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T03:59:50.052683",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:00:26.108794",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:01:02.152517",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:01:38.204365",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:02:14.258193",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:02:50.311361",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:03:26.373236",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:04:02.440114",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:04:38.536683",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:05:14.593138",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:05:50.638963",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:06:26.675620",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:07:02.748726",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:07:38.797423",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:08:14.872914",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:08:50.912394",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:09:26.952955",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:10:03.072296",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:10:39.130004",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:11:15.172738",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:11:51.245399",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:12:27.297440",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:13:03.428164",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:13:39.478304",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:14:15.528019",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:14:51.590964",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:15:27.638333",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:16:03.682151",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:16:39.723164",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:17:15.778740",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:17:51.812230",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:18:27.861497",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:19:03.903095",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:19:39.971839",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:20:16.019009",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:20:52.144282",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:21:28.192317",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:22:04.238797",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:22:40.308158",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:23:16.351972",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:23:52.501027",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:24:28.542396",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:25:04.603730",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:25:40.660536",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:26:16.697687",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:26:52.759485",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:27:28.823016",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:28:04.899570",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:28:40.952375",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:29:17.035204",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:29:53.078457",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:30:29.136845",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:31:05.185951",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:31:41.229819",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:32:17.273768",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:32:53.313598",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:33:29.385535",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:34:05.441223",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:34:41.569456",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:35:17.623797",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:35:53.672653",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:36:29.708143",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:37:05.764025",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:37:41.829952",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:38:17.889302",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:38:53.950223",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:39:30.008006",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:40:06.111778",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:40:42.167336",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:41:18.213512",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:41:54.309974",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:42:30.386884",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:43:06.460857",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:43:42.504317",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:44:18.557392",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:44:54.610663",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:45:30.672821",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:46:06.719153",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:46:42.782448",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:47:18.844587",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:47:54.893883",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:48:31.008079",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:49:07.054533",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:49:43.118383",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:50:19.175015",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:50:55.219988",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:51:31.351998",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:52:07.409905",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:52:43.461720",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:53:19.517780",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:53:55.572539",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:54:31.709337",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:55:07.769172",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:55:43.852917",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:56:19.906671",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:56:55.963532",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:57:32.061403",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": true,
+      "ports": [],
+      "status": "online",
+      "checked_at": "2026-04-02T04:58:08.118762",
+      "response_time_ms": null
+    },
+    {
+      "device_id": "linux-workstation-1",
+      "ip": "192.168.1.4",
+      "ping_success": false,
+      "ports": [],
+      "status": "offline",
+      "checked_at": "2026-04-02T04:58:45.179887",
+      "response_time_ms": null
+    }
+  ]
+}

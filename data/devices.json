@@ -1,0 +1,71 @@
+[
+  {
+    "id": "mac-mini-1",
+    "name": "擎天柱-MacMini",
+    "ip": "192.168.31.41",
+    "os": "macOS Sonoma",
+    "role": "团队主服务器",
+    "status": "online",
+    "location": "机房",
+    "description": "OpenClaw 主节点、看板后端、邮件检查、定时任务",
+    "specs": {
+      "cpu": "Apple M4",
+      "ram": "16GB",
+      "gpu": "10 核 GPU",
+      "storage": "256GB SSD"
+    },
+    "ports": [3020, 18789, 8000],
+    "assigned_agents": [
+      "optimus",
+      "bumblebee",
+      "perceptor",
+      "shockwave"
+    ],
+    "updated_at": "2026-04-04T12:05:00.000000"
+  },
+  {
+    "id": "macbook-pro-1",
+    "name": "李奥纳多-MacBookPro",
+    "ip": "192.168.31.144",
+    "os": "macOS Sonoma",
+    "role": "开发工作站",
+    "status": "offline",
+    "location": "办公室",
+    "description": "孙总开发用机，运行 IDE、忍者神龟团队",
+    "specs": {
+      "cpu": "Apple M1 Pro",
+      "ram": "16GB",
+      "gpu": "14 核 GPU",
+      "storage": "512GB SSD"
+    },
+    "ports": [3011, 8080],
+    "assigned_agents": [
+      "leonardo",
+      "raphael",
+      "donatello",
+      "michelangelo"
+    ],
+    "updated_at": "2026-04-04T12:05:00.000000"
+  },
+  {
+    "id": "linux-workstation-1",
+    "name": "铁皮-LinuxWS",
+    "ip": "192.168.1.4",
+    "os": "Ubuntu 24.04.4 LTS",
+    "role": "AI 训练服务器",
+    "status": "online",
+    "location": "机房",
+    "description": "Isaac Sim 仿真训练服务器，机器人/无人车训练",
+    "specs": {
+      "cpu": "Intel i7-8700K 6 核 12 线程 @3.7GHz",
+      "ram": "64GB DDR4",
+      "gpu": "NVIDIA GTX 1080 8GB",
+      "storage": "218GB SSD"
+    },
+    "ports": [22, 8765, 9007, 18789],
+    "assigned_agents": [
+      "ironhide"
+    ],
+    "updated_at": "2026-04-04T12:05:00.000000"
+  }
+]

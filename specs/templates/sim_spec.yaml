@@ -1,0 +1,58 @@
+# Sim Spec - 仿真级规格书
+# 负责人：铁皮 (Ironhide) / 仿真负责人
+# 用途：将仿真任务分解为可执行的仿真配置
+
+sim_spec_id: sim_{{timestamp}}
+type: sim_spec
+version: 1.0
+
+# 关联的父任务 Spec
+parent_spec_id: ""
+
+# 仿真场景
+scenario:
+  map: ""
+  initial_state: ""
+  environment: ""  # weather, time, terrain
+
+# 模型配置
+models:
+  detection: ""
+  planning: ""
+  decision: ""
+  control: ""
+
+# 仿真参数
+parameters:
+  time_step: 0.01      # 秒
+  duration: 600        # 秒
+  real_time_factor: 1.0
+
+# 评估指标
+metrics:
+  - name: Pd            # 探测概率
+    target: 0.95
+  - name: reaction_time # 响应时间
+    target: 0.5         # 秒
+  - name: intercept_success  # 拦截成功率
+    target: 0.9
+
+# 运行配置
+runs: 10  # 运行次数 (用于统计显著性)
+
+# 输出要求
+output:
+  - result_json
+  - plots
+  - logs
+  - video  # 可选
+
+# 验证要求
+validation:
+  baseline_comparison: true
+  statistical_significance: true
+
+# 状态追踪
+status: drafted  # drafted → approved → running → completed
+created_at: ""
+approved_by: ""

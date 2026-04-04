@@ -1,0 +1,75 @@
+# Dev Spec - 开发级规格书
+# 负责人：李奥纳多 (Leonardo)
+# 用途：将 Task Spec 分解为可执行的开发任务
+
+dev_spec_id: dev_{{timestamp}}
+type: dev_spec
+version: 1.0
+
+# 关联的父任务 Spec
+parent_spec_id: ""
+
+# 模块范围 (精确到文件/目录)
+module_scope:
+  - ""
+
+# 架构设计
+architecture:
+  new_modules:
+    - name: ""
+      description: ""
+      location: ""
+  modified_modules:
+    - name: ""
+      description: ""
+      changes: ""
+
+# 接口定义
+interfaces:
+  - name: ""
+    input: ""
+    output: ""
+    description: ""
+
+# 任务拆解 (按忍者神龟成员)
+tasks:
+  raphael:
+    - id: task_r001
+      description: ""
+      files:
+        - ""
+      estimated_hours: 0
+  donatello:
+    - id: task_d001
+      description: ""
+      files:
+        - ""
+      estimated_hours: 0
+  michelangelo:
+    - id: task_m001
+      description: ""
+      files:
+        - ""
+      estimated_hours: 0
+
+# 技术约束
+constraints:
+  - do_not_break_existing_api
+  - keep_backward_compatibility
+  - follow_pep8_style
+  - test_coverage_minimum: 80%
+
+# 验证要求
+validation:
+  unit_tests: true
+  integration_tests: true
+  code_review: true
+
+# 依赖关系
+dependencies:
+  - ""
+
+# 状态追踪
+status: drafted  # drafted → approved → in_progress → review → completed
+created_at: ""
+approved_by: ""  # 需擎天柱批准

@@ -1,0 +1,35 @@
+{
+  "architecture": {
+    "name": "AI 集群架构",
+    "updated": "2026-03-18",
+    "nodes": [
+      {
+        "id": "mac-mini",
+        "name": "Mac mini",
+        "role": "知识库/信息汇总",
+        "emoji": "🧠",
+        "ip": "192.168.31.41",
+        "services": ["OpenClaw", "看板后端", "邮件检查", "记忆管理"],
+        "status": "online"
+      },
+      {
+        "id": "macbook-pro",
+        "name": "MacBook Pro",
+        "role": "开发环境",
+        "emoji": "🥷",
+        "ip": "DHCP",
+        "services": ["IDE", "开发工具"],
+        "status": "online"
+      },
+      {
+        "id": "tiepi",
+        "name": "铁皮",
+        "role": "Isaac Sim 仿真",
+        "emoji": "🤖",
+        "ip": "192.168.1.4",
+        "services": ["Isaac Sim", "Omniverse", "机器人训练"],
+        "status": "online"
+      }
+    ]
+  }
+}

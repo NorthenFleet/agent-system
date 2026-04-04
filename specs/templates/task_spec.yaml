@@ -1,0 +1,43 @@
+# Task Spec - 任务级规格书
+# 负责人：擎天柱 (Optimus)
+# 用途：将自然语言任务结构化为可执行的任务规格
+
+spec_id: task_{{timestamp}}
+type: task_spec
+version: 1.0
+
+# 任务基本信息
+title: ""
+task_type: ""  # development / research / simulation / paper / mixed
+intent: ""     # 原始用户描述
+priority: medium  # high / medium / low
+
+# 任务目标 (必须清晰可验证，至少 1 条)
+objective:
+  - ""
+
+# 交付物清单 (必须可验证)
+deliverables:
+  - type: code_patch        # code_patch / simulation_result / paper_section / data_analysis / report
+    description: ""
+    location: ""
+
+# 约束条件
+constraints:
+  - ""
+
+# 团队归属
+owners:
+  architect: leonardo       # 架构负责人 (开发任务必填)
+  planner: gpt_planner      # 规划负责人
+  simulator: sim_worker     # 仿真负责人 (铁皮)
+  analyst: gpt_analyst      # 分析负责人 (震荡波)
+  archivist: medic_agent    # 归档负责人
+
+# 截止时间 (可选)
+deadline: null
+
+# 状态追踪
+status: drafted  # drafted → approved → in_progress → review → completed
+created_at: ""
+approved_by: ""
