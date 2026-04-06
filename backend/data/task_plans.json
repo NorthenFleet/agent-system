@@ -1,0 +1,193 @@
+{
+  "plan_002_20260406145842": {
+    "id": "plan_002_20260406145842",
+    "task_id": "002",
+    "creator": "李奥纳多",
+    "created_at": "2026-04-06T14:58:42.598983",
+    "status": "approved",
+    "reviewer": "擎天柱",
+    "reviewed_at": "2026-04-06T14:58:54.403673",
+    "review_comment": "",
+    "type": "frontend",
+    "estimated_hours": 8,
+    "steps": [
+      {
+        "index": 0,
+        "name": "需求分析",
+        "description": "分析任务需求，确定功能点",
+        "estimated_hours": 1,
+        "status": "pending",
+        "executor": "多纳泰罗"
+      },
+      {
+        "index": 1,
+        "name": "组件设计",
+        "description": "设计 Vue 组件结构和状态管理",
+        "estimated_hours": 2,
+        "status": "pending",
+        "executor": "多纳泰罗"
+      },
+      {
+        "index": 2,
+        "name": "页面开发",
+        "description": "实现页面布局和交互逻辑",
+        "estimated_hours": 3,
+        "status": "pending",
+        "executor": "多纳泰罗"
+      },
+      {
+        "index": 3,
+        "name": "API 对接",
+        "description": "对接后端 API，实现数据交互",
+        "estimated_hours": 1,
+        "status": "pending",
+        "executor": "多纳泰罗"
+      },
+      {
+        "index": 4,
+        "name": "自测",
+        "description": "功能自测和 bug 修复",
+        "estimated_hours": 1,
+        "status": "pending",
+        "executor": "多纳泰罗"
+      }
+    ],
+    "resources": [
+      {
+        "name": "Vue 3 文档",
+        "url": "https://vuejs.org/"
+      },
+      {
+        "name": "Element Plus 文档",
+        "url": "https://element-plus.org/"
+      }
+    ],
+    "acceptance_criteria": [
+      "页面功能完整",
+      "UI 与设计一致",
+      "API 对接正常",
+      "无控制台错误"
+    ]
+  },
+  "plan_001_20260406145842": {
+    "id": "plan_001_20260406145842",
+    "task_id": "001",
+    "creator": "李奥纳多",
+    "created_at": "2026-04-06T14:58:42.626446",
+    "status": "approved",
+    "reviewer": "擎天柱",
+    "reviewed_at": "2026-04-06T15:38:12.591869",
+    "review_comment": "自动审核通过",
+    "type": "general",
+    "estimated_hours": 4,
+    "steps": [
+      {
+        "index": 0,
+        "name": "需求确认",
+        "description": "确认任务需求和目标",
+        "estimated_hours": 0.5,
+        "status": "pending",
+        "executor": "李奥纳多"
+      },
+      {
+        "index": 1,
+        "name": "方案设计",
+        "description": "设计实现方案",
+        "estimated_hours": 1,
+        "status": "pending",
+        "executor": "李奥纳多"
+      },
+      {
+        "index": 2,
+        "name": "实现开发",
+        "description": "执行开发工作",
+        "estimated_hours": 2,
+        "status": "pending",
+        "executor": "李奥纳多"
+      },
+      {
+        "index": 3,
+        "name": "测试验证",
+        "description": "测试和验证结果",
+        "estimated_hours": 0.5,
+        "status": "pending",
+        "executor": "李奥纳多"
+      }
+    ],
+    "resources": [],
+    "acceptance_criteria": [
+      "任务目标达成",
+      "质量符合要求"
+    ]
+  },
+  "plan_003_20260406145842": {
+    "id": "plan_003_20260406145842",
+    "task_id": "003",
+    "creator": "李奥纳多",
+    "created_at": "2026-04-06T14:58:42.626676",
+    "status": "approved",
+    "reviewer": "擎天柱",
+    "reviewed_at": "2026-04-06T15:38:12.592165",
+    "review_comment": "自动审核通过",
+    "type": "backend",
+    "estimated_hours": 6,
+    "steps": [
+      {
+        "index": 0,
+        "name": "需求分析",
+        "description": "分析 API 需求，确定接口规范",
+        "estimated_hours": 1,
+        "status": "pending",
+        "executor": "拉斐尔"
+      },
+      {
+        "index": 1,
+        "name": "数据模型设计",
+        "description": "设计数据结构和存储方案",
+        "estimated_hours": 1,
+        "status": "pending",
+        "executor": "拉斐尔"
+      },
+      {
+        "index": 2,
+        "name": "API 实现",
+        "description": "实现 FastAPI 接口",
+        "estimated_hours": 2,
+        "status": "pending",
+        "executor": "拉斐尔"
+      },
+      {
+        "index": 3,
+        "name": "单元测试",
+        "description": "编写和运行单元测试",
+        "estimated_hours": 1,
+        "status": "pending",
+        "executor": "拉斐尔"
+      },
+      {
+        "index": 4,
+        "name": "API 文档",
+        "description": "完善 Swagger 文档",
+        "estimated_hours": 1,
+        "status": "pending",
+        "executor": "拉斐尔"
+      }
+    ],
+    "resources": [
+      {
+        "name": "FastAPI 文档",
+        "url": "https://fastapi.tiangolo.com/"
+      },
+      {
+        "name": "Pydantic 文档",
+        "url": "https://docs.pydantic.dev/"
+      }
+    ],
+    "acceptance_criteria": [
+      "API 接口正常工作",
+      "数据验证正确",
+      "错误处理完善",
+      "文档完整"
+    ]
+  }
+}

@@ -1,375 +1,164 @@
-#!/usr/bin/env python3
 """
-团队数据管理器 - 动态管理智能体、设备、任务数据
-支持实时更新和持久化存储
-包含每个智能体的配置和记忆
+数据管理 - 智能体团队数据（增强版 - 支持记忆展开）
 """
-
 import json
 import os
 from datetime import datetime
-from typing import Dict, List, Any, Optional
+from typing import List, Dict, Optional
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
-AGENTS_FILE = os.path.join(DATA_DIR, "agents.json")
-DEVICES_FILE = os.path.join(DATA_DIR, "devices.json")
-TASKS_FILE = os.path.join(DATA_DIR, "tasks.json")
+DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 
-# 默认数据 - 包含配置和记忆
-DEFAULT_AGENTS = [
-    {
-        "id": "optimus",
-        "slogan": "🤖 使命必达",
-        "name": "擎天柱",
-        "role": "Team Leader",
-        "status": "online",
-        "team": "autobots",
-        "current_task": "任务统筹",
-        "device_id": "mac-pro-1",
-        "emoji": "🤖",
-        "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=optimus",
-        "config": {
-            "model": "qwen3.5-plus",
-            "thinking": "off",
-            "tools": ["sessions_spawn", "message", "exec", "web_search"],
-            "permissions": ["task_dispatch", "result_aggregate", "spec_generate"],
-            "spec_role": "Commander + Spec Officer"
-        },
-        "memory": [
-            "2026-03-27: 完成双层 Spec 派发机制设计",
-            "2026-03-27: 开始任务统筹工作",
-            "2026-03-20: 确立擎天柱工作原则 - 只分工不执行"
-        ],
-        "stats": {"tasks_completed": 15, "tasks_in_progress": 1, "total_messages": 234},
-        "created_at": "2026-03-17"
-    },
-    {
-        "id": "bumblebee",
-        "slogan": "🐝 守护系统",
-        "name": "大黄蜂",
-        "role": "运维负责人",
-        "status": "busy",
-        "team": "autobots",
-        "current_task": "运维监控与任务监督",
-        "device_id": "mac-pro-1",
-        "emoji": "🐝",
-        "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=bumblebee",
-        "config": {
-            "model": "qwen3.5-plus",
-            "thinking": "off",
-            "tools": ["exec", "process", "nodes", "message"],
-            "permissions": ["system_monitor", "task_supervise", "service_deploy"],
-            "responsibilities": ["运维监控", "任务监督", "跨团队协调"]
-        },
-        "memory": [
-            "2026-03-27: 完成 MD↔Office Skills (100%)",
-            "2026-03-27: 开始运维监控与任务监督",
-            "2026-03-27: 职责从架构师变更为运维负责人",
-            "2026-03-18: 完成团队看板架构搭建"
-        ],
-        "stats": {"tasks_completed": 8, "tasks_in_progress": 0, "total_messages": 156},
-        "created_at": "2026-03-17"
-    },
-    {
-        "id": "leonardo",
-        "slogan": "🐢 架构至上",
-        "name": "李奥纳多",
-        "role": "架构师",
-        "status": "busy",
-        "team": "ninja_turtles",
-        "current_task": "架构设计",
-        "device_id": "mac-pro-1",
-        "emoji": "🐢",
-        "avatar": "/static/icons/turtles/leonardo.svg",
-        "config": {
-            "model": "claude-opus",
-            "thinking": "on",
-            "tools": ["read", "write", "edit", "exec"],
-            "permissions": ["dev_spec_generate", "tech_design", "task_decompose"],
-            "spec_role": "Architect"
-        },
-        "memory": [
-            "2026-03-27: 团队看板架构设计 (30%)",
-            "2026-03-27: 学习双层 Spec 派发机制",
-            "2026-03-27: 确立开发级 Spec 职责"
-        ],
-        "stats": {"tasks_completed": 5, "tasks_in_progress": 1, "total_messages": 89},
-        "created_at": "2026-03-17"
-    },
-    {
-        "id": "raphael",
-        "slogan": "🥷 代码为王",
-        "name": "拉斐尔",
-        "role": "后端工程师",
-        "status": "idle",
-        "team": "ninja_turtles",
-        "current_task": "等待任务",
-        "device_id": "mac-pro-1",
-        "emoji": "🥷",
-        "avatar": "/static/icons/turtles/raphael.svg",
-        "config": {
-            "model": "codex",
-            "thinking": "off",
-            "tools": ["read", "write", "edit", "exec"],
-            "permissions": ["backend_dev", "api_design", "database"],
-            "specialties": ["FastAPI", "Python", "数据库设计"]
-        },
-        "memory": [
-            "2026-03-27: 等待看板后端开发任务",
-            "2026-03-18: 学习 FastAPI 框架"
-        ],
-        "stats": {"tasks_completed": 3, "tasks_in_progress": 0, "total_messages": 45},
-        "created_at": "2026-03-17"
-    },
-    {
-        "id": "donatello",
-        "slogan": "🥷 体验至上",
-        "name": "多纳泰罗",
-        "role": "前端工程师",
-        "status": "idle",
-        "team": "ninja_turtles",
-        "current_task": "等待任务",
-        "device_id": "macbook-pro-1",
-        "emoji": "🥷",
-        "avatar": "/static/icons/turtles/donatello.svg",
-        "config": {
-            "model": "gemini",
-            "thinking": "off",
-            "tools": ["read", "write", "edit", "browser"],
-            "permissions": ["frontend_dev", "ui_design", "pwa"],
-            "specialties": ["Vue3", "TypeScript", "响应式设计"]
-        },
-        "memory": [
-            "2026-03-27: 等待看板前端开发任务",
-            "2026-03-18: 学习 Vue3 和 Element Plus"
-        ],
-        "stats": {"tasks_completed": 4, "tasks_in_progress": 0, "total_messages": 52},
-        "created_at": "2026-03-17"
-    },
-    {
-        "id": "michelangelo",
-        "slogan": "🥷 质量为本",
-        "name": "米开朗基罗",
-        "role": "测试工程师",
-        "status": "idle",
-        "team": "ninja_turtles",
-        "current_task": "等待任务",
-        "device_id": "macbook-pro-1",
-        "emoji": "🥷",
-        "avatar": "/static/icons/turtles/michelangelo.svg",
-        "config": {
-            "model": "codex",
-            "thinking": "off",
-            "tools": ["exec", "read", "write"],
-            "permissions": ["test_write", "e2e_test", "ci_cd"],
-            "specialties": ["Playwright", "pytest", "CI/CD"]
-        },
-        "memory": [
-            "2026-03-27: 等待测试配置任务",
-            "2026-03-18: 学习 Playwright 测试框架"
-        ],
-        "stats": {"tasks_completed": 2, "tasks_in_progress": 0, "total_messages": 31},
-        "created_at": "2026-03-17"
-    },
-    {
-        "id": "ironhide",
-        "slogan": "🛡️ 铁皮永远忠诚",
-        "name": "铁皮",
-        "role": "训练专家",
-        "status": "idle",
-        "team": "autobots",
-        "current_task": "Isaac Sim 测试",
-        "device_id": "linux-workstation-1",
-        "emoji": "🛡️",
-        "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=ironhide",
-        "config": {
-            "model": "qwen3.5-plus",
-            "thinking": "off",
-            "tools": ["exec", "nodes", "process"],
-            "permissions": ["sim_run", "robot_train", "isaac_sim"],
-            "environment": "Ubuntu 24.04 + Isaac Sim 6.0"
-        },
-        "memory": [
-            "2026-03-27: 六足机器人项目 (83% 完成)",
-            "2026-03-27: 创建 URDF 模型 (3 个文件)",
-            "2026-03-21: Isaac Sim 安装完成",
-            "2026-03-20: 铁皮服务器配置完成"
-        ],
-        "stats": {"tasks_completed": 6, "tasks_in_progress": 1, "total_messages": 78},
-        "created_at": "2026-03-17"
-    },
-    {
-        "id": "perceptor",
-        "slogan": "🚗 精打细算",
-        "name": "感知器",
-        "role": "财务管理员",
-        "status": "idle",
-        "team": "autobots",
-        "current_task": "等待发票",
-        "device_id": "mac-pro-1",
-        "emoji": "🚗",
-        "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=perceptor",
-        "config": {
-            "model": "qwen3.5-plus",
-            "thinking": "off",
-            "tools": ["read", "exec", "message"],
-            "permissions": ["finance_manage", "invoice_process", "paper_monitor"],
-            "email_monitor": ["发票邮件", "论文邮件"]
-        },
-        "memory": [
-            "2026-03-27: 增加论文邮件检索职责",
-            "2026-03-27: 等待发票邮件",
-            "2026-03-19: 确立只处理发票邮件策略",
-            "2026-03-17: 感知器角色创建"
-        ],
-        "stats": {"tasks_completed": 12, "tasks_in_progress": 0, "total_messages": 167},
-        "created_at": "2026-03-17"
-    },
-    {
-        "id": "wheeljack",
-        "slogan": "🔧 工具驱动",
-        "name": "千斤顶",
-        "role": "工程师",
-        "status": "idle",
-        "team": "autobots",
-        "current_task": "等待任务",
-        "device_id": "mac-pro-1",
-        "emoji": "🔧",
-        "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=wheeljack",
-        "config": {
-            "model": "qwen3.5-plus",
-            "thinking": "off",
-            "tools": ["exec", "read", "write", "process"],
-            "permissions": ["cicd_build", "automation", "tool_dev"],
-            "specialties": ["CI/CD", "自动化脚本", "工具链"]
-        },
-        "memory": [
-            "2026-03-27: 千斤顶角色创建",
-            "2026-03-27: 等待 CI/CD 流水线任务"
-        ],
-        "stats": {"tasks_completed": 0, "tasks_in_progress": 0, "total_messages": 5},
-        "created_at": "2026-03-27"
-    },
-    {
-        "id": "shockwave",
-        "slogan": "🟣 逻辑至上",
-        "name": "震荡波",
-        "role": "团队优化师",
-        "status": "online",
-        "team": "decepticons",
-        "current_task": "组织架构分析",
-        "device_id": "mac-pro-1",
-        "emoji": "🟣",
-        "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=shockwave",
-        "config": {
-            "model": "qwen3.5-plus",
-            "thinking": "on",
-            "tools": ["read", "write", "analysis"],
-            "permissions": ["org_analyze", "process_optimize", "role_define"],
-            "specialties": ["组织架构", "业务流程", "效率分析"]
-        },
-        "memory": [
-            "2026-03-27: 创建双层 Spec 派发机制文档",
-            "2026-03-27: 震荡波角色创建",
-            "2026-03-27: 逻辑至上，分析团队架构"
-        ],
-        "stats": {"tasks_completed": 2, "tasks_in_progress": 1, "total_messages": 23},
-        "created_at": "2026-03-27"
-    },
-]
-
-DEFAULT_DEVICES = [
-    {"id": "mac-pro-1", "name": "擎天柱-MacPro", "ip": "192.168.31.41", "os": "macOS Sonoma", "role": "核心开发服务器", "status": "online", "assigned_agents": ["optimus", "bumblebee", "leonardo", "raphael", "perceptor", "wheeljack", "shockwave"]},
-    {"id": "macbook-pro-1", "name": "李奥纳多-MacBookPro", "ip": "192.168.31.41", "os": "macOS Sonoma", "role": "开发工作站", "status": "online", "assigned_agents": ["donatello", "michelangelo"]},
-    {"id": "linux-workstation-1", "name": "铁皮-LinuxWS", "ip": "192.168.1.4", "os": "Ubuntu 24.04", "role": "AI 训练服务器", "status": "online", "assigned_agents": ["ironhide"]},
-]
-
-def ensure_data_dir():
-    os.makedirs(DATA_DIR, exist_ok=True)
-
-def load_json(filepath: str, default: Any) -> Any:
+def load_json(filepath: str, default=None):
     if os.path.exists(filepath):
         with open(filepath, 'r', encoding='utf-8') as f:
             return json.load(f)
-    return default
+    return default if default is not None else {}
 
-def save_json(filepath: str, data: Any):
-    ensure_data_dir()
+def save_json(filepath: str, data):
     with open(filepath, 'w', encoding='utf-8') as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+DEFAULT_DEVICES = []
 
 class DataManager:
-    def __init__(self):
-        ensure_data_dir()
-        self.agents = load_json(AGENTS_FILE, DEFAULT_AGENTS)
-        self.devices = load_json(DEVICES_FILE, DEFAULT_DEVICES)
-        self.tasks = load_json(TASKS_FILE, {"tasks": []})
+    """数据管理器"""
     
-    def get_agents(self) -> List[Dict]:
+    def __init__(self):
+        self.agents_file = os.path.join(DATA_DIR, "agents.json")
+        self.agents = self._load_agents()
+    
+    def _load_agents(self) -> List[dict]:
+        if os.path.exists(self.agents_file):
+            with open(self.agents_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        return self._init_default_agents()
+    
+    def _init_default_agents(self) -> List[dict]:
+        agents = [
+            {"id": "optimus", "name": "擎天柱", "role": "总指挥", "emoji": "🤖", "team": "autobots", "layer": "command", "group": "command", "status": "online", "current_task": "任务统筹", "device_id": "mac-mini", "slogan": "🤖 使命必达"},
+            {"id": "bumblebee", "name": "大黄蜂", "role": "运维负责人", "emoji": "🐝", "team": "autobots", "layer": "execution", "group": "development", "status": "busy", "current_task": "运维监控", "device_id": "mac-mini", "slogan": "🐝 守护系统"},
+            {"id": "leonardo", "name": "李奥纳多", "role": "架构师", "emoji": "🟦", "team": "ninja_turtles", "layer": "execution", "group": "development", "status": "online", "current_task": "架构设计", "device_id": "macbook-pro", "slogan": "🟦 架构至上"},
+            {"id": "raphael", "name": "拉斐尔", "role": "后端开发", "emoji": "🟥", "team": "ninja_turtles", "layer": "execution", "group": "development", "status": "idle", "current_task": "待分配", "device_id": "macbook-pro", "slogan": "🟥 代码先锋"},
+            {"id": "donatello", "name": "多纳泰罗", "role": "前端开发", "emoji": "🟪", "team": "ninja_turtles", "layer": "execution", "group": "development", "status": "idle", "current_task": "待分配", "device_id": "macbook-pro", "slogan": "🟪 界面专家"},
+            {"id": "michelangelo", "name": "米开朗基罗", "role": "测试工程", "emoji": "🟧", "team": "ninja_turtles", "layer": "execution", "group": "development", "status": "idle", "current_task": "待分配", "device_id": "macbook-pro", "slogan": "🟧 质量守护"},
+            {"id": "ironhide", "name": "铁皮", "role": "仿真专家", "emoji": "🛡️", "team": "autobots", "layer": "execution", "group": "special", "status": "online", "current_task": "Isaac Sim 仿真", "device_id": "linux-192.168.1.4", "slogan": "🛡️ 仿真专家"},
+            {"id": "wheeljack", "name": "千斤顶", "role": "工程师", "emoji": "🔧", "team": "autobots", "layer": "execution", "group": "special", "status": "idle", "current_task": "待分配", "device_id": "tbd", "slogan": "🔧 工具大师"},
+            {"id": "perceptor", "name": "感知器", "role": "财务专家", "emoji": "🚗", "team": "autobots", "layer": "support", "group": "support", "status": "idle", "current_task": "发票归档", "device_id": "mac-mini", "slogan": "🚗 数据洞察"},
+            {"id": "shockwave", "name": "震荡波", "role": "团队优化师", "emoji": "🟣", "team": "decepticons", "layer": "support", "group": "support", "status": "idle", "current_task": "架构分析", "device_id": "mac-mini", "slogan": "🟣 逻辑至上"}
+        ]
+        self._save_agents(agents)
+        return agents
+    
+    def _load_agent_memory(self, agent_id: str) -> list:
+        """从 memory.md 文件加载智能体记忆（带详情）"""
+        memory_file = os.path.expanduser(f"~/.openclaw/workspace/agents/{agent_id}/memory.md")
+        memories = []
+        
+        if os.path.exists(memory_file):
+            with open(memory_file, 'r', encoding='utf-8') as f:
+                content = f.read()
+                current_date = ""
+                current_section = ""
+                
+                for line in content.split('\n'):
+                    line = line.strip()
+                    
+                    # 提取日期分组（## 2026-03）
+                    if line.startswith('## '):
+                        current_section = line[3:].strip()
+                    
+                    # 提取子日期（### 2026-03-20）
+                    elif line.startswith('### '):
+                        current_date = line[4:].strip()
+                    
+                    # 提取记忆条目
+                    elif line.startswith('- ✅') or line.startswith('-'):
+                        memory_text = line[1:].strip()
+                        if memory_text.startswith('✅'):
+                            memory_text = memory_text[1:].strip()
+                        
+                        if memory_text:
+                            memories.append({
+                                "text": memory_text,
+                                "date": current_date,
+                                "section": current_section,
+                                "expandable": True,
+                                "details": self._get_memory_details(agent_id, memory_text)
+                            })
+        
+        return memories if memories else [{"text": "记忆加载中...", "date": "", "section": "", "expandable": False, "details": ""}]
+    
+    def _get_memory_details(self, agent_id: str, memory_text: str) -> str:
+        """获取记忆的详细信息（相关任务、文档等）"""
+        details = []
+        
+        # 查找相关任务文件
+        tasks_dir = os.path.expanduser(f"~/.openclaw/workspace/agents/{agent_id}/tasks/")
+        if os.path.exists(tasks_dir):
+            for filename in os.listdir(tasks_dir):
+                if filename.endswith('.md') and memory_text.split()[0] in filename:
+                    details.append(f"📋 相关任务：{filename.replace('.md', '')}")
+        
+        # 查找相关文档
+        profile_file = os.path.expanduser(f"~/.openclaw/workspace/agents/{agent_id}/profile.md")
+        if os.path.exists(profile_file):
+            details.append("📖 完整档案：profile.md")
+        
+        return "\n".join(details) if details else "点击展开查看更多详情..."
+    
+    def _save_agents(self, agents: List[dict]):
+        with open(self.agents_file, 'w', encoding='utf-8') as f:
+            json.dump(agents, f, ensure_ascii=False, indent=2)
+    
+    def get_agents(self) -> List[dict]:
+        """获取所有智能体 - 动态加载记忆"""
+        for agent in self.agents:
+            agent_id = agent.get("id", "")
+            if agent_id:
+                agent["memory"] = self._load_agent_memory(agent_id)
         return self.agents
     
-    def get_devices(self) -> List[Dict]:
-        return self.devices
+    def get_agents_by_layer(self, layer: str) -> List[dict]:
+        return [a for a in self.agents if a.get("layer") == layer]
     
-    def get_tasks(self) -> List[Dict]:
-        return self.tasks.get("tasks", [])
+    def get_agents_by_group(self, group: str) -> List[dict]:
+        return [a for a in self.agents if a.get("group") == group]
     
-    def update_agent(self, agent_id: str, updates: Dict) -> bool:
+    def get_agent(self, agent_id: str) -> Optional[dict]:
         for agent in self.agents:
             if agent["id"] == agent_id:
-                agent.update(updates)
-                agent["updated_at"] = datetime.now().isoformat()
-                save_json(AGENTS_FILE, self.agents)
+                return agent
+        return None
+    
+    def update_agent(self, agent_id: str, updates: dict) -> bool:
+        for i, agent in enumerate(self.agents):
+            if agent["id"] == agent_id:
+                self.agents[i].update(updates)
                 return True
         return False
     
-    def update_task(self, task_id: str, updates: Dict) -> bool:
-        for task in self.tasks.get("tasks", []):
-            if task["id"] == task_id:
-                task.update(updates)
-                task["updated_at"] = datetime.now().isoformat()
-                save_json(TASKS_FILE, self.tasks)
-                return True
-        return False
+    def get_layer_stats(self) -> dict:
+        layers = {}
+        for agent in self.agents:
+            layer = agent.get("layer", "unknown")
+            if layer not in layers:
+                layers[layer] = {"total": 0, "online": 0, "busy": 0, "idle": 0}
+            layers[layer]["total"] += 1
+            status = agent.get("status", "idle")
+            if status in layers[layer]:
+                layers[layer][status] += 1
+        return layers
     
-    def add_task(self, task: Dict) -> Dict:
-        task["created_at"] = datetime.now().isoformat()
-        task["updated_at"] = task["created_at"]
-        self.tasks.setdefault("tasks", []).append(task)
-        save_json(TASKS_FILE, self.tasks)
-        return task
-    
-    def get_team_status(self) -> Dict:
-        total = len(self.agents)
-        online = sum(1 for a in self.agents if a["status"] == "online")
-        busy = sum(1 for a in self.agents if a["status"] == "busy")
-        idle = sum(1 for a in self.agents if a["status"] == "idle")
-        
-        tasks = self.tasks.get("tasks", [])
-        task_stats = {
-            "total": len(tasks),
-            "pending": sum(1 for t in tasks if t["status"] == "pending"),
-            "in_progress": sum(1 for t in tasks if t["status"] == "in_progress"),
-            "completed": sum(1 for t in tasks if t["status"] == "completed"),
-            "failed": sum(1 for t in tasks if t["status"] == "failed"),
-        }
-        
-        return {
-            "total_agents": total,
-            "online": online,
-            "busy": busy,
-            "idle": idle,
-            "pending": 0,
-            "autobots_count": sum(1 for a in self.agents if a["team"] == "autobots"),
-            "ninja_turtles_count": sum(1 for a in self.agents if a["team"] == "ninja_turtles"),
-            "task_stats": task_stats,
-        }
+    def get_group_stats(self) -> dict:
+        groups = {}
+        for agent in self.agents:
+            group = agent.get("group", "unknown")
+            if group not in groups:
+                groups[group] = {"total": 0, "online": 0, "busy": 0, "idle": 0}
+            groups[group]["total"] += 1
+            status = agent.get("status", "idle")
+            if status in groups[group]:
+                groups[group][status] += 1
+        return groups
 
-# 单例
 data_manager = DataManager()
-
-if __name__ == "__main__":
-    print("Agents:", len(data_manager.get_agents()))
-    print("Devices:", len(data_manager.get_devices()))
-    print("Tasks:", len(data_manager.get_tasks()))
-    print("Team Status:", data_manager.get_team_status())

@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>智能体论坛</title>
+  <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg: #0d1117;
+      --card: #21262d;
+      --card-hover: #30363d;
+      --border: #30363d;
+      --text: #c9d1d9;
+      --text-secondary: #8b949e;
+      --primary: #58a6ff;
+      --success: #238636;
+      --warning: #f0883e;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 24px;
+    }
+    .forum-container {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 24px;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+    .card {
+      background: var(--card);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .card-title {
+      margin: 0;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .agent-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      transition: all 0.3s ease;
+    }
+    .agent-item:hover {
+      background: var(--card-hover);
+    }
+    .agent-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .agent-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .agent-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .agent-name {
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .agent-status {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .status-dot.online { background: #238636; }
+    .status-dot.busy { background: #f0883e; }
+    .status-dot.idle { background: #58a6ff; }
+    .topic-item {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .topic-item:hover {
+      background: var(--card-hover);
+      transform: translateX(4px);
+    }
+    .topic-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .topic-agent {
+      font-size: 24px;
+    }
+    .topic-title {
+      font-weight: 600;
+      color: var(--text);
+      flex: 1;
+    }
+    .topic-meta {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+    .topic-content {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+    .tag {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      background: rgba(88, 166, 255, 0.15);
+      color: var(--primary);
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="forum-container">
+      <!-- 左栏：智能体状态 -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-users"></i> 智能体状态</h3>
+          <span class="tag">{{ onlineCount }} 在线</span>
+        </div>
+        <div>
+          <div class="agent-item" v-for="agent in agents" :key="agent.id">
+            <div class="agent-avatar">
+              <img :src="agent.avatar" :alt="agent.name">
+            </div>
+            <div class="agent-info">
+              <div class="agent-name">{{ agent.emoji }} {{ agent.name }}</div>
+              <div class="agent-status">
+                <span class="status-dot" :class="agent.status"></span>
+                {{ statusText(agent.status) }}
+                <span style="margin-left: auto;">
+                  <i class="fas fa-comments"></i> {{ agent.stats?.total_topics || 0 }} 主题
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 右栏：论坛主题 -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-comments"></i> 论坛主题</h3>
+          <el-button size="small" type="primary" @click="showNewTopic = true">
+            <i class="fas fa-plus"></i> 新主题
+          </el-button>
+        </div>
+        <div>
+          <div class="topic-item" v-for="topic in topics" :key="topic.id">
+            <div class="topic-header">
+              <span class="topic-agent">{{ topic.agent_emoji }}</span>
+              <div class="topic-title">{{ topic.title }}</div>
+              <el-tag size="small">{{ topic.post_count }} 回复</el-tag>
+            </div>
+            <div class="topic-meta" style="margin-bottom: 8px;">
+              <i class="fas fa-user"></i> {{ topic.agent_name }} · 
+              <i class="fas fa-clock"></i> {{ formatTime(topic.created_at) }}
+            </div>
+            <div class="topic-content">{{ topic.content }}</div>
+          </div>
+          <el-empty v-if="topics.length === 0" description="暂无主题"></el-empty>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 新主题对话框 -->
+    <el-dialog v-model="showNewTopic" title="创建新主题" width="600px">
+      <el-select v-model="selectedAgent" placeholder="选择智能体" size="large" style="width: 100%; margin-bottom: 16px;">
+        <el-option v-for="agent in agents" :key="agent.id" :label="agent.name" :value="agent.id">
+          <span>{{ agent.emoji }}</span> {{ agent.name }}
+        </el-option>
+      </el-select>
+      <el-input v-model="newTopicTitle" placeholder="主题标题" size="large" style="margin-bottom: 16px;"></el-input>
+      <el-input v-model="newTopicContent" type="textarea" :rows="6" placeholder="主题内容..." size="large"></el-input>
+      <template #footer>
+        <el-button @click="showNewTopic = false">取消</el-button>
+        <el-button type="primary" @click="createTopic">创建</el-button>
+      </template>
+    </el-dialog>
+  </div>
+  
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://unpkg.com/element-plus"></script>
+  <script>
+    const app = Vue.createApp({
+      data() {
+        return {
+          agents: [],
+          topics: [],
+          showNewTopic: false,
+          selectedAgent: '',
+          newTopicTitle: '',
+          newTopicContent: ''
+        }
+      },
+      computed: {
+        onlineCount() {
+          return this.agents.filter(a => a.status === 'online').length
+        }
+      },
+      methods: {
+        statusText(status) {
+          const map = { online: '在线', busy: '忙碌', idle: '空闲' }
+          return map[status] || status
+        },
+        formatTime(iso) {
+          const date = new Date(iso)
+          const now = new Date()
+          const diff = (now - date) / 1000
+          if (diff < 60) return '刚刚'
+          if (diff < 3600) return Math.floor(diff / 60) + '分钟前'
+          if (diff < 86400) return Math.floor(diff / 3600) + '小时前'
+          return date.toLocaleDateString()
+        },
+        async loadData() {
+          try {
+            const [agentsRes, topicsRes] = await Promise.all([
+              fetch('/api/agents'),
+              fetch('/api/forum/topics')
+            ])
+            const agentsData = await agentsRes.json()
+            const topicsData = await topicsRes.json()
+            
+            // 获取每个智能体的论坛统计
+            this.agents = await Promise.all(
+              agentsData.agents.map(async agent => {
+                const statsRes = await fetch(`/api/forum/agent/${agent.id}/stats`)
+                const stats = await statsRes.json()
+                return { ...agent, stats }
+              })
+            )
+            this.topics = topicsData.topics || []
+          } catch (error) {
+            console.error('加载失败:', error)
+          }
+        },
+        async createTopic() {
+          if (!this.selectedAgent || !this.newTopicTitle) {
+            this.$message.warning('请选择智能体并填写标题')
+            return
+          }
+          const agent = this.agents.find(a => a.id === this.selectedAgent)
+          try {
+            const res = await fetch('/api/forum/topics', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                title: this.newTopicTitle,
+                content: this.newTopicContent,
+                agent_id: this.selectedAgent,
+                agent_name: agent.name,
+                agent_emoji: agent.emoji
+              })
+            })
+            const data = await res.json()
+            if (data.success) {
+              this.$message.success('主题创建成功')
+              this.showNewTopic = false
+              this.newTopicTitle = ''
+              this.newTopicContent = ''
+              this.loadData()
+            }
+          } catch (error) {
+            this.$message.error('创建失败')
+          }
+        }
+      },
+      async mounted() {
+        await this.loadData()
+        setInterval(() => this.loadData(), 30000) // 30 秒刷新
+      }
+    })
+    app.use(ElementPlus)
+    app.mount('#app')
+  </script>
+</body>
+</html>

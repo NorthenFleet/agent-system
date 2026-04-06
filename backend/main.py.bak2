@@ -996,10 +996,25 @@ def get_agent_forum_stats(agent_id: str):
 
 
 
+# 新闻管理导入
 
+# 新闻管理导入
 from news_manager import news_manager
 
-# 新闻 API（注意：locations/categories 必须在{news_id}之前）
+# 新闻 API
+@app.get("/api/news")
+def get_news(category: Optional[str] = None, location: Optional[str] = None):
+    """获取新闻列表"""
+    return {"news": news_manager.get_all_news(category, location)}
+
+@app.get("/api/news/{news_id}")
+def get_news_detail(news_id: str):
+    """获取新闻详情"""
+    news = news_manager.get_news_by_id(news_id)
+    if not news:
+        raise HTTPException(status_code=404, detail="新闻不存在")
+    return news
+
 @app.get("/api/news/locations")
 def get_news_locations():
     """获取新闻位置信息"""
@@ -1015,19 +1030,6 @@ def get_location_news():
     """获取带位置的新闻"""
     return {"data": news_manager.get_location_news()}
 
-@app.get("/api/news")
-def get_news(category: Optional[str] = None, location: Optional[str] = None):
-    """获取新闻列表"""
-    return {"news": news_manager.get_all_news(category, location)}
-
-@app.get("/api/news/{news_id}")
-def get_news_detail(news_id: str):
-    """获取新闻详情"""
-    news = news_manager.get_news_by_id(news_id)
-    if not news:
-        raise HTTPException(status_code=404, detail="新闻不存在")
-    return news
-
 @app.get("/news")
 def news_page():
     """新闻资讯页面"""
@@ -1036,210 +1038,6 @@ def news_page():
         headers={"Cache-Control": "no-store, no-cache, must-revalidate"},
     )
 
-
-
-# ==================== 任务计划管理接口 ====================
-from plan_manager import plan_manager
-
-# 注意：具体路由必须在动态参数路由之前！
-
-@app.post("/api/plans/generate-all")
-def generate_all_plans():
-    """李奥纳多为所有空闲任务生成计划"""
-    tasks = task_manager.get_all_tasks()
-    generated = []
-    skipped = []
-    
-    for task in tasks:
-        if task["status"] in ["pending", "in_progress"]:
-            existing_plan = plan_manager.get_plan_by_task(task["id"])
-            if not existing_plan:
-                plan_template = plan_manager.generate_plan_template(task)
-                plan = plan_manager.create_plan(task["id"], plan_template, "李奥纳多")
-                generated.append({"task_id": task["id"], "plan_id": plan["id"]})
-            else:
-                skipped.append({"task_id": task["id"], "reason": "计划已存在"})
-    
-    return {"success": True, "generated": generated, "skipped": skipped}
-
-@app.post("/api/plans/generate/{task_id}")
-def generate_plan(task_id: str):
-    """李奥纳多为任务生成计划"""
-    tasks = task_manager.get_all_tasks()
-    task = next((t for t in tasks if t["id"] == task_id), None)
-    
-    if not task:
-        raise HTTPException(status_code=404, detail="任务不存在")
-    
-    existing_plan = plan_manager.get_plan_by_task(task_id)
-    if existing_plan:
-        raise HTTPException(status_code=400, detail="计划已存在")
-    
-    plan_template = plan_manager.generate_plan_template(task)
-    plan = plan_manager.create_plan(task_id, plan_template, "李奥纳多")
-    
-    return {"success": True, "plan": plan}
-
-@app.get("/api/plans/pending")
-def get_pending_plans():
-    """获取待审核计划"""
-    return {"plans": plan_manager.get_pending_plans()}
-
-@app.get("/api/plans/task/{task_id}")
-def get_task_plan(task_id: str):
-    """获取任务的计划"""
-    plan = plan_manager.get_plan_by_task(task_id)
-    if not plan:
-        raise HTTPException(status_code=404, detail="计划不存在")
-    return plan
-
-@app.post("/api/plans/{plan_id}/review")
-def review_plan_endpoint(plan_id: str, approved: bool, comment: str = ""):
-    """擎天柱审核计划"""
-    success = plan_manager.review_plan(plan_id, approved, "擎天柱", comment)
-    if not success:
-        raise HTTPException(status_code=404, detail="计划不存在")
-    return {"success": True, "approved": approved}
-
-@app.post("/api/plans/{plan_id}/execute/{step_index}")
-def execute_plan_step_endpoint(plan_id: str, step_index: int):
-    """执行计划步骤"""
-    result = plan_manager.execute_plan_step(plan_id, step_index)
-    if "error" in result:
-        raise HTTPException(status_code=400, detail=result["error"])
-    return result
-
-@app.post("/api/plans/{plan_id}/execute-all")
-def execute_all_steps_endpoint(plan_id: str):
-    """执行计划所有步骤"""
-    plan = plan_manager.plans.get(plan_id)
-    if not plan:
-        raise HTTPException(status_code=404, detail="计划不存在")
-    
-    if plan["status"] != "approved":
-        raise HTTPException(status_code=400, detail="计划未通过审核")
-    
-    results = []
-    for i in range(len(plan.get("steps", []))):
-        result = plan_manager.execute_plan_step(plan_id, i)
-        results.append(result)
-    
-    return {"success": True, "results": results}
-
-@app.get("/api/plans")
-def get_all_plans():
-    """获取所有计划"""
-    return {"plans": list(plan_manager.plans.values())}
-
-
-
-@app.get("/plans")
-def plans_page():
-    """任务计划页面"""
-    return FileResponse(
-        os.path.join(FRONTEND_DIR, "plans.html"),
-        headers={"Cache-Control": "no-store, no-cache, must-revalidate"},
-    )
-
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=3020)
-
-# ==================== 后台自动任务 ====================
-import asyncio
-from auto_plan_manager import auto_plan_manager
-
-# 后台自动任务状态
-auto_task_running = False
-auto_task_interval_generate = 1800  # 李奥纳多生成计划：30 分钟
-auto_task_interval_review = 600     # 擎天柱审核计划：10 分钟
-
-async def leonardo_auto_generate_task():
-    """李奥纳多后台自动生成计划"""
-    global auto_task_running
-    auto_task_running = True
-    
-    while auto_task_running:
-        try:
-            print("[Auto] 李奥纳多开始自动生成计划...")
-            result = auto_plan_manager.leonardo_auto_generate()
-            print(f"[Auto] 李奥纳多完成：生成{len(result.get('generated', []))}个计划")
-        except Exception as e:
-            print(f"[Auto] 李奥纳多出错：{e}")
-        
-        await asyncio.sleep(auto_task_interval_generate)
-
-async def optimus_auto_review_task():
-    """擎天柱后台自动审核计划"""
-    global auto_task_running
-    
-    while auto_task_running:
-        try:
-            print("[Auto] 擎天柱开始自动审核计划...")
-            result = auto_plan_manager.optimus_auto_review(auto_approve=True)
-            print(f"[Auto] 擎天柱完成：通过{len(result.get('approved', []))}个计划")
-        except Exception as e:
-            print(f"[Auto] 擎天柱出错：{e}")
-        
-        await asyncio.sleep(auto_task_interval_review)
-
-async def start_auto_tasks():
-    """启动后台自动任务"""
-    print("[Auto] 启动后台自动任务...")
-    
-    # 立即执行一次
-    print("[Auto] 初始执行...")
-    auto_plan_manager.leonardo_auto_generate()
-    await asyncio.sleep(2)
-    auto_plan_manager.optimus_auto_review(auto_approve=True)
-    
-    # 启动后台任务
-    asyncio.create_task(leonardo_auto_generate_task())
-    asyncio.create_task(optimus_auto_review_task())
-    
-    print("[Auto] 后台自动任务已启动")
-    print(f"[Auto] 李奥纳多生成计划间隔：{auto_task_interval_generate}秒")
-    print(f"[Auto] 擎天柱审核计划间隔：{auto_task_interval_review}秒")
-
-# 在应用启动时启动自动任务
-@app.on_event("startup")
-async def startup_event():
-    """应用启动时执行"""
-    print("=" * 50)
-    print("团队看板 API 启动")
-    print("=" * 50)
-    
-    # 启动后台自动任务
-    await start_auto_tasks()
-
-# API: 获取自动任务日志
-@app.get("/api/auto/logs")
-def get_auto_logs(limit: int = 50):
-    """获取自动任务执行日志"""
-    return {"logs": auto_plan_manager.get_auto_logs(limit)}
-
-# API: 手动触发李奥纳多生成
-@app.post("/api/auto/leonardo/generate")
-def trigger_leonardo_generate():
-    """手动触发李奥纳多生成计划"""
-    result = auto_plan_manager.leonardo_auto_generate()
-    return result
-
-# API: 手动触发擎天柱审核
-@app.post("/api/auto/optimus/review")
-def trigger_optimus_review():
-    """手动触发擎天柱审核计划"""
-    result = auto_plan_manager.optimus_auto_review(auto_approve=True)
-    return result
-
-# API: 获取自动任务状态
-@app.get("/api/auto/status")
-def get_auto_status():
-    """获取自动任务状态"""
-    return {
-        "running": auto_task_running,
-        "leonardo_interval": auto_task_interval_generate,
-        "optimus_interval": auto_task_interval_review,
-        "leonardo_interval_min": auto_task_interval_generate // 60,
-        "optimus_interval_min": auto_task_interval_review // 60
-    }

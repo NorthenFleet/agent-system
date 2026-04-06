@@ -1036,6 +1036,10 @@ def news_page():
         headers={"Cache-Control": "no-store, no-cache, must-revalidate"},
     )
 
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=3020)
+
 
 
 # ==================== 任务计划管理接口 ====================
@@ -1132,114 +1136,6 @@ def get_all_plans():
     return {"plans": list(plan_manager.plans.values())}
 
 
-
-@app.get("/plans")
-def plans_page():
-    """任务计划页面"""
-    return FileResponse(
-        os.path.join(FRONTEND_DIR, "plans.html"),
-        headers={"Cache-Control": "no-store, no-cache, must-revalidate"},
-    )
-
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=3020)
-
-# ==================== 后台自动任务 ====================
-import asyncio
-from auto_plan_manager import auto_plan_manager
-
-# 后台自动任务状态
-auto_task_running = False
-auto_task_interval_generate = 1800  # 李奥纳多生成计划：30 分钟
-auto_task_interval_review = 600     # 擎天柱审核计划：10 分钟
-
-async def leonardo_auto_generate_task():
-    """李奥纳多后台自动生成计划"""
-    global auto_task_running
-    auto_task_running = True
-    
-    while auto_task_running:
-        try:
-            print("[Auto] 李奥纳多开始自动生成计划...")
-            result = auto_plan_manager.leonardo_auto_generate()
-            print(f"[Auto] 李奥纳多完成：生成{len(result.get('generated', []))}个计划")
-        except Exception as e:
-            print(f"[Auto] 李奥纳多出错：{e}")
-        
-        await asyncio.sleep(auto_task_interval_generate)
-
-async def optimus_auto_review_task():
-    """擎天柱后台自动审核计划"""
-    global auto_task_running
-    
-    while auto_task_running:
-        try:
-            print("[Auto] 擎天柱开始自动审核计划...")
-            result = auto_plan_manager.optimus_auto_review(auto_approve=True)
-            print(f"[Auto] 擎天柱完成：通过{len(result.get('approved', []))}个计划")
-        except Exception as e:
-            print(f"[Auto] 擎天柱出错：{e}")
-        
-        await asyncio.sleep(auto_task_interval_review)
-
-async def start_auto_tasks():
-    """启动后台自动任务"""
-    print("[Auto] 启动后台自动任务...")
-    
-    # 立即执行一次
-    print("[Auto] 初始执行...")
-    auto_plan_manager.leonardo_auto_generate()
-    await asyncio.sleep(2)
-    auto_plan_manager.optimus_auto_review(auto_approve=True)
-    
-    # 启动后台任务
-    asyncio.create_task(leonardo_auto_generate_task())
-    asyncio.create_task(optimus_auto_review_task())
-    
-    print("[Auto] 后台自动任务已启动")
-    print(f"[Auto] 李奥纳多生成计划间隔：{auto_task_interval_generate}秒")
-    print(f"[Auto] 擎天柱审核计划间隔：{auto_task_interval_review}秒")
-
-# 在应用启动时启动自动任务
-@app.on_event("startup")
-async def startup_event():
-    """应用启动时执行"""
-    print("=" * 50)
-    print("团队看板 API 启动")
-    print("=" * 50)
-    
-    # 启动后台自动任务
-    await start_auto_tasks()
-
-# API: 获取自动任务日志
-@app.get("/api/auto/logs")
-def get_auto_logs(limit: int = 50):
-    """获取自动任务执行日志"""
-    return {"logs": auto_plan_manager.get_auto_logs(limit)}
-
-# API: 手动触发李奥纳多生成
-@app.post("/api/auto/leonardo/generate")
-def trigger_leonardo_generate():
-    """手动触发李奥纳多生成计划"""
-    result = auto_plan_manager.leonardo_auto_generate()
-    return result
-
-# API: 手动触发擎天柱审核
-@app.post("/api/auto/optimus/review")
-def trigger_optimus_review():
-    """手动触发擎天柱审核计划"""
-    result = auto_plan_manager.optimus_auto_review(auto_approve=True)
-    return result
-
-# API: 获取自动任务状态
-@app.get("/api/auto/status")
-def get_auto_status():
-    """获取自动任务状态"""
-    return {
-        "running": auto_task_running,
-        "leonardo_interval": auto_task_interval_generate,
-        "optimus_interval": auto_task_interval_review,
-        "leonardo_interval_min": auto_task_interval_generate // 60,
-        "optimus_interval_min": auto_task_interval_review // 60
-    }
