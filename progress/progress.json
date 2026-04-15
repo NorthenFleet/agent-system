@@ -1,0 +1,16 @@
+{
+  "tasks": {
+    "TASK-20260416-003": {
+      "name": "用户注册功能",
+      "assignee": "多纳泰罗",
+      "hours": 6,
+      "priority": "P0",
+      "status": "in_progress",
+      "progress": 25,
+      "created_at": "2026-04-16T00:37:44.592780",
+      "updated_at": "2026-04-16T00:37:59.268409",
+      "note": "开始开发"
+    }
+  },
+  "projects": {}
+}
