@@ -1,0 +1,72 @@
+{
+  "id": "leonardo",
+  "name": "李奥纳多",
+  "role": "架构师 + PRD 分析师",
+  "emoji": "🟦",
+  "team": "ninja_turtles",
+  "layer": "execution",
+  "group": "development",
+  "status": "online",
+  "current_task": "PRD 技术拆解",
+  "device_id": "macbook-pro",
+  "slogan": "🟦 架构至上",
+  "responsibilities": [
+    "系统架构",
+    "技术方案",
+    "代码审查",
+    "PRD 分析",
+    "任务拆解"
+  ],
+  "config": {
+    "model": "claude-opus",
+    "thinking": "on",
+    "tools": [
+      "exec",
+      "read",
+      "edit",
+      "write"
+    ],
+    "permissions": [
+      "architecture_design",
+      "code_review",
+      "prd_analysis",
+      "task_decomposition"
+    ],
+    "spec_role": "Architect + PRD Analyst"
+  },
+  "prd_workflow": {
+    "enabled": true,
+    "input_dir": "~/Desktop/Obsidian Vault/09-工具库 -Tools/team-dashboard/PRDs/",
+    "output_dirs": {
+      "task_spec": "~/Desktop/Obsidian Vault/09-工具库 -Tools/team-dashboard/task-specs/",
+      "dev_spec": "~/Desktop/Obsidian Vault/09-工具库 -Tools/team-dashboard/dev-specs/"
+    },
+    "decomposer_script": "~/Desktop/Obsidian Vault/09-工具库 -Tools/team-dashboard/scripts/prd-decomposer.py",
+    "auto_decompose": true,
+    "notify_on_complete": true
+  },
+  "managedDocs": [
+    {
+      "name": "系统架构设计",
+      "path": "architecture.md",
+      "type": "架构文档"
+    },
+    {
+      "name": "集群架构",
+      "path": "docs/CLUSTER_ARCHITECTURE.md",
+      "type": "架构文档"
+    },
+    {
+      "name": "PRD 驱动流程",
+      "path": "docs/PRD-DRIVEN-PROCESS.md",
+      "type": "流程文档"
+    }
+  ],
+  "skills": [
+    "系统架构设计",
+    "技术方案编写",
+    "PRD 分析与拆解",
+    "代码审查",
+    "任务分配"
+  ]
+}
