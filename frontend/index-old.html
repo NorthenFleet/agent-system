@@ -848,7 +848,11 @@
                   <div style="font-weight:800;">文档目录与章节计划</div>
                   <div class="muted" style="font-size:0.84rem;">{{ documentSpec(selectedProjectV3).document_type || '文档' }} · {{ documentSpec(selectedProjectV3).output_format || '未设置输出格式' }}</div>
                 </div>
-                <el-tag size="small" type="info">{{ documentChapters(selectedProjectV3).length }} 章</el-tag>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                  <el-tag size="small" type="info">{{ documentChapters(selectedProjectV3).length }} 章</el-tag>
+                  <el-button size="small" @click="openCreateDocumentSectionDialog">新增章节</el-button>
+                  <el-button size="small" @click="openCreateDocumentAssetDialog">新增图片/图表</el-button>
+                </div>
               </div>
               <div class="muted" style="line-height:1.55;margin-bottom:12px;">{{ documentSpec(selectedProjectV3).writing_goal || '暂无写作目标' }}</div>
               <div v-if="documentChapters(selectedProjectV3).length" style="display:grid;gap:8px;">
@@ -864,6 +868,23 @@
                 </div>
               </div>
               <div v-else class="muted" style="padding:18px;text-align:center;border:1px solid var(--border);border-radius:8px;">暂无目录结构</div>
+              <div style="margin-top:14px;">
+                <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:8px;">
+                  <strong>图片/图表</strong>
+                  <el-tag size="small" type="info">{{ documentAssets(selectedProjectV3).length }} 个</el-tag>
+                </div>
+                <div v-if="documentAssets(selectedProjectV3).length" style="display:grid;gap:8px;">
+                  <div v-for="asset in documentAssets(selectedProjectV3)" :key="asset.id || asset.title" style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding:9px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,0.02);">
+                    <div style="min-width:0;">
+                      <div style="font-weight:700;">{{ asset.title }}</div>
+                      <div class="muted" style="font-size:0.82rem;margin-top:4px;">{{ asset.type || 'image' }} · {{ asset.chapter_title || documentSectionTitle(asset.chapter_id || asset.section_id) || '未关联章节' }}</div>
+                      <div v-if="asset.description" class="muted" style="font-size:0.82rem;margin-top:4px;">{{ asset.description }}</div>
+                    </div>
+                    <el-tag size="small" type="info">{{ asset.status || 'planned' }}</el-tag>
+                  </div>
+                </div>
+                <div v-else class="muted" style="padding:12px;text-align:center;border:1px solid var(--border);border-radius:8px;">暂无图片/图表计划</div>
+              </div>
             </div>
 
             <div v-else style="border:1px solid var(--border);border-radius:8px;padding:14px;background:rgba(255,255,255,0.02);">
@@ -2642,6 +2663,73 @@
       </template>
     </el-dialog>
 
+    <el-dialog v-model="documentSectionDialogVisible" title="新增文档章节" width="620px">
+      <el-form label-position="top">
+        <el-form-item label="章节标题">
+          <el-input v-model="newDocumentSectionForm.title" placeholder="例如：第二章 系统设计"></el-input>
+        </el-form-item>
+        <el-form-item label="章节摘要">
+          <el-input v-model="newDocumentSectionForm.summary" type="textarea" :rows="2"></el-input>
+        </el-form-item>
+        <el-form-item label="主要内容">
+          <el-input v-model="newDocumentSectionForm.main_content" type="textarea" :rows="4" placeholder="说明本章要写的主要内容"></el-input>
+        </el-form-item>
+        <el-form-item label="关键点">
+          <el-input v-model="newDocumentSectionForm.key_points_text" type="textarea" :rows="2" placeholder="每行一个关键点"></el-input>
+        </el-form-item>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;">
+          <el-form-item label="状态">
+            <el-select v-model="newDocumentSectionForm.status" style="width:100%;">
+              <el-option label="规划中" value="planning"></el-option>
+              <el-option label="撰写中" value="writing"></el-option>
+              <el-option label="评审中" value="review"></el-option>
+              <el-option label="完成" value="done"></el-option>
+            </el-select>
+          </el-form-item>
+          <el-form-item label="负责智能体">
+            <el-input v-model="newDocumentSectionForm.assigned_agent" placeholder="例如：ultra-magnus"></el-input>
+          </el-form-item>
+        </div>
+      </el-form>
+      <template #footer>
+        <el-button @click="documentSectionDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="documentSectionSaving" @click="createDocumentSection">保存章节</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="documentAssetDialogVisible" title="新增图片/图表" width="620px">
+      <el-form label-position="top">
+        <el-form-item label="标题">
+          <el-input v-model="newDocumentAssetForm.title" placeholder="例如：系统架构图"></el-input>
+        </el-form-item>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;">
+          <el-form-item label="类型">
+            <el-select v-model="newDocumentAssetForm.type" style="width:100%;">
+              <el-option label="图片" value="image"></el-option>
+              <el-option label="图表" value="chart"></el-option>
+              <el-option label="表格" value="table"></el-option>
+              <el-option label="架构图" value="diagram"></el-option>
+            </el-select>
+          </el-form-item>
+          <el-form-item label="关联章节">
+            <el-select v-model="newDocumentAssetForm.chapter_id" clearable placeholder="选择章节" style="width:100%;">
+              <el-option v-for="chapter in documentChapters(selectedProjectV3)" :key="chapter.id" :label="chapter.title" :value="chapter.id"></el-option>
+            </el-select>
+          </el-form-item>
+        </div>
+        <el-form-item label="说明">
+          <el-input v-model="newDocumentAssetForm.description" type="textarea" :rows="3"></el-input>
+        </el-form-item>
+        <el-form-item label="文件路径">
+          <el-input v-model="newDocumentAssetForm.file_path" placeholder="可先留空，后续上传或绑定"></el-input>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="documentAssetDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="documentAssetSaving" @click="createDocumentAsset">保存图片/图表</el-button>
+      </template>
+    </el-dialog>
+
     <el-dialog v-model="editProjectVisible" title="编辑项目" width="680px">
       <el-form label-position="top">
         <el-form-item label="项目名称">
@@ -2889,6 +2977,25 @@
           projectActionSending: false,
           projectConversationsCache: {},
           projectChatContextCache: {},
+          documentSectionDialogVisible: false,
+          documentSectionSaving: false,
+          documentAssetDialogVisible: false,
+          documentAssetSaving: false,
+          newDocumentSectionForm: {
+            title: "",
+            summary: "",
+            main_content: "",
+            key_points_text: "",
+            status: "planning",
+            assigned_agent: "",
+          },
+          newDocumentAssetForm: {
+            title: "",
+            type: "image",
+            chapter_id: "",
+            description: "",
+            file_path: "",
+          },
           newTaskForm: {
             title: "",
             description: "",
@@ -4466,10 +4573,120 @@
           return Array.isArray(spec.chapters) ? spec.chapters : [];
         },
 
+        documentAssets(project) {
+          const spec = this.documentSpec(project);
+          return Array.isArray(spec.assets) ? spec.assets : [];
+        },
+
+        documentSectionTitle(sectionId) {
+          if (!sectionId || !this.selectedProjectV3) return '';
+          const chapter = this.documentChapters(this.selectedProjectV3).find(item => item.id === sectionId);
+          return chapter ? chapter.title : '';
+        },
+
         summarizeDocumentAssets(project) {
           const assets = this.documentSpec(project).assets || [];
           if (!Array.isArray(assets) || !assets.length) return '暂无';
           return assets.slice(0, 4).map(item => item.title || item.description || item.type || '未命名素材').join('；');
+        },
+
+        openCreateDocumentSectionDialog() {
+          if (!this.selectedProjectV3 || !this.isDocumentProject(this.selectedProjectV3)) {
+            this.$message.warning('请先选择文档撰写类项目');
+            return;
+          }
+          this.newDocumentSectionForm = {
+            title: '',
+            summary: '',
+            main_content: '',
+            key_points_text: '',
+            status: 'planning',
+            assigned_agent: '',
+          };
+          this.documentSectionDialogVisible = true;
+        },
+
+        openCreateDocumentAssetDialog() {
+          if (!this.selectedProjectV3 || !this.isDocumentProject(this.selectedProjectV3)) {
+            this.$message.warning('请先选择文档撰写类项目');
+            return;
+          }
+          this.newDocumentAssetForm = {
+            title: '',
+            type: 'image',
+            chapter_id: '',
+            description: '',
+            file_path: '',
+          };
+          this.documentAssetDialogVisible = true;
+        },
+
+        async createDocumentSection() {
+          if (!this.selectedProjectV3 || !this.selectedProjectV3.id) return;
+          const title = String(this.newDocumentSectionForm.title || '').trim();
+          if (!title) {
+            this.$message.warning('请填写章节标题');
+            return;
+          }
+          this.documentSectionSaving = true;
+          try {
+            const res = await fetch(API_BASE + '/api/v3/projects/' + encodeURIComponent(this.selectedProjectV3.id) + '/document-sections', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', ...this.apiAuthHeaders() },
+              body: JSON.stringify({
+                title,
+                summary: String(this.newDocumentSectionForm.summary || '').trim(),
+                main_content: String(this.newDocumentSectionForm.main_content || '').trim(),
+                key_points: this.splitDesignLines(this.newDocumentSectionForm.key_points_text),
+                status: this.newDocumentSectionForm.status || 'planning',
+                assigned_agent: String(this.newDocumentSectionForm.assigned_agent || '').trim(),
+              }),
+            });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            this.documentSectionDialogVisible = false;
+            this.$message.success('章节已创建');
+            await this.loadProjectsV3();
+          } catch (error) {
+            console.warn('[ProjectsV3] document section create failed:', error);
+            this.$message.error('创建章节失败：' + error.message);
+          } finally {
+            this.documentSectionSaving = false;
+          }
+        },
+
+        async createDocumentAsset() {
+          if (!this.selectedProjectV3 || !this.selectedProjectV3.id) return;
+          const title = String(this.newDocumentAssetForm.title || '').trim();
+          if (!title) {
+            this.$message.warning('请填写图片/图表标题');
+            return;
+          }
+          const sectionTitle = this.documentSectionTitle(this.newDocumentAssetForm.chapter_id);
+          this.documentAssetSaving = true;
+          try {
+            const res = await fetch(API_BASE + '/api/v3/projects/' + encodeURIComponent(this.selectedProjectV3.id) + '/document-assets', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', ...this.apiAuthHeaders() },
+              body: JSON.stringify({
+                title,
+                type: this.newDocumentAssetForm.type || 'image',
+                chapter_id: this.newDocumentAssetForm.chapter_id || '',
+                section_id: this.newDocumentAssetForm.chapter_id || '',
+                chapter_title: sectionTitle,
+                description: String(this.newDocumentAssetForm.description || '').trim(),
+                file_path: String(this.newDocumentAssetForm.file_path || '').trim(),
+              }),
+            });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            this.documentAssetDialogVisible = false;
+            this.$message.success('图片/图表已创建');
+            await this.loadProjectsV3();
+          } catch (error) {
+            console.warn('[ProjectsV3] document asset create failed:', error);
+            this.$message.error('创建图片/图表失败：' + error.message);
+          } finally {
+            this.documentAssetSaving = false;
+          }
         },
 
         projectConversations(project) {

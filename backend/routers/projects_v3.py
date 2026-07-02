@@ -203,6 +203,76 @@ class ProjectAgentActionRequest(BaseModel):
     payload: dict[str, Any] = Field(default_factory=dict)
 
 
+class SoftwareSpecUpdate(BaseModel):
+    requirements: Optional[list[Any]] = None
+    design_doc: Optional[dict[str, Any]] = None
+    architecture: Optional[dict[str, Any]] = None
+    database_design: Optional[dict[str, Any]] = None
+    api_design: Optional[list[Any]] = None
+    frontend_design: Optional[dict[str, Any]] = None
+    test_plan: Optional[list[Any]] = None
+    deployment_plan: Optional[list[Any]] = None
+    agent_id: str = "project-manager"
+
+
+class DocumentSectionCreate(BaseModel):
+    id: Optional[str] = None
+    parent_id: str = ""
+    title: str
+    summary: str = ""
+    main_content: str = ""
+    content_brief: str = ""
+    key_points: list[str] = Field(default_factory=list)
+    images: list[Any] = Field(default_factory=list)
+    status: str = "planning"
+    assigned_agent: str = ""
+    assigned_agent_id: str = ""
+    order_index: Optional[int] = None
+    agent_id: str = "project-manager"
+
+
+class DocumentSectionUpdate(BaseModel):
+    parent_id: Optional[str] = None
+    title: Optional[str] = None
+    summary: Optional[str] = None
+    main_content: Optional[str] = None
+    content_brief: Optional[str] = None
+    key_points: Optional[list[str]] = None
+    images: Optional[list[Any]] = None
+    status: Optional[str] = None
+    assigned_agent: Optional[str] = None
+    assigned_agent_id: Optional[str] = None
+    order_index: Optional[int] = None
+    agent_id: str = "project-manager"
+
+
+class DocumentAssetCreate(BaseModel):
+    id: Optional[str] = None
+    chapter_id: str = ""
+    section_id: str = ""
+    chapter_title: str = ""
+    type: str = "image"
+    title: str
+    description: str = ""
+    file_path: str = ""
+    status: str = "planned"
+    order_index: Optional[int] = None
+    agent_id: str = "project-manager"
+
+
+class DocumentAssetUpdate(BaseModel):
+    chapter_id: Optional[str] = None
+    section_id: Optional[str] = None
+    chapter_title: Optional[str] = None
+    type: Optional[str] = None
+    title: Optional[str] = None
+    description: Optional[str] = None
+    file_path: Optional[str] = None
+    status: Optional[str] = None
+    order_index: Optional[int] = None
+    agent_id: str = "project-manager"
+
+
 class DecomposeRequest(BaseModel):
     reasoning_summary: str = ""
     agent_id: str = "project-manager"
@@ -1053,6 +1123,72 @@ def create_project_agent_action(project_id: str, req: ProjectAgentActionRequest)
         "log": log,
         "dispatch_status": "recorded",
     }
+
+
+@router.put("/projects/{project_id}/software-spec")
+def update_project_software_spec(project_id: str, req: SoftwareSpecUpdate):
+    payload = _model_dict(req, exclude_unset=True)
+    agent_id = payload.pop("agent_id", "project-manager")
+    result = project_manager.update_software_spec(project_id, payload, agent_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return result
+
+
+@router.post("/projects/{project_id}/document-sections", status_code=201)
+def create_document_section(project_id: str, req: DocumentSectionCreate):
+    payload = _model_dict(req, exclude_unset=True)
+    agent_id = payload.pop("agent_id", "project-manager")
+    result = project_manager.add_document_section(project_id, payload, agent_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return result
+
+
+@router.put("/projects/{project_id}/document-sections/{section_id}")
+def update_document_section(project_id: str, section_id: str, req: DocumentSectionUpdate):
+    payload = _model_dict(req, exclude_unset=True)
+    agent_id = payload.pop("agent_id", "project-manager")
+    result = project_manager.update_document_section(project_id, section_id, payload, agent_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Project or section not found")
+    return result
+
+
+@router.delete("/projects/{project_id}/document-sections/{section_id}")
+def delete_document_section(project_id: str, section_id: str, agent_id: str = Query("project-manager")):
+    result = project_manager.delete_document_section(project_id, section_id, agent_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Project or section not found")
+    return result
+
+
+@router.post("/projects/{project_id}/document-assets", status_code=201)
+def create_document_asset(project_id: str, req: DocumentAssetCreate):
+    payload = _model_dict(req, exclude_unset=True)
+    agent_id = payload.pop("agent_id", "project-manager")
+    result = project_manager.add_document_asset(project_id, payload, agent_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return result
+
+
+@router.put("/projects/{project_id}/document-assets/{asset_id}")
+def update_document_asset(project_id: str, asset_id: str, req: DocumentAssetUpdate):
+    payload = _model_dict(req, exclude_unset=True)
+    agent_id = payload.pop("agent_id", "project-manager")
+    result = project_manager.update_document_asset(project_id, asset_id, payload, agent_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Project or asset not found")
+    return result
+
+
+@router.delete("/projects/{project_id}/document-assets/{asset_id}")
+def delete_document_asset(project_id: str, asset_id: str, agent_id: str = Query("project-manager")):
+    result = project_manager.delete_document_asset(project_id, asset_id, agent_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Project or asset not found")
+    return result
 
 
 @router.get("/projects/{project_id}/iteration-context")

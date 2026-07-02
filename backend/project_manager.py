@@ -14,10 +14,9 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Optional
 
-from path_config import data_path
 from unified_data_manager import unified_data_manager
 
-PROJECTS_FILE = data_path("projects-v3.json")
+PROJECTS_FILE = os.path.expanduser("~/WorkSpace/team-dashboard/data/projects-v3.json")
 CANONICAL_BOARD_PROJECT_ID = "proj-b098ac3dbf"
 CANONICAL_BOARD_PROJECT_NAME = "OpenClaw 团队信息看板"
 TASK_PROJECT_NAME_MAP = {
@@ -716,6 +715,205 @@ class ProjectManager:
             "recent_conversation": messages,
             "recent_logs": self.list_logs(project_id, 12),
         }
+
+    def update_software_spec(self, project_id: str, payload: dict, agent_id: str = "project-manager") -> Optional[dict]:
+        def mutate(data):
+            project = self._find_project_unlocked(data, project_id)
+            if not project:
+                return None
+            now = _now_iso()
+            project["project_type"] = "software"
+            project["type"] = "software"
+            project.setdefault("context", {})["project_type"] = "software"
+            current = self._normalize_design_doc(project.get("design_doc"), project_id, project.get("created_at") or now)
+            updates = {}
+            if "requirements" in payload:
+                updates["usage_requirements"] = _as_list(payload.get("requirements"))
+            if "design_doc" in payload:
+                updates.update(_as_dict(payload.get("design_doc")))
+            if "architecture" in payload:
+                updates["system_architecture"] = _as_dict(payload.get("architecture"))
+            if "database_design" in payload:
+                updates["data_structure"] = _as_dict(payload.get("database_design"))
+            if "api_design" in payload:
+                updates["api_interfaces"] = _as_list(payload.get("api_design"))
+            for key in ("frontend_design", "test_plan", "deployment_plan"):
+                if key in payload:
+                    updates[key] = payload[key]
+            current.update(updates)
+            current["updated_at"] = now
+            project["design_doc"] = self._normalize_design_doc(current, project_id, project.get("created_at") or now)
+            project["updated_at"] = now
+            log = self._append_log(data, project_id, None, agent_id, "software_spec_updated", "软件项目规格已更新")
+            return {"project": project, "design_doc": project["design_doc"], "log": log}
+
+        return self._with_data(mutate)
+
+    def add_document_section(self, project_id: str, payload: dict, agent_id: str = "project-manager") -> Optional[dict]:
+        def mutate(data):
+            project = self._find_project_unlocked(data, project_id)
+            if not project:
+                return None
+            now = _now_iso()
+            project["project_type"] = "document"
+            project["type"] = "document"
+            project.setdefault("context", {})["project_type"] = "document"
+            spec = self._normalize_document_spec(project.get("document_spec"), project_id, project.get("created_at") or now)
+            chapters = _as_list(spec.get("chapters"))
+            section = {
+                "id": payload.get("id") or _new_id("chapter"),
+                "project_id": project_id,
+                "parent_id": payload.get("parent_id", ""),
+                "title": payload.get("title", ""),
+                "summary": payload.get("summary", ""),
+                "main_content": payload.get("main_content") or payload.get("content_brief", ""),
+                "key_points": _as_list(payload.get("key_points")),
+                "images": _as_list(payload.get("images")),
+                "status": payload.get("status", "planning"),
+                "assigned_agent": payload.get("assigned_agent") or payload.get("assigned_agent_id", ""),
+                "order_index": int(payload.get("order_index") if payload.get("order_index") is not None else len(chapters)),
+            }
+            chapters.append(section)
+            spec["chapters"] = chapters
+            if section["title"] and section["title"] not in _as_list(spec.get("outline")):
+                spec["outline"] = _as_list(spec.get("outline")) + [section["title"]]
+            spec["updated_at"] = now
+            project["document_spec"] = self._normalize_document_spec(spec, project_id, project.get("created_at") or now)
+            project["updated_at"] = now
+            log = self._append_log(data, project_id, None, agent_id, "document_section_created", f"文档章节创建：{section['title']}")
+            return {"project": project, "section": section, "log": log}
+
+        return self._with_data(mutate)
+
+    def update_document_section(self, project_id: str, section_id: str, payload: dict, agent_id: str = "project-manager") -> Optional[dict]:
+        def mutate(data):
+            project = self._find_project_unlocked(data, project_id)
+            if not project:
+                return None
+            now = _now_iso()
+            spec = self._normalize_document_spec(project.get("document_spec"), project_id, project.get("created_at") or now)
+            updated = None
+            for section in _as_list(spec.get("chapters")):
+                if section.get("id") == section_id:
+                    for key in ("parent_id", "title", "summary", "main_content", "content_brief", "status", "assigned_agent", "assigned_agent_id", "order_index"):
+                        if key in payload and payload[key] is not None:
+                            target_key = "main_content" if key == "content_brief" else ("assigned_agent" if key == "assigned_agent_id" else key)
+                            section[target_key] = payload[key]
+                    if "key_points" in payload:
+                        section["key_points"] = _as_list(payload.get("key_points"))
+                    if "images" in payload:
+                        section["images"] = _as_list(payload.get("images"))
+                    updated = section
+                    break
+            if not updated:
+                return None
+            spec["updated_at"] = now
+            project["document_spec"] = self._normalize_document_spec(spec, project_id, project.get("created_at") or now)
+            project["updated_at"] = now
+            log = self._append_log(data, project_id, None, agent_id, "document_section_updated", f"文档章节更新：{updated.get('title')}")
+            return {"project": project, "section": updated, "log": log}
+
+        return self._with_data(mutate)
+
+    def delete_document_section(self, project_id: str, section_id: str, agent_id: str = "project-manager") -> Optional[dict]:
+        def mutate(data):
+            project = self._find_project_unlocked(data, project_id)
+            if not project:
+                return None
+            now = _now_iso()
+            spec = self._normalize_document_spec(project.get("document_spec"), project_id, project.get("created_at") or now)
+            chapters = _as_list(spec.get("chapters"))
+            removed = next((section for section in chapters if section.get("id") == section_id), None)
+            if not removed:
+                return None
+            spec["chapters"] = [section for section in chapters if section.get("id") != section_id]
+            spec["assets"] = [asset for asset in _as_list(spec.get("assets")) if asset.get("chapter_id") != section_id and asset.get("section_id") != section_id]
+            spec["updated_at"] = now
+            project["document_spec"] = self._normalize_document_spec(spec, project_id, project.get("created_at") or now)
+            project["updated_at"] = now
+            log = self._append_log(data, project_id, None, agent_id, "document_section_deleted", f"文档章节删除：{removed.get('title')}")
+            return {"project": project, "section": removed, "deleted": True, "log": log}
+
+        return self._with_data(mutate)
+
+    def add_document_asset(self, project_id: str, payload: dict, agent_id: str = "project-manager") -> Optional[dict]:
+        def mutate(data):
+            project = self._find_project_unlocked(data, project_id)
+            if not project:
+                return None
+            now = _now_iso()
+            project["project_type"] = "document"
+            project["type"] = "document"
+            project.setdefault("context", {})["project_type"] = "document"
+            spec = self._normalize_document_spec(project.get("document_spec"), project_id, project.get("created_at") or now)
+            assets = _as_list(spec.get("assets"))
+            asset = {
+                "id": payload.get("id") or _new_id("asset"),
+                "project_id": project_id,
+                "chapter_id": payload.get("chapter_id") or payload.get("section_id", ""),
+                "section_id": payload.get("section_id") or payload.get("chapter_id", ""),
+                "chapter_title": payload.get("chapter_title", ""),
+                "type": payload.get("type", "image"),
+                "title": payload.get("title", ""),
+                "description": payload.get("description", ""),
+                "file_path": payload.get("file_path", ""),
+                "status": payload.get("status", "planned"),
+                "order_index": int(payload.get("order_index") if payload.get("order_index") is not None else len(assets)),
+            }
+            assets.append(asset)
+            spec["assets"] = assets
+            spec["updated_at"] = now
+            project["document_spec"] = self._normalize_document_spec(spec, project_id, project.get("created_at") or now)
+            project["updated_at"] = now
+            log = self._append_log(data, project_id, None, agent_id, "document_asset_created", f"文档素材创建：{asset['title']}")
+            return {"project": project, "asset": asset, "log": log}
+
+        return self._with_data(mutate)
+
+    def update_document_asset(self, project_id: str, asset_id: str, payload: dict, agent_id: str = "project-manager") -> Optional[dict]:
+        def mutate(data):
+            project = self._find_project_unlocked(data, project_id)
+            if not project:
+                return None
+            now = _now_iso()
+            spec = self._normalize_document_spec(project.get("document_spec"), project_id, project.get("created_at") or now)
+            updated = None
+            for asset in _as_list(spec.get("assets")):
+                if asset.get("id") == asset_id:
+                    for key in ("chapter_id", "section_id", "chapter_title", "type", "title", "description", "file_path", "status", "order_index"):
+                        if key in payload and payload[key] is not None:
+                            asset[key] = payload[key]
+                    updated = asset
+                    break
+            if not updated:
+                return None
+            spec["updated_at"] = now
+            project["document_spec"] = self._normalize_document_spec(spec, project_id, project.get("created_at") or now)
+            project["updated_at"] = now
+            log = self._append_log(data, project_id, None, agent_id, "document_asset_updated", f"文档素材更新：{updated.get('title')}")
+            return {"project": project, "asset": updated, "log": log}
+
+        return self._with_data(mutate)
+
+    def delete_document_asset(self, project_id: str, asset_id: str, agent_id: str = "project-manager") -> Optional[dict]:
+        def mutate(data):
+            project = self._find_project_unlocked(data, project_id)
+            if not project:
+                return None
+            now = _now_iso()
+            spec = self._normalize_document_spec(project.get("document_spec"), project_id, project.get("created_at") or now)
+            assets = _as_list(spec.get("assets"))
+            removed = next((asset for asset in assets if asset.get("id") == asset_id), None)
+            if not removed:
+                return None
+            spec["assets"] = [asset for asset in assets if asset.get("id") != asset_id]
+            spec["updated_at"] = now
+            project["document_spec"] = self._normalize_document_spec(spec, project_id, project.get("created_at") or now)
+            project["updated_at"] = now
+            log = self._append_log(data, project_id, None, agent_id, "document_asset_deleted", f"文档素材删除：{removed.get('title')}")
+            return {"project": project, "asset": removed, "deleted": True, "log": log}
+
+        return self._with_data(mutate)
 
     def get_iteration_context(self, project_id: str, agents: Optional[list[dict]] = None) -> Optional[dict]:
         project = self.get_project(project_id)
