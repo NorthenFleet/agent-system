@@ -1,0 +1,257 @@
+/* OpenClaw global style, aligned with the legacy dark dashboard. */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #0d1117;
+  color: #c9d1d9;
+  transition: background 0.3s, color 0.3s;
+}
+
+.app-layout {
+  --el-color-primary: var(--view-color);
+  --el-bg-color: var(--card-bg);
+  --el-bg-color-page: var(--app-bg);
+  --el-bg-color-overlay: var(--card-bg);
+  --el-border-color: var(--line-color);
+  --el-border-color-light: var(--line-color);
+  --el-border-color-lighter: rgba(48, 54, 61, 0.78);
+  --el-fill-color: var(--panel-bg);
+  --el-fill-color-light: var(--card-bg-soft);
+  --el-fill-color-lighter: var(--card-bg-soft);
+  --el-fill-color-blank: var(--panel-bg);
+  --el-text-color-primary: var(--text-primary);
+  --el-text-color-regular: var(--text-primary);
+  --el-text-color-secondary: var(--text-secondary);
+  --el-text-color-placeholder: #6e7681;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #30363d;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #484f58;
+}
+
+.app-layout .el-button--primary {
+  --el-button-bg-color: var(--view-color);
+  --el-button-border-color: var(--view-color);
+  --el-button-hover-bg-color: #79b8ff;
+  --el-button-hover-border-color: #79b8ff;
+  --el-button-text-color: #08111f;
+}
+
+.app-layout .el-card {
+  color: var(--text-primary);
+  border: 1px solid var(--line-color);
+  border-radius: 8px;
+  background: var(--card-bg);
+  box-shadow: none;
+}
+
+.app-layout .el-card:hover {
+  border-color: var(--view-color-border);
+}
+
+.app-layout .el-card__header {
+  color: var(--text-primary);
+  border-bottom-color: var(--line-color);
+}
+
+.app-layout .el-table {
+  --el-table-bg-color: transparent;
+  --el-table-tr-bg-color: transparent;
+  --el-table-header-bg-color: rgba(255, 255, 255, 0.035);
+  --el-table-row-hover-bg-color: rgba(var(--view-rgb), 0.08);
+  --el-table-border-color: var(--line-color);
+  --el-table-text-color: var(--text-primary);
+  --el-table-header-text-color: var(--text-secondary);
+  color: var(--text-primary);
+  background: transparent;
+}
+
+.app-layout .el-table th.el-table__cell,
+.app-layout .el-table tr,
+.app-layout .el-table td.el-table__cell {
+  background: transparent;
+}
+
+.app-layout .el-input__wrapper,
+.app-layout .el-textarea__inner,
+.app-layout .el-select__wrapper,
+.app-layout .el-input-number .el-input__wrapper {
+  color: var(--text-primary);
+  background: var(--panel-bg);
+  box-shadow: 0 0 0 1px var(--line-color) inset;
+}
+
+.app-layout .el-input__inner,
+.app-layout .el-textarea__inner,
+.app-layout .el-select__placeholder {
+  color: var(--text-primary);
+}
+
+.app-layout .el-dialog,
+.app-layout .el-drawer,
+.app-layout .el-message-box {
+  color: var(--text-primary);
+  background: var(--panel-bg);
+  border: 1px solid var(--line-color);
+}
+
+.app-layout .el-dialog__title,
+.app-layout .el-drawer__title,
+.app-layout .el-descriptions__title {
+  color: var(--text-primary);
+}
+
+.app-layout .el-descriptions__body,
+.app-layout .el-descriptions__cell,
+.app-layout .el-collapse-item__wrap,
+.app-layout .el-collapse-item__header {
+  color: var(--text-primary);
+  background: var(--card-bg);
+  border-color: var(--line-color);
+}
+
+.app-layout .el-tag {
+  border-color: rgba(var(--view-rgb), 0.24);
+  background: rgba(var(--view-rgb), 0.08);
+}
+
+.app-layout .el-tabs__nav-wrap::after {
+  background: var(--line-color);
+}
+
+.app-layout .el-tabs__active-bar,
+.app-layout .el-progress-bar__inner {
+  background-color: var(--view-color);
+}
+
+.app-layout .el-tabs__item,
+.app-layout .el-link,
+.app-layout a {
+  color: var(--text-secondary);
+}
+
+.app-layout .el-tabs__item.is-active,
+.app-layout .el-link.el-link--primary,
+.app-layout a:hover {
+  color: var(--view-color);
+}
+
+.app-layout .page-content .panel,
+.app-layout .page-content .panel-card,
+.app-layout .page-content .project-card,
+.app-layout .page-content .task-card,
+.app-layout .page-content .agent-card,
+.app-layout .page-content .memory-card,
+.app-layout .page-content .overview-panel,
+.app-layout .page-content .device-card,
+.app-layout .page-content .news-card,
+.app-layout .page-content .product-card {
+  color: var(--text-primary) !important;
+  border: 1px solid var(--line-color) !important;
+  border-radius: 8px !important;
+  background: var(--card-bg) !important;
+  box-shadow: none !important;
+}
+
+.app-layout .page-content .panel:hover,
+.app-layout .page-content .panel-card:hover,
+.app-layout .page-content .project-card:hover,
+.app-layout .page-content .task-card:hover,
+.app-layout .page-content .agent-card:hover,
+.app-layout .page-content .memory-card:hover,
+.app-layout .page-content .overview-panel:hover,
+.app-layout .page-content .device-card:hover,
+.app-layout .page-content .news-card:hover,
+.app-layout .page-content .product-card:hover {
+  border-color: var(--view-color-border) !important;
+}
+
+.app-layout .page-content .project-card.active,
+.app-layout .page-content .agent-card.active,
+.app-layout .page-content .product-card.is-active {
+  border-color: var(--view-color-strong-border) !important;
+  background: linear-gradient(90deg, rgba(var(--view-rgb), 0.1), transparent 62%), var(--card-bg) !important;
+}
+
+.app-layout .page-content .panel *,
+.app-layout .page-content .panel-card *,
+.app-layout .page-content .project-card *,
+.app-layout .page-content .task-card *,
+.app-layout .page-content .agent-card *,
+.app-layout .page-content .memory-card *,
+.app-layout .page-content .overview-panel *,
+.app-layout .page-content .device-card *,
+.app-layout .page-content .news-card *,
+.app-layout .page-content .product-card * {
+  color: inherit;
+}
+
+.app-layout .page-content .panel small,
+.app-layout .page-content .panel-card small,
+.app-layout .page-content .project-card small,
+.app-layout .page-content .task-card small,
+.app-layout .page-content .agent-card small,
+.app-layout .page-content .memory-card small,
+.app-layout .page-content .overview-panel small,
+.app-layout .page-content .device-card small,
+.app-layout .page-content .news-card small,
+.app-layout .page-content .product-card small,
+.app-layout .page-content .project-card-meta,
+.app-layout .page-content .card-meta,
+.app-layout .page-content .task-meta,
+.app-layout .page-content .muted {
+  color: var(--text-secondary) !important;
+}
+
+.app-layout .page-content,
+.app-layout .page-title,
+.app-layout h1,
+.app-layout h2,
+.app-layout h3,
+.app-layout h4 {
+  color: var(--text-primary);
+}
+
+.app-layout .page-subtitle,
+.app-layout small,
+.app-layout .muted {
+  color: var(--text-secondary);
+}
+
+.app-layout .page-title {
+  position: relative;
+}
+
+.app-layout .page-title::before {
+  content: "";
+  display: inline-block;
+  width: 4px;
+  height: 1em;
+  margin-right: 8px;
+  border-radius: 999px;
+  vertical-align: -0.12em;
+  background: var(--view-color);
+  box-shadow: 0 0 14px var(--view-color-shadow);
+}

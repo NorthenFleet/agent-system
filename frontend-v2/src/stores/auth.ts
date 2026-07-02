@@ -1,0 +1,97 @@
+import { defineStore } from 'pinia'
+import { ref, computed } from 'vue'
+import { login as apiLogin, logout as apiLogout, getMe, refreshToken as apiRefreshToken } from '@/api/auth'
+
+export interface User {
+  id: number
+  username: string
+  display_name: string
+  role: 'admin' | 'agent' | 'viewer'
+  is_active: boolean
+  last_login_at: string | null
+}
+
+export const useAuthStore = defineStore('auth', () => {
+  const user = ref<User | null>(null)
+  const token = ref<string | null>(localStorage.getItem('jwt_token'))
+  const refreshToken = ref<string | null>(localStorage.getItem('jwt_refresh_token'))
+  const loading = ref(false)
+
+  const isAuthenticated = computed(() => !!token.value)
+  const isAdmin = computed(() => user.value?.role === 'admin')
+  const displayName = computed(() => user.value?.display_name || '用户')
+
+  async function login(username: string, password: string) {
+    loading.value = true
+    try {
+      const data = await apiLogin(username, password)
+      token.value = data.access_token
+      refreshToken.value = (data as any).refresh_token || null
+      user.value = data.user
+      localStorage.setItem('jwt_token', data.access_token)
+      if (refreshToken.value) {
+        localStorage.setItem('jwt_refresh_token', refreshToken.value)
+      }
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function logout() {
+    if (token.value) {
+      try {
+        await apiLogout()
+      } catch {
+        // 忽略登出失败
+      }
+    }
+    token.value = null
+    refreshToken.value = null
+    user.value = null
+    localStorage.removeItem('jwt_token')
+    localStorage.removeItem('jwt_refresh_token')
+  }
+
+  async function fetchMe() {
+    if (!token.value) return
+    try {
+      user.value = await getMe()
+    } catch {
+      token.value = null
+      localStorage.removeItem('jwt_token')
+    }
+  }
+
+  async function doRefreshToken() {
+    if (!refreshToken.value) return false
+    try {
+      const data = await apiRefreshToken(refreshToken.value)
+      token.value = (data as any).access_token
+      refreshToken.value = (data as any).refresh_token || refreshToken.value
+      localStorage.setItem('jwt_token', token.value)
+      localStorage.setItem('jwt_refresh_token', refreshToken.value)
+      return true
+    } catch {
+      token.value = null
+      refreshToken.value = null
+      user.value = null
+      localStorage.removeItem('jwt_token')
+      localStorage.removeItem('jwt_refresh_token')
+      return false
+    }
+  }
+
+  return {
+    user,
+    token,
+    refreshToken,
+    loading,
+    isAuthenticated,
+    isAdmin,
+    displayName,
+    login,
+    logout,
+    fetchMe,
+    doRefreshToken,
+  }
+})

@@ -1,0 +1,40 @@
+{
+  "feeds": [
+    {
+      "key": "36kr",
+      "name": "36Kr",
+      "url": "https://www.36kr.com/feed",
+      "category": "科技",
+      "location": "beijing",
+      "priority": "high",
+      "enabled": true
+    },
+    {
+      "key": "huxiu",
+      "name": "虎嗅",
+      "url": "https://www.huxiu.com/rss/1.xml",
+      "category": "财经",
+      "location": "beijing",
+      "priority": "medium",
+      "enabled": true
+    },
+    {
+      "key": "github_trending",
+      "name": "GitHub Trending",
+      "url": "https://github-trends.com/rss",
+      "category": "科技",
+      "location": "sanfrancisco",
+      "priority": "high",
+      "enabled": true
+    },
+    {
+      "key": "zhihu_hot",
+      "name": "知乎热榜",
+      "url": "https://www.zhihu.com/rss",
+      "category": "科技",
+      "location": "beijing",
+      "priority": "medium",
+      "enabled": true
+    }
+  ]
+}

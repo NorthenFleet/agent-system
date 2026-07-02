@@ -57,9 +57,43 @@
             color: #58a6ff;
             font-size: 20px;
         }
+        .news-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
         .news-filters {
             display: flex;
             gap: 10px;
+        }
+        .refresh-btn {
+            padding: 6px 12px;
+            background: #238636;
+            border: 1px solid rgba(240,246,252,0.1);
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .refresh-btn:hover {
+            background: #2ea043;
+        }
+        .refresh-btn:disabled {
+            background: #21262d;
+            color: #8b949e;
+            cursor: not-allowed;
+        }
+        .refresh-btn.spinning {
+            animation: spin 1s linear infinite;
+        }
+        .last-update {
+            font-size: 12px;
+            color: #8b949e;
+            margin-left: 10px;
         }
         .filter-btn {
             padding: 6px 12px;
@@ -226,11 +260,17 @@
         <div class="news-section">
             <div class="news-header">
                 <h2>📰 新闻资讯</h2>
-                <div class="news-filters" id="filters">
-                    <button class="filter-btn active" data-category="all">全部</button>
-                    <button class="filter-btn" data-category="科技">科技</button>
-                    <button class="filter-btn" data-category="财经">财经</button>
-                    <button class="filter-btn" data-category="能源">能源</button>
+                <div class="news-controls">
+                    <div class="news-filters" id="filters">
+                        <button class="filter-btn active" data-category="all">全部</button>
+                        <button class="filter-btn" data-category="科技">科技</button>
+                        <button class="filter-btn" data-category="财经">财经</button>
+                        <button class="filter-btn" data-category="能源">能源</button>
+                    </div>
+                    <button class="refresh-btn" id="refresh-btn" onclick="manualRefresh()">
+                        <span>🔄</span> 刷新
+                    </button>
+                    <span class="last-update" id="last-update">更新中...</span>
                 </div>
             </div>
             
@@ -254,6 +294,9 @@
         let allNews = [];
         let locations = {};
         let currentCategory = 'all';
+        let refreshInterval = null;
+        let isRefreshing = false;
+        const REFRESH_INTERVAL_MS = 30 * 60 * 1000; // 30 分钟
 
         // 初始化 Three.js 场景
         function initEarth() {
@@ -563,9 +606,79 @@
             }
         });
 
+        // 手动刷新
+        async function manualRefresh() {
+            if (isRefreshing) return;
+            
+            isRefreshing = true;
+            const btn = document.getElementById('refresh-btn');
+            btn.disabled = true;
+            btn.classList.add('spinning');
+            
+            try {
+                const response = await fetch('/api/news/refresh', { method: 'POST' });
+                const result = await response.json();
+                
+                if (result.success) {
+                    await loadNews();
+                    updateLastUpdateTime();
+                } else {
+                    alert('刷新失败，请稍后重试');
+                }
+            } catch (error) {
+                console.error('刷新失败:', error);
+                alert('刷新失败：' + error.message);
+            } finally {
+                isRefreshing = false;
+                btn.disabled = false;
+                btn.classList.remove('spinning');
+            }
+        }
+
+        // 自动刷新
+        function startAutoRefresh() {
+            if (refreshInterval) clearInterval(refreshInterval);
+            refreshInterval = setInterval(async () => {
+                console.log('[Auto] 自动刷新新闻...');
+                try {
+                    await loadNews();
+                    updateLastUpdateTime();
+                } catch (error) {
+                    console.error('[Auto] 刷新失败:', error);
+                }
+            }, REFRESH_INTERVAL_MS);
+            console.log(`[Auto] 自动刷新已启动，间隔：${REFRESH_INTERVAL_MS/1000/60}分钟`);
+        }
+
+        // 更新最后更新时间
+        function updateLastUpdateTime() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('zh-CN', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            document.getElementById('last-update').textContent = `最后更新：${timeStr}`;
+        }
+
+        // 加载新闻统计
+        async function loadNewsStats() {
+            try {
+                const response = await fetch('/api/news/stats');
+                const data = await response.json();
+                console.log('[Stats] 新闻统计:', data.stats);
+            } catch (error) {
+                console.error('[Stats] 加载统计失败:', error);
+            }
+        }
+
         // 初始化
         initEarth();
-        loadNews();
+        loadNews().then(() => {
+            updateLastUpdateTime();
+            startAutoRefresh();
+            loadNewsStats();
+        });
     </script>
 </body>
 </html>

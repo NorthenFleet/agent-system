@@ -10,6 +10,7 @@ import subprocess
 from datetime import datetime
 from typing import Dict, List, Any, Optional
 from data_manager import DATA_DIR, load_json, save_json, DEFAULT_DEVICES
+from unified_data_manager import unified_data_manager
 
 DEVICES_FILE = os.path.join(DATA_DIR, "devices.json")
 DEVICE_HEALTH_FILE = os.path.join(DATA_DIR, "device_health.json")
@@ -22,18 +23,24 @@ PING_TIMEOUT = 2  # ping 超时时间 (秒)
 
 class DeviceManager:
     def __init__(self):
-        self.devices = load_json(DEVICES_FILE, DEFAULT_DEVICES)
-        self.health_records = load_json(DEVICE_HEALTH_FILE, {})
+        self.devices = unified_data_manager.list_devices() or load_json(DEVICES_FILE, DEFAULT_DEVICES)
+        if self.devices:
+            unified_data_manager.save_devices(self.devices, actor="device_manager:init", audit=False)
+        self.health_records = unified_data_manager.load_device_health_records() or load_json(DEVICE_HEALTH_FILE, {})
+        if self.health_records:
+            unified_data_manager.save_device_health_records(self.health_records, actor="device_manager:init", audit=False)
         self.alerts = load_json(DEVICE_ALERTS_FILE, {"alerts": []})
         self._health_check_task = None
         self._running = False
     
     def get_devices(self) -> List[Dict]:
         """获取所有设备"""
+        self.devices = unified_data_manager.list_devices()
         return self.devices
     
     def get_device(self, device_id: str) -> Optional[Dict]:
         """获取单个设备"""
+        self.devices = unified_data_manager.list_devices()
         for device in self.devices:
             if device["id"] == device_id:
                 return device
@@ -44,27 +51,28 @@ class DeviceManager:
         device["created_at"] = datetime.now().isoformat()
         device["updated_at"] = device["created_at"]
         device["status"] = device.get("status", "unknown")
-        self.devices.append(device)
-        save_json(DEVICES_FILE, self.devices)
-        return device
+        saved = unified_data_manager.add_device(device, actor="device_manager")
+        self.devices = unified_data_manager.list_devices()
+        return saved
     
     def update_device(self, device_id: str, updates: Dict) -> bool:
         """更新设备信息"""
         for device in self.devices:
             if device["id"] == device_id:
-                device.update(updates)
-                device["updated_at"] = datetime.now().isoformat()
-                save_json(DEVICES_FILE, self.devices)
-                return True
+                updated = unified_data_manager.update_device(device_id, {**updates, "updated_at": datetime.now().isoformat()}, actor="device_manager")
+                if updated:
+                    self.devices = unified_data_manager.list_devices()
+                    return True
+                return False
         return False
     
     def delete_device(self, device_id: str) -> bool:
         """删除设备"""
         for i, device in enumerate(self.devices):
             if device["id"] == device_id:
-                self.devices.pop(i)
-                save_json(DEVICES_FILE, self.devices)
-                return True
+                deleted = unified_data_manager.delete_device(device_id, actor="device_manager")
+                self.devices = unified_data_manager.list_devices()
+                return deleted
         return False
     
     async def ping_device(self, ip: str) -> bool:
@@ -143,7 +151,7 @@ class DeviceManager:
         
         # 只保留最近 100 条记录
         self.health_records[device_id] = self.health_records[device_id][-100:]
-        save_json(DEVICE_HEALTH_FILE, self.health_records)
+        unified_data_manager.append_device_health_record(health_record, actor="device_manager")
         
         # 检查是否需要告警
         await self._check_offline_alert(device_id, ping_success)
@@ -240,6 +248,7 @@ class DeviceManager:
     
     def get_health_history(self, device_id: str, limit: int = 10) -> List[Dict]:
         """获取设备健康历史"""
+        self.health_records = unified_data_manager.load_device_health_records()
         records = self.health_records.get(device_id, [])
         return records[-limit:]
     
@@ -262,14 +271,21 @@ class DeviceManager:
     
     async def start_health_monitoring(self, interval: int = HEALTH_CHECK_INTERVAL):
         """启动健康监控任务"""
+        if self._health_check_task and not self._health_check_task.done():
+            return
+
         self._running = True
         
         async def monitor_loop():
             print(f"[DeviceManager] 🔄 启动设备健康监控 (间隔：{interval}秒)")
             while self._running:
-                for device in self.devices:
-                    if device.get("status") != "offline":
+                try:
+                    for device in self.get_devices():
                         await self.check_device_health(device["id"])
+                except asyncio.CancelledError:
+                    raise
+                except Exception as e:
+                    print(f"[DeviceManager] 健康监控循环异常：{e}")
                 await asyncio.sleep(interval)
         
         self._health_check_task = asyncio.create_task(monitor_loop())
@@ -283,6 +299,7 @@ class DeviceManager:
     
     def get_device_stats(self) -> Dict:
         """获取设备统计信息"""
+        self.devices = unified_data_manager.list_devices()
         total = len(self.devices)
         online = sum(1 for d in self.devices if d["status"] == "online")
         offline = sum(1 for d in self.devices if d["status"] == "offline")

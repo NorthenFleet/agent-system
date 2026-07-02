@@ -14,6 +14,27 @@ from pathlib import Path
 OPENCLAW_WORKSPACE = os.path.expanduser("~/.openclaw/workspace")
 TEAM_DASHBOARD = os.path.expanduser("~/WorkSpace/team-dashboard")
 
+MAX_PREVIEW_LINES = 500
+MAX_PREVIEW_BYTES = 1024 * 1024
+ALLOWED_PREVIEW_ROOTS = tuple(
+    Path(root).expanduser().resolve()
+    for root in (
+        OPENCLAW_WORKSPACE,
+        f"{TEAM_DASHBOARD}/docs",
+        f"{TEAM_DASHBOARD}/specs",
+        f"{TEAM_DASHBOARD}/backend",
+        f"{TEAM_DASHBOARD}/frontend",
+        f"{TEAM_DASHBOARD}/tests",
+    )
+)
+
+def _is_relative_to(path: Path, root: Path) -> bool:
+    try:
+        path.relative_to(root)
+        return True
+    except ValueError:
+        return False
+
 # 智能体文档映射
 AGENT_DOC_MAP = {
     "optimus": {
@@ -81,25 +102,25 @@ AGENT_DOC_MAP = {
 
 class DocumentManager:
     """文档管理器"""
-    
+
     def __init__(self):
         self.cache = {}
         self.last_scan = None
-    
+
     def scan_documents(self, agent_id: str) -> List[Dict]:
         """扫描智能体相关文档"""
         if agent_id not in AGENT_DOC_MAP:
             return []
-        
+
         docs = []
         config = AGENT_DOC_MAP[agent_id]
-        
+
         for item in config.get("paths", []):
             path = item["path"]
             doc_type = item["type"]
             doc_name = item["name"]
             pattern = item.get("pattern", "*")
-            
+
             if path.startswith("ssh://"):
                 docs.append({
                     "name": doc_name,
@@ -125,7 +146,7 @@ class DocumentManager:
                         depth = root.replace(path, '').count(os.sep)
                         if depth > 2:
                             continue
-                        
+
                         for filename in files:
                             if self._match_pattern(filename, pattern):
                                 filepath = os.path.join(root, filename)
@@ -143,43 +164,53 @@ class DocumentManager:
                                     })
                                 except Exception as e:
                                     print(f"[DocManager] 读取文件失败 {filepath}: {e}")
-        
+
         docs.sort(key=lambda x: x.get("modified", ""), reverse=True)
         return docs[:50]
-    
+
     def get_document_content(self, filepath: str, max_lines: int = 100) -> str:
         """获取文档内容预览"""
         try:
-            if not os.path.exists(filepath):
+            requested = Path(filepath).expanduser().resolve()
+            if not any(_is_relative_to(requested, root) for root in ALLOWED_PREVIEW_ROOTS):
+                return "拒绝访问：文件不在允许预览目录内"
+            if not requested.exists():
                 return "文件不存在"
-            
-            with open(filepath, 'r', encoding='utf-8') as f:
+            if not requested.is_file():
+                return "拒绝访问：只能预览文件"
+            if requested.stat().st_size > MAX_PREVIEW_BYTES:
+                return "拒绝访问：文件超过 1MB 预览上限"
+
+            max_lines = max(1, min(int(max_lines), MAX_PREVIEW_LINES))
+            with requested.open('r', encoding='utf-8') as f:
                 lines = []
                 for i, line in enumerate(f):
                     if i >= max_lines:
-                        lines.append(f"\n... (还有更多行，共 {max_lines} 行)")
+                        lines.append(f"\n... (预览已截断，最多显示 {max_lines} 行)")
                         break
                     lines.append(line)
                 return ''.join(lines)
+        except UnicodeDecodeError:
+            return "拒绝访问：仅支持 UTF-8 文本预览"
         except Exception as e:
             return f"读取失败：{e}"
-    
+
     def get_agent_full_details(self, agent_id: str, data_manager) -> Dict:
         """获取智能体完整详情"""
         agents = data_manager.get_agents()
         agent = None
-        
+
         for a in agents:
             if a["id"] == agent_id:
                 agent = a
                 break
-        
+
         if not agent:
             return {"error": "智能体不存在"}
-        
+
         documents = self.scan_documents(agent_id)
         memory = agent.get("memory", [])
-        
+
         return {
             "agent": agent,
             "memory": memory,
@@ -187,7 +218,7 @@ class DocumentManager:
             "document_count": len(documents),
             "last_scan": self.last_scan
         }
-    
+
     def _format_size(self, size_bytes: int) -> str:
         """格式化文件大小"""
         for unit in ['B', 'KB', 'MB', 'GB']:
@@ -195,7 +226,7 @@ class DocumentManager:
                 return f"{size_bytes:.1f}{unit}"
             size_bytes /= 1024.0
         return f"{size_bytes:.1f}TB"
-    
+
     def _match_pattern(self, filename: str, pattern: str) -> bool:
         """简单的文件名模式匹配"""
         if pattern == "*":

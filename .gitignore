@@ -57,3 +57,42 @@ complete.html
 complete-full.html
 fix-index.html
 min-test.html
+
+# Runtime databases and generated state
+*.db
+*.db.*
+backend/data/*.db
+backend/data/*.db.*
+backend/data/backups/
+backend/data/*.bak*
+backend/data/*backup*
+backend/data/agent_instances.json
+backend/data/agent_runner.json
+backend/data/chat_sessions.json
+backend/data/forum.json
+backend/data/idle_agent_state.json
+backend/data/products.json
+backend/data/tasks.json
+backend/data/device_alerts.json
+data/news_cache.json
+data/scheduled-tasks.json
+# Backups and local runtime artifacts
+*.backup*
+*.backup-*
+*.new
+backend/*.log
+backend/backend*.log
+frontend/*.log
+progress/progress.json
+# Python and test caches
+.pytest_cache/
+backend/.pytest_cache/
+backend/__pycache__/
+backend/**/__pycache__/
+# Local environments
+backend/venv/
+# Frontend generated artifacts
+frontend-v2/node_modules/
+frontend-v2/dist/
+frontend-v2/src.backup*/
+frontend-v2/.vscode/

@@ -1,0 +1,219 @@
+{
+  "version": 3,
+  "root": {
+    "id": "sun",
+    "name": "孙总",
+    "node_type": "person",
+    "registered": false
+  },
+  "nodes": [
+    {
+      "id": "optimus",
+      "parent_id": "sun",
+      "node_type": "agent",
+      "agent_id": "optimus",
+      "name": "擎天柱",
+      "emoji": "🤖",
+      "title": "总项目管理",
+      "registered": true,
+      "order": 10
+    },
+    {
+      "id": "main",
+      "parent_id": "sun",
+      "node_type": "assistant",
+      "agent_id": "main",
+      "name": "小梦",
+      "emoji": "🌙",
+      "title": "个人助理",
+      "registered": false,
+      "order": 20
+    },
+    {
+      "id": "project-managers",
+      "parent_id": "optimus",
+      "node_type": "group",
+      "name": "项目经理",
+      "emoji": "📁",
+      "title": "三个项目经理负责项目推进与任务拆分",
+      "registered": false,
+      "order": 10
+    },
+    {
+      "id": "wheeljack",
+      "parent_id": "project-managers",
+      "node_type": "agent",
+      "agent_id": "wheeljack",
+      "name": "千斤顶",
+      "emoji": "🔧",
+      "title": "看板 V2 PM",
+      "registered": true,
+      "order": 10
+    },
+    {
+      "id": "ironhide",
+      "parent_id": "project-managers",
+      "node_type": "agent",
+      "agent_id": "ironhide",
+      "name": "铁皮",
+      "emoji": "🛡️",
+      "title": "one-sim 仿真 PM",
+      "registered": true,
+      "order": 20
+    },
+    {
+      "id": "ultra-magnus",
+      "parent_id": "project-managers",
+      "node_type": "agent",
+      "agent_id": "ultra-magnus",
+      "name": "通天晓",
+      "emoji": "🔵",
+      "title": "博士论文 PM",
+      "registered": true,
+      "order": 30
+    },
+    {
+      "id": "ninja-turtles",
+      "parent_id": "project-managers",
+      "node_type": "group",
+      "name": "忍者神龟开发组",
+      "emoji": "🐢",
+      "title": "项目经理下方的开发执行能力池",
+      "registered": false,
+      "order": 40
+    },
+    {
+      "id": "leonardo",
+      "parent_id": "ninja-turtles",
+      "node_type": "agent",
+      "agent_id": "leonardo",
+      "name": "李奥纳多",
+      "emoji": "🟦",
+      "title": "架构师 / 开发负责人",
+      "registered": true,
+      "order": 10
+    },
+    {
+      "id": "raphael",
+      "parent_id": "ninja-turtles",
+      "node_type": "agent",
+      "agent_id": "raphael",
+      "name": "拉斐尔",
+      "emoji": "🟥",
+      "title": "后端开发",
+      "registered": true,
+      "order": 20
+    },
+    {
+      "id": "donatello",
+      "parent_id": "ninja-turtles",
+      "node_type": "agent",
+      "agent_id": "donatello",
+      "name": "多纳泰罗",
+      "emoji": "🟪",
+      "title": "前端开发",
+      "registered": true,
+      "order": 30
+    },
+    {
+      "id": "michelangelo",
+      "parent_id": "ninja-turtles",
+      "node_type": "agent",
+      "agent_id": "michelangelo",
+      "name": "米开朗基罗",
+      "emoji": "🟧",
+      "title": "测试工程",
+      "registered": true,
+      "order": 40
+    },
+    {
+      "id": "support",
+      "parent_id": "ninja-turtles",
+      "node_type": "group",
+      "name": "保障",
+      "emoji": "🧰",
+      "title": "运维、情报、知识库、财务、客户与团队治理保障",
+      "registered": false,
+      "order": 50
+    },
+    {
+      "id": "bumblebee",
+      "parent_id": "support",
+      "node_type": "agent",
+      "agent_id": "bumblebee",
+      "name": "大黄蜂",
+      "emoji": "🐝",
+      "title": "运维",
+      "registered": true,
+      "order": 10
+    },
+    {
+      "id": "perceptor",
+      "parent_id": "support",
+      "node_type": "agent",
+      "agent_id": "perceptor",
+      "name": "感知器",
+      "emoji": "🚗",
+      "title": "资讯 / 情报",
+      "registered": true,
+      "order": 20
+    },
+    {
+      "id": "ratchet",
+      "parent_id": "support",
+      "node_type": "agent",
+      "agent_id": "ratchet",
+      "name": "救护车",
+      "emoji": "🚑",
+      "title": "知识库",
+      "registered": true,
+      "order": 30
+    },
+    {
+      "id": "jazz",
+      "parent_id": "support",
+      "node_type": "agent",
+      "agent_id": "jazz",
+      "name": "爵士",
+      "emoji": "🎷",
+      "title": "销售与客户关系",
+      "registered": true,
+      "order": 40
+    },
+    {
+      "id": "shockwave",
+      "parent_id": "support",
+      "node_type": "agent",
+      "agent_id": "shockwave",
+      "name": "震荡波",
+      "emoji": "🟣",
+      "title": "团队优化师",
+      "registered": true,
+      "order": 50
+    },
+    {
+      "id": "soundwave",
+      "parent_id": "support",
+      "node_type": "agent",
+      "agent_id": "soundwave",
+      "name": "声波",
+      "emoji": "🔷",
+      "title": "财务管理",
+      "registered": true,
+      "order": 60
+    }
+  ],
+  "relations": [
+    { "from": "sun", "to": "optimus", "type": "direct", "label": "总项目管理" },
+    { "from": "sun", "to": "main", "type": "direct", "label": "个人助理" },
+    { "from": "optimus", "to": "project-managers", "type": "manages", "label": "项目经理管理" },
+    { "from": "project-managers", "to": "wheeljack", "type": "project_manager", "label": "看板 V2 PM" },
+    { "from": "project-managers", "to": "ironhide", "type": "project_manager", "label": "one-sim 仿真 PM" },
+    { "from": "project-managers", "to": "ultra-magnus", "type": "project_manager", "label": "博士论文 PM" },
+    { "from": "project-managers", "to": "ninja-turtles", "type": "delivery_pool", "label": "开发执行能力池" },
+    { "from": "ninja-turtles", "to": "support", "type": "support", "label": "底层保障" },
+    { "from": "support", "to": "jazz", "type": "support", "label": "客户关系保障" },
+    { "from": "support", "to": "shockwave", "type": "support", "label": "团队治理保障" },
+    { "from": "support", "to": "soundwave", "type": "support", "label": "财务保障" }
+  ]
+}

@@ -109,15 +109,105 @@ class OpenClawIntegration:
         
         return state
     
+    def sync_agents(self) -> List[Dict]:
+        """从 OpenClaw 工作区实时读取智能体状态"""
+        agents = []
+        agents_dir = os.path.join(OPENCLAW_WORKSPACE, "agents")
+        if not os.path.isdir(agents_dir):
+            return agents
+
+        # 只读取包含 AGENTS.md/SOUL.md/IDENTITY.md 的目录（排除 README.md、data/ 等非智能体目录）
+        for name in sorted(os.listdir(agents_dir)):
+            agent_dir = os.path.join(agents_dir, name)
+            if not os.path.isdir(agent_dir):
+                continue
+
+            # 排除已知非智能体目录
+            if name in ("data", "command", "execution", "knowledge", "main", "planning"):
+                continue
+
+            # 检查是否为智能体目录（包含 workspace 或 agent 配置文件）
+            is_agent = False
+            for check_path in ["workspace/AGENTS.md", "workspace/IDENTITY.md", "workspace/SOUL.md", "AGENT.md", "agent.md"]:
+                if os.path.exists(os.path.join(agent_dir, check_path)):
+                    is_agent = True
+                    break
+            if not is_agent:
+                continue
+
+            agent_info: Dict[str, Any] = {
+                "id": name,
+                "name": name.capitalize(),
+                "role": "",
+                "status": "idle",
+                "current_task": "待分配",
+            }
+
+            # 读取 workspace 中的身份文件
+            for fname in ["IDENTITY.md", "SOUL.md", "AGENT.md", "agent.md"]:
+                role_file = os.path.join(agent_dir, "workspace", fname)
+                if not os.path.exists(role_file):
+                    role_file = os.path.join(agent_dir, fname)
+                if os.path.exists(role_file):
+                    try:
+                        with open(role_file, 'r', encoding='utf-8') as f:
+                            content = f.read()
+                        for line in content.split('\n'):
+                            line = line.strip()
+                            if '**Name**' in line or '**name**' in line:
+                                parts = line.split(':', 1)
+                                if len(parts) == 2:
+                                    agent_info['name'] = parts[1].strip().strip('*').strip()
+                            if '**Role**' in line or '**role**' in line:
+                                parts = line.split(':', 1)
+                                if len(parts) == 2:
+                                    agent_info['role'] = parts[1].strip().strip('*').strip()
+                            if '**Emoji**' in line or '**emoji**' in line:
+                                parts = line.split(':', 1)
+                                if len(parts) == 2:
+                                    agent_info['emoji'] = parts[1].strip().strip('*').strip()
+                            if '**状态**' in line or '**status**' in line:
+                                parts = line.split(':', 1)
+                                if len(parts) == 2:
+                                    agent_info['status'] = parts[1].strip().strip('*').strip()
+                    except Exception:
+                        pass
+                    break
+
+            # 从 dev-loop/queue.json 中查找当前任务
+            queue_file = os.path.join(OPENCLAW_WORKSPACE, "agents", "ninja-turtles", "dev-loop", "queue.json")
+            if os.path.exists(queue_file):
+                try:
+                    with open(queue_file, 'r', encoding='utf-8') as f:
+                        queue_data = json.load(f)
+                    for task in queue_data.get("tasks", []):
+                        if task.get("assignee") == name and task.get("status") in ("assigned", "in_progress", "review"):
+                            agent_info["current_task"] = task.get("title", task["id"])
+                            agent_info["status"] = "busy" if task.get("status") == "in_progress" else "online"
+                            break
+                        for sub in task.get("subtasks", []):
+                            if sub.get("assignee") == name and sub.get("status") in ("assigned", "in_progress", "review"):
+                                agent_info["current_task"] = sub.get("title", sub["id"])
+                                agent_info["status"] = "busy" if sub.get("status") == "in_progress" else "online"
+                                break
+                except Exception:
+                    pass
+
+            agents.append(agent_info)
+
+        return agents
+
     def sync_data(self) -> Dict:
         """同步数据"""
         email_stats = self.get_email_stats()
         codex_tasks = self.get_codex_tasks()
         heartbeat = self.get_heartbeat_state()
-        
+        agents = self.sync_agents()
+
         self.last_sync = datetime.now().isoformat()
-        
+
         return {
+            "agents": agents,
             "email_stats": email_stats,
             "codex_tasks": codex_tasks,
             "heartbeat": heartbeat,

@@ -21,6 +21,8 @@ FRONTEND_DIR="$PROJECT_DIR/frontend"
 # 默认配置
 API_PORT=3020
 FRONTEND_PORT=8080
+FRONTEND_ENTRY="${FRONTEND_ENTRY:-index.html}"
+USE_FRONTEND_V2="${USE_FRONTEND_V2:-true}"
 
 # 打印带颜色的信息
 print_info() {
@@ -116,6 +118,13 @@ start_backend() {
     
     # 启动后端
     cd "$BACKEND_DIR"
+    export FRONTEND_ENTRY="$FRONTEND_ENTRY"
+    export USE_FRONTEND_V2="$USE_FRONTEND_V2"
+    if [ "$USE_FRONTEND_V2" = "true" ]; then
+        print_info "前端入口: frontend-v2/dist/index.html"
+    else
+        print_info "前端入口文件: $FRONTEND_ENTRY"
+    fi
     print_info "启动 FastAPI 服务 (端口: $API_PORT)..."
     
     # 使用 nohup 在后台运行

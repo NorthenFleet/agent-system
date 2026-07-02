@@ -6,7 +6,13 @@ import os
 from datetime import datetime
 from typing import List, Dict, Optional
 
+from unified_data_manager import unified_data_manager
+
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
+
+# Dev Loop 路径
+DEV_LOOP_DIR = os.path.expanduser("~/.openclaw/workspace/agents/ninja-turtles/dev-loop")
+QUEUE_FILE = os.path.join(DEV_LOOP_DIR, "queue.json")
 
 def load_json(filepath: str, default=None):
     if os.path.exists(filepath):
@@ -18,6 +24,47 @@ def save_json(filepath: str, data):
     with open(filepath, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
+
+def load_queue_json() -> Optional[dict]:
+    """加载 queue.json，失败返回 None"""
+    return load_json(QUEUE_FILE)
+
+
+def merge_tasks() -> list[dict]:
+    """合并 queue.json + tasks.json 的任务数据，去重后返回统一列表。
+    
+    优先使用 queue.json 中的 Loop 任务（含 subtasks、workflow_history），
+    再补充 task_queue.py 内存任务列表（兼容旧版 tasks.json 数据源）。
+    相同 id 的任务以 queue.json 为准。
+    """
+    merged: dict[str, dict] = {}
+
+    # 1) queue.json 中的 Loop 任务（最高优先级）
+    queue = load_queue_json()
+    if queue:
+        for task in queue.get("tasks", []):
+            task_id = task["id"]
+            merged[task_id] = {
+                **task,
+                "source": "loop",
+            }
+
+    # 2) 从 task_queue 补充内存中的任务（旧数据源兼容）
+    try:
+        from task_queue import task_manager
+        in_memory = task_manager.get_all_tasks()
+        for task in in_memory:
+            tid = task["id"]
+            if tid not in merged:
+                merged[tid] = {
+                    **task,
+                    "source": "legacy",
+                }
+    except Exception:
+        pass
+
+    return list(merged.values())
+
 DEFAULT_DEVICES = []
 
 class DataManager:
@@ -28,9 +75,14 @@ class DataManager:
         self.agents = self._load_agents()
     
     def _load_agents(self) -> List[dict]:
+        agents = unified_data_manager.list_agents()
+        if agents:
+            return agents
         if os.path.exists(self.agents_file):
             with open(self.agents_file, 'r', encoding='utf-8') as f:
-                return json.load(f)
+                agents = json.load(f)
+            unified_data_manager.save_agents(agents, actor="data_manager:init", audit=False)
+            return agents
         return self._init_default_agents()
     
     def _init_default_agents(self) -> List[dict]:
@@ -107,11 +159,11 @@ class DataManager:
         return "\n".join(details) if details else "点击展开查看更多详情..."
     
     def _save_agents(self, agents: List[dict]):
-        with open(self.agents_file, 'w', encoding='utf-8') as f:
-            json.dump(agents, f, ensure_ascii=False, indent=2)
+        unified_data_manager.save_agents(agents, actor="data_manager")
     
     def get_agents(self) -> List[dict]:
         """获取所有智能体 - 动态加载记忆"""
+        self.agents = unified_data_manager.list_agents()
         for agent in self.agents:
             agent_id = agent.get("id", "")
             if agent_id:
@@ -131,11 +183,11 @@ class DataManager:
         return None
     
     def update_agent(self, agent_id: str, updates: dict) -> bool:
-        for i, agent in enumerate(self.agents):
-            if agent["id"] == agent_id:
-                self.agents[i].update(updates)
-                return True
-        return False
+        updated = unified_data_manager.update_agent(agent_id, updates, actor="data_manager")
+        if not updated:
+            return False
+        self.agents = unified_data_manager.list_agents()
+        return True
     
     def get_layer_stats(self) -> dict:
         layers = {}
@@ -160,5 +212,9 @@ class DataManager:
             if status in groups[group]:
                 groups[group][status] += 1
         return groups
+
+    def get_merged_tasks(self) -> list[dict]:
+        """返回 queue.json + tasks.json 合并后的任务列表"""
+        return merge_tasks()
 
 data_manager = DataManager()
