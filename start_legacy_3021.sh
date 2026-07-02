@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-PROJECT_DIR="/Users/apple/.openclaw/workspace/team-dashboard"
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_DIR="$PROJECT_DIR/backend"
 PORT=3021
 PID_FILE="/tmp/team-dashboard-legacy-3021.pid"
