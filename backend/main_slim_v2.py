@@ -60,7 +60,7 @@ app.get("/")(lambda: _r(_fe())); app.get("/index-old")(lambda: _r(_fe())); app.g
 app.get("/products")(lambda: _r(_fe())); app.get("/data-admin")(lambda: _r(_fe())); app.get("/dataAdmin")(lambda: _r(_fe()))
 app.get("/login")(lambda: _r(_fe()))
 app.get("/forum")(lambda: _r(os.path.join(FD, "forum.html"))); app.get("/favicon.ico")(lambda: JSONResponse(status_code=204, content=None))
-app.get("/health")(lambda: {"status": "ok", "port": int(os.getenv("API_PORT", "3020"))})
+app.get("/health")(lambda: {"status": "ok", "port": int(os.getenv("API_PORT") or os.getenv("PORT") or "3021")})
 app.mount("/static", StaticFiles(directory=FD), name="static")
 app.mount("/js", StaticFiles(directory=os.path.join(FD, "js")), name="js")
 app.mount("/views", StaticFiles(directory=os.path.join(FD, "views")), name="views")
@@ -112,4 +112,4 @@ async def shutdown():
     except Exception as e: print(f"[Scheduler] 关闭异常: {e}")
 
 
-if __name__ == "__main__": import uvicorn; uvicorn.run(app, host="0.0.0.0", port=3020)
+if __name__ == "__main__": import uvicorn; uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("API_PORT") or os.getenv("PORT") or "3021"))
