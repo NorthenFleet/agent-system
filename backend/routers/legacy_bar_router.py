@@ -5,11 +5,11 @@ import os
 import time
 import json
 from fastapi import APIRouter
+from path_config import data_path
 
 router = APIRouter(prefix="/api/bar", tags=["legacy-bar"])
 
-DATA_DIR = os.path.expanduser("~/WorkSpace/team-dashboard/data")
-BAR_DATA_FILE = os.path.join(DATA_DIR, "bar.json")
+BAR_DATA_FILE = data_path("bar.json")
 
 
 def load_bar_data():

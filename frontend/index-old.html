@@ -716,37 +716,13 @@
         <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:14px;">
           <el-radio-group v-model="projectTaskView" size="small">
             <el-radio-button label="project">项目详情</el-radio-button>
-            <el-radio-button label="list" :disabled="!selectedProjectV3">当前项目任务列表</el-radio-button>
             <el-radio-button label="kanban" :disabled="!selectedProjectV3">当前项目看板</el-radio-button>
             <el-radio-button label="gantt" :disabled="!selectedProjectV3">当前项目甘特图</el-radio-button>
           </el-radio-group>
           <div class="muted" style="font-size:0.86rem;">任务隶属于当前项目；切换视图不会离开项目管理。</div>
         </div>
 
-        <section v-if="projectTaskView === 'list'" style="display:grid;gap:10px;">
-          <div v-if="!selectedProjectV3" class="muted" style="padding:28px;text-align:center;border:1px solid var(--border);border-radius:8px;">请先选择一个项目</div>
-          <div v-else-if="filteredProjectTasks.length === 0" class="muted" style="padding:28px;text-align:center;border:1px solid var(--border);border-radius:8px;">当前项目暂无匹配任务</div>
-          <div v-for="task in filteredProjectTasks" :key="'project-list-' + task.id" class="task-item" style="cursor:pointer;" @click="openProjectTask(task)">
-            <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">
-              <div style="min-width:0;">
-                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                  <strong>{{ task.title || task.name || task.id }}</strong>
-                  <el-tag size="small" :type="taskStatusType(task.status)">{{ taskStatusText(task.status) }}</el-tag>
-                  <el-tag size="small" :type="taskPriorityType(task.priority)">{{ taskPriorityText(task.priority) }}</el-tag>
-                  <el-tag size="small" type="info">{{ (task.development_points || []).length }} 要点</el-tag>
-                </div>
-                <div class="muted" style="font-size:0.84rem;margin-top:5px;">{{ task.assignee_agent || task.assignee || '未分配' }} · {{ task.description || '暂无描述' }}</div>
-              </div>
-              <div style="min-width:96px;text-align:right;">
-                <div style="font-weight:800;">{{ normalizeProgress(task.progress) }}%</div>
-                <div class="muted" style="font-size:0.78rem;">{{ formatDateTime(task.due_date || task.updated_at) }}</div>
-              </div>
-            </div>
-            <el-progress :percentage="normalizeProgress(task.progress)" :show-text="false" :stroke-width="6" style="margin-top:10px;"></el-progress>
-          </div>
-        </section>
-
-        <section v-else-if="projectTaskView === 'kanban'" style="display:flex;gap:12px;overflow-x:auto;padding-bottom:8px;">
+        <section v-if="projectTaskView === 'kanban'" style="display:flex;gap:12px;overflow-x:auto;padding-bottom:8px;">
           <div v-for="column in projectKanbanColumns" :key="column.key" style="flex:0 0 240px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,0.02);overflow:hidden;">
             <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;border-bottom:1px solid var(--border);">
               <strong>{{ column.title }}</strong>
@@ -808,7 +784,10 @@
                   <div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ project.name }}</div>
                   <div class="muted" style="font-size:0.8rem;margin-top:4px;">{{ project.current_phase || 'planning' }} · {{ projectStatusText(project.status) }}</div>
                 </div>
-                <el-tag size="small" :type="taskStatusType(project.status)">{{ normalizeProgress(project.progress) }}%</el-tag>
+                <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
+                  <el-tag size="small" :type="projectTypeTag(project)">{{ projectTypeText(project) }}</el-tag>
+                  <el-tag size="small" :type="taskStatusType(project.status)">{{ normalizeProgress(project.progress) }}%</el-tag>
+                </div>
               </div>
               <el-progress :percentage="normalizeProgress(project.progress)" :show-text="false" :stroke-width="6" style="margin-top:10px;"></el-progress>
               <div class="muted" style="display:flex;justify-content:space-between;font-size:0.8rem;margin-top:8px;">
@@ -824,6 +803,7 @@
                 <div style="min-width:0;">
                   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                     <h2 style="margin:0;font-size:1.3rem;">{{ selectedProjectV3.name }}</h2>
+                    <el-tag size="small" :type="projectTypeTag(selectedProjectV3)">{{ projectTypeText(selectedProjectV3) }}</el-tag>
                     <el-tag size="small" :type="taskStatusType(selectedProjectV3.status)">{{ projectStatusText(selectedProjectV3.status) }}</el-tag>
                     <el-tag size="small" type="info">{{ selectedProjectV3.current_phase || 'planning' }}</el-tag>
                   </div>
@@ -862,9 +842,44 @@
               <el-progress :percentage="normalizeProgress(selectedProjectV3.progress)" :stroke-width="8" style="margin-top:14px;"></el-progress>
             </div>
 
+            <div v-if="isDocumentProject(selectedProjectV3)" style="border:1px solid var(--border);border-radius:8px;padding:14px;background:rgba(255,255,255,0.02);">
+              <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
+                <div>
+                  <div style="font-weight:800;">文档目录与章节计划</div>
+                  <div class="muted" style="font-size:0.84rem;">{{ documentSpec(selectedProjectV3).document_type || '文档' }} · {{ documentSpec(selectedProjectV3).output_format || '未设置输出格式' }}</div>
+                </div>
+                <el-tag size="small" type="info">{{ documentChapters(selectedProjectV3).length }} 章</el-tag>
+              </div>
+              <div class="muted" style="line-height:1.55;margin-bottom:12px;">{{ documentSpec(selectedProjectV3).writing_goal || '暂无写作目标' }}</div>
+              <div v-if="documentChapters(selectedProjectV3).length" style="display:grid;gap:8px;">
+                <div v-for="chapter in documentChapters(selectedProjectV3)" :key="chapter.id || chapter.title" style="padding:10px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,0.02);">
+                  <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;">
+                    <strong>{{ chapter.title }}</strong>
+                    <el-tag size="small" type="info">{{ chapter.status || 'planning' }}</el-tag>
+                  </div>
+                  <div class="muted" style="font-size:0.84rem;line-height:1.5;margin-top:6px;">{{ chapter.main_content || chapter.summary || '暂无章节说明' }}</div>
+                  <div v-if="chapter.key_points && chapter.key_points.length" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+                    <el-tag v-for="point in chapter.key_points" :key="point" size="small">{{ point }}</el-tag>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="muted" style="padding:18px;text-align:center;border:1px solid var(--border);border-radius:8px;">暂无目录结构</div>
+            </div>
+
+            <div v-else style="border:1px solid var(--border);border-radius:8px;padding:14px;background:rgba(255,255,255,0.02);">
+              <div style="font-weight:800;margin-bottom:8px;">程序开发设计文档</div>
+              <div class="muted" style="line-height:1.55;">{{ (selectedProjectV3.design_doc && selectedProjectV3.design_doc.summary) || '暂无设计摘要' }}</div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:12px;font-size:0.86rem;">
+                <div><strong>使用需求</strong><div class="muted">{{ summarizeDesignList(selectedProjectV3.design_doc && selectedProjectV3.design_doc.usage_requirements) }}</div></div>
+                <div><strong>数据结构</strong><div class="muted">{{ summarizeDesignSection(selectedProjectV3.design_doc && selectedProjectV3.design_doc.data_structure) }}</div></div>
+                <div><strong>系统架构</strong><div class="muted">{{ summarizeDesignSection(selectedProjectV3.design_doc && selectedProjectV3.design_doc.system_architecture) }}</div></div>
+                <div><strong>API 接口</strong><div class="muted">{{ summarizeDesignList(selectedProjectV3.design_doc && selectedProjectV3.design_doc.api_interfaces) }}</div></div>
+              </div>
+            </div>
+
             <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;">
               <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                <strong>当前开发任务</strong>
+                <strong>{{ isDocumentProject(selectedProjectV3) ? '当前写作任务' : '当前开发任务' }}</strong>
                 <el-tag size="small" type="info">{{ selectedProjectTasks.length }} 个</el-tag>
               </div>
               <div style="display:flex;gap:8px;align-items:center;">
@@ -974,10 +989,41 @@
             </div>
 
             <div style="border:1px solid var(--border);border-radius:8px;padding:12px;background:rgba(255,255,255,0.02);">
+              <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:8px;">
+                <div style="font-weight:700;">项目智能体对话</div>
+                <el-select v-model="projectChatAgent" size="small" style="width:130px;">
+                  <el-option label="擎天柱" value="optimus"></el-option>
+                  <el-option label="通天晓" value="ultra-magnus"></el-option>
+                  <el-option label="千斤顶" value="wheeljack"></el-option>
+                  <el-option label="救护车" value="ratchet"></el-option>
+                  <el-option label="感知器" value="perceptor"></el-option>
+                </el-select>
+              </div>
+              <div class="muted" style="font-size:0.78rem;margin-bottom:8px;">{{ projectChatContextSummary(selectedProjectV3) }}</div>
+              <div v-if="projectConversations(selectedProjectV3).length" style="display:grid;gap:7px;max-height:180px;overflow:auto;margin-bottom:10px;">
+                <div v-for="msg in projectConversations(selectedProjectV3).slice(-6)" :key="msg.id || msg.created_at" class="muted" style="padding:8px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,0.02);font-size:0.84rem;line-height:1.45;">
+                  <strong>{{ agentDisplayName({ id: msg.agent_id }) }}</strong>：{{ msg.message }}
+                </div>
+              </div>
+              <div v-else class="muted" style="font-size:0.84rem;margin-bottom:10px;">暂无项目对话。这里会携带当前项目类型、设计文档或目录结构作为上下文。</div>
+              <el-input v-model="projectChatInput" type="textarea" :rows="3" :placeholder="isDocumentProject(selectedProjectV3) ? '例如：让通天晓扩展第二章目录，并让感知器补充图片素材建议' : '例如：让拉斐尔实现接口，让多纳泰罗补前端页面'"></el-input>
+              <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px;">
+                <el-button size="small" :loading="projectActionSending" @click="createProjectAgentActionFromChat">生成任务</el-button>
+                <el-button size="small" type="primary" :loading="projectChatSending" @click="sendProjectChatMessage">发送到项目上下文</el-button>
+              </div>
+            </div>
+
+            <div style="border:1px solid var(--border);border-radius:8px;padding:12px;background:rgba(255,255,255,0.02);">
               <el-collapse>
-                <el-collapse-item title="设计文档" name="design">
+                <el-collapse-item :title="isDocumentProject(selectedProjectV3) ? '文档结构' : '设计文档'" name="design">
                   <div class="muted" style="line-height:1.5;">{{ (selectedProjectV3.design_doc && selectedProjectV3.design_doc.summary) || '暂无设计摘要' }}</div>
-                  <div style="display:grid;gap:8px;margin-top:10px;font-size:0.86rem;">
+                  <div v-if="isDocumentProject(selectedProjectV3)" style="display:grid;gap:8px;margin-top:10px;font-size:0.86rem;">
+                    <div><strong>目标读者</strong><div class="muted">{{ documentSpec(selectedProjectV3).target_audience || '暂无' }}</div></div>
+                    <div><strong>目录结构</strong><div class="muted">{{ summarizeDesignList(documentSpec(selectedProjectV3).outline) }}</div></div>
+                    <div><strong>图片/图表</strong><div class="muted">{{ summarizeDocumentAssets(selectedProjectV3) }}</div></div>
+                    <div><strong>引用资料</strong><div class="muted">{{ summarizeDesignList(documentSpec(selectedProjectV3).references) }}</div></div>
+                  </div>
+                  <div v-else style="display:grid;gap:8px;margin-top:10px;font-size:0.86rem;">
                     <div><strong>数据结构</strong><div class="muted">{{ summarizeDesignSection(selectedProjectV3.design_doc && selectedProjectV3.design_doc.data_structure) }}</div></div>
                     <div><strong>系统架构</strong><div class="muted">{{ summarizeDesignSection(selectedProjectV3.design_doc && selectedProjectV3.design_doc.system_architecture) }}</div></div>
                     <div><strong>系统功能</strong><div class="muted">{{ summarizeDesignList(selectedProjectV3.design_doc && selectedProjectV3.design_doc.system_functions) }}</div></div>
@@ -2482,38 +2528,77 @@
 
     <el-dialog v-model="createProjectVisible" title="项目初始化向导" width="860px">
       <el-form label-position="top">
+        <el-form-item label="项目类型">
+          <el-radio-group v-model="newProjectForm.projectType">
+            <el-radio-button label="software">程序开发</el-radio-button>
+            <el-radio-button label="document">文档撰写</el-radio-button>
+          </el-radio-group>
+        </el-form-item>
         <el-form-item label="项目名称">
-          <el-input v-model="newProjectForm.name" placeholder="例如：多智能体任务管理平台"></el-input>
+          <el-input v-model="newProjectForm.name" :placeholder="newProjectForm.projectType === 'document' ? '例如：博士论文第六章写作' : '例如：多智能体任务管理平台'"></el-input>
         </el-form-item>
         <el-form-item label="项目描述">
           <el-input v-model="newProjectForm.description" type="textarea" :rows="2"></el-input>
         </el-form-item>
-        <el-form-item label="设计摘要">
-          <el-input v-model="newProjectForm.designSummary" type="textarea" :rows="2" placeholder="说明项目目标、边界和设计原则"></el-input>
-        </el-form-item>
-        <el-form-item label="使用需求">
-          <el-input v-model="newProjectForm.usageRequirements" type="textarea" :rows="4" placeholder="每行一条用户角色、使用场景、验收需求或约束条件"></el-input>
-        </el-form-item>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;">
-          <el-form-item label="数据结构">
-            <el-input v-model="newProjectForm.dataStructure" type="textarea" :rows="5" placeholder="每行一个实体、关系、字段或存储说明"></el-input>
+        <template v-if="newProjectForm.projectType === 'software'">
+          <el-form-item label="设计摘要">
+            <el-input v-model="newProjectForm.designSummary" type="textarea" :rows="2" placeholder="说明项目目标、边界和设计原则"></el-input>
           </el-form-item>
-          <el-form-item label="系统架构">
-            <el-input v-model="newProjectForm.systemArchitecture" type="textarea" :rows="5" placeholder="每行一个组件、数据流、agent 角色或权限边界"></el-input>
+          <el-form-item label="使用需求">
+            <el-input v-model="newProjectForm.usageRequirements" type="textarea" :rows="4" placeholder="每行一条用户角色、使用场景、验收需求或约束条件"></el-input>
           </el-form-item>
-          <el-form-item label="系统功能">
-            <el-input v-model="newProjectForm.systemFunctions" type="textarea" :rows="5" placeholder="每行一个功能点"></el-input>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;">
+            <el-form-item label="数据结构">
+              <el-input v-model="newProjectForm.dataStructure" type="textarea" :rows="5" placeholder="每行一个实体、关系、字段或存储说明"></el-input>
+            </el-form-item>
+            <el-form-item label="系统架构">
+              <el-input v-model="newProjectForm.systemArchitecture" type="textarea" :rows="5" placeholder="每行一个组件、数据流、agent 角色或权限边界"></el-input>
+            </el-form-item>
+            <el-form-item label="系统功能">
+              <el-input v-model="newProjectForm.systemFunctions" type="textarea" :rows="5" placeholder="每行一个功能点"></el-input>
+            </el-form-item>
+            <el-form-item label="API 接口">
+              <el-input v-model="newProjectForm.apiInterfaces" type="textarea" :rows="5" placeholder="每行一个接口，例如 GET /api/v3/projects"></el-input>
+            </el-form-item>
+          </div>
+          <el-form-item label="任务拆解建议">
+            <el-input v-model="newProjectForm.taskBreakdownGuidance" type="textarea" :rows="3" placeholder="每行一条项目经理拆解任务时应遵循的规则"></el-input>
           </el-form-item>
-          <el-form-item label="API 接口">
-            <el-input v-model="newProjectForm.apiInterfaces" type="textarea" :rows="5" placeholder="每行一个接口，例如 GET /api/v3/projects"></el-input>
+          <el-form-item label="并行任务清单">
+            <el-input v-model="newProjectForm.parallelTasks" type="textarea" :rows="4" placeholder="每行一个可并行开发任务；创建项目后会自动生成到该项目下"></el-input>
           </el-form-item>
-        </div>
-        <el-form-item label="任务拆解建议">
-          <el-input v-model="newProjectForm.taskBreakdownGuidance" type="textarea" :rows="3" placeholder="每行一条项目经理拆解任务时应遵循的规则"></el-input>
-        </el-form-item>
-        <el-form-item label="并行任务清单">
-          <el-input v-model="newProjectForm.parallelTasks" type="textarea" :rows="4" placeholder="每行一个可并行开发任务；创建项目后会自动生成到该项目下"></el-input>
-        </el-form-item>
+        </template>
+        <template v-else>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;">
+            <el-form-item label="文档类型">
+              <el-input v-model="newProjectForm.documentType" placeholder="论文 / 报告 / 方案 / 白皮书"></el-input>
+            </el-form-item>
+            <el-form-item label="输出格式">
+              <el-input v-model="newProjectForm.outputFormat" placeholder="Markdown / Word / PDF / 飞书文档"></el-input>
+            </el-form-item>
+          </div>
+          <el-form-item label="写作目标">
+            <el-input v-model="newProjectForm.writingGoal" type="textarea" :rows="3" placeholder="说明文档要解决的问题、交付目标和验收标准"></el-input>
+          </el-form-item>
+          <el-form-item label="目标读者">
+            <el-input v-model="newProjectForm.targetAudience" type="textarea" :rows="2" placeholder="例如：导师、评审专家、研发团队、客户决策者"></el-input>
+          </el-form-item>
+          <el-form-item label="目录结构">
+            <el-input v-model="newProjectForm.documentOutline" type="textarea" :rows="5" placeholder="每行一个章节标题，支持 1. / 1.1 这种层级编号"></el-input>
+          </el-form-item>
+          <el-form-item label="各章节主要内容">
+            <el-input v-model="newProjectForm.chapterPlan" type="textarea" :rows="5" placeholder="每行格式：章节标题｜主要内容｜关键点1、关键点2"></el-input>
+          </el-form-item>
+          <el-form-item label="图片/图表计划">
+            <el-input v-model="newProjectForm.imagePlan" type="textarea" :rows="4" placeholder="每行格式：图片标题｜所属章节｜说明"></el-input>
+          </el-form-item>
+          <el-form-item label="引用资料">
+            <el-input v-model="newProjectForm.referencePlan" type="textarea" :rows="3" placeholder="每行一条参考文献、资料来源或知识库节点"></el-input>
+          </el-form-item>
+          <el-form-item label="写作任务清单">
+            <el-input v-model="newProjectForm.documentTasks" type="textarea" :rows="4" placeholder="每行一个可并行写作/审阅任务；创建后会自动生成到该项目下"></el-input>
+          </el-form-item>
+        </template>
       </el-form>
       <template #footer>
         <el-button @click="createProjectVisible = false">取消</el-button>
@@ -2777,6 +2862,7 @@
           createTaskVisible: false,
           creatingTask: false,
           newProjectForm: {
+            projectType: "software",
             name: "",
             description: "",
             designSummary: "",
@@ -2787,7 +2873,22 @@
             apiInterfaces: "",
             taskBreakdownGuidance: "",
             parallelTasks: "",
+            documentType: "报告",
+            writingGoal: "",
+            targetAudience: "",
+            documentOutline: "",
+            chapterPlan: "",
+            imagePlan: "",
+            referencePlan: "",
+            outputFormat: "Markdown / Word / PDF",
+            documentTasks: "",
           },
+          projectChatInput: "",
+          projectChatAgent: "optimus",
+          projectChatSending: false,
+          projectActionSending: false,
+          projectConversationsCache: {},
+          projectChatContextCache: {},
           newTaskForm: {
             title: "",
             description: "",
@@ -4067,6 +4168,7 @@
 
         defaultProjectForm() {
           return {
+            projectType: 'software',
             name: '',
             description: '',
             designSummary: '',
@@ -4077,6 +4179,15 @@
             apiInterfaces: '',
             taskBreakdownGuidance: '',
             parallelTasks: '',
+            documentType: '报告',
+            writingGoal: '',
+            targetAudience: '',
+            documentOutline: '',
+            chapterPlan: '',
+            imagePlan: '',
+            referencePlan: '',
+            outputFormat: 'Markdown / Word / PDF',
+            documentTasks: '',
           };
         },
 
@@ -4115,8 +4226,61 @@
           };
         },
 
+        parsePipeRows(value) {
+          return this.splitDesignLines(value).map(line => line.split('｜').map(part => part.trim()));
+        },
+
+        buildDocumentProjectSpec() {
+          const outline = this.splitDesignLines(this.newProjectForm.documentOutline);
+          const chapters = this.parsePipeRows(this.newProjectForm.chapterPlan).map((parts, index) => ({
+            title: parts[0] || outline[index] || '未命名章节',
+            summary: parts[1] || '',
+            main_content: parts[1] || '',
+            key_points: parts[2] ? parts[2].split(/[、,，]/).map(item => item.trim()).filter(Boolean) : [],
+            images: [],
+            status: 'planning',
+            order_index: index,
+          }));
+          const plannedChapters = chapters.length ? chapters : outline.map((title, index) => ({
+            title,
+            summary: '',
+            main_content: '',
+            key_points: [],
+            images: [],
+            status: 'planning',
+            order_index: index,
+          }));
+          const assets = this.parsePipeRows(this.newProjectForm.imagePlan).map((parts, index) => ({
+            title: parts[0] || '未命名图片',
+            chapter_id: '',
+            chapter_title: parts[1] || '',
+            type: 'image',
+            description: parts[2] || '',
+            status: 'planned',
+            order_index: index,
+          }));
+          return {
+            document_type: this.newProjectForm.documentType.trim() || '报告',
+            writing_goal: this.newProjectForm.writingGoal.trim(),
+            target_audience: this.newProjectForm.targetAudience.trim(),
+            outline,
+            chapters: plannedChapters,
+            assets,
+            references: this.splitDesignLines(this.newProjectForm.referencePlan),
+            output_format: this.newProjectForm.outputFormat.trim() || 'Markdown / Word / PDF',
+          };
+        },
+
         validateProjectDesignForm() {
-          const required = [
+          const isDocument = this.newProjectForm.projectType === 'document';
+          const required = isDocument ? [
+            ['项目名称', this.newProjectForm.name],
+            ['写作目标', this.newProjectForm.writingGoal],
+            ['目标读者', this.newProjectForm.targetAudience],
+            ['目录结构', this.newProjectForm.documentOutline],
+            ['章节主要内容', this.newProjectForm.chapterPlan],
+            ['写作任务清单', this.newProjectForm.documentTasks],
+          ] : [
             ['项目名称', this.newProjectForm.name],
             ['设计摘要', this.newProjectForm.designSummary],
             ['使用需求', this.newProjectForm.usageRequirements],
@@ -4138,14 +4302,27 @@
           if (!this.validateProjectDesignForm()) return;
           this.creatingProject = true;
           try {
+            const isDocument = this.newProjectForm.projectType === 'document';
+            const designDoc = isDocument ? {
+              summary: this.newProjectForm.writingGoal.trim(),
+              usage_requirements: this.splitDesignLines(this.newProjectForm.targetAudience),
+              task_breakdown_guidance: ['按目录结构拆分章节写作、图片制作、引用整理和审阅任务'],
+              parallel_tasks: this.splitDesignLines(this.newProjectForm.documentTasks).map(line => ({ title: line })),
+              author_agent: 'project-manager',
+            } : this.buildProjectDesignDoc();
             const payload = {
               name: this.newProjectForm.name.trim(),
               description: this.newProjectForm.description.trim(),
+              project_type: this.newProjectForm.projectType || 'software',
               status: 'planning',
               priority: 'medium',
               owner_agent: 'optimus',
-              current_phase: 'design',
-              design_doc: this.buildProjectDesignDoc(),
+              current_phase: isDocument ? 'outline' : 'design',
+              context: {
+                project_type: this.newProjectForm.projectType || 'software',
+              },
+              design_doc: designDoc,
+              document_spec: isDocument ? this.buildDocumentProjectSpec() : {},
             };
             const res = await fetch(API_BASE + '/api/v3/projects', {
               method: 'POST',
@@ -4168,7 +4345,8 @@
         },
 
         async createInitialProjectTasks(projectId) {
-          const lines = this.splitDesignLines(this.newProjectForm.parallelTasks);
+          const isDocument = this.newProjectForm.projectType === 'document';
+          const lines = this.splitDesignLines(isDocument ? this.newProjectForm.documentTasks : this.newProjectForm.parallelTasks);
           let created = 0;
           for (const line of lines) {
             const res = await fetch(API_BASE + '/api/v3/projects/' + encodeURIComponent(projectId) + '/tasks', {
@@ -4176,12 +4354,15 @@
               headers: { 'Content-Type': 'application/json', ...this.apiAuthHeaders() },
               body: JSON.stringify({
                 title: line,
-                description: '项目初始化并行任务',
+                description: isDocument ? '文档项目初始化写作/审阅任务' : '项目初始化并行任务',
                 priority: 'medium',
                 status: 'todo',
                 progress: 0,
+                context: {
+                  task_type: isDocument ? 'writing' : 'development',
+                },
                 development_points: [{
-                  title: line + '开发要点',
+                  title: line + (isDocument ? '写作要点' : '开发要点'),
                   status: 'todo',
                   weight: 1,
                 }],
@@ -4259,6 +4440,206 @@
           return map[status] || (status || '未知');
         },
 
+        projectTypeValue(project) {
+          const value = String((project && (project.project_type || project.type || (project.context && project.context.project_type))) || 'software').toLowerCase();
+          return value === 'document' ? 'document' : 'software';
+        },
+
+        isDocumentProject(project) {
+          return this.projectTypeValue(project) === 'document';
+        },
+
+        projectTypeText(project) {
+          return this.isDocumentProject(project) ? '文档撰写' : '程序开发';
+        },
+
+        projectTypeTag(project) {
+          return this.isDocumentProject(project) ? 'success' : 'primary';
+        },
+
+        documentSpec(project) {
+          return (project && project.document_spec && typeof project.document_spec === 'object') ? project.document_spec : {};
+        },
+
+        documentChapters(project) {
+          const spec = this.documentSpec(project);
+          return Array.isArray(spec.chapters) ? spec.chapters : [];
+        },
+
+        summarizeDocumentAssets(project) {
+          const assets = this.documentSpec(project).assets || [];
+          if (!Array.isArray(assets) || !assets.length) return '暂无';
+          return assets.slice(0, 4).map(item => item.title || item.description || item.type || '未命名素材').join('；');
+        },
+
+        projectConversations(project) {
+          if (!project || !project.id) return [];
+          const cached = this.projectConversationsCache[project.id];
+          if (Array.isArray(cached)) return cached;
+          const context = (project.context && typeof project.context === 'object') ? project.context : {};
+          return Array.isArray(context.conversations) ? context.conversations : [];
+        },
+
+        async loadProjectConversation(projectId) {
+          if (!projectId) return;
+          try {
+            const res = await fetch(API_BASE + '/api/v3/projects/' + encodeURIComponent(projectId) + '/conversation', {
+              headers: this.apiAuthHeaders(),
+            });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const data = await res.json();
+            this.projectConversationsCache[projectId] = data.messages || [];
+          } catch (error) {
+            console.warn('[ProjectsV3] conversation load failed:', error);
+          }
+        },
+
+        async loadProjectChatContext(projectId) {
+          if (!projectId) return;
+          try {
+            const res = await fetch(API_BASE + '/api/v3/projects/' + encodeURIComponent(projectId) + '/chat-context', {
+              headers: this.apiAuthHeaders(),
+            });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            this.projectChatContextCache[projectId] = await res.json();
+          } catch (error) {
+            console.warn('[ProjectsV3] chat context load failed:', error);
+          }
+        },
+
+        async sendProjectChatMessage() {
+          if (!this.selectedProjectV3 || !this.selectedProjectV3.id) {
+            this.$message.warning('请先选择项目');
+            return;
+          }
+          const message = String(this.projectChatInput || '').trim();
+          if (!message) {
+            this.$message.warning('请输入对话内容');
+            return;
+          }
+          this.projectChatSending = true;
+          try {
+            const project = this.selectedProjectV3;
+            const res = await fetch(API_BASE + '/api/v3/projects/' + encodeURIComponent(project.id) + '/chat', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', ...this.apiAuthHeaders() },
+              body: JSON.stringify({
+                agent_id: this.projectChatAgent || 'optimus',
+                role: 'user',
+                intent: this.isDocumentProject(project) ? 'document_collaboration' : 'software_collaboration',
+                task_id: this.selectedProjectTaskId || '',
+                message,
+              }),
+            });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const data = await res.json();
+            this.projectConversationsCache[project.id] = data.conversation || (data.message ? this.projectConversations(project).concat([data.message]) : this.projectConversations(project));
+            this.projectChatContextCache[project.id] = data.context || this.projectChatContextCache[project.id];
+            this.projectChatInput = '';
+            this.$message.success('已写入项目对话上下文');
+          } catch (error) {
+            console.warn('[ProjectsV3] chat context update failed:', error);
+            this.$message.error('项目对话保存失败：' + error.message);
+          } finally {
+            this.projectChatSending = false;
+          }
+        },
+
+        async createProjectAgentActionFromChat() {
+          if (!this.selectedProjectV3 || !this.selectedProjectV3.id) {
+            this.$message.warning('请先选择项目');
+            return;
+          }
+          const instruction = String(this.projectChatInput || '').trim();
+          if (!instruction) {
+            this.$message.warning('请输入要生成任务的指令');
+            return;
+          }
+          this.projectActionSending = true;
+          try {
+            const project = this.selectedProjectV3;
+            const taskType = this.isDocumentProject(project) ? 'writing' : 'development';
+            const res = await fetch(API_BASE + '/api/v3/projects/' + encodeURIComponent(project.id) + '/agent-actions', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', ...this.apiAuthHeaders() },
+              body: JSON.stringify({
+                agent_id: this.projectChatAgent || 'optimus',
+                action_type: this.isDocumentProject(project) ? 'writing_task' : 'development_task',
+                instruction,
+                task_title: instruction.length > 42 ? instruction.slice(0, 42) + '...' : instruction,
+                task_type: taskType,
+                assignee_agent: this.projectChatAgent || 'optimus',
+                task_id: this.selectedProjectTaskId || '',
+              }),
+            });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const data = await res.json();
+            if (data.chat && data.chat.conversation) {
+              this.projectConversationsCache[project.id] = data.chat.conversation;
+            }
+            this.projectChatInput = '';
+            this.$message.success('已生成项目任务');
+            await this.loadProjectsV3();
+          } catch (error) {
+            console.warn('[ProjectsV3] agent action failed:', error);
+            this.$message.error('生成任务失败：' + error.message);
+          } finally {
+            this.projectActionSending = false;
+          }
+        },
+
+        projectChatContextSummary(project) {
+          if (!project || !project.id) return '暂无上下文';
+          const context = this.projectChatContextCache[project.id];
+          if (!context) return '项目上下文将在选择项目后加载';
+          const work = context.work_object || {};
+          if (this.isDocumentProject(project)) {
+            return '文档上下文：' + ((work.chapters || []).length || 0) + ' 章，' + ((work.assets || []).length || 0) + ' 个图片/图表计划';
+          }
+          return '开发上下文：' + ((work.system_functions || []).length || 0) + ' 个功能，' + ((work.api_interfaces || []).length || 0) + ' 个接口';
+        },
+
+        async sendProjectChatMessageLegacy() {
+          if (!this.selectedProjectV3 || !this.selectedProjectV3.id) {
+            this.$message.warning('请先选择项目');
+            return;
+          }
+          const message = String(this.projectChatInput || '').trim();
+          if (!message) {
+            this.$message.warning('请输入对话内容');
+            return;
+          }
+          this.projectChatSending = true;
+          try {
+            const project = this.selectedProjectV3;
+            const context = Object.assign({}, project.context || {});
+            const conversations = Array.isArray(context.conversations) ? context.conversations.slice() : [];
+            conversations.push({
+              id: 'chat-' + Date.now(),
+              agent_id: this.projectChatAgent || 'optimus',
+              message,
+              project_type: this.projectTypeValue(project),
+              created_at: new Date().toISOString(),
+            });
+            context.conversations = conversations.slice(-80);
+            context.project_type = this.projectTypeValue(project);
+            const res = await fetch(API_BASE + '/api/v3/projects/' + encodeURIComponent(project.id), {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json', ...this.apiAuthHeaders() },
+              body: JSON.stringify({ context }),
+            });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            this.projectChatInput = '';
+            this.$message.success('已写入项目对话上下文');
+            await this.loadProjectsV3();
+          } catch (error) {
+            console.warn('[ProjectsV3] chat context update failed:', error);
+            this.$message.error('项目对话保存失败：' + error.message);
+          } finally {
+            this.projectChatSending = false;
+          }
+        },
+
         summarizeDesignList(value) {
           const list = Array.isArray(value) ? value : [];
           if (!list.length) return '暂无';
@@ -4286,6 +4667,8 @@
           this.selectedProjectTaskId = '';
           await this.loadProjectContextV3();
           await this.loadAgentProjectStatusV3();
+          await this.loadProjectConversation(project.id);
+          await this.loadProjectChatContext(project.id);
         },
 
         openProjectTask(task) {
@@ -4411,6 +4794,8 @@
             }
             if (this.selectedProjectId) {
               await this.loadProjectContextV3();
+              await this.loadProjectConversation(this.selectedProjectId);
+              await this.loadProjectChatContext(this.selectedProjectId);
               if (this.selectedProjectTaskId && !this.selectedProjectTasks.some(task => task.id === this.selectedProjectTaskId)) this.selectedProjectTaskId = '';
             } else {
               this.projectContext = null;

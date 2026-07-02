@@ -84,6 +84,8 @@ class ApproveDesignDocumentRequest(BaseModel):
 class ProjectCreate(BaseModel):
     id: Optional[str] = None
     name: str
+    project_type: str = "software"
+    type: Optional[str] = None
     description: str = ""
     status: str = "planning"
     priority: str = "medium"
@@ -92,10 +94,13 @@ class ProjectCreate(BaseModel):
     current_phase: str = "planning"
     context: dict[str, Any] = Field(default_factory=dict)
     design_doc: Optional[DesignDocument] = None
+    document_spec: dict[str, Any] = Field(default_factory=dict)
 
 
 class ProjectUpdate(BaseModel):
     name: Optional[str] = None
+    project_type: Optional[str] = None
+    type: Optional[str] = None
     description: Optional[str] = None
     status: Optional[str] = None
     priority: Optional[str] = None
@@ -103,6 +108,7 @@ class ProjectUpdate(BaseModel):
     progress: Optional[float] = None
     current_phase: Optional[str] = None
     context: Optional[dict[str, Any]] = None
+    document_spec: Optional[dict[str, Any]] = None
 
 
 class DevelopmentPointCreate(BaseModel):
@@ -129,9 +135,11 @@ class DevelopmentPointUpdate(BaseModel):
 
 class TaskCreate(BaseModel):
     id: Optional[str] = None
+    type: str = "development"
     title: str
     description: str = ""
     assignee_agent: str = ""
+    assignee_agent_id: str = ""
     status: str = "todo"
     progress: float = 0
     priority: str = "medium"
@@ -143,9 +151,11 @@ class TaskCreate(BaseModel):
 
 
 class TaskUpdate(BaseModel):
+    type: Optional[str] = None
     title: Optional[str] = None
     description: Optional[str] = None
     assignee_agent: Optional[str] = None
+    assignee_agent_id: Optional[str] = None
     status: Optional[str] = None
     progress: Optional[float] = None
     priority: Optional[str] = None
@@ -169,6 +179,28 @@ class LogCreate(BaseModel):
     agent_id: str = "system"
     action: str = "note"
     content: str
+
+
+class ProjectChatRequest(BaseModel):
+    agent_id: str = "optimus"
+    message: str
+    intent: str = "chat"
+    task_id: str = ""
+    chapter_id: str = ""
+    role: str = "user"
+    attachments: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class ProjectAgentActionRequest(BaseModel):
+    agent_id: str = "optimus"
+    action_type: str = "note"
+    instruction: str = ""
+    task_id: str = ""
+    chapter_id: str = ""
+    task_title: str = ""
+    task_type: str = ""
+    assignee_agent: str = ""
+    payload: dict[str, Any] = Field(default_factory=dict)
 
 
 class DecomposeRequest(BaseModel):
@@ -926,6 +958,101 @@ def list_project_logs(project_id: str, limit: int = Query(50, ge=1, le=200)):
     if not project_manager.get_project(project_id):
         raise HTTPException(status_code=404, detail="Project not found")
     return {"project_id": project_id, "logs": project_manager.list_logs(project_id, limit)}
+
+
+@router.get("/projects/{project_id}/conversation")
+def list_project_conversation(project_id: str, limit: int = Query(80, ge=1, le=200)):
+    messages = project_manager.list_conversation(project_id, limit)
+    if messages is None:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return {"project_id": project_id, "messages": messages, "total": len(messages)}
+
+
+@router.get("/projects/{project_id}/chat-context")
+def get_project_chat_context(project_id: str):
+    context = project_manager.build_project_chat_context(project_id)
+    if not context:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return context
+
+
+@router.post("/projects/{project_id}/chat", status_code=201)
+def create_project_chat_message(project_id: str, req: ProjectChatRequest):
+    payload = _model_dict(req)
+    result = project_manager.add_conversation_message(project_id, payload)
+    if not result:
+        raise HTTPException(status_code=404, detail="Project not found")
+    context = project_manager.build_project_chat_context(project_id)
+    project_type = (context or {}).get("project", {}).get("project_type", "software")
+    if project_type == "document":
+        next_actions = [
+            "根据目录结构拆分章节写作任务",
+            "补充章节主要内容和图片/图表计划",
+            "把引用资料绑定到章节或写作任务",
+        ]
+    else:
+        next_actions = [
+            "根据设计文档拆分开发任务",
+            "指派后端、前端、测试智能体并行推进",
+            "把接口、数据结构和验收标准写入开发要点",
+        ]
+    return {
+        **result,
+        "context": context,
+        "suggested_next_actions": next_actions,
+        "dispatch_status": "recorded",
+    }
+
+
+@router.post("/projects/{project_id}/agent-actions", status_code=201)
+def create_project_agent_action(project_id: str, req: ProjectAgentActionRequest):
+    project = project_manager.get_project(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    project_type = project.get("project_type") or project.get("type") or project.get("context", {}).get("project_type") or "software"
+    instruction = req.instruction or req.payload.get("instruction") or req.task_title or req.action_type
+    chat = project_manager.add_conversation_message(project_id, {
+        "agent_id": req.agent_id,
+        "role": "system",
+        "intent": "agent_action",
+        "message": instruction,
+        "task_id": req.task_id,
+        "chapter_id": req.chapter_id,
+    })
+    created_task = None
+    should_create_task = req.action_type in {"create_task", "assign_task", "writing_task", "development_task"} or bool(req.task_title)
+    if should_create_task:
+        task_type = req.task_type or req.payload.get("task_type") or ("writing" if project_type == "document" else "development")
+        title = req.task_title or req.payload.get("title") or instruction
+        created_task = project_manager.add_task(project_id, {
+            "title": title,
+            "description": instruction,
+            "type": task_type,
+            "assignee_agent": req.assignee_agent or req.agent_id,
+            "assignee_agent_id": req.assignee_agent or req.agent_id,
+            "status": "todo",
+            "priority": req.payload.get("priority", "medium"),
+            "context": {
+                "created_from_agent_action": req.action_type,
+                "chapter_id": req.chapter_id,
+                "project_type": project_type,
+            },
+            "development_points": [{
+                "title": req.payload.get("point_title") or (title + ("写作要点" if task_type == "writing" else "开发要点")),
+                "status": "todo",
+                "assigned_agent": req.assignee_agent or req.agent_id,
+            }],
+        })
+    log = project_manager.add_log(project_id, req.task_id or (created_task or {}).get("id"), req.agent_id, "project_agent_action", instruction)
+    return {
+        "project_id": project_id,
+        "action_type": req.action_type,
+        "agent_id": req.agent_id,
+        "chat": chat,
+        "created_task": created_task,
+        "log": log,
+        "dispatch_status": "recorded",
+    }
 
 
 @router.get("/projects/{project_id}/iteration-context")

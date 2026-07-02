@@ -28,12 +28,12 @@ from models.customer import (
     CreatePurchaseRequest, UpdatePurchaseRequest,
     CustomerStats,
 )
+from path_config import data_path
 
 router = APIRouter(prefix="/api", tags=["customers"])
 
 # ── 数据文件路径 ──
-BASE_DIR = os.path.expanduser("~/WorkSpace/team-dashboard")
-CUSTOMERS_FILE = os.path.join(BASE_DIR, "data", "customers.json")
+CUSTOMERS_FILE = data_path("customers.json")
 
 
 def _now_iso() -> str:

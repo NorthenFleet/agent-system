@@ -10,11 +10,10 @@ Dev Spec: DEV-SCHEDULED-TASKS v2.0
 """
 
 import asyncio
-import json
 import logging
 import os
+import shlex
 import time
-from datetime import datetime
 from typing import Optional
 
 import httpx
@@ -24,6 +23,13 @@ logger = logging.getLogger(__name__)
 # ── 配置 ──
 OPENCLAW_GATEWAY_URL = os.getenv("OPENCLAW_GATEWAY_URL", "http://localhost:18789")
 OPENCLAW_BIN = os.getenv("OPENCLAW_BIN", "openclaw")
+ALLOW_SCHEDULED_SHELL = os.getenv("ALLOW_SCHEDULED_SHELL", "false").lower() == "true"
+SCHEDULED_SHELL_ALLOWLIST = {
+    item.strip()
+    for item in os.getenv("SCHEDULED_SHELL_ALLOWLIST", "").split(",")
+    if item.strip()
+}
+SHELL_CONTROL_TOKENS = {"|", "&", ";", "&&", "||", ">", ">>", "<", "$(", "`"}
 
 
 class ExecutionResult:
@@ -220,6 +226,8 @@ class OpenClawTaskExecutor:
             f"HTTP API 执行: agent={agent_id}, message={message[:100]}..."
         )
 
+        errors = []
+
         async with httpx.AsyncClient(timeout=timeout_seconds) as client:
             # 尝试多种方式触发 Agent
             # 方式 1: 通过 sessions send
@@ -236,8 +244,9 @@ class OpenClawTaskExecutor:
                         success=True,
                         output=resp.text[:2000],
                     )
-            except httpx.RequestError:
-                pass
+                errors.append(f"/api/v1/sessions/send HTTP {resp.status_code}: {resp.text[:500]}")
+            except httpx.RequestError as exc:
+                errors.append(f"/api/v1/sessions/send request error: {exc}")
 
             # 方式 2: 通过 agent 端点
             try:
@@ -250,12 +259,13 @@ class OpenClawTaskExecutor:
                         success=True,
                         output=resp.text[:2000],
                     )
-            except httpx.RequestError:
-                pass
+                errors.append(f"/api/v1/agents/{agent_id}/run HTTP {resp.status_code}: {resp.text[:500]}")
+            except httpx.RequestError as exc:
+                errors.append(f"/api/v1/agents/{agent_id}/run request error: {exc}")
 
         return ExecutionResult(
             success=False,
-            error=f"无法通过 HTTP API 连接到 Gateway ({self.gateway_url})",
+            error=f"无法通过 HTTP API 连接到 Gateway ({self.gateway_url}): " + " | ".join(errors),
         )
 
     # ── Shell 执行 ──
@@ -263,17 +273,43 @@ class OpenClawTaskExecutor:
     async def _execute_shell(
         self, args: dict, timeout_seconds: int
     ) -> ExecutionResult:
-        """执行 shell 命令"""
+        """执行显式允许的命令，不经过 shell 解释器。"""
         shell_cmd = args.get("command", "")
         if not shell_cmd:
             return ExecutionResult(
                 success=False, error="shell 命令不能为空"
             )
 
-        logger.info(f"Shell 执行: {shell_cmd[:200]}...")
+        if not ALLOW_SCHEDULED_SHELL:
+            return ExecutionResult(
+                success=False,
+                error="shell 命令执行已禁用；如确需启用，请设置 ALLOW_SCHEDULED_SHELL=true 并配置 SCHEDULED_SHELL_ALLOWLIST",
+            )
 
-        proc = await asyncio.create_subprocess_shell(
-            shell_cmd,
+        try:
+            cmd = shlex.split(shell_cmd)
+        except ValueError as exc:
+            return ExecutionResult(success=False, error=f"shell 命令解析失败: {exc}")
+
+        if not cmd:
+            return ExecutionResult(success=False, error="shell 命令不能为空")
+
+        if any(token in shell_cmd for token in SHELL_CONTROL_TOKENS):
+            return ExecutionResult(
+                success=False,
+                error="shell 命令包含控制符，已拒绝执行；请改用单一可执行文件和参数",
+            )
+
+        if not SCHEDULED_SHELL_ALLOWLIST or cmd[0] not in SCHEDULED_SHELL_ALLOWLIST:
+            return ExecutionResult(
+                success=False,
+                error=f"shell 命令 '{cmd[0]}' 未在 SCHEDULED_SHELL_ALLOWLIST 中，已拒绝执行",
+            )
+
+        logger.info("Shell 执行: %s", " ".join(cmd))
+
+        proc = await asyncio.create_subprocess_exec(
+            *cmd,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )

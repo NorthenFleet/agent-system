@@ -34,13 +34,13 @@ from models.scheduled_task import (
     CreateTaskRequest, UpdateTaskRequest,
 )
 from services.openclaw_task_executor import openclaw_task_executor, ExecutionResult
+from path_config import data_path
 
 logger = logging.getLogger(__name__)
 
 # ── 数据文件路径 ──
-BASE_DIR = os.path.expanduser("~/WorkSpace/team-dashboard")
-SCHEDULED_TASKS_FILE = os.path.join(BASE_DIR, "data", "scheduled-tasks.json")
-EXECUTION_LOGS_FILE = os.path.join(BASE_DIR, "data", "execution-logs.json")
+SCHEDULED_TASKS_FILE = data_path("scheduled-tasks.json")
+EXECUTION_LOGS_FILE = data_path("execution-logs.json")
 
 
 def _now_iso() -> str:

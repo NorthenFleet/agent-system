@@ -8,12 +8,13 @@ import subprocess
 import time
 from datetime import datetime
 from typing import List, Dict
+from path_config import backend_data_path
 
 class CloudSessionMonitor:
     """Cloud Code 会话监控器"""
     
     def __init__(self):
-        self.sessions_file = os.path.expanduser("~/WorkSpace/team-dashboard/backend/data/cloud_sessions.json")
+        self.sessions_file = backend_data_path("cloud_sessions.json")
         self.task_map = {
             "clear-shore": "005",  # 任务看板与开发计划整合
             "tidy-claw": "006",    # 西部小镇咖啡馆

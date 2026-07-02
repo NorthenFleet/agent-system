@@ -65,10 +65,6 @@
         <el-icon><Grid /></el-icon>
         <span>产品矩阵</span>
       </el-menu-item>
-      <el-menu-item index="/legacy" @click.prevent="openLegacy">
-        <el-icon><Link /></el-icon>
-        <span>旧版入口</span>
-      </el-menu-item>
     </el-menu>
   </div>
 </template>
@@ -76,7 +72,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { Calendar, ChatLineRound, Coin, Collection, Cpu, Document, FolderOpened, Grid, Link, List, Monitor, Platform, Tools } from '@element-plus/icons-vue'
+import { Calendar, ChatLineRound, Coin, Collection, Cpu, Document, FolderOpened, Grid, List, Monitor, Platform, Tools } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const activeMenu = computed(() => {
@@ -98,10 +94,6 @@ const activeMenu = computed(() => {
   if (path.startsWith('/products')) return '/products'
   return '/'
 })
-
-function openLegacy() {
-  window.location.href = '/legacy'
-}
 </script>
 
 <style scoped>

@@ -9,10 +9,11 @@ import os
 from datetime import datetime
 from typing import Dict, List, Any, Optional
 from pathlib import Path
+from path_config import PROJECT_ROOT
 
 # 工作区路径
 OPENCLAW_WORKSPACE = os.path.expanduser("~/.openclaw/workspace")
-TEAM_DASHBOARD = os.path.expanduser("~/WorkSpace/team-dashboard")
+TEAM_DASHBOARD = str(PROJECT_ROOT)
 
 MAX_PREVIEW_LINES = 500
 MAX_PREVIEW_BYTES = 1024 * 1024

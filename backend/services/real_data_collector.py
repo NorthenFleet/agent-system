@@ -7,12 +7,13 @@ import json
 import subprocess
 from datetime import datetime
 from typing import List, Dict, Optional
+from path_config import project_path
 
 class RealDataCollector:
     """真实数据采集器"""
     
     def __init__(self):
-        self.workspace = os.path.expanduser("~/WorkSpace/team-dashboard")
+        self.workspace = project_path()
         self.backend_dir = os.path.join(self.workspace, "backend")
         self.frontend_dir = os.path.join(self.workspace, "frontend")
         

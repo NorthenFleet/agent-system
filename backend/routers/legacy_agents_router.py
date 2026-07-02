@@ -34,15 +34,52 @@ def get_agent_emoji(agent_id: str) -> str:
     return emoji_map.get(agent_id, "👤")
 
 
+AGENT_CHINESE_NAMES = {
+    "optimus": "擎天柱",
+    "bumblebee": "大黄蜂",
+    "donatello": "多纳泰罗",
+    "inspector": "巡检员",
+    "ironhide": "铁皮",
+    "jazz": "爵士",
+    "leonardo": "李奥纳多",
+    "michelangelo": "米开朗基罗",
+    "perceptor": "感知器",
+    "raphael": "拉斐尔",
+    "ratchet": "救护车",
+    "shockwave": "震荡波",
+    "soundwave": "声波",
+    "ultra-magnus": "通天晓",
+    "wheeljack": "千斤顶",
+    "wheeljack-donatello": "千斤顶-多纳泰罗",
+    "wheeljack-leonardo": "千斤顶-李奥纳多",
+    "wheeljack-michelangelo": "千斤顶-米开朗基罗",
+    "wheeljack-raphael": "千斤顶-拉斐尔",
+    "main": "小梦",
+}
+
+
+def localize_agent_names(agents):
+    localized = []
+    for agent in agents:
+        item = agent.copy()
+        agent_id = item.get("id") or item.get("agent_id")
+        chinese_name = AGENT_CHINESE_NAMES.get(agent_id)
+        if chinese_name:
+            item["name"] = chinese_name
+            item["agent_name"] = chinese_name
+        localized.append(item)
+    return localized
+
+
 @router.get("/api/agents")
 def get_agents():
     try:
-        agents = _openclaw_integration.sync_agents()
+        agents = localize_agent_names(_openclaw_integration.sync_agents())
         if agents:
             return {"agents": agents, "total": len(agents), "source": "openclaw"}
     except Exception:
         pass
-    agents = _data_manager.get_agents()
+    agents = localize_agent_names(_data_manager.get_agents())
     return {"agents": agents, "total": len(agents), "source": "local"}
 
 

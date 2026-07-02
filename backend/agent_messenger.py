@@ -45,22 +45,26 @@ class AgentMessenger:
         with open(filepath, 'w', encoding='utf-8') as f:
             json.dump(messages, f, ensure_ascii=False, indent=2)
     
-    def add_message(self, agent_id: str, role: str, content: str) -> Dict:
+    def add_message(self, agent_id: str, role: str, content: str, attachments: Optional[List[Dict]] = None) -> Dict:
         messages = self.load_conversation(agent_id)
         message = {
             "role": role,
             "content": content,
             "timestamp": datetime.now().isoformat()
         }
+        if attachments:
+            message["attachments"] = attachments
         messages.append(message)
         self.save_conversation(agent_id, messages)
         return message
     
-    async def send_to_agent(self, agent_id: str, message: str) -> Dict:
+    async def send_to_agent(self, agent_id: str, message: str, attachments: Optional[List[Dict]] = None) -> Dict:
         """发送消息到指定智能体"""
-        response_text = await self._call_openclaw(agent_id, message)
+        safe_attachments = self._normalize_attachments(attachments or [])
+        openclaw_message = self._compose_openclaw_message(message, safe_attachments)
+        response_text = await self._call_openclaw(agent_id, openclaw_message)
 
-        self.add_message(agent_id, "user", message)
+        self.add_message(agent_id, "user", message, safe_attachments)
         self.add_message(agent_id, "agent", response_text)
         
         return {
@@ -68,6 +72,7 @@ class AgentMessenger:
             "agent_id": agent_id,
             "user_message": message,
             "agent_response": response_text,
+            "attachments": safe_attachments,
             "timestamp": datetime.now().isoformat()
         }
     
@@ -86,6 +91,51 @@ class AgentMessenger:
             "shockwave": "震荡波",
         }
         return names.get(agent_id, agent_id)
+
+    def _normalize_attachments(self, attachments: List[Dict]) -> List[Dict]:
+        normalized = []
+        for item in attachments[:6]:
+            if not isinstance(item, dict):
+                continue
+            name = str(item.get("name") or "未命名附件")[:160]
+            content_type = str(item.get("type") or "application/octet-stream")[:120]
+            try:
+                size = int(item.get("size") or 0)
+            except (TypeError, ValueError):
+                size = 0
+            data_url = item.get("data_url")
+            if not isinstance(data_url, str):
+                data_url = None
+            if data_url and len(data_url) > 1_500_000:
+                data_url = None
+
+            normalized.append({
+                "id": str(item.get("id") or name),
+                "name": name,
+                "type": content_type,
+                "size": size,
+                "data_url": data_url,
+            })
+        return normalized
+
+    def _compose_openclaw_message(self, message: str, attachments: List[Dict]) -> str:
+        if not attachments:
+            return message
+
+        lines = [message.strip() or "请结合附件内容进行分析。", "", "【用户随消息附加的多模态材料】"]
+        for index, attachment in enumerate(attachments, start=1):
+            lines.append(
+                f"{index}. {attachment['name']} | {attachment['type']} | {attachment['size']} bytes"
+            )
+            data_url = attachment.get("data_url")
+            if data_url:
+                if attachment["type"].startswith("image/"):
+                    lines.append(f"   图片 data URL: {data_url[:120000]}")
+                else:
+                    lines.append("   文件已随看板消息保存；如需原文，请根据文件名向用户确认或要求粘贴内容。")
+            else:
+                lines.append("   附件内容未内联，当前仅可参考文件名、类型和大小。")
+        return "\n".join(lines)
     
     async def _call_openclaw(self, agent_id: str, message: str) -> Optional[str]:
         """调用 OpenClaw CLI 发送消息"""

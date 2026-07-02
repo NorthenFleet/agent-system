@@ -14,9 +14,10 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Optional
 
+from path_config import data_path
 from unified_data_manager import unified_data_manager
 
-PROJECTS_FILE = os.path.expanduser("~/WorkSpace/team-dashboard/data/projects-v3.json")
+PROJECTS_FILE = data_path("projects-v3.json")
 CANONICAL_BOARD_PROJECT_ID = "proj-b098ac3dbf"
 CANONICAL_BOARD_PROJECT_NAME = "OpenClaw 团队信息看板"
 TASK_PROJECT_NAME_MAP = {
@@ -47,6 +48,13 @@ def _is_done(status: str) -> bool:
 
 def _normalize_name(value: Any) -> str:
     return str(value or "").strip().lower()
+
+
+def _normalize_project_type(value: Any) -> str:
+    value = str(value or "").strip().lower()
+    if value in {"document", "doc", "writing", "paper"}:
+        return "document"
+    return "software"
 
 
 def _status_counts(items: list[dict]) -> dict:
@@ -108,6 +116,10 @@ class ProjectManager:
             self._recalculate_project(project)
 
     def _recalculate_project(self, project: dict) -> None:
+        project_type = _normalize_project_type(project.get("project_type") or project.get("type") or _as_dict(project.get("context")).get("project_type"))
+        project["project_type"] = project_type
+        project["type"] = project_type
+        project["document_spec"] = self._normalize_document_spec(project.get("document_spec"), project.get("id", ""), project.get("created_at") or _now_iso())
         if project.get("id"):
             project["design_doc"] = self._normalize_design_doc(
                 project.get("design_doc"),
@@ -219,17 +231,23 @@ class ProjectManager:
                 return canonical
 
             project_id = payload.get("id") or _new_id("proj")
+            project_type = _normalize_project_type(payload.get("project_type") or payload.get("type"))
+            context = _as_dict(payload.get("context"))
+            context["project_type"] = project_type
             project = {
                 "id": project_id,
                 "name": payload["name"],
+                "project_type": project_type,
+                "type": project_type,
                 "description": payload.get("description", ""),
                 "status": payload.get("status", "planning"),
                 "priority": payload.get("priority", "medium"),
                 "owner_agent": payload.get("owner_agent", "optimus"),
                 "progress": float(payload.get("progress", 0) or 0),
                 "current_phase": payload.get("current_phase", "planning"),
-                "context": _as_dict(payload.get("context")),
+                "context": context,
                 "design_doc": self._normalize_design_doc(payload.get("design_doc"), project_id, now),
+                "document_spec": self._normalize_document_spec(payload.get("document_spec"), project_id, now),
                 "tasks": [],
                 "created_at": now,
                 "updated_at": now,
@@ -253,7 +271,7 @@ class ProjectManager:
         return bool(self._with_data(mutate))
 
     def update_project(self, project_id: str, payload: dict) -> Optional[dict]:
-        allowed = {"name", "description", "status", "priority", "owner_agent", "current_phase", "context", "progress"}
+        allowed = {"name", "description", "status", "priority", "owner_agent", "current_phase", "context", "progress", "project_type", "type", "document_spec"}
 
         def mutate(data):
             project = self._find_project_unlocked(data, project_id)
@@ -261,7 +279,15 @@ class ProjectManager:
                 return None
             for key, value in payload.items():
                 if key in allowed and value is not None:
-                    project[key] = value
+                    if key in {"project_type", "type"}:
+                        project_type = _normalize_project_type(value)
+                        project["project_type"] = project_type
+                        project["type"] = project_type
+                        project.setdefault("context", {})["project_type"] = project_type
+                    elif key == "document_spec":
+                        project["document_spec"] = self._normalize_document_spec(value, project_id, project.get("created_at") or _now_iso())
+                    else:
+                        project[key] = value
             project["updated_at"] = _now_iso()
             return project
 
@@ -381,9 +407,11 @@ class ProjectManager:
             task = {
                 "id": payload.get("id") or _new_id("task"),
                 "project_id": project_id,
+                "type": payload.get("type") or _as_dict(payload.get("context")).get("task_type") or ("writing" if project.get("project_type") == "document" else "development"),
                 "title": payload["title"],
                 "description": payload.get("description", ""),
                 "assignee_agent": payload.get("assignee_agent", ""),
+                "assignee_agent_id": payload.get("assignee_agent_id") or payload.get("assignee_agent", ""),
                 "status": payload.get("status", "todo"),
                 "progress": float(payload.get("progress", 0) or 0),
                 "priority": payload.get("priority", "medium"),
@@ -405,7 +433,7 @@ class ProjectManager:
 
     def update_task(self, task_id: str, payload: dict) -> Optional[dict]:
         allowed = {
-            "title", "description", "assignee_agent", "status", "progress", "priority",
+            "title", "description", "type", "assignee_agent", "assignee_agent_id", "status", "progress", "priority",
             "dependencies", "acceptance_criteria", "context", "result_summary",
         }
 
@@ -597,6 +625,97 @@ class ProjectManager:
         data = self._read()
         logs = [log for log in data.get("logs", []) if log.get("project_id") == project_id]
         return logs[-limit:]
+
+    def list_conversation(self, project_id: str, limit: int = 80) -> Optional[list[dict]]:
+        project = self.get_project(project_id)
+        if not project:
+            return None
+        context = _as_dict(project.get("context"))
+        messages = _as_list(context.get("conversations"))
+        return messages[-limit:]
+
+    def add_conversation_message(self, project_id: str, payload: dict) -> Optional[dict]:
+        def mutate(data):
+            project = self._find_project_unlocked(data, project_id)
+            if not project:
+                return None
+            now = _now_iso()
+            context = _as_dict(project.get("context"))
+            context["project_type"] = _normalize_project_type(project.get("project_type") or context.get("project_type"))
+            messages = _as_list(context.get("conversations"))
+            message = {
+                "id": payload.get("id") or _new_id("chat"),
+                "project_id": project_id,
+                "agent_id": payload.get("agent_id") or "optimus",
+                "role": payload.get("role") or "user",
+                "message": str(payload.get("message") or payload.get("content") or "").strip(),
+                "intent": payload.get("intent", "chat"),
+                "project_type": context["project_type"],
+                "task_id": payload.get("task_id", ""),
+                "chapter_id": payload.get("chapter_id", ""),
+                "created_at": payload.get("created_at") or now,
+            }
+            if payload.get("attachments") is not None:
+                message["attachments"] = _as_list(payload.get("attachments"))
+            messages.append(message)
+            context["conversations"] = messages[-160:]
+            project["context"] = context
+            project["updated_at"] = now
+            log = self._append_log(
+                data,
+                project_id,
+                message.get("task_id") or None,
+                message["agent_id"],
+                "project_chat_message",
+                message["message"],
+            )
+            return {"message": message, "conversation": context["conversations"], "log": log}
+
+        return self._with_data(mutate)
+
+    def build_project_chat_context(self, project_id: str, limit: int = 12) -> Optional[dict]:
+        project = self.get_project(project_id)
+        if not project:
+            return None
+        project_type = _normalize_project_type(project.get("project_type") or project.get("type") or _as_dict(project.get("context")).get("project_type"))
+        messages = self.list_conversation(project_id, limit) or []
+        if project_type == "document":
+            spec = _as_dict(project.get("document_spec"))
+            work_object = {
+                "type": "document",
+                "document_type": spec.get("document_type", ""),
+                "writing_goal": spec.get("writing_goal", ""),
+                "target_audience": spec.get("target_audience", ""),
+                "outline": _as_list(spec.get("outline"))[:30],
+                "chapters": _as_list(spec.get("chapters"))[:20],
+                "assets": _as_list(spec.get("assets"))[:20],
+                "references": _as_list(spec.get("references"))[:20],
+            }
+        else:
+            design = _as_dict(project.get("design_doc"))
+            work_object = {
+                "type": "software",
+                "summary": design.get("summary", ""),
+                "usage_requirements": _as_list(design.get("usage_requirements"))[:20],
+                "data_structure": _as_dict(design.get("data_structure")),
+                "system_architecture": _as_dict(design.get("system_architecture")),
+                "system_functions": _as_list(design.get("system_functions"))[:30],
+                "api_interfaces": _as_list(design.get("api_interfaces"))[:30],
+            }
+        return {
+            "project": {
+                "id": project.get("id"),
+                "name": project.get("name"),
+                "project_type": project_type,
+                "status": project.get("status"),
+                "current_phase": project.get("current_phase"),
+                "progress": project.get("progress", 0),
+            },
+            "work_object": work_object,
+            "tasks": _as_list(project.get("tasks"))[:40],
+            "recent_conversation": messages,
+            "recent_logs": self.list_logs(project_id, 12),
+        }
 
     def get_iteration_context(self, project_id: str, agents: Optional[list[dict]] = None) -> Optional[dict]:
         project = self.get_project(project_id)
@@ -933,6 +1052,51 @@ class ProjectManager:
             "approved_at": payload.get("approved_at"),
             "created_at": created_at,
             "updated_at": updated_at,
+        }
+
+    def _normalize_document_spec(self, payload: Any, project_id: str, now: str) -> dict:
+        payload = _as_dict(payload)
+        chapters = []
+        for index, item in enumerate(_as_list(payload.get("chapters") or payload.get("sections"))):
+            item = _as_dict(item) if not isinstance(item, str) else {"title": item}
+            chapters.append({
+                "id": item.get("id") or _new_id("chapter"),
+                "project_id": project_id,
+                "parent_id": item.get("parent_id", ""),
+                "title": item.get("title", ""),
+                "summary": item.get("summary", ""),
+                "main_content": item.get("main_content") or item.get("content_brief", ""),
+                "key_points": _as_list(item.get("key_points")),
+                "images": _as_list(item.get("images")),
+                "status": item.get("status", "planning"),
+                "assigned_agent": item.get("assigned_agent", ""),
+                "order_index": int(item.get("order_index") if item.get("order_index") is not None else index),
+            })
+        assets = []
+        for index, item in enumerate(_as_list(payload.get("assets") or payload.get("image_plan"))):
+            item = _as_dict(item) if not isinstance(item, str) else {"title": item}
+            assets.append({
+                "id": item.get("id") or _new_id("asset"),
+                "project_id": project_id,
+                "chapter_id": item.get("chapter_id") or item.get("section_id", ""),
+                "type": item.get("type", "image"),
+                "title": item.get("title", ""),
+                "description": item.get("description", ""),
+                "file_path": item.get("file_path", ""),
+                "status": item.get("status", "planned"),
+                "order_index": int(item.get("order_index") if item.get("order_index") is not None else index),
+            })
+        return {
+            "document_type": payload.get("document_type", "报告"),
+            "writing_goal": payload.get("writing_goal", ""),
+            "target_audience": payload.get("target_audience", ""),
+            "outline": _as_list(payload.get("outline")),
+            "chapters": chapters,
+            "assets": assets,
+            "references": _as_list(payload.get("references") or payload.get("reference_plan")),
+            "output_format": payload.get("output_format", "Markdown / Word / PDF"),
+            "created_at": payload.get("created_at") or now,
+            "updated_at": payload.get("updated_at") or now,
         }
 
     def _make_point(self, task_id: str, payload: dict, now: str) -> dict:

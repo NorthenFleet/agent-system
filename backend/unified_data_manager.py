@@ -226,24 +226,85 @@ class UnifiedDataManager:
                     id TEXT PRIMARY KEY,
                     name TEXT NOT NULL,
                     description TEXT,
+                    project_type TEXT NOT NULL DEFAULT 'software',
                     status TEXT,
                     priority TEXT,
                     owner_agent TEXT,
+                    project_manager_agent TEXT,
                     progress REAL NOT NULL DEFAULT 0,
                     current_phase TEXT,
                     context TEXT NOT NULL DEFAULT '{}',
                     design_doc TEXT NOT NULL DEFAULT '{}',
+                    document_spec TEXT NOT NULL DEFAULT '{}',
                     created_at TEXT,
                     updated_at TEXT,
                     source_id TEXT NOT NULL DEFAULT 'projects-v3-json'
                 );
 
+                CREATE TABLE IF NOT EXISTS software_project_specs (
+                    project_id TEXT PRIMARY KEY,
+                    requirements TEXT NOT NULL DEFAULT '[]',
+                    design_doc TEXT NOT NULL DEFAULT '{}',
+                    architecture TEXT NOT NULL DEFAULT '{}',
+                    database_design TEXT NOT NULL DEFAULT '{}',
+                    api_design TEXT NOT NULL DEFAULT '[]',
+                    frontend_design TEXT NOT NULL DEFAULT '{}',
+                    test_plan TEXT NOT NULL DEFAULT '[]',
+                    deployment_plan TEXT NOT NULL DEFAULT '[]',
+                    updated_at TEXT,
+                    FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE
+                );
+
+                CREATE TABLE IF NOT EXISTS document_project_specs (
+                    project_id TEXT PRIMARY KEY,
+                    document_type TEXT,
+                    writing_goal TEXT,
+                    target_audience TEXT,
+                    outline TEXT NOT NULL DEFAULT '[]',
+                    chapter_plan TEXT NOT NULL DEFAULT '[]',
+                    image_plan TEXT NOT NULL DEFAULT '[]',
+                    reference_plan TEXT NOT NULL DEFAULT '[]',
+                    output_format TEXT,
+                    updated_at TEXT,
+                    FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE
+                );
+
+                CREATE TABLE IF NOT EXISTS document_sections (
+                    id TEXT PRIMARY KEY,
+                    project_id TEXT NOT NULL,
+                    parent_id TEXT,
+                    title TEXT NOT NULL,
+                    summary TEXT,
+                    content_brief TEXT,
+                    order_index INTEGER NOT NULL DEFAULT 0,
+                    status TEXT,
+                    assigned_agent_id TEXT,
+                    metadata TEXT NOT NULL DEFAULT '{}',
+                    FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE
+                );
+
+                CREATE TABLE IF NOT EXISTS document_assets (
+                    id TEXT PRIMARY KEY,
+                    project_id TEXT NOT NULL,
+                    section_id TEXT,
+                    type TEXT,
+                    title TEXT NOT NULL,
+                    description TEXT,
+                    file_path TEXT,
+                    status TEXT,
+                    metadata TEXT NOT NULL DEFAULT '{}',
+                    FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE,
+                    FOREIGN KEY(section_id) REFERENCES document_sections(id) ON DELETE SET NULL
+                );
+
                 CREATE TABLE IF NOT EXISTS project_tasks (
                     id TEXT PRIMARY KEY,
                     project_id TEXT NOT NULL,
+                    type TEXT NOT NULL DEFAULT 'development',
                     title TEXT NOT NULL,
                     description TEXT,
                     assignee_agent TEXT,
+                    assignee_agent_id TEXT,
                     status TEXT,
                     priority TEXT,
                     progress REAL NOT NULL DEFAULT 0,
@@ -437,6 +498,11 @@ class UnifiedDataManager:
                 );
                 """
             )
+            self._ensure_column(conn, "projects", "project_type", "TEXT NOT NULL DEFAULT 'software'")
+            self._ensure_column(conn, "projects", "project_manager_agent", "TEXT")
+            self._ensure_column(conn, "projects", "document_spec", "TEXT NOT NULL DEFAULT '{}'")
+            self._ensure_column(conn, "project_tasks", "type", "TEXT NOT NULL DEFAULT 'development'")
+            self._ensure_column(conn, "project_tasks", "assignee_agent_id", "TEXT")
             self._ensure_column(conn, "project_tasks", "dependencies", "TEXT NOT NULL DEFAULT '[]'")
             self._ensure_column(conn, "project_tasks", "acceptance_criteria", "TEXT NOT NULL DEFAULT '[]'")
             self._ensure_agent_columns(conn)
@@ -1587,6 +1653,7 @@ class UnifiedDataManager:
             projects = []
             for project_row in project_rows:
                 project = self._project_document_row(project_row)
+                self._hydrate_typed_project_specs(conn, project)
                 task_rows = conn.execute(
                     "SELECT * FROM project_tasks WHERE project_id=? ORDER BY created_at, id",
                     (project["id"],),
@@ -1615,6 +1682,10 @@ class UnifiedDataManager:
             conn.execute("DELETE FROM project_logs")
             conn.execute("DELETE FROM development_points")
             conn.execute("DELETE FROM project_tasks")
+            conn.execute("DELETE FROM document_assets")
+            conn.execute("DELETE FROM document_sections")
+            conn.execute("DELETE FROM document_project_specs")
+            conn.execute("DELETE FROM software_project_specs")
             conn.execute("DELETE FROM projects")
             task_count, point_count = self._insert_project_document(conn, projects, logs)
             self._refresh_sources(conn, {
@@ -1634,51 +1705,62 @@ class UnifiedDataManager:
             project_id = project.get("id")
             if not project_id:
                 continue
+            context = project.get("context") if isinstance(project.get("context"), dict) else {}
+            project_type = project.get("project_type") or project.get("type") or context.get("project_type") or "software"
+            design_doc = project.get("design_doc") if isinstance(project.get("design_doc"), dict) else {}
+            document_spec = project.get("document_spec") if isinstance(project.get("document_spec"), dict) else {}
             conn.execute(
                 """
                 INSERT INTO projects
-                (id, name, description, status, priority, owner_agent, progress, current_phase, context, design_doc, created_at, updated_at, source_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (id, name, description, project_type, status, priority, owner_agent, project_manager_agent, progress, current_phase, context, design_doc, document_spec, created_at, updated_at, source_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     project_id,
                     project.get("name", ""),
                     project.get("description", ""),
+                    project_type,
                     project.get("status", ""),
                     project.get("priority", ""),
                     project.get("owner_agent", ""),
+                    project.get("project_manager_agent") or project.get("owner_agent", "") or "optimus",
                     float(project.get("progress") or 0),
                     project.get("current_phase", ""),
-                    _json(project.get("context", {})),
-                    _json(project.get("design_doc", {})),
+                    _json(context),
+                    _json(design_doc),
+                    _json(document_spec),
                     project.get("created_at"),
                     project.get("updated_at"),
                     project.get("source_id") or "unified-sqlite",
                 ),
             )
+            self._insert_typed_project_specs(conn, project_id, project_type, design_doc, document_spec, project.get("updated_at"))
             for task in project.get("tasks", []):
                 task_id = task.get("id")
                 if not task_id:
                     continue
                 task_count += 1
+                task_context = task.get("context") if isinstance(task.get("context"), dict) else {}
                 conn.execute(
                     """
                     INSERT INTO project_tasks
-                    (id, project_id, title, description, assignee_agent, status, priority, progress, dependencies, acceptance_criteria, context, result_summary, created_at, updated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (id, project_id, type, title, description, assignee_agent, assignee_agent_id, status, priority, progress, dependencies, acceptance_criteria, context, result_summary, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         task_id,
                         project_id,
+                        task.get("type") or task_context.get("task_type") or ("writing" if project_type == "document" else "development"),
                         task.get("title", ""),
                         task.get("description", ""),
                         task.get("assignee_agent", ""),
+                        task.get("assignee_agent_id") or task.get("assignee_agent", ""),
                         task.get("status", ""),
                         task.get("priority", ""),
                         float(task.get("progress") or 0),
                         _json(task.get("dependencies", [])),
                         _json(task.get("acceptance_criteria", [])),
-                        _json(task.get("context", {})),
+                        _json(task_context),
                         task.get("result_summary", ""),
                         task.get("created_at"),
                         task.get("updated_at"),
@@ -1733,6 +1815,114 @@ class UnifiedDataManager:
                 ),
             )
         return task_count, point_count
+
+    def _insert_typed_project_specs(
+        self,
+        conn: sqlite3.Connection,
+        project_id: str,
+        project_type: str,
+        design_doc: dict,
+        document_spec: dict,
+        updated_at: str | None,
+    ) -> None:
+        if project_type == "document":
+            chapters = document_spec.get("chapters") if isinstance(document_spec.get("chapters"), list) else []
+            assets = document_spec.get("assets") if isinstance(document_spec.get("assets"), list) else []
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO document_project_specs
+                (project_id, document_type, writing_goal, target_audience, outline, chapter_plan, image_plan, reference_plan, output_format, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    project_id,
+                    document_spec.get("document_type", ""),
+                    document_spec.get("writing_goal", ""),
+                    document_spec.get("target_audience", ""),
+                    _json(document_spec.get("outline", [])),
+                    _json(chapters),
+                    _json(assets),
+                    _json(document_spec.get("references", [])),
+                    document_spec.get("output_format", ""),
+                    updated_at,
+                ),
+            )
+            section_id_by_title: dict[str, str] = {}
+            for index, chapter in enumerate(chapters):
+                if not isinstance(chapter, dict):
+                    chapter = {"title": str(chapter)}
+                section_id = chapter.get("id") or f"{project_id}-section-{index + 1}"
+                title = chapter.get("title", "")
+                if title:
+                    section_id_by_title[title] = section_id
+                conn.execute(
+                    """
+                    INSERT OR REPLACE INTO document_sections
+                    (id, project_id, parent_id, title, summary, content_brief, order_index, status, assigned_agent_id, metadata)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        section_id,
+                        project_id,
+                        chapter.get("parent_id", ""),
+                        title,
+                        chapter.get("summary", ""),
+                        chapter.get("main_content") or chapter.get("content_brief", ""),
+                        int(chapter.get("order_index") if chapter.get("order_index") is not None else index),
+                        chapter.get("status", "planning"),
+                        chapter.get("assigned_agent") or chapter.get("assigned_agent_id", ""),
+                        _json({
+                            "key_points": chapter.get("key_points", []),
+                            "images": chapter.get("images", []),
+                        }),
+                    ),
+                )
+            for index, asset in enumerate(assets):
+                if not isinstance(asset, dict):
+                    asset = {"title": str(asset)}
+                section_id = asset.get("section_id") or asset.get("chapter_id") or section_id_by_title.get(asset.get("chapter_title", ""), "")
+                conn.execute(
+                    """
+                    INSERT OR REPLACE INTO document_assets
+                    (id, project_id, section_id, type, title, description, file_path, status, metadata)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        asset.get("id") or f"{project_id}-asset-{index + 1}",
+                        project_id,
+                        section_id,
+                        asset.get("type", "image"),
+                        asset.get("title", ""),
+                        asset.get("description", ""),
+                        asset.get("file_path", ""),
+                        asset.get("status", "planned"),
+                        _json({
+                            "chapter_title": asset.get("chapter_title", ""),
+                            "order_index": asset.get("order_index", index),
+                        }),
+                    ),
+                )
+            return
+
+        conn.execute(
+            """
+            INSERT OR REPLACE INTO software_project_specs
+            (project_id, requirements, design_doc, architecture, database_design, api_design, frontend_design, test_plan, deployment_plan, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                project_id,
+                _json(design_doc.get("usage_requirements", [])),
+                _json(design_doc),
+                _json(design_doc.get("system_architecture", {})),
+                _json(design_doc.get("data_structure", {})),
+                _json(design_doc.get("api_interfaces", [])),
+                _json(design_doc.get("frontend_design", {})),
+                _json(design_doc.get("test_plan", [])),
+                _json(design_doc.get("deployment_plan", [])),
+                updated_at,
+            ),
+        )
 
     def schema_summary(self, conn: sqlite3.Connection | None = None) -> list[dict]:
         owns_connection = conn is None
@@ -1866,17 +2056,91 @@ class UnifiedDataManager:
             "updated_at": row["updated_at"],
         }
 
+    def _hydrate_typed_project_specs(self, conn: sqlite3.Connection, project: dict) -> None:
+        project_type = project.get("project_type") or "software"
+        if project_type == "document":
+            spec_row = conn.execute("SELECT * FROM document_project_specs WHERE project_id=?", (project["id"],)).fetchone()
+            section_rows = conn.execute(
+                "SELECT * FROM document_sections WHERE project_id=? ORDER BY order_index, id",
+                (project["id"],),
+            ).fetchall()
+            asset_rows = conn.execute(
+                "SELECT * FROM document_assets WHERE project_id=? ORDER BY rowid",
+                (project["id"],),
+            ).fetchall()
+            sections = []
+            for row in section_rows:
+                metadata = _loads(row["metadata"], {})
+                sections.append({
+                    "id": row["id"],
+                    "project_id": row["project_id"],
+                    "parent_id": row["parent_id"] or "",
+                    "title": row["title"] or "",
+                    "summary": row["summary"] or "",
+                    "main_content": row["content_brief"] or "",
+                    "content_brief": row["content_brief"] or "",
+                    "order_index": row["order_index"],
+                    "status": row["status"] or "planning",
+                    "assigned_agent": row["assigned_agent_id"] or "",
+                    "assigned_agent_id": row["assigned_agent_id"] or "",
+                    "key_points": metadata.get("key_points", []),
+                    "images": metadata.get("images", []),
+                })
+            assets = []
+            for row in asset_rows:
+                metadata = _loads(row["metadata"], {})
+                assets.append({
+                    "id": row["id"],
+                    "project_id": row["project_id"],
+                    "chapter_id": row["section_id"] or "",
+                    "section_id": row["section_id"] or "",
+                    "chapter_title": metadata.get("chapter_title", ""),
+                    "type": row["type"] or "image",
+                    "title": row["title"] or "",
+                    "description": row["description"] or "",
+                    "file_path": row["file_path"] or "",
+                    "status": row["status"] or "planned",
+                    "order_index": metadata.get("order_index", 0),
+                })
+            if spec_row:
+                project["document_spec"] = {
+                    "document_type": spec_row["document_type"] or "",
+                    "writing_goal": spec_row["writing_goal"] or "",
+                    "target_audience": spec_row["target_audience"] or "",
+                    "outline": _loads(spec_row["outline"], []),
+                    "chapters": sections or _loads(spec_row["chapter_plan"], []),
+                    "assets": assets or _loads(spec_row["image_plan"], []),
+                    "references": _loads(spec_row["reference_plan"], []),
+                    "output_format": spec_row["output_format"] or "",
+                }
+            return
+
+        spec_row = conn.execute("SELECT * FROM software_project_specs WHERE project_id=?", (project["id"],)).fetchone()
+        if spec_row:
+            design_doc = _loads(spec_row["design_doc"], project.get("design_doc", {}))
+            design_doc.setdefault("usage_requirements", _loads(spec_row["requirements"], []))
+            design_doc.setdefault("system_architecture", _loads(spec_row["architecture"], {}))
+            design_doc.setdefault("data_structure", _loads(spec_row["database_design"], {}))
+            design_doc.setdefault("api_interfaces", _loads(spec_row["api_design"], []))
+            design_doc.setdefault("frontend_design", _loads(spec_row["frontend_design"], {}))
+            design_doc.setdefault("test_plan", _loads(spec_row["test_plan"], []))
+            design_doc.setdefault("deployment_plan", _loads(spec_row["deployment_plan"], []))
+            project["design_doc"] = design_doc
+
     def _project_row(self, row: sqlite3.Row) -> dict:
         return {
             "id": row["id"],
             "name": row["name"],
             "description": row["description"],
+            "project_type": row["project_type"] if "project_type" in row.keys() else "software",
             "status": row["status"],
             "priority": row["priority"],
             "owner_agent": row["owner_agent"],
+            "project_manager_agent": row["project_manager_agent"] if "project_manager_agent" in row.keys() else "",
             "progress": row["progress"],
             "current_phase": row["current_phase"],
             "context": _loads(row["context"], {}),
+            "document_spec": _loads(row["document_spec"], {}) if "document_spec" in row.keys() else {},
             "created_at": row["created_at"],
             "updated_at": row["updated_at"],
             "source_id": row["source_id"],
@@ -1889,13 +2153,17 @@ class UnifiedDataManager:
             "id": row["id"],
             "name": row["name"],
             "description": row["description"] or "",
+            "project_type": row["project_type"] if "project_type" in row.keys() else "software",
+            "type": row["project_type"] if "project_type" in row.keys() else "software",
             "status": row["status"] or "",
             "priority": row["priority"] or "",
             "owner_agent": row["owner_agent"] or "",
+            "project_manager_agent": row["project_manager_agent"] if "project_manager_agent" in row.keys() else "",
             "progress": float(row["progress"] or 0),
             "current_phase": row["current_phase"] or "",
             "context": _loads(row["context"], {}),
             "design_doc": _loads(row["design_doc"], {}),
+            "document_spec": _loads(row["document_spec"], {}) if "document_spec" in row.keys() else {},
             "tasks": [],
             "created_at": row["created_at"],
             "updated_at": row["updated_at"],
@@ -1906,9 +2174,11 @@ class UnifiedDataManager:
         return {
             "id": row["id"],
             "project_id": row["project_id"],
+            "type": row["type"] if "type" in row.keys() else "development",
             "title": row["title"],
             "description": row["description"] or "",
             "assignee_agent": row["assignee_agent"] or "",
+            "assignee_agent_id": row["assignee_agent_id"] if "assignee_agent_id" in row.keys() else (row["assignee_agent"] or ""),
             "status": row["status"] or "",
             "priority": row["priority"] or "",
             "progress": float(row["progress"] or 0),

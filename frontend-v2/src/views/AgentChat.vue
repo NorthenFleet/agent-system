@@ -16,20 +16,27 @@
         clearable
       />
 
-      <div class="agent-list">
+      <div class="agent-tree">
         <button
-          v-for="agent in filteredAgents"
-          :key="agent.id"
+          v-for="node in filteredTreeNodes"
+          :key="node.id"
           class="agent-row"
-          :class="{ active: selectedAgent?.id === agent.id }"
-          @click="selectAgent(agent)"
+          :class="{
+            active: node.agent?.id === selectedAgent?.id,
+            group: !node.agent,
+            planned: node.planned
+          }"
+          :style="{ '--depth': node.depth }"
+          :disabled="!node.agent"
+          @click="node.agent && selectAgent(node.agent)"
         >
-          <span class="avatar">{{ agentInitial(agent) }}</span>
+          <span class="tree-line" />
+          <span class="avatar">{{ node.emoji || agentInitial(node.agent || node) }}</span>
           <span class="agent-main">
-            <span class="agent-name">{{ agent.name }}</span>
-            <span class="agent-meta">{{ agent.role || agent.team || agent.id }}</span>
+            <span class="agent-name">{{ node.name }}</span>
+            <span class="agent-meta">{{ node.agent ? agentMeta(node.agent) : node.title || '组织分组' }}</span>
           </span>
-          <span class="status-dot" :class="agent.status || 'idle'" />
+          <span v-if="node.agent" class="status-dot" :class="node.agent.status || 'idle'" />
         </button>
       </div>
     </section>
@@ -69,6 +76,22 @@
               <time>{{ formatTime(message.timestamp) }}</time>
             </div>
             <p>{{ message.content }}</p>
+            <div v-if="message.attachments?.length" class="message-attachments">
+              <a
+                v-for="attachment in message.attachments"
+                :key="attachment.id || attachment.name"
+                class="attachment-chip"
+                :href="attachment.data_url"
+                target="_blank"
+                rel="noreferrer"
+              >
+                <span class="attachment-icon">{{ attachment.type.startsWith('image/') ? '图' : '文' }}</span>
+                <span>
+                  <strong>{{ attachment.name }}</strong>
+                  <small>{{ formatFileSize(attachment.size) }} · {{ attachment.type || '文件' }}</small>
+                </span>
+              </a>
+            </div>
           </div>
 
           <div v-if="sending" class="message from-agent pending">
@@ -82,19 +105,33 @@
       </div>
 
       <div class="composer">
-        <el-input
-          v-model="draft"
-          type="textarea"
-          :rows="3"
-          resize="none"
-          :placeholder="selectedAgent ? '输入业务问题、项目需求或开发任务...' : '请先选择智能体'"
-          :disabled="!selectedAgent || sending"
-          @keydown.meta.enter.prevent="sendMessage"
-          @keydown.ctrl.enter.prevent="sendMessage"
-        />
-        <el-button type="primary" :icon="Promotion" :loading="sending" :disabled="!canSend" @click="sendMessage">
-          发送
-        </el-button>
+        <div class="composer-main">
+          <el-input
+            v-model="draft"
+            type="textarea"
+            :rows="3"
+            resize="none"
+            :placeholder="selectedAgent ? '输入业务问题、项目需求、开发任务，也可以添加图片或文件...' : '请先选择智能体'"
+            :disabled="!selectedAgent || sending"
+            @keydown.meta.enter.prevent="sendMessage"
+            @keydown.ctrl.enter.prevent="sendMessage"
+          />
+          <div v-if="selectedAttachments.length" class="selected-attachments">
+            <span v-for="attachment in selectedAttachments" :key="attachment.id" class="selected-attachment">
+              <span>{{ attachment.type.startsWith('image/') ? '图片' : '文件' }}</span>
+              <strong>{{ attachment.name }}</strong>
+              <small>{{ formatFileSize(attachment.size) }}</small>
+              <button type="button" @click="removeAttachment(attachment.id)">移除</button>
+            </span>
+          </div>
+          <input ref="fileInput" class="hidden-file-input" type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.md" @change="handleFileChange" />
+        </div>
+        <div class="composer-actions">
+          <el-button :icon="Paperclip" :disabled="!selectedAgent || sending" @click="openFilePicker" />
+          <el-button type="primary" :icon="Promotion" :loading="sending" :disabled="!canSend" @click="sendMessage">
+            发送
+          </el-button>
+        </div>
       </div>
     </section>
 
@@ -130,7 +167,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Delete, Promotion, Refresh, Search } from '@element-plus/icons-vue'
+import { Delete, Paperclip, Promotion, Refresh, Search } from '@element-plus/icons-vue'
 import {
   clearAgentMessages,
   getAgentMessages,
@@ -138,11 +175,14 @@ import {
   getConversationSummaries,
   sendAgentMessage,
   type ChatAgent,
+  type ChatAgentNode,
+  type ChatAttachment,
   type ChatMessage,
   type ConversationSummary
 } from '@/api/chat'
 
 const agents = ref<ChatAgent[]>([])
+const agentTreeNodes = ref<ChatAgentNode[]>([])
 const conversations = ref<ConversationSummary[]>([])
 const selectedAgent = ref<ChatAgent | null>(null)
 const messages = ref<ChatMessage[]>([])
@@ -152,6 +192,8 @@ const agentQuery = ref('')
 const sending = ref(false)
 const loadingMessages = ref(false)
 const messagesEl = ref<HTMLElement | null>(null)
+const fileInput = ref<HTMLInputElement | null>(null)
+const selectedAttachments = ref<ChatAttachment[]>([])
 
 const modeOptions = [
   { label: '业务管理', value: 'business' },
@@ -172,12 +214,27 @@ const prompts = {
 }
 
 const activePrompts = computed(() => prompts[mode.value as keyof typeof prompts])
-const filteredAgents = computed(() => {
+const filteredTreeNodes = computed(() => {
   const q = agentQuery.value.trim().toLowerCase()
-  if (!q) return agents.value
-  return agents.value.filter(agent => `${agent.name} ${agent.id} ${agent.role || ''}`.toLowerCase().includes(q))
+  if (!q) return agentTreeNodes.value
+  const matchedAgentIds = new Set<string>()
+  const matchedNodeIds = new Set<string>()
+
+  for (const node of agentTreeNodes.value) {
+    const text = `${node.name} ${node.agent_id || ''} ${node.title || ''} ${node.agent?.role || ''} ${(node.path || []).join(' ')}`.toLowerCase()
+    if (text.includes(q)) {
+      matchedNodeIds.add(node.id)
+      if (node.agent?.id) matchedAgentIds.add(node.agent.id)
+      for (const pathName of node.path || []) {
+        const ancestor = agentTreeNodes.value.find(item => item.name === pathName)
+        if (ancestor) matchedNodeIds.add(ancestor.id)
+      }
+    }
+  }
+
+  return agentTreeNodes.value.filter(node => matchedNodeIds.has(node.id) || (node.agent?.id && matchedAgentIds.has(node.agent.id)))
 })
-const canSend = computed(() => Boolean(selectedAgent.value && draft.value.trim() && !sending.value))
+const canSend = computed(() => Boolean(selectedAgent.value && (draft.value.trim() || selectedAttachments.value.length) && !sending.value))
 
 onMounted(async () => {
   await Promise.all([loadAgents(), loadConversations()])
@@ -187,6 +244,7 @@ async function loadAgents() {
   try {
     const res = await getChatAgents()
     agents.value = res.agents
+    agentTreeNodes.value = res.nodes
     if (!selectedAgent.value && agents.value.length > 0) {
       await selectAgent(agents.value[0])
     }
@@ -224,25 +282,28 @@ async function loadMessages(agentId: string) {
 
 async function sendMessage() {
   if (!canSend.value || !selectedAgent.value) return
-  const text = draft.value.trim()
+  const text = draft.value.trim() || '请结合附件内容进行分析。'
+  const attachments = selectedAttachments.value.slice()
   const agent = selectedAgent.value
   draft.value = ''
-  const optimisticMessage: ChatMessage = { role: 'user', content: text, timestamp: new Date().toISOString() }
+  selectedAttachments.value = []
+  const optimisticMessage: ChatMessage = { role: 'user', content: text, timestamp: new Date().toISOString(), attachments }
   messages.value.push(optimisticMessage)
   await scrollToBottom()
 
   sending.value = true
   try {
-    const res = await sendAgentMessage(agent.id, text)
+    const res = await sendAgentMessage(agent.id, text, attachments)
     messages.value.push({
       role: 'agent',
-      content: res.agent_response || '已收到，我会继续跟进。',
+      content: res.agent_response,
       timestamp: res.timestamp || new Date().toISOString()
     })
     await loadConversations()
   } catch {
     messages.value = messages.value.filter(message => message !== optimisticMessage)
     draft.value = text
+    selectedAttachments.value = attachments
     ElMessage.error('OpenClaw 智能体调用失败，请检查服务日志')
   } finally {
     sending.value = false
@@ -275,8 +336,68 @@ function agentName(agentId: string) {
   return agents.value.find(agent => agent.id === agentId)?.name || agentId
 }
 
-function agentInitial(agent: ChatAgent) {
+function agentMeta(agent: ChatAgent) {
+  const path = (agent.path || []).slice(0, -1).join(' / ')
+  return [agent.role || agent.title, path || agent.team || agent.id].filter(Boolean).join(' · ')
+}
+
+function agentInitial(agent: Pick<ChatAgent, 'name' | 'id'> | ChatAgentNode) {
   return (agent.name || agent.id).slice(0, 1).toUpperCase()
+}
+
+function openFilePicker() {
+  fileInput.value?.click()
+}
+
+async function handleFileChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  const files = Array.from(input.files || [])
+  if (!files.length) return
+
+  try {
+    const attachments = await Promise.all(files.map(fileToAttachment))
+    selectedAttachments.value.push(...attachments)
+  } catch {
+    ElMessage.error('附件读取失败')
+  } finally {
+    input.value = ''
+  }
+}
+
+function fileToAttachment(file: File): Promise<ChatAttachment> {
+  const maxSize = 8 * 1024 * 1024
+  if (file.size > maxSize) {
+    ElMessage.warning(`${file.name} 超过 8MB，已跳过`)
+    return Promise.resolve({
+      id: `${Date.now()}-${file.name}`,
+      name: file.name,
+      type: file.type || 'application/octet-stream',
+      size: file.size
+    })
+  }
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve({
+      id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      name: file.name,
+      type: file.type || 'application/octet-stream',
+      size: file.size,
+      data_url: String(reader.result || '')
+    })
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
+function removeAttachment(id?: string) {
+  selectedAttachments.value = selectedAttachments.value.filter(item => item.id !== id)
+}
+
+function formatFileSize(size = 0) {
+  if (size < 1024) return `${size} B`
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`
+  return `${(size / 1024 / 1024).toFixed(1)} MB`
 }
 
 function formatTime(value: string) {
@@ -355,10 +476,10 @@ h3 {
   margin-top: 4px;
 }
 
-.agent-list {
+.agent-tree {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   margin-top: 14px;
   max-height: calc(100vh - 210px);
   overflow-y: auto;
@@ -376,12 +497,16 @@ h3 {
 
 .agent-row {
   display: grid;
-  grid-template-columns: 36px 1fr 10px;
+  grid-template-columns: calc(var(--depth, 0) * 14px) 32px 1fr 10px;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
-  padding: 10px;
+  padding: 8px 10px;
   border-radius: 6px;
+}
+
+.agent-row:disabled {
+  cursor: default;
 }
 
 .agent-row:hover,
@@ -390,11 +515,31 @@ h3 {
   background: var(--view-color-soft);
 }
 
+.agent-row.group {
+  color: var(--text-secondary);
+  background: transparent;
+}
+
+.agent-row.group:hover {
+  border-color: transparent;
+  background: transparent;
+}
+
+.agent-row.planned {
+  opacity: 0.66;
+}
+
+.tree-line {
+  width: 100%;
+  height: 1px;
+  border-top: 1px solid rgba(139, 148, 158, 0.24);
+}
+
 .avatar {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 6px;
   background: rgba(var(--view-rgb), 0.18);
   color: var(--view-color);
@@ -515,13 +660,116 @@ h3 {
   white-space: pre-wrap;
 }
 
+.message-attachments {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.attachment-chip {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 8px;
+  align-items: center;
+  max-width: 360px;
+  padding: 8px;
+  border: 1px solid var(--line-color);
+  border-radius: 6px;
+  color: var(--text-primary);
+  text-decoration: none;
+  background: rgba(13, 17, 23, 0.52);
+}
+
+.attachment-icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  color: var(--view-color);
+  background: rgba(var(--view-rgb), 0.18);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.attachment-chip strong,
+.attachment-chip small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachment-chip strong {
+  font-size: 12px;
+}
+
+.attachment-chip small {
+  margin-top: 2px;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
 .composer {
   display: grid;
-  grid-template-columns: 1fr 92px;
+  grid-template-columns: 1fr auto;
   gap: 10px;
   padding: 14px;
   border-top: 1px solid var(--line-color);
   background: #0d1117;
+}
+
+.composer-main {
+  min-width: 0;
+}
+
+.composer-actions {
+  display: grid;
+  grid-template-columns: 38px 92px;
+  gap: 8px;
+  align-self: end;
+}
+
+.hidden-file-input {
+  display: none;
+}
+
+.selected-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.selected-attachment {
+  display: inline-grid;
+  grid-template-columns: auto minmax(70px, 160px) auto auto;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--line-color);
+  border-radius: 6px;
+  color: var(--text-primary);
+  background: var(--card-bg-soft);
+  font-size: 12px;
+}
+
+.selected-attachment strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selected-attachment small {
+  color: var(--text-secondary);
+}
+
+.selected-attachment button {
+  border: 0;
+  color: var(--view-color);
+  background: transparent;
+  cursor: pointer;
 }
 
 .context-panel {
@@ -587,7 +835,7 @@ h3 {
     grid-template-columns: 1fr;
   }
 
-  .agent-list {
+  .agent-tree {
     max-height: 260px;
   }
 
@@ -599,6 +847,11 @@ h3 {
 
   .message {
     max-width: 100%;
+  }
+
+  .composer,
+  .composer-actions {
+    grid-template-columns: 1fr;
   }
 }
 </style>

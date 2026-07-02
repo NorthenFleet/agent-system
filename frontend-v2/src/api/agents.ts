@@ -1,5 +1,11 @@
 import apiClient from './client'
-import type { Agent, AgentListResponse, AgentHistoryResponse, AgentTaskResponse } from '@/stores/agents'
+import type { AgentListResponse, AgentHistoryResponse } from '@/stores/agents'
+
+export interface AgentTaskResponse {
+  agent_id: string
+  tasks: unknown[]
+  total: number
+}
 
 // Agent 实时状态
 export function getAgentsLive() {
@@ -8,6 +14,7 @@ export function getAgentsLive() {
 
 // Agent 心跳上报
 export function sendHeartbeat(agentId: string, data: {
+  agent_name?: string
   status: string
   current_task?: string
   cpu_usage?: number
@@ -15,7 +22,17 @@ export function sendHeartbeat(agentId: string, data: {
   task_queue_len?: number
   metadata?: Record<string, unknown>
 }) {
-  return apiClient.post(`/api/v2/agents/${agentId}/heartbeat`, data).then(r => r.data)
+  const agentName =
+    data.agent_name ||
+    (typeof data.metadata?.agent_name === 'string' ? data.metadata.agent_name : undefined) ||
+    (typeof data.metadata?.name === 'string' ? data.metadata.name : undefined) ||
+    agentId
+
+  return apiClient.post(`/api/v2/agents/${agentId}/heartbeat`, {
+    ...data,
+    agent_id: agentId,
+    agent_name: agentName
+  }).then(r => r.data)
 }
 
 // Agent 状态历史
