@@ -37,8 +37,8 @@ import { useAuthStore } from '@/stores/auth'
 const router = useRouter()
 const authStore = useAuthStore()
 
-function getRoleType(role?: string): '' | 'success' | 'warning' | 'info' {
-  const map: Record<string, '' | 'success' | 'warning' | 'info'> = {
+function getRoleType(role?: string): '' | 'success' | 'warning' | 'info' | 'danger' {
+  const map: Record<string, '' | 'success' | 'warning' | 'info' | 'danger'> = {
     admin: 'danger', agent: 'success', viewer: 'info'
   }
   return map[role || ''] || ''

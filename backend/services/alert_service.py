@@ -1,9 +1,10 @@
 """
 AlertService — 告警业务逻辑
 """
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
+from sqlalchemy import func as sql_func
 
 from services.base import BaseService, Cache
 from repositories.alert_rule_repository import AlertRuleRepository
@@ -40,6 +41,14 @@ class AlertService(BaseService[AlertRule, AlertRuleRepository]):
 
     def toggle_rule(self, rule_id: int, enabled: bool) -> Optional[AlertRule]:
         return self.update(rule_id, {"enabled": enabled})
+
+    def get_rule_by_id(self, rule_id: int) -> Optional[AlertRule]:
+        """根据 ID 获取规则"""
+        return self.repository.get_by_id(self.db, rule_id)
+
+    def list_rules(self, skip: int = 0, limit: int = 100) -> List[AlertRule]:
+        """获取规则列表"""
+        return self.repository.get_all(self.db, skip=skip, limit=limit, order_by="created_at")
 
     # ─── AlertEvent ───
 
@@ -91,3 +100,22 @@ class AlertService(BaseService[AlertRule, AlertRuleRepository]):
             self.db.commit()
             self._cache_invalidate_prefix("unack")
         return count
+
+    def get_event_by_id(self, event_id: int) -> Optional[AlertEvent]:
+        """根据 ID 获取事件"""
+        return self._event_repo.get_by_id(self.db, event_id)
+
+    def get_event_stats(self) -> Dict[str, Any]:
+        """获取告警统计"""
+        total = self._event_repo.count(self.db)
+        active = self._event_repo.count_unacknowledged(self.db)
+        critical = self._event_repo.count(self.db, filters={"severity": "critical", "acknowledged": False})
+        return {
+            "total": total or 0,
+            "active": active or 0,
+            "critical": critical or 0,
+        }
+
+    def list_events(self, skip: int = 0, limit: int = 100) -> List[AlertEvent]:
+        """获取事件列表"""
+        return self._event_repo.get_all(self.db, skip=skip, limit=limit, order_by="created_at")

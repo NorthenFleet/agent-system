@@ -1,15 +1,9 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { login as apiLogin, logout as apiLogout, getMe, refreshToken as apiRefreshToken } from '@/api/auth'
+import type { User } from '@/api/auth'
 
-export interface User {
-  id: number
-  username: string
-  display_name: string
-  role: 'admin' | 'agent' | 'viewer'
-  is_active: boolean
-  last_login_at: string | null
-}
+export type { User } from '@/api/auth'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
@@ -66,10 +60,12 @@ export const useAuthStore = defineStore('auth', () => {
     if (!refreshToken.value) return false
     try {
       const data = await apiRefreshToken(refreshToken.value)
-      token.value = (data as any).access_token
-      refreshToken.value = (data as any).refresh_token || refreshToken.value
-      localStorage.setItem('jwt_token', token.value)
-      localStorage.setItem('jwt_refresh_token', refreshToken.value)
+      const nextToken = (data as any).access_token as string
+      const nextRefreshToken = ((data as any).refresh_token as string | undefined) || refreshToken.value
+      token.value = nextToken
+      refreshToken.value = nextRefreshToken
+      localStorage.setItem('jwt_token', nextToken)
+      localStorage.setItem('jwt_refresh_token', nextRefreshToken)
       return true
     } catch {
       token.value = null

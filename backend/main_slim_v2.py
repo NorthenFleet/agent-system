@@ -36,7 +36,7 @@ async def _protect_legacy(req: Request, call_next):
     return await call_next(req)
 
 # Routes
-from api.tasks import router as _r0; from api.plans import router as _r1; from routers import loop_queue as _m0, workflow as _m1, openclaw_status as _m2, system_status as _m3, projects_v3 as _m4, knowledge as _m5, knowledge_stack as _m6, data_admin as _m7, products_router as _m8
+from api.tasks import router as _r0; from api.plans import router as _r1; from routers import loop_queue as _m0, workflow as _m1, openclaw_status as _m2, system_status as _m3, projects_v3 as _m4, knowledge as _m5, knowledge_stack as _m6, data_admin as _m7, products_router as _m8, agent_os as _m9
 from routers.auth_router import router as _r2; from routers.users_router import router as _r3; from routers.tasks_v2 import router as _r4; from routers.agents_router import router as _r5; from routers.customers_router import router as _r6; from routers.v2_chat_router import router as _r16
 # Wire legacy managers before router import
 from data_manager import data_manager; from task_queue import task_manager; from device_manager import device_manager
@@ -53,17 +53,21 @@ _l12.set_managers(community_manager, chat_manager, forum_manager); _l13.set_mana
 _l14.set_managers(task_manager, plan_manager, auto_plan_manager)
 
 from routers.legacy_tasks_router import router as _r7; from routers.legacy_agents_router import router as _r8; from routers.legacy_bar_router import router as _r9; from routers.legacy_idle_agents_router import router as _r10; from routers.legacy_agent_docs_router import router as _r11; from routers.legacy_community_router import router as _r12; from routers.legacy_news_router import router as _r13; from routers.legacy_plans_auto_router import router as _r14; from routers.legacy_scheduled_tasks_router import router as _r15
-for r in (_r0, _r1, _m0.router, _m1.router, _m2.router, _m3.router, _m4.router, _m5.router, _m6.router, _m7.router, _m8.router, _r2, _r3, _r4, _r5, _r6, _r16, _r7, _r8, _r9, _r10, _r11, _r12, _r13, _r14, _r15): app.include_router(r)
+for r in (_r0, _r1, _m0.router, _m1.router, _m2.router, _m3.router, _m4.router, _m5.router, _m6.router, _m7.router, _m8.router, _m9.router, _r2, _r3, _r4, _r5, _r6, _r16, _r7, _r8, _r9, _r10, _r11, _r12, _r13, _r14, _r15): app.include_router(r)
 
 # Pages
 app.get("/")(lambda: _r(_fe())); app.get("/index-old")(lambda: _r(_fe())); app.get("/modular")(lambda: _r(_fe()))
 app.get("/products")(lambda: _r(_fe())); app.get("/data-admin")(lambda: _r(_fe())); app.get("/dataAdmin")(lambda: _r(_fe()))
 app.get("/login")(lambda: _r(_fe()))
+app.get("/mobile")(lambda: _r(os.path.join(FD, "mobile.html")))
+app.get("/manifest.json")(lambda: _r(os.path.join(FD, "manifest.json")))
+app.get("/sw.js")(lambda: _r(os.path.join(FD, "sw.js")))
 app.get("/forum")(lambda: _r(os.path.join(FD, "forum.html"))); app.get("/favicon.ico")(lambda: JSONResponse(status_code=204, content=None))
-app.get("/health")(lambda: {"status": "ok", "port": int(os.getenv("API_PORT") or os.getenv("PORT") or "3021")})
+app.get("/health")(lambda: {"status": "ok", "port": int(os.getenv("API_PORT", "3020"))})
 app.mount("/static", StaticFiles(directory=FD), name="static")
 app.mount("/js", StaticFiles(directory=os.path.join(FD, "js")), name="js")
 app.mount("/views", StaticFiles(directory=os.path.join(FD, "views")), name="views")
+app.mount("/icons", StaticFiles(directory=os.path.join(FD, "icons")), name="icons")
 if os.path.isdir(FD2): app.mount("/assets", StaticFiles(directory=os.path.join(FD2, "assets")), name="v2")
 
 
@@ -112,4 +116,4 @@ async def shutdown():
     except Exception as e: print(f"[Scheduler] 关闭异常: {e}")
 
 
-if __name__ == "__main__": import uvicorn; uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("API_PORT") or os.getenv("PORT") or "3021"))
+if __name__ == "__main__": import uvicorn; uvicorn.run(app, host="0.0.0.0", port=3020)

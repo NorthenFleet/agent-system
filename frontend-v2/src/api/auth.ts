@@ -1,17 +1,21 @@
 import apiClient from './client'
 
+export type UserRole = 'admin' | 'agent' | 'viewer'
+
+export interface User {
+  id: number
+  username: string
+  display_name: string
+  role: UserRole
+  is_active: boolean
+  last_login_at: string | null
+}
+
 export interface LoginResponse {
   access_token: string
   token_type: string
   expires_in: number
-  user: {
-    id: number
-    username: string
-    display_name: string
-    role: string
-    is_active: boolean
-    last_login_at: string | null
-  }
+  user: User
 }
 
 export function login(username: string, password: string) {
@@ -23,7 +27,7 @@ export function logout() {
 }
 
 export function getMe() {
-  return apiClient.get('/api/v2/auth/me').then(r => r.data)
+  return apiClient.get<User>('/api/v2/auth/me').then(r => r.data)
 }
 
 export function refreshToken(refresh_token: string) {

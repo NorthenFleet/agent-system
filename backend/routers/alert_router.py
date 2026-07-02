@@ -12,21 +12,27 @@ from fastapi import APIRouter, HTTPException, Depends, Query
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime, timezone
+from sqlalchemy.orm import Session
 
-from models.v2_models import get_session, AlertRule, AlertEvent
+from models.v2_models import get_session
+from services.alert_service import AlertService
 from routers.auth_router import get_current_user
 
 router = APIRouter(prefix="/api/v2/alerts", tags=["v2-alerts"])
 
 
+def get_alert_service(db: Session = Depends(get_session)) -> AlertService:
+    return AlertService(db)
+
+
 class AlertRuleCreate(BaseModel):
     name: str
     description: Optional[str] = ""
-    rule_type: str  # offline | cpu_high | memory_high | custom
+    rule_type: str
     condition_field: str
-    condition_op: str  # gt, lt, gte, lte, eq
+    condition_op: str
     threshold: float
-    severity: str = "warning"  # info | warning | critical
+    severity: str = "warning"
     enabled: bool = True
 
 
@@ -42,82 +48,61 @@ class AlertRuleUpdate(BaseModel):
 
 
 @router.post("/rules")
-def create_alert_rule(data: AlertRuleCreate, user: dict = Depends(get_current_user)):
-    db = get_session()
-    try:
-        rule = AlertRule(
-            name=data.name,
-            description=data.description,
-            rule_type=data.rule_type,
-            condition_field=data.condition_field,
-            condition_op=data.condition_op,
-            threshold=data.threshold,
-            severity=data.severity,
-            enabled=data.enabled,
-            created_by=user.get("username"),
-        )
-        db.add(rule)
-        db.commit()
-        db.refresh(rule)
-        return {"success": True, "rule_id": rule.id, "rule": rule.to_dict()}
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        db.close()
+def create_alert_rule(
+    data: AlertRuleCreate,
+    user: dict = Depends(get_current_user),
+    svc: AlertService = Depends(get_alert_service),
+):
+    rule = svc.create_rule({
+        "name": data.name,
+        "description": data.description,
+        "rule_type": data.rule_type,
+        "condition_field": data.condition_field,
+        "condition_op": data.condition_op,
+        "threshold": data.threshold,
+        "severity": data.severity,
+        "enabled": data.enabled,
+    })
+    return {"success": True, "rule_id": rule.id, "rule": rule.to_dict()}
 
 
 @router.get("/rules")
-def list_alert_rules(user: dict = Depends(get_current_user)):
-    db = get_session()
-    try:
-        rules = db.query(AlertRule).order_by(AlertRule.created_at.desc()).all()
-        return {"rules": [r.to_dict() for r in rules], "total": len(rules)}
-    finally:
-        db.close()
+def list_alert_rules(
+    user: dict = Depends(get_current_user),
+    svc: AlertService = Depends(get_alert_service),
+):
+    rules = svc.list_rules()
+    return {"rules": [r.to_dict() for r in rules], "total": len(rules)}
 
 
 @router.put("/rules/{rule_id}")
-def update_alert_rule(rule_id: int, data: AlertRuleUpdate, user: dict = Depends(get_current_user)):
-    db = get_session()
-    try:
-        rule = db.query(AlertRule).filter(AlertRule.id == rule_id).first()
-        if not rule:
-            raise HTTPException(status_code=404, detail="告警规则不存在")
+def update_alert_rule(
+    rule_id: int,
+    data: AlertRuleUpdate,
+    user: dict = Depends(get_current_user),
+    svc: AlertService = Depends(get_alert_service),
+):
+    rule = svc.get_rule_by_id(rule_id)
+    if not rule:
+        raise HTTPException(status_code=404, detail="告警规则不存在")
 
-        update_data = data.model_dump(exclude_unset=True)
-        for k, v in update_data.items():
-            setattr(rule, k, v)
-
-        db.commit()
-        db.refresh(rule)
-        return {"success": True, "rule": rule.to_dict()}
-    except HTTPException:
-        raise
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        db.close()
+    update_data = data.model_dump(exclude_unset=True)
+    updated_rule = svc.update(rule_id, update_data)
+    return {"success": True, "rule": updated_rule.to_dict()}
 
 
 @router.delete("/rules/{rule_id}")
-def delete_alert_rule(rule_id: int, user: dict = Depends(get_current_user)):
-    db = get_session()
-    try:
-        rule = db.query(AlertRule).filter(AlertRule.id == rule_id).first()
-        if not rule:
-            raise HTTPException(status_code=404, detail="告警规则不存在")
-        db.delete(rule)
-        db.commit()
-        return {"success": True, "message": "告警规则已删除"}
-    except HTTPException:
-        raise
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        db.close()
+def delete_alert_rule(
+    rule_id: int,
+    user: dict = Depends(get_current_user),
+    svc: AlertService = Depends(get_alert_service),
+):
+    rule = svc.get_rule_by_id(rule_id)
+    if not rule:
+        raise HTTPException(status_code=404, detail="告警规则不存在")
+
+    svc.delete(rule_id)
+    return {"success": True, "message": "告警规则已删除"}
 
 
 @router.get("/events")
@@ -126,56 +111,39 @@ def list_alert_events(
     severity: Optional[str] = Query(None),
     acknowledged: Optional[bool] = Query(None),
     limit: int = Query(100, ge=1, le=500),
+    svc: AlertService = Depends(get_alert_service),
 ):
-    db = get_session()
-    try:
-        q = db.query(AlertEvent).order_by(AlertEvent.created_at.desc())
-        if severity:
-            q = q.filter(AlertEvent.severity == severity)
-        if acknowledged is not None:
-            q = q.filter(AlertEvent.acknowledged == acknowledged)
-        events = q.limit(limit).all()
-        return {"events": [e.to_dict() for e in events], "total": len(events)}
-    finally:
-        db.close()
+    events = svc.list_events(limit=limit)
+    if severity:
+        events = [e for e in events if e.severity == severity]
+    if acknowledged is not None:
+        events = [e for e in events if e.acknowledged == acknowledged]
+    return {"events": [e.to_dict() for e in events], "total": len(events)}
 
 
 @router.post("/events/{event_id}/ack")
-def ack_alert_event(event_id: int, user: dict = Depends(get_current_user)):
-    db = get_session()
-    try:
-        event = db.query(AlertEvent).filter(AlertEvent.id == event_id).first()
-        if not event:
-            raise HTTPException(status_code=404, detail="告警事件不存在")
-        event.acknowledged = True
-        event.acknowledged_by = user.get("username")
-        event.acknowledged_at = datetime.now(timezone.utc)
-        db.commit()
-        return {"success": True, "message": "告警已确认"}
-    except HTTPException:
-        raise
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        db.close()
+def ack_alert_event(
+    event_id: int,
+    user: dict = Depends(get_current_user),
+    svc: AlertService = Depends(get_alert_service),
+):
+    event = svc.get_event_by_id(event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail="告警事件不存在")
+
+    svc.acknowledge_event(event_id, acknowledged_by=user.get("username"))
+    return {"success": True, "message": "告警已确认"}
 
 
 @router.get("/stats")
-def alert_stats(user: dict = Depends(get_current_user)):
-    db = get_session()
-    try:
-        total = db.query(AlertEvent).count()
-        active = db.query(AlertEvent).filter(AlertEvent.acknowledged == False).count()
-        critical = db.query(AlertEvent).filter(
-            AlertEvent.severity == "critical",
-            AlertEvent.acknowledged == False,
-        ).count()
-        return {
-            "total": total,
-            "active": active,
-            "critical": critical,
-            "acknowledged": total - active,
-        }
-    finally:
-        db.close()
+def alert_stats(
+    user: dict = Depends(get_current_user),
+    svc: AlertService = Depends(get_alert_service),
+):
+    stats = svc.get_event_stats()
+    return {
+        "total": stats["total"],
+        "active": stats["active"],
+        "critical": stats["critical"],
+        "acknowledged": stats["total"] - stats["active"],
+    }

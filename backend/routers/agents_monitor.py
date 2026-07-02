@@ -13,13 +13,16 @@ import json
 import asyncio
 import os
 import subprocess
+from sqlalchemy.orm import Session
 
-from models.v2_models import get_session, AgentHeartbeat, AgentStatusHistory, Task
+from models.v2_models import get_session
+from services.agent_service import AgentService
+from services.task_service import TaskService
 from routers.auth_router import get_current_user
 
 router = APIRouter(prefix="/api/v2/agents", tags=["v2-agents"])
 
-# ---------- 内存 WebSocket 管理器 ----------
+
 class WSManager:
     def __init__(self):
         self.connections: Set[WebSocket] = set()
@@ -52,9 +55,9 @@ class WSManager:
         self._heartbeat_last[msg_type] = now
         await self.broadcast({"type": msg_type, **data})
 
+
 ws_manager = WSManager()
 
-# ---------- Agent emoji 映射 ----------
 AGENT_EMOJI = {
     "optimus": "🤖", "bumblebee": "🐝", "leonardo": "🟦", "raphael": "🟥",
     "donatello": "🟪", "michelangelo": "🟧", "ironhide": "🛡️", "perceptor": "🚗",
@@ -67,7 +70,15 @@ AGENT_NAMES = {
     "wheeljack": "千斤顶", "shockwave": "震荡波", "ultra-magnus": "通天晓", "ratchet": "救护车",
 }
 
-# ---------- Schemas ----------
+
+def get_agent_service(db: Session = Depends(get_session)) -> AgentService:
+    return AgentService(db)
+
+
+def get_task_service(db: Session = Depends(get_session)) -> TaskService:
+    return TaskService(db)
+
+
 class HeartbeatRequest(BaseModel):
     status: str
     current_task: Optional[str] = None
@@ -82,134 +93,119 @@ def heartbeat(
     agent_id: str,
     data: HeartbeatRequest,
     user: dict = Depends(get_current_user),
+    svc: AgentService = Depends(get_agent_service),
 ):
-    db = get_session()
-    try:
-        now = datetime.now(timezone.utc)
-        name = AGENT_NAMES.get(agent_id, agent_id)
+    now = datetime.now(timezone.utc)
+    name = AGENT_NAMES.get(agent_id, agent_id)
 
-        # 查上一个状态
-        last = db.query(AgentHeartbeat).filter(
-            AgentHeartbeat.agent_id == agent_id
-        ).order_by(AgentHeartbeat.heartbeat_at.desc()).first()
+    svc.record_heartbeat({
+        "agent_id": agent_id,
+        "agent_name": name,
+        "status": data.status,
+        "current_task": data.current_task,
+        "cpu_usage": data.cpu_usage,
+        "memory_usage": data.memory_usage,
+        "task_queue_len": data.task_queue_len or 0,
+        "metadata": data.metadata or {},
+    })
 
-        prev_status = last.status if last else None
-
-        # 记录心跳
-        hb = AgentHeartbeat(
-            agent_id=agent_id,
-            agent_name=name,
-            status=data.status,
-            current_task=data.current_task,
-            cpu_usage=data.cpu_usage,
-            memory_usage=data.memory_usage,
-            task_queue_len=data.task_queue_len or 0,
-            metadata=data.metadata or {},
-            heartbeat_at=now,
-        )
-        db.add(hb)
-
-        # 如果状态变了，记录状态历史
+    latest_hb = svc.get_latest_heartbeat(agent_id)
+    if latest_hb:
+        prev_status = None
+        recent_hbs = svc.get_recent_heartbeats(minutes=5, limit=2)
+        if len(recent_hbs) >= 2:
+            prev_status = recent_hbs[1]["status"]
         if prev_status and prev_status != data.status:
-            history = AgentStatusHistory(
-                agent_id=agent_id,
-                from_status=prev_status,
-                to_status=data.status,
+            svc.update_status(
+                agent_id,
+                data.status,
                 current_task=data.current_task,
                 triggered_by=user.get("username"),
-                changed_at=now,
             )
-            db.add(history)
 
-        db.commit()
-
-        # WebSocket 推送
-        asyncio.create_task(ws_manager.broadcast_ratelimited("heartbeat_update", {
-            "data": {
-                "agent_id": agent_id,
-                "agent_name": name,
-                "status": data.status,
-                "cpu_usage": data.cpu_usage,
-                "memory_usage": data.memory_usage,
-                "heartbeat_at": now.isoformat(),
-            }
-        }))
-
-        return {
+    asyncio.create_task(ws_manager.broadcast_ratelimited("heartbeat_update", {
+        "data": {
             "agent_id": agent_id,
+            "agent_name": name,
             "status": data.status,
-            "next_heartbeat_in": 30,
-            "message": "心跳已记录",
+            "cpu_usage": data.cpu_usage,
+            "memory_usage": data.memory_usage,
+            "heartbeat_at": now.isoformat(),
         }
-    finally:
-        db.close()
+    }))
+
+    return {
+        "agent_id": agent_id,
+        "status": data.status,
+        "next_heartbeat_in": 30,
+        "message": "心跳已记录",
+    }
 
 
 @router.get("/live")
-def agents_live(user: dict = Depends(get_current_user)):
-    """实时 Agent 状态 — 从 OpenClaw CLI + 心跳数据合并"""
-    db = get_session()
-    try:
-        agents_list = []
-        now = datetime.now(timezone.utc)
+def agents_live(
+    user: dict = Depends(get_current_user),
+    svc: AgentService = Depends(get_agent_service),
+):
+    agents_list = []
+    now = datetime.now(timezone.utc)
 
-        # 1. 从 agents.json 读取基本信息
-        agents_json_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "agents.json")
-        base_agents = []
-        if os.path.exists(agents_json_path):
-            with open(agents_json_path, 'r', encoding='utf-8') as f:
-                base_agents = json.load(f)
+    agents_json_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "agents.json")
+    base_agents = []
+    if os.path.exists(agents_json_path):
+        with open(agents_json_path, 'r', encoding='utf-8') as f:
+            base_agents = json.load(f)
 
-        for agent in base_agents:
-            aid = agent.get("id", "")
-            name = agent.get("name", aid)
+    for agent in base_agents:
+        aid = agent.get("id", "")
+        name = agent.get("name", aid)
 
-            # 取最新心跳
-            last_hb = db.query(AgentHeartbeat).filter(
-                AgentHeartbeat.agent_id == aid
-            ).order_by(AgentHeartbeat.heartbeat_at.desc()).first()
+        latest_hb = svc.get_latest_heartbeat(aid)
 
-            hb_age = None
-            health = "offline"
-            if last_hb:
-                hb_age = (now - last_hb.heartbeat_at).total_seconds()
-                if hb_age <= 60:
-                    health = "healthy"
-                elif hb_age <= 300:
-                    health = "warning"
-                else:
-                    health = "offline"
+        hb_age = None
+        health = "offline"
+        last_hb = None
+        if latest_hb:
+            last_hb = latest_hb.to_dict() if hasattr(latest_hb, 'to_dict') else latest_hb
+            hb_time = datetime.fromisoformat(last_hb["heartbeat_at"])
+            if hb_time.tzinfo is None:
+                hb_time = hb_time.replace(tzinfo=timezone.utc)
+            hb_age = (now - hb_time).total_seconds()
+            if hb_age <= 60:
+                health = "healthy"
+            elif hb_age <= 300:
+                health = "warning"
+            else:
+                health = "offline"
 
-            agents_list.append({
-                "agent_id": aid,
-                "agent_name": name,
-                "emoji": AGENT_EMOJI.get(aid, "👤"),
-                "role": agent.get("role", ""),
-                "team": agent.get("team", ""),
-                "status": last_hb.status if last_hb else agent.get("status", "idle"),
-                "current_task": last_hb.current_task if last_hb else agent.get("current_task", ""),
-                "last_heartbeat": last_hb.heartbeat_at.isoformat() if last_hb else None,
-                "heartbeat_age_seconds": round(hb_age, 1) if hb_age is not None else None,
-                "health": health,
-                "cpu_usage": last_hb.cpu_usage if last_hb else None,
-                "memory_usage": last_hb.memory_usage if last_hb else None,
-            })
+        agents_list.append({
+            "agent_id": aid,
+            "agent_name": name,
+            "emoji": AGENT_EMOJI.get(aid, "👤"),
+            "role": agent.get("role", ""),
+            "team": agent.get("team", ""),
+            "status": last_hb.get("status") if last_hb else agent.get("status", "idle"),
+            "current_task": last_hb.get("current_task") if last_hb else agent.get("current_task", ""),
+            "last_heartbeat": last_hb.get("heartbeat_at") if last_hb else None,
+            "heartbeat_age_seconds": round(hb_age, 1) if hb_age is not None else None,
+            "health": health,
+            "cpu_usage": last_hb.get("cpu_usage") if last_hb else None,
+            "memory_usage": last_hb.get("memory_usage") if last_hb else None,
+        })
 
-        online = sum(1 for a in agents_list if a["health"] in ("healthy", "warning"))
-        busy = sum(1 for a in agents_list if a["status"] == "busy")
-        idle = sum(1 for a in agents_list if a["status"] == "idle")
-        offline_count = sum(1 for a in agents_list if a["health"] == "offline")
+    online = sum(1 for a in agents_list if a["health"] in ("healthy", "warning"))
+    busy = sum(1 for a in agents_list if a["status"] == "busy")
+    idle = sum(1 for a in agents_list if a["status"] == "idle")
+    offline_count = sum(1 for a in agents_list if a["health"] == "offline")
 
-        return {
-            "agents": agents_list,
-            "total": len(agents_list),
-            "online": online,
-            "busy": busy,
-            "idle": idle,
-            "offline": offline_count,
-        }
-    finally:
-        db.close()
+    return {
+        "agents": agents_list,
+        "total": len(agents_list),
+        "online": online,
+        "busy": busy,
+        "idle": idle,
+        "offline": offline_count,
+    }
 
 
 @router.get("/{agent_id}/history")
@@ -218,48 +214,38 @@ def agent_history(
     limit: int = Query(50, ge=1, le=500),
     hours: int = Query(24, ge=1, le=720),
     user: dict = Depends(get_current_user),
+    svc: AgentService = Depends(get_agent_service),
 ):
-    db = get_session()
-    try:
-        cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
-        records = db.query(AgentStatusHistory).filter(
-            AgentStatusHistory.agent_id == agent_id,
-            AgentStatusHistory.changed_at >= cutoff,
-        ).order_by(AgentStatusHistory.changed_at.desc()).limit(limit).all()
+    minutes = hours * 60
+    history = svc.get_recent_status_changes(minutes=minutes, limit=limit)
+    filtered_history = [h for h in history if h["agent_id"] == agent_id]
 
-        return {
-            "agent_id": agent_id,
-            "history": [r.to_dict() for r in records],
-            "total": len(records),
-        }
-    finally:
-        db.close()
+    return {
+        "agent_id": agent_id,
+        "history": filtered_history,
+        "total": len(filtered_history),
+    }
 
 
 @router.get("/{agent_id}/tasks")
 def agent_tasks(
     agent_id: str,
     user: dict = Depends(get_current_user),
+    svc: TaskService = Depends(get_task_service),
 ):
-    db = get_session()
-    try:
-        tasks = db.query(Task).filter(Task.assignee == agent_id).order_by(Task.created_at.desc()).all()
-        return {
-            "agent_id": agent_id,
-            "tasks": [t.to_dict() for t in tasks],
-            "total": len(tasks),
-        }
-    finally:
-        db.close()
+    tasks = svc.get_by_assignee(agent_id)
+    return {
+        "agent_id": agent_id,
+        "tasks": [t.to_dict() for t in tasks],
+        "total": len(tasks),
+    }
 
 
-# ---------- WebSocket ----------
 @router.websocket("/ws")
 async def agents_websocket(ws: WebSocket):
     await ws_manager.connect(ws)
     try:
         while True:
-            # 保持连接，接收客户端心跳
             await ws.receive_text()
     except WebSocketDisconnect:
         ws_manager.disconnect(ws)

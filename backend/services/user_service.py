@@ -1,7 +1,8 @@
 """
 UserService — 用户业务逻辑
 """
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from services.base import BaseService, Cache
@@ -46,3 +47,36 @@ class UserService(BaseService[User, UserRepository]):
 
     def activate_user(self, user_id: int) -> Optional[User]:
         return self.update(user_id, {"is_active": True})
+
+    def authenticate(self, username: str, password_hash: str) -> Optional[User]:
+        """验证用户身份"""
+        user = self.repository.get_by_username(self.db, username)
+        if user and user.is_active and user.password_hash == password_hash:
+            return user
+        return None
+
+    def update_last_login(self, user_id: int) -> Optional[User]:
+        """更新最后登录时间"""
+        return self.update(user_id, {"last_login_at": datetime.now(timezone.utc)})
+
+    def get_active_user_by_username(self, username: str) -> Optional[User]:
+        """获取活跃用户"""
+        user = self.repository.get_by_username(self.db, username)
+        if user and user.is_active:
+            return user
+        return None
+
+    def get_user_by_id(self, user_id: int) -> Optional[User]:
+        """根据 ID 获取用户"""
+        return self.repository.get_by_id(self.db, user_id)
+
+    def get_active_user_by_id(self, user_id: int) -> Optional[User]:
+        """根据 ID 获取活跃用户"""
+        user = self.repository.get_by_id(self.db, user_id)
+        if user and user.is_active:
+            return user
+        return None
+
+    def list_users(self, skip: int = 0, limit: int = 100) -> List[User]:
+        """获取用户列表"""
+        return self.repository.get_all(self.db, skip=skip, limit=limit, order_by="created_at")

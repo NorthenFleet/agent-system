@@ -73,7 +73,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import { Plus } from '@element-plus/icons-vue'
 import { useTasksStore, type Task } from '@/stores/tasks'
 import TaskDialog from '@/components/TaskDialog.vue'

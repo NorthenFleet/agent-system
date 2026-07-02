@@ -66,7 +66,6 @@ class AgentService(BaseService[Agent, AgentRepository]):
 
         obj = self.repository.update(self.db, agent.id, update_data)
         if obj:
-            # 记录状态变更
             self._status_history_repo.create(self.db, {
                 "agent_id": agent_id,
                 "from_status": old_status,
@@ -81,7 +80,6 @@ class AgentService(BaseService[Agent, AgentRepository]):
     def record_heartbeat(self, heartbeat_data: Dict[str, Any]) -> Any:
         hb = self._heartbeat_repo.create(self.db, heartbeat_data)
         self.db.commit()
-        # 更新 agent 的最后心跳时间
         agent_id = heartbeat_data.get("agent_id")
         if agent_id:
             agent = self.repository.get_by_agent_id(self.db, agent_id)
@@ -100,4 +98,13 @@ class AgentService(BaseService[Agent, AgentRepository]):
         return hbs[0] if hbs else None
 
     def get_status_history(self, agent_id: str, skip: int = 0, limit: int = 50) -> List[Any]:
-        return self._status_history_repo.get_by_agent(self.db, agent_id, skip, limit)
+        history = self._status_history_repo.get_by_agent(self.db, agent_id, skip, limit)
+        return [h.to_dict() for h in history]
+
+    def get_recent_heartbeats(self, minutes: int = 60, skip: int = 0, limit: int = 100) -> List[Any]:
+        hbs = self._heartbeat_repo.get_recent_heartbeats(self.db, minutes, skip, limit)
+        return [hb.to_dict() for hb in hbs]
+
+    def get_recent_status_changes(self, minutes: int = 60, skip: int = 0, limit: int = 100) -> List[Any]:
+        changes = self._status_history_repo.get_recent_status_changes(self.db, minutes, skip, limit)
+        return [c.to_dict() for c in changes]

@@ -140,11 +140,12 @@ async function loadGanttData() {
       },
       series: [{
         type: 'custom',
-        renderItem: (params: { context: { lastIndex?: number }; coordSys: { height: number } }, api) => {
-          const categoryIndex = api.value(0)
-          const start = api.coord([api.value(1), categoryIndex])
-          const end = api.coord([api.value(2), categoryIndex])
-          const barHeight = Math.min(api.size([0, 1])[1] * 0.6, 24)
+        renderItem: (_params, api) => {
+          const categoryIndex = Number(api.value(0))
+          const start = api.coord([Number(api.value(1)), categoryIndex]) as number[]
+          const end = api.coord([Number(api.value(2)), categoryIndex]) as number[]
+          const size = api.size?.([0, 1]) as number[] | undefined
+          const barHeight = Math.min((size?.[1] || 24) * 0.6, 24)
 
           const rect = {
             x: start[0],

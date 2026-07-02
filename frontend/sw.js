@@ -1,18 +1,15 @@
 // Service Worker for OpenClaw Team Dashboard - 离线缓存策略
-const CACHE_NAME = 'team-dashboard-v2';
-const STATIC_CACHE = 'static-v2';
-const DYNAMIC_CACHE = 'dynamic-v2';
+const CACHE_NAME = 'agent-os-mobile-v1';
+const STATIC_CACHE = 'agent-os-static-v1';
+const DYNAMIC_CACHE = 'agent-os-dynamic-v1';
 
 // 静态资源缓存 (安装时缓存)
 const STATIC_ASSETS = [
   '/',
+  '/mobile',
   '/manifest.json',
-  'https://unpkg.com/vue@3',
-  'https://unpkg.com/element-plus/dist/index.css',
-  'https://unpkg.com/element-plus',
-  'https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js',
-  'https://cdn.jsdelivr.net/npm/echarts-gl@2.0.9/dist/echarts-gl.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
+  '/icons/icon-192x192.png',
+  '/icons/icon-512x512.png',
 ];
 
 // 安装事件 - 缓存静态资源

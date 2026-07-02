@@ -36,10 +36,10 @@ async def _protect_legacy(req: Request, call_next):
     return await call_next(req)
 
 # Routes
-from api.tasks import router as _r0; from api.plans import router as _r1; from routers import loop_queue as _m0, workflow as _m1, openclaw_status as _m2, system_status as _m3, projects_v3 as _m4, knowledge as _m5, knowledge_stack as _m6, data_admin as _m7, products_router as _m8
+from api.tasks import router as _r0; from api.plans import router as _r1; from routers import loop_queue as _m0, workflow as _m1, openclaw_status as _m2, system_status as _m3, projects_v3 as _m4, knowledge as _m5, knowledge_stack as _m6, data_admin as _m7, products_router as _m8, agent_os as _m9
 from routers.auth_router import router as _r2; from routers.users_router import router as _r3; from routers.tasks_v2 import router as _r4; from routers.agents_router import router as _r5; from routers.customers_router import router as _r6
 import routers.legacy_tasks_router as _l7; import routers.legacy_agents_router as _l8; import routers.legacy_bar_router as _l9; import routers.legacy_idle_agents_router as _l10; import routers.legacy_agent_docs_router as _l11; import routers.legacy_community_router as _l12; import routers.legacy_news_router as _l13; import routers.legacy_plans_auto_router as _l14; import routers.legacy_scheduled_tasks_router as _l15
-for r in (_r0, _r1, _m0.router, _m1.router, _m2.router, _m3.router, _m4.router, _m5.router, _m6.router, _m7.router, _m8.router, _r2, _r3, _r4, _r5, _r6, _l7.router, _l8.router, _l9.router, _l10.router, _l11.router, _l12.router, _l13.router, _l14.router, _l15.router): app.include_router(r)
+for r in (_r0, _r1, _m0.router, _m1.router, _m2.router, _m3.router, _m4.router, _m5.router, _m6.router, _m7.router, _m8.router, _m9.router, _r2, _r3, _r4, _r5, _r6, _l7.router, _l8.router, _l9.router, _l10.router, _l11.router, _l12.router, _l13.router, _l14.router, _l15.router): app.include_router(r)
 
 # Wire legacy
 from data_manager import data_manager; from task_queue import task_manager; from device_manager import device_manager
@@ -56,11 +56,15 @@ _l14.set_managers(task_manager, plan_manager, auto_plan_manager)
 # Pages
 def _legacy_page(): return _r(os.path.join(FD, os.getenv("FRONTEND_ENTRY", "index-old.html").strip() or "index-old.html"))
 app.get("/")(lambda: _r(_fe())); app.get("/index-old")(lambda: _legacy_page()); app.get("/legacy")(lambda: _legacy_page()); app.get("/modular")(lambda: _legacy_page())
+app.get("/mobile")(lambda: _r(os.path.join(FD, "mobile.html")))
+app.get("/manifest.json")(lambda: _r(os.path.join(FD, "manifest.json")))
+app.get("/sw.js")(lambda: _r(os.path.join(FD, "sw.js")))
 app.get("/forum")(lambda: _r(os.path.join(FD, "forum.html"))); app.get("/favicon.ico")(lambda: JSONResponse(status_code=204, content=None))
 app.get("/health")(lambda: {"status": "ok", "port": int(os.getenv("API_PORT", "3020"))})
 app.mount("/static", StaticFiles(directory=FD), name="static")
 app.mount("/js", StaticFiles(directory=os.path.join(FD, "js")), name="js")
 app.mount("/views", StaticFiles(directory=os.path.join(FD, "views")), name="views")
+app.mount("/icons", StaticFiles(directory=os.path.join(FD, "icons")), name="icons")
 if os.path.isdir(FD2): app.mount("/assets", StaticFiles(directory=os.path.join(FD2, "assets")), name="v2")
 
 def _raise_404(): raise HTTPException(404)

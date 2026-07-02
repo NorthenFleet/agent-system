@@ -11,8 +11,10 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime, timezone
 import os
+from sqlalchemy.orm import Session
 
-from models.v2_models import get_session, User
+from models.v2_models import get_session
+from services.user_service import UserService
 from services.auth_service import (
     verify_password, hash_password, create_access_token, create_refresh_token,
     decode_access_token, revoke_token, generate_default_admin_password
@@ -20,6 +22,9 @@ from services.auth_service import (
 
 router = APIRouter(prefix="/api/v2/auth", tags=["v2-auth"])
 
+
+def get_user_service(db: Session = Depends(get_session)) -> UserService:
+    return UserService(db)
 
 
 def _is_local_setup_request(request: Request) -> bool:
@@ -38,7 +43,6 @@ def require_init_admin_allowed(request: Request) -> None:
 
 
 def get_current_user(authorization: Optional[str] = Header(None)):
-    """依赖注入：获取当前登录用户"""
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(401, "未登录")
     token = authorization[7:]
@@ -49,7 +53,6 @@ def get_current_user(authorization: Optional[str] = Header(None)):
 
 
 def require_role(*roles):
-    """依赖注入：检查角色"""
     def check(user: dict = Depends(get_current_user)):
         if user.get("role") not in roles:
             raise HTTPException(403, "权限不足")
@@ -78,39 +81,36 @@ class UserCreateRequest(BaseModel):
 
 
 @router.post("/login")
-def login(req: LoginRequest):
-    db = get_session()
-    try:
-        user = db.query(User).filter(User.username == req.username, User.is_active == True).first()
-        if not user:
-            raise HTTPException(401, "用户名或密码错误")
-        if not verify_password(req.password, user.password_hash):
-            raise HTTPException(401, "用户名或密码错误")
+def login(
+    req: LoginRequest,
+    svc: UserService = Depends(get_user_service),
+):
+    user = svc.get_active_user_by_username(req.username)
+    if not user:
+        raise HTTPException(401, "用户名或密码错误")
+    if not verify_password(req.password, user.password_hash):
+        raise HTTPException(401, "用户名或密码错误")
 
-        # 更新最后登录时间
-        user.last_login_at = datetime.now(timezone.utc)
-        db.commit()
+    svc.update_last_login(user.id)
 
-        access_token = create_access_token({
-            "sub": str(user.id),
-            "username": user.username,
-            "role": user.role,
-        })
-        refresh_token = create_refresh_token({
-            "sub": str(user.id),
-            "username": user.username,
-            "role": user.role,
-        })
+    access_token = create_access_token({
+        "sub": str(user.id),
+        "username": user.username,
+        "role": user.role,
+    })
+    refresh_token = create_refresh_token({
+        "sub": str(user.id),
+        "username": user.username,
+        "role": user.role,
+    })
 
-        return {
-            "access_token": access_token,
-            "refresh_token": refresh_token,
-            "token_type": "Bearer",
-            "expires_in": 86400,
-            "user": user.to_dict(),
-        }
-    finally:
-        db.close()
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "Bearer",
+        "expires_in": 86400,
+        "user": user.to_dict(),
+    }
 
 
 @router.post("/logout")
@@ -121,39 +121,35 @@ def logout(authorization: Optional[str] = Header(None)):
 
 
 @router.get("/me")
-def get_me(user: dict = Depends(get_current_user)):
-    db = get_session()
-    try:
-        u = db.query(User).filter(User.id == user["sub"]).first()
-        if not u:
-            raise HTTPException(404, "用户不存在")
-        return u.to_dict()
-    finally:
-        db.close()
+def get_me(
+    user: dict = Depends(get_current_user),
+    svc: UserService = Depends(get_user_service),
+):
+    u = svc.get_user_by_id(int(user["sub"]))
+    if not u:
+        raise HTTPException(404, "用户不存在")
+    return u.to_dict()
 
 
 @router.post("/init-admin")
-def init_admin(request: Request):
-    """初始化 admin 用户（仅首次使用）"""
+def init_admin(
+    request: Request,
+    svc: UserService = Depends(get_user_service),
+):
     require_init_admin_allowed(request)
-    db = get_session()
-    try:
-        existing = db.query(User).filter(User.username == "admin").first()
-        if existing:
-            return {"message": "admin 用户已存在"}
 
-        initial_password = generate_default_admin_password()
-        admin = User(
-            username="admin",
-            password_hash=hash_password(initial_password),
-            display_name="管理员",
-            role="admin",
-        )
-        db.add(admin)
-        db.commit()
-        return {"message": "admin 用户已创建", "user": admin.to_dict(), "initial_password": initial_password}
-    finally:
-        db.close()
+    existing = svc.get_by_username("admin")
+    if existing:
+        return {"message": "admin 用户已存在"}
+
+    initial_password = generate_default_admin_password()
+    admin = svc.create_user({
+        "username": "admin",
+        "password_hash": hash_password(initial_password),
+        "display_name": "管理员",
+        "role": "admin",
+    })
+    return {"message": "admin 用户已创建", "user": admin.to_dict(), "initial_password": initial_password}
 
 
 class RefreshRequest(BaseModel):
@@ -161,35 +157,33 @@ class RefreshRequest(BaseModel):
 
 
 @router.post("/refresh")
-def refresh_token(req: RefreshRequest):
-    """刷新 access token"""
+def refresh_token(
+    req: RefreshRequest,
+    svc: UserService = Depends(get_user_service),
+):
     payload = decode_access_token(req.refresh_token)
     if not payload:
         raise HTTPException(401, "Refresh token 无效或已过期")
     if payload.get("type") != "refresh":
         raise HTTPException(401, "请使用 refresh token")
 
-    db = get_session()
-    try:
-        user = db.query(User).filter(User.id == int(payload["sub"]), User.is_active == True).first()
-        if not user:
-            raise HTTPException(401, "用户不存在或已禁用")
+    user = svc.get_active_user_by_id(int(payload["sub"]))
+    if not user:
+        raise HTTPException(401, "用户不存在或已禁用")
 
-        new_access = create_access_token({
-            "sub": str(user.id),
-            "username": user.username,
-            "role": user.role,
-        })
-        new_refresh = create_refresh_token({
-            "sub": str(user.id),
-            "username": user.username,
-            "role": user.role,
-        })
-        return {
-            "access_token": new_access,
-            "refresh_token": new_refresh,
-            "token_type": "Bearer",
-            "expires_in": 86400,
-        }
-    finally:
-        db.close()
+    new_access = create_access_token({
+        "sub": str(user.id),
+        "username": user.username,
+        "role": user.role,
+    })
+    new_refresh = create_refresh_token({
+        "sub": str(user.id),
+        "username": user.username,
+        "role": user.role,
+    })
+    return {
+        "access_token": new_access,
+        "refresh_token": new_refresh,
+        "token_type": "Bearer",
+        "expires_in": 86400,
+    }

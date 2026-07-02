@@ -1,8 +1,9 @@
 {
-  "name": "OpenClaw 团队信息看板",
-  "short_name": "团队看板",
-  "description": "OpenClaw 团队智能体状态监控看板",
-  "start_url": "/index.html",
+  "name": "OpenClaw Agent OS",
+  "short_name": "Agent OS",
+  "description": "OpenClaw 智能体操作系统移动指挥终端",
+  "id": "/mobile",
+  "start_url": "/mobile",
   "display": "standalone",
   "background_color": "#0d1117",
   "theme_color": "#58a6ff",
@@ -66,21 +67,21 @@
       "name": "仪表盘",
       "short_name": "仪表盘",
       "description": "查看团队概览",
-      "url": "/index.html?view=dashboard",
+      "url": "/mobile#overview",
       "icons": [{ "src": "icons/icon-96x96.png", "sizes": "96x96" }]
     },
     {
       "name": "智能体",
       "short_name": "智能体",
       "description": "查看智能体状态",
-      "url": "/index.html?view=agents",
+      "url": "/mobile#agents",
       "icons": [{ "src": "icons/icon-96x96.png", "sizes": "96x96" }]
     },
     {
-      "name": "设备",
-      "short_name": "设备",
-      "description": "查看设备清单",
-      "url": "/index.html?view=devices",
+      "name": "项目",
+      "short_name": "项目",
+      "description": "查看开放项目",
+      "url": "/mobile#projects",
       "icons": [{ "src": "icons/icon-96x96.png", "sizes": "96x96" }]
     }
   ],
