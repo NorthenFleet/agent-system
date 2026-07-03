@@ -61,21 +61,11 @@ min-test.html
 # Runtime databases and generated state
 *.db
 *.db.*
-backend/data/*.db
-backend/data/*.db.*
-backend/data/backups/
-backend/data/*.bak*
-backend/data/*backup*
-backend/data/agent_instances.json
-backend/data/agent_runner.json
-backend/data/chat_sessions.json
-backend/data/forum.json
-backend/data/idle_agent_state.json
-backend/data/products.json
-backend/data/tasks.json
-backend/data/device_alerts.json
+backend/data/
+backend/request_logs.jsonl
 data/news_cache.json
 data/scheduled-tasks.json
+data/execution-logs.json
 # Backups and local runtime artifacts
 *.backup*
 *.backup-*
