@@ -33,11 +33,16 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import * as echarts from 'echarts'
+import * as echarts from 'echarts/core'
 import type { EChartsOption } from 'echarts'
+import { CustomChart } from 'echarts/charts'
+import { GridComponent, TitleComponent, TooltipComponent } from 'echarts/components'
+import { CanvasRenderer } from 'echarts/renderers'
 import { getTasks } from '@/api/tasks'
 import type { Task } from '@/stores/tasks'
 import TaskDetail from '@/components/TaskDetail.vue'
+
+echarts.use([CanvasRenderer, CustomChart, GridComponent, TitleComponent, TooltipComponent])
 
 const chartRef = ref<HTMLElement>()
 const loading = ref(false)
@@ -45,7 +50,7 @@ const filterAgent = ref('')
 const showDetail = ref(false)
 const selectedTask = ref<Task | null>(null)
 
-let chartInstance: echarts.ECharts | null = null
+let chartInstance: echarts.EChartsType | null = null
 
 const statusColors: Record<string, string> = {
   pending: '#909399',

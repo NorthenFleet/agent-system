@@ -100,6 +100,76 @@ export interface KnowledgeNode {
   title: string
   type: string
   path: string
+  score?: number
+  matched_keyword?: string
+}
+
+export interface KnowledgeRelation {
+  source: string
+  target: string
+  type?: string
+  relation?: string
+  weight?: number
+}
+
+export interface KnowledgeGraph {
+  stats: KnowledgeStats
+  nodes: KnowledgeNode[]
+  relations: KnowledgeRelation[]
+  total_relations: number
+  limit_edges: number
+  source?: string
+}
+
+export interface KnowledgeNodeContent {
+  node: KnowledgeNode
+  content: string
+  excerpt: string
+  path?: string
+  available: boolean
+}
+
+export interface KnowledgeNeighbors {
+  node: KnowledgeNode
+  neighbors: KnowledgeNode[]
+  relations: KnowledgeRelation[]
+  total: number
+}
+
+export interface KnowledgeStackStatus {
+  local?: {
+    name: string
+    available: boolean
+    nodes: number
+    edges: number
+    index_path?: string
+    vault_path?: string
+    build_time?: string
+  }
+  lightrag?: {
+    name: string
+    installed: boolean
+    running: boolean
+    ready: boolean
+    url?: string
+    message?: string
+  }
+  kag?: {
+    name: string
+    installed: boolean
+    running: boolean
+    ready: boolean
+    path?: string
+    message?: string
+  }
+}
+
+export interface KnowledgeStackQueryResult {
+  source: string
+  query: string
+  mode?: string
+  data?: Record<string, unknown>
+  local?: { nodes?: KnowledgeNode[]; total?: number }
 }
 
 export interface SkillItem {
@@ -196,8 +266,46 @@ export function getKnowledgeStats() {
   return apiClient.get<KnowledgeStats>('/api/knowledge/stats').then(r => r.data)
 }
 
-export function getKnowledgeNodes() {
-  return apiClient.get<{ nodes: KnowledgeNode[] }>('/api/knowledge/nodes').then(r => r.data)
+export function getKnowledgeNodes(limit = 500, offset = 0, type?: string, q?: string) {
+  return apiClient.get<{ nodes: KnowledgeNode[]; total: number; limit: number; offset: number }>('/api/knowledge/nodes', {
+    params: { limit, offset, type: type || undefined, q: q || undefined }
+  }).then(r => r.data)
+}
+
+export function getKnowledgeGraph(limitEdges = 260, type?: string) {
+  return apiClient.get<KnowledgeGraph>('/api/knowledge/graph', {
+    params: { limit_edges: limitEdges, type: type || undefined }
+  }).then(r => r.data)
+}
+
+export function searchKnowledge(q: string, limit = 40, type?: string) {
+  return apiClient.get<{ query: string; nodes: KnowledgeNode[]; total: number }>('/api/knowledge/search', {
+    params: { q, limit, type: type || undefined }
+  }).then(r => r.data)
+}
+
+export function getKnowledgeNodeContent(nodeId: string, maxChars = 5000) {
+  return apiClient.get<KnowledgeNodeContent>(`/api/knowledge/nodes/${encodeURIComponent(nodeId)}/content`, {
+    params: { max_chars: maxChars }
+  }).then(r => r.data)
+}
+
+export function getKnowledgeNeighbors(nodeId: string, limit = 60) {
+  return apiClient.get<KnowledgeNeighbors>(`/api/knowledge/neighbors/${encodeURIComponent(nodeId)}`, {
+    params: { limit }
+  }).then(r => r.data)
+}
+
+export function getKnowledgeStackStatus() {
+  return apiClient.get<KnowledgeStackStatus>('/api/knowledge-stack/status').then(r => r.data)
+}
+
+export function queryKnowledgeStack(query: string, mode = 'mix', limit = 8) {
+  return apiClient.post<KnowledgeStackQueryResult>('/api/knowledge-stack/query', {
+    query,
+    mode,
+    limit
+  }).then(r => r.data)
 }
 
 export function getSkills() {

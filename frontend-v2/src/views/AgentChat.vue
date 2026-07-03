@@ -137,6 +137,62 @@
 
     <aside class="context-panel">
       <section>
+        <h3>Codex 开发任务</h3>
+        <div v-if="selectedAgent && isDevelopmentAgent" class="codex-panel">
+          <el-input
+            v-model="codexInstruction"
+            type="textarea"
+            :rows="3"
+            resize="none"
+            placeholder="描述要让该智能体执行的代码任务..."
+            :disabled="creatingCodexJob"
+          />
+          <div class="codex-actions">
+            <el-button type="primary" :loading="creatingCodexJob" :disabled="!codexInstruction.trim()" @click="startCodexJob">
+              发起任务
+            </el-button>
+            <el-button :loading="loadingCodexJobs" @click="loadCodexJobs">刷新</el-button>
+          </div>
+        </div>
+        <p v-else-if="selectedAgent" class="muted">当前智能体不是开发执行角色，请选择李奥纳多、多纳泰罗、拉斐尔或米开朗基罗。</p>
+        <p v-else class="muted">选择开发智能体后可发起 Codex 任务。</p>
+
+        <div v-if="codexJobs.length" class="codex-job-list">
+          <button
+            v-for="job in codexJobs"
+            :key="job.id"
+            class="codex-job"
+            :class="{ active: selectedCodexJob?.id === job.id }"
+            @click="selectCodexJob(job.id)"
+          >
+            <span>{{ job.instruction }}</span>
+            <small>{{ codexStatusLabel(job.status) }} · {{ formatTime(job.created_at) }}</small>
+          </button>
+        </div>
+
+        <div v-if="selectedCodexJob" class="codex-detail">
+          <div class="codex-detail-head">
+            <span>{{ selectedCodexJob.id }}</span>
+            <el-tag size="small" :type="codexStatusType(selectedCodexJob.status)">{{ codexStatusLabel(selectedCodexJob.status) }}</el-tag>
+          </div>
+          <p v-if="selectedCodexJob.error" class="codex-error">{{ selectedCodexJob.error }}</p>
+          <pre v-if="selectedCodexJob.summary" class="codex-summary">{{ selectedCodexJob.summary }}</pre>
+          <pre v-else class="codex-log">{{ codexLogsText }}</pre>
+          <div class="codex-actions">
+            <el-button size="small" @click="refreshSelectedCodexJob">刷新日志</el-button>
+            <el-button
+              v-if="selectedCodexJob.status === 'running' || selectedCodexJob.status === 'queued'"
+              size="small"
+              type="warning"
+              @click="cancelSelectedCodexJob"
+            >
+              取消
+            </el-button>
+          </div>
+        </div>
+      </section>
+
+      <section>
         <h3>快捷语境</h3>
         <div class="prompt-list">
           <button v-for="prompt in activePrompts" :key="prompt.title" @click="usePrompt(prompt.text)">
@@ -165,7 +221,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Delete, Paperclip, Promotion, Refresh, Search } from '@element-plus/icons-vue'
 import {
@@ -180,6 +236,14 @@ import {
   type ChatMessage,
   type ConversationSummary
 } from '@/api/chat'
+import {
+  cancelCodexJob,
+  createCodexJob,
+  getCodexJobLogs,
+  listCodexJobs,
+  type CodexJob,
+  type CodexJobStatus
+} from '@/api/codex'
 
 const agents = ref<ChatAgent[]>([])
 const agentTreeNodes = ref<ChatAgentNode[]>([])
@@ -194,6 +258,13 @@ const loadingMessages = ref(false)
 const messagesEl = ref<HTMLElement | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
 const selectedAttachments = ref<ChatAttachment[]>([])
+const codexInstruction = ref('')
+const codexJobs = ref<CodexJob[]>([])
+const selectedCodexJob = ref<CodexJob | null>(null)
+const codexLogs = ref<string[]>([])
+const creatingCodexJob = ref(false)
+const loadingCodexJobs = ref(false)
+let codexPoller: number | undefined
 
 const modeOptions = [
   { label: '业务管理', value: 'business' },
@@ -214,6 +285,9 @@ const prompts = {
 }
 
 const activePrompts = computed(() => prompts[mode.value as keyof typeof prompts])
+const developmentAgentIds = new Set(['leonardo', 'donatello', 'raphael', 'michelangelo'])
+const isDevelopmentAgent = computed(() => Boolean(selectedAgent.value && developmentAgentIds.has(selectedAgent.value.id)))
+const codexLogsText = computed(() => codexLogs.value.join('').slice(-12000) || '暂无日志')
 const filteredTreeNodes = computed(() => {
   const q = agentQuery.value.trim().toLowerCase()
   if (!q) return agentTreeNodes.value
@@ -238,6 +312,22 @@ const canSend = computed(() => Boolean(selectedAgent.value && (draft.value.trim(
 
 onMounted(async () => {
   await Promise.all([loadAgents(), loadConversations()])
+  codexPoller = window.setInterval(() => {
+    if (selectedCodexJob.value?.status === 'queued' || selectedCodexJob.value?.status === 'running') {
+      refreshSelectedCodexJob()
+    }
+  }, 5000)
+})
+
+onBeforeUnmount(() => {
+  if (codexPoller) window.clearInterval(codexPoller)
+})
+
+watch(selectedAgent, async () => {
+  selectedCodexJob.value = null
+  codexLogs.value = []
+  codexInstruction.value = ''
+  await loadCodexJobs()
 })
 
 async function loadAgents() {
@@ -265,6 +355,64 @@ async function loadConversations() {
 async function selectAgent(agent: ChatAgent) {
   selectedAgent.value = agent
   await loadMessages(agent.id)
+}
+
+async function loadCodexJobs() {
+  if (!selectedAgent.value) {
+    codexJobs.value = []
+    return
+  }
+  loadingCodexJobs.value = true
+  try {
+    const res = await listCodexJobs(selectedAgent.value.id)
+    codexJobs.value = res.jobs || []
+  } catch {
+    codexJobs.value = []
+  } finally {
+    loadingCodexJobs.value = false
+  }
+}
+
+async function startCodexJob() {
+  if (!selectedAgent.value || !codexInstruction.value.trim()) return
+  creatingCodexJob.value = true
+  try {
+    const res = await createCodexJob({
+      agent_id: selectedAgent.value.id,
+      instruction: codexInstruction.value.trim()
+    })
+    codexInstruction.value = ''
+    selectedCodexJob.value = res.job
+    codexLogs.value = []
+    ElMessage.success('Codex 开发任务已发起')
+    await loadCodexJobs()
+    await refreshSelectedCodexJob()
+  } catch {
+    ElMessage.error('Codex 开发任务创建失败')
+  } finally {
+    creatingCodexJob.value = false
+  }
+}
+
+async function selectCodexJob(jobId: string) {
+  const job = codexJobs.value.find(item => item.id === jobId)
+  selectedCodexJob.value = job || null
+  await refreshSelectedCodexJob()
+}
+
+async function refreshSelectedCodexJob() {
+  if (!selectedCodexJob.value) return
+  const res = await getCodexJobLogs(selectedCodexJob.value.id)
+  selectedCodexJob.value = res.job
+  codexLogs.value = res.logs || []
+  await loadCodexJobs()
+}
+
+async function cancelSelectedCodexJob() {
+  if (!selectedCodexJob.value) return
+  const res = await cancelCodexJob(selectedCodexJob.value.id)
+  selectedCodexJob.value = res.job
+  await refreshSelectedCodexJob()
 }
 
 async function loadMessages(agentId: string) {
@@ -398,6 +546,26 @@ function formatFileSize(size = 0) {
   if (size < 1024) return `${size} B`
   if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`
   return `${(size / 1024 / 1024).toFixed(1)} MB`
+}
+
+function codexStatusLabel(status: CodexJobStatus) {
+  return {
+    queued: '排队中',
+    running: '执行中',
+    succeeded: '已完成',
+    failed: '失败',
+    cancelled: '已取消'
+  }[status] || status
+}
+
+function codexStatusType(status: CodexJobStatus) {
+  return {
+    queued: 'info',
+    running: 'primary',
+    succeeded: 'success',
+    failed: 'danger',
+    cancelled: 'warning'
+  }[status] || 'info'
 }
 
 function formatTime(value: string) {
@@ -776,6 +944,99 @@ h3 {
   display: flex;
   flex-direction: column;
   gap: 22px;
+}
+
+.codex-panel,
+.codex-detail {
+  display: grid;
+  gap: 10px;
+}
+
+.codex-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.codex-job-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.codex-job {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--line-color);
+  border-radius: 6px;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  background: var(--card-bg-soft);
+}
+
+.codex-job:hover,
+.codex-job.active {
+  border-color: var(--view-color-border);
+  background: var(--view-color-soft);
+}
+
+.codex-job span,
+.codex-job small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.codex-job small {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.codex-detail {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line-color);
+}
+
+.codex-detail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.codex-detail-head span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.codex-summary,
+.codex-log,
+.codex-error {
+  max-height: 240px;
+  margin: 0;
+  padding: 10px;
+  overflow: auto;
+  border: 1px solid var(--line-color);
+  border-radius: 6px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--text-primary);
+  background: #0d1117;
+}
+
+.codex-error {
+  color: #ff7b72;
 }
 
 .prompt-list,

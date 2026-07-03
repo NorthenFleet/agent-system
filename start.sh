@@ -17,12 +17,15 @@ BOLD='\033[1m'
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_DIR="$PROJECT_DIR/backend"
 FRONTEND_DIR="$PROJECT_DIR/frontend"
+JWT_SECRET_FILE="$BACKEND_DIR/data/.dashboard_jwt_secret"
 
 # 默认配置
-API_PORT=3020
+API_PORT="${API_PORT:-3021}"
+LEGACY_API_PORT="${LEGACY_API_PORT:-3020}"
 FRONTEND_PORT=8080
 FRONTEND_ENTRY="${FRONTEND_ENTRY:-index.html}"
 USE_FRONTEND_V2="${USE_FRONTEND_V2:-true}"
+DISABLE_SCHEDULER="${DISABLE_SCHEDULER:-false}"
 
 # 打印带颜色的信息
 print_info() {
@@ -98,6 +101,15 @@ check_venv() {
     fi
 }
 
+ensure_jwt_secret() {
+    mkdir -p "$BACKEND_DIR/data"
+    if [ ! -f "$JWT_SECRET_FILE" ]; then
+        "$BACKEND_DIR/venv/bin/python" -c 'import secrets; print(secrets.token_urlsafe(48))' > "$JWT_SECRET_FILE"
+        chmod 600 "$JWT_SECRET_FILE"
+    fi
+    export DASHBOARD_JWT_SECRET="$(cat "$JWT_SECRET_FILE")"
+}
+
 # 启动后端服务
 start_backend() {
     print_header
@@ -115,11 +127,18 @@ start_backend() {
     if ! check_port $API_PORT; then
         kill_port $API_PORT
     fi
+    if [ "$LEGACY_API_PORT" != "$API_PORT" ] && ! check_port $LEGACY_API_PORT; then
+        print_warning "检测到旧 3020 服务，归并到 $API_PORT 前先停止旧入口..."
+        kill_port $LEGACY_API_PORT
+    fi
     
     # 启动后端
     cd "$BACKEND_DIR"
+    ensure_jwt_secret
     export FRONTEND_ENTRY="$FRONTEND_ENTRY"
     export USE_FRONTEND_V2="$USE_FRONTEND_V2"
+    export API_PORT="$API_PORT"
+    export DISABLE_SCHEDULER="$DISABLE_SCHEDULER"
     if [ "$USE_FRONTEND_V2" = "true" ]; then
         print_info "前端入口: frontend-v2/dist/index.html"
     else
@@ -128,7 +147,7 @@ start_backend() {
     print_info "启动 FastAPI 服务 (端口: $API_PORT)..."
     
     # 使用 nohup 在后台运行
-    nohup python main.py > backend.log 2>&1 &
+    nohup ./venv/bin/uvicorn main_slim_v2:app --host 0.0.0.0 --port "$API_PORT" > backend-slim-3021.log 2>&1 &
     BACKEND_PID=$!
     
     # 等待服务启动
@@ -146,7 +165,7 @@ start_backend() {
     
     # 检查是否真正启动
     if ! curl -s http://localhost:$API_PORT/ > /dev/null 2>&1; then
-        print_error "后端服务启动失败，请检查日志: $BACKEND_DIR/backend.log"
+        print_error "后端服务启动失败，请检查日志: $BACKEND_DIR/backend-slim-3021.log"
         exit 1
     fi
     
@@ -154,7 +173,7 @@ start_backend() {
     print_success "✅ 后端服务运行中"
     print_info "   API 地址: http://localhost:$API_PORT"
     print_info "   API 文档: http://localhost:$API_PORT/docs"
-    print_info "   日志文件: $BACKEND_DIR/backend.log"
+    print_info "   日志文件: $BACKEND_DIR/backend-slim-3021.log"
     print_info "   进程 PID: $BACKEND_PID"
 }
 
@@ -193,6 +212,9 @@ stop_services() {
     
     # 停止后端
     kill_port $API_PORT
+    if [ "$LEGACY_API_PORT" != "$API_PORT" ]; then
+        kill_port $LEGACY_API_PORT
+    fi
     
     # 停止前端
     kill_port $FRONTEND_PORT
@@ -258,9 +280,9 @@ show_help() {
     echo "  - 前端端口: $FRONTEND_PORT"
     echo ""
     echo "${BOLD}文件位置:${NC}"
-    echo "  - 后端代码: $BACKEND_DIR/main.py"
+    echo "  - 后端代码: $BACKEND_DIR/main_slim_v2.py"
     echo "  - 前端代码: $FRONTEND_DIR/index.html"
-    echo "  - 后端日志: $BACKEND_DIR/backend.log"
+    echo "  - 后端日志: $BACKEND_DIR/backend-slim-3021.log"
     echo ""
 }
 
@@ -286,7 +308,7 @@ main() {
             echo ""
             
             # 持续显示日志
-            tail -f "$BACKEND_DIR/backend.log" 2>/dev/null || true
+            tail -f "$BACKEND_DIR/backend-slim-3021.log" 2>/dev/null || true
             ;;
         all)
             start_backend
@@ -308,7 +330,7 @@ main() {
             fi
             
             # 持续显示日志
-            tail -f "$BACKEND_DIR/backend.log" 2>/dev/null || true
+            tail -f "$BACKEND_DIR/backend-slim-3021.log" 2>/dev/null || true
             ;;
         stop)
             stop_services

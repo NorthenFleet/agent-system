@@ -1,15 +1,17 @@
 """
-BaseService — 业务逻辑基类 + 内存缓存
+BaseService — 业务逻辑基类 + 内存缓存 + 统一日志
 
 所有 Service 继承此类。提供：
 1. Repository 实例管理
 2. 简单内存缓存（TTL + max_size）
+3. 统一日志记录
 
 @task VB-008
 @author 🟥 拉斐尔
 """
 import time
 import threading
+import logging
 from typing import TypeVar, Generic, Optional, Any, Dict
 from functools import wraps
 
@@ -107,12 +109,19 @@ class BaseService(Generic[ModelType, RepoType]):
 
     repository: BaseRepository = None
     cache_prefix: str = ""
-    cache: Cache = None  # 共享缓存实例，由外部注入
+    cache: Cache = None
+    _logger: logging.Logger = None
 
     def __init__(self, db: Session, cache: Optional[Cache] = None):
         self.db = db
         if cache is not None:
             self.cache = cache
+
+    @property
+    def logger(self) -> logging.Logger:
+        if self._logger is None:
+            self._logger = logging.getLogger(self.__class__.__name__)
+        return self._logger
 
     # ─── 便捷缓存操作 ───
 
@@ -143,10 +152,12 @@ class BaseService(Generic[ModelType, RepoType]):
     # ─── CRUD 委托 ───
 
     def get_by_id(self, record_id: int):
+        self.logger.debug(f"获取记录: {record_id}")
         return self.repository.get_by_id(self.db, record_id)
 
     def list(self, skip: int = 0, limit: int = 100, order_by: Optional[str] = None,
              order_desc: bool = True, filters: Optional[Dict[str, Any]] = None):
+        self.logger.debug(f"列表查询: skip={skip}, limit={limit}, filters={filters}")
         return self.repository.get_all(self.db, skip=skip, limit=limit,
                                        order_by=order_by, order_desc=order_desc,
                                        filters=filters)
@@ -155,23 +166,33 @@ class BaseService(Generic[ModelType, RepoType]):
         return self.repository.count(self.db, filters=filters)
 
     def create(self, obj_data: Dict[str, Any]):
+        self.logger.info(f"创建记录: {obj_data}")
         obj = self.repository.create(self.db, obj_data)
         self.db.commit()
-        self._cache_invalidate_prefix()  # 清空相关缓存
+        self._cache_invalidate_prefix()
+        self.logger.info(f"记录创建成功: {obj.id}")
         return obj
 
     def update(self, record_id: int, update_data: Dict[str, Any]):
+        self.logger.info(f"更新记录: {record_id}, data={update_data}")
         obj = self.repository.update(self.db, record_id, update_data)
         if obj:
             self.db.commit()
             self._cache_invalidate(str(record_id))
             self._cache_invalidate_prefix()
+            self.logger.info(f"记录更新成功: {record_id}")
+        else:
+            self.logger.warning(f"记录更新失败，未找到: {record_id}")
         return obj
 
     def delete(self, record_id: int) -> bool:
+        self.logger.info(f"删除记录: {record_id}")
         result = self.repository.delete(self.db, record_id)
         if result:
             self.db.commit()
             self._cache_invalidate(str(record_id))
             self._cache_invalidate_prefix()
+            self.logger.info(f"记录删除成功: {record_id}")
+        else:
+            self.logger.warning(f"记录删除失败，未找到: {record_id}")
         return result

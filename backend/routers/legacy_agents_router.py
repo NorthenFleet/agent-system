@@ -4,6 +4,7 @@ Legacy Agent & Device routes extracted from main.py
 These endpoints use the old JSON-file data source.
 They remain functional for backward compatibility.
 """
+import os
 from fastapi import APIRouter, HTTPException, Request, Response
 from fastapi.responses import FileResponse
 from typing import Optional
@@ -32,6 +33,21 @@ def get_agent_emoji(agent_id: str) -> str:
         "ironhide": "🛡️", "perceptor": "🔬", "wheeljack": "🔧", "shockwave": "🟣",
     }
     return emoji_map.get(agent_id, "👤")
+
+
+def _load_memory_map() -> dict:
+    """Load memory data from agents.json file."""
+    import json
+    agents_file = os.path.join(os.path.dirname(__file__), "..", "data", "agents.json")
+    if not os.path.exists(agents_file):
+        return {}
+    try:
+        with open(agents_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        agents = data if isinstance(data, list) else data.get("agents", [])
+        return {a.get("id", a.get("agent_id")): a.get("memory", []) for a in agents if a.get("id") or a.get("agent_id")}
+    except Exception:
+        return {}
 
 
 AGENT_CHINESE_NAMES = {
@@ -76,10 +92,33 @@ def get_agents():
     try:
         agents = localize_agent_names(_openclaw_integration.sync_agents())
         if agents:
+            # Enrich with memory data from agents.json
+            memory_map = _load_memory_map()
+            for agent in agents:
+                agent_id = agent.get("id") or agent.get("agent_id", "")
+                if agent_id and agent_id not in memory_map:
+                    # Try with Chinese name mapping reversed
+                    for orig_id, loc_name in AGENT_CHINESE_NAMES.items():
+                        if agent.get("name") == loc_name:
+                            agent_id = orig_id
+                            break
+                if agent_id and agent_id in memory_map:
+                    agent["memory"] = memory_map[agent_id]
             return {"agents": agents, "total": len(agents), "source": "openclaw"}
     except Exception:
         pass
     agents = localize_agent_names(_data_manager.get_agents())
+    # Enrich with memory data
+    memory_map = _load_memory_map()
+    for agent in agents:
+        agent_id = agent.get("id") or agent.get("agent_id", "")
+        if agent_id and agent_id not in memory_map:
+            for orig_id, loc_name in AGENT_CHINESE_NAMES.items():
+                if agent.get("name") == loc_name:
+                    agent_id = orig_id
+                    break
+        if agent_id and agent_id in memory_map and "memory" not in agent:
+            agent["memory"] = memory_map[agent_id]
     return {"agents": agents, "total": len(agents), "source": "local"}
 
 

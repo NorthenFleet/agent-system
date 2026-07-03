@@ -827,7 +827,7 @@
                   <div style="font-weight:800;font-size:1.15rem;">{{ projectIterationCount(selectedProjectV3) }}</div>
                 </div>
                 <div style="padding:10px;border:1px solid var(--border);border-radius:8px;">
-                  <div class="muted" style="font-size:0.78rem;">开发要点</div>
+                  <div class="muted" style="font-size:0.78rem;">{{ projectPointLabel(selectedProjectV3) }}</div>
                   <div style="font-weight:800;font-size:1.15rem;">{{ projectPointTotal }}</div>
                 </div>
                 <div style="padding:10px;border:1px solid var(--border);border-radius:8px;">
@@ -862,29 +862,28 @@
                     <el-tag size="small" type="info">{{ chapter.status || 'planning' }}</el-tag>
                   </div>
                   <div class="muted" style="font-size:0.84rem;line-height:1.5;margin-top:6px;">{{ chapter.main_content || chapter.summary || '暂无章节说明' }}</div>
-                  <div v-if="chapter.key_points && chapter.key_points.length" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
-                    <el-tag v-for="point in chapter.key_points" :key="point" size="small">{{ point }}</el-tag>
+                  <!-- 二级标题树形结构 -->
+                  <div v-if="chapter.key_points && chapter.key_points.length" style="margin-top:8px;">
+                    <div style="font-size:0.82rem;font-weight:600;color:#aaa;margin-bottom:4px;">二级标题</div>
+                    <div style="padding-left:12px;border-left:2px solid #409eff;">
+                      <div v-for="(point, idx) in chapter.key_points" :key="point + idx" style="padding:3px 0;font-size:0.83rem;color:#b0b0b0;">
+                        <span style="color:#409eff;">▸</span> {{ point }}
+                      </div>
+                    </div>
+                  </div>
+                  <!-- 本章图片/图表 -->
+                  <div v-if="assetsForChapter(chapter).length" style="margin-top:8px;">
+                    <div style="font-size:0.82rem;font-weight:600;color:#aaa;margin-bottom:4px;">📷 图片/图表 ({{ assetsForChapter(chapter).length }})</div>
+                    <div style="padding-left:12px;border-left:2px solid #e6a23c;">
+                      <div v-for="asset in assetsForChapter(chapter)" :key="asset.id || asset.title" style="padding:3px 0;font-size:0.83rem;color:#b0b0b0;">
+                        <span style="color:#e6a23c;">📎</span> {{ asset.title }} <span class="muted" style="font-size:0.8rem;">({{ asset.type || 'image' }})</span>
+                        <div v-if="asset.description" class="muted" style="font-size:0.78rem;margin-top:1px;padding-left:16px;">{{ asset.description }}</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
               <div v-else class="muted" style="padding:18px;text-align:center;border:1px solid var(--border);border-radius:8px;">暂无目录结构</div>
-              <div style="margin-top:14px;">
-                <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:8px;">
-                  <strong>图片/图表</strong>
-                  <el-tag size="small" type="info">{{ documentAssets(selectedProjectV3).length }} 个</el-tag>
-                </div>
-                <div v-if="documentAssets(selectedProjectV3).length" style="display:grid;gap:8px;">
-                  <div v-for="asset in documentAssets(selectedProjectV3)" :key="asset.id || asset.title" style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding:9px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,0.02);">
-                    <div style="min-width:0;">
-                      <div style="font-weight:700;">{{ asset.title }}</div>
-                      <div class="muted" style="font-size:0.82rem;margin-top:4px;">{{ asset.type || 'image' }} · {{ asset.chapter_title || documentSectionTitle(asset.chapter_id || asset.section_id) || '未关联章节' }}</div>
-                      <div v-if="asset.description" class="muted" style="font-size:0.82rem;margin-top:4px;">{{ asset.description }}</div>
-                    </div>
-                    <el-tag size="small" type="info">{{ asset.status || 'planned' }}</el-tag>
-                  </div>
-                </div>
-                <div v-else class="muted" style="padding:12px;text-align:center;border:1px solid var(--border);border-radius:8px;">暂无图片/图表计划</div>
-              </div>
             </div>
 
             <div v-else style="border:1px solid var(--border);border-radius:8px;padding:14px;background:rgba(255,255,255,0.02);">
@@ -931,7 +930,7 @@
                 </div>
                 <div style="min-width:92px;text-align:right;">
                   <div style="font-weight:700;">{{ normalizeProgress(task.progress) }}%</div>
-                  <div class="muted" style="font-size:0.78rem;">{{ (task.development_points || []).length }} 要点</div>
+                  <div class="muted" style="font-size:0.78rem;">{{ (task.development_points || []).length }} {{ projectPointShortLabel(selectedProjectV3) }}</div>
                 </div>
               </div>
               <el-progress :percentage="normalizeProgress(task.progress)" :show-text="false" :stroke-width="6" style="margin-top:10px;"></el-progress>
@@ -961,7 +960,7 @@
                 <div><span class="muted">状态</span><br>{{ taskStatusText(selectedProjectTask.status) }}</div>
                 <div><span class="muted">优先级</span><br>{{ taskPriorityText(selectedProjectTask.priority) }}</div>
               </div>
-              <div style="margin-top:12px;font-weight:600;">开发要点</div>
+              <div style="margin-top:12px;font-weight:600;">{{ projectPointLabel(selectedProjectV3) }}</div>
               <div v-if="selectedProjectTask.development_points && selectedProjectTask.development_points.length" style="display:grid;gap:7px;margin-top:8px;">
                 <div v-for="point in selectedProjectTask.development_points" :key="point.id" style="padding:8px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,0.02);">
                   <div style="display:flex;gap:6px;align-items:center;">
@@ -972,7 +971,7 @@
                   <div v-if="point.completion_evidence" class="muted" style="font-size:0.8rem;margin-top:5px;">{{ point.completion_evidence }}</div>
                 </div>
               </div>
-              <div v-else class="muted" style="margin-top:8px;">暂无开发要点</div>
+              <div v-else class="muted" style="margin-top:8px;">暂无{{ projectPointLabel(selectedProjectV3) }}</div>
               <div v-if="selectedProjectTask.result_summary" style="margin-top:12px;">
                 <div style="font-weight:600;margin-bottom:5px;">结果摘要</div>
                 <div class="muted">{{ selectedProjectTask.result_summary }}</div>
@@ -990,7 +989,7 @@
                   <div v-else class="muted" style="font-size:0.84rem;">暂无建议</div>
                 </div>
                 <div>
-                  <div class="muted" style="font-size:0.8rem;margin-bottom:4px;">未完成开发要点</div>
+                  <div class="muted" style="font-size:0.8rem;margin-bottom:4px;">未完成{{ projectPointLabel(selectedProjectV3) }}</div>
                   <div v-if="projectContext && projectContext.open_points && projectContext.open_points.length" style="display:grid;gap:5px;">
                     <div v-for="point in projectContext.open_points.slice(0,5)" :key="point.id" class="muted" style="font-size:0.84rem;">{{ point.task_title }} / {{ point.title }}</div>
                   </div>
@@ -2627,13 +2626,13 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="createTaskVisible" title="新建项目任务" width="680px">
+    <el-dialog v-model="createTaskVisible" :title="isDocumentProject(selectedProjectV3) ? '新建写作任务' : '新建开发任务'" width="680px">
       <el-form label-position="top">
         <el-form-item label="所属项目">
           <el-input :model-value="selectedProjectV3 ? selectedProjectV3.name : '未选择项目'" disabled></el-input>
         </el-form-item>
         <el-form-item label="任务名称">
-          <el-input v-model="newTaskForm.title" placeholder="例如：知识绑定任务、前端看板调整"></el-input>
+          <el-input v-model="newTaskForm.title" :placeholder="isDocumentProject(selectedProjectV3) ? '例如：第二章文献综述、实验结果分析' : '例如：知识绑定任务、前端看板调整'"></el-input>
         </el-form-item>
         <el-form-item label="任务描述">
           <el-input v-model="newTaskForm.description" type="textarea" :rows="3" placeholder="说明任务目标、边界和交付物"></el-input>
@@ -2653,8 +2652,8 @@
             </el-select>
           </el-form-item>
         </div>
-        <el-form-item label="首个开发要点">
-          <el-input v-model="newTaskForm.development_point_title" placeholder="可选，例如：绑定开发要点"></el-input>
+        <el-form-item :label="'首个' + projectPointLabel(selectedProjectV3)">
+          <el-input v-model="newTaskForm.development_point_title" :placeholder="isDocumentProject(selectedProjectV3) ? '可选，例如：整理本章关键论点' : '可选，例如：绑定开发要点'"></el-input>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -2821,8 +2820,16 @@
   <script src="https://cdn.jsdelivr.net/npm/vue-draggable-next@2.1.1/dist/vue-draggable-next.umd.min.js"></script>
   <script src="/js/g6.min.js"></script>
   <script>
+    let dashboardBootComplete = false;
     function showDashboardBootError(error) {
       try {
+        if (dashboardBootComplete) {
+          console.error('[Dashboard runtime error]', error);
+          if (window.ElementPlus && window.ElementPlus.ElMessage) {
+            window.ElementPlus.ElMessage.error('页面运行异常：' + ((error && error.message) || String(error || '未知错误')));
+          }
+          return;
+        }
         const message = error && (error.stack || error.message || String(error));
         document.body.style.background = '#0d1117';
         document.body.style.color = '#f0f6fc';
@@ -4564,6 +4571,14 @@
           return this.isDocumentProject(project) ? 'success' : 'primary';
         },
 
+        projectPointLabel(project) {
+          return this.isDocumentProject(project) ? '写作要点' : '开发要点';
+        },
+
+        projectPointShortLabel(project) {
+          return this.isDocumentProject(project) ? '写作要点' : '要点';
+        },
+
         documentSpec(project) {
           return (project && project.document_spec && typeof project.document_spec === 'object') ? project.document_spec : {};
         },
@@ -4582,6 +4597,16 @@
           if (!sectionId || !this.selectedProjectV3) return '';
           const chapter = this.documentChapters(this.selectedProjectV3).find(item => item.id === sectionId);
           return chapter ? chapter.title : '';
+        },
+
+        assetsForChapter(chapter) {
+          const assets = this.documentAssets(this.selectedProjectV3) || [];
+          const chapterId = chapter.id || chapter.title;
+          return assets.filter(asset => {
+            if (asset.section_id === chapterId || asset.chapter_id === chapterId) return true;
+            if (asset.chapter_title === chapter.title) return true;
+            return false;
+          });
         },
 
         summarizeDocumentAssets(project) {
@@ -4767,6 +4792,10 @@
             this.$message.warning('请先选择项目');
             return;
           }
+          if (!this.hasApiToken()) {
+            this.$message.warning('请先登录管理员账号后再生成任务');
+            return;
+          }
           const instruction = String(this.projectChatInput || '').trim();
           if (!instruction) {
             this.$message.warning('请输入要生成任务的指令');
@@ -4789,7 +4818,14 @@
                 task_id: this.selectedProjectTaskId || '',
               }),
             });
-            if (!res.ok) throw new Error('HTTP ' + res.status);
+            if (!res.ok) {
+              let message = 'HTTP ' + res.status;
+              try {
+                const errorBody = await res.json();
+                message = errorBody.detail || message;
+              } catch (parseError) {}
+              throw new Error(message);
+            }
             const data = await res.json();
             if (data.chat && data.chat.conversation) {
               this.projectConversationsCache[project.id] = data.chat.conversation;
@@ -6943,6 +6979,13 @@
     });
 
     teamDashboardApp.config.errorHandler = function(error) {
+      if (dashboardBootComplete) {
+        console.error('[Dashboard runtime error]', error);
+        if (window.ElementPlus && window.ElementPlus.ElMessage) {
+          window.ElementPlus.ElMessage.error('页面运行异常：' + ((error && error.message) || String(error || '未知错误')));
+        }
+        return;
+      }
       showDashboardBootError(error);
     };
 
@@ -6951,6 +6994,7 @@
         .use(ElementPlus)
         .component('draggable', window.VueDraggableNext || { template: '<div><slot></slot></div>' })
         .mount('#app');
+      dashboardBootComplete = true;
     } catch (error) {
       showDashboardBootError(error);
     }

@@ -43,6 +43,39 @@ def _extract_api_key(request: Request) -> str:
     return auth[7:].strip() if auth.lower().startswith("bearer ") else ""
 
 
+def _authenticated_admin_role(request: Request) -> bool:
+    payload = _authenticated_payload(request)
+    return bool(payload and payload.get("role") == "admin")
+
+
+def _authenticated_payload(request: Request) -> dict | None:
+    token = _extract_api_key(request)
+    if not token:
+        return None
+    try:
+        from services.auth_service import decode_access_token
+        return decode_access_token(token)
+    except Exception:
+        return None
+
+
+def _is_project_workspace_write(request: Request) -> bool:
+    path = request.url.path.rstrip("/")
+    if path == "/api/v3/projects":
+        return request.method.upper() == "POST"
+    if not path.startswith("/api/v3/projects/"):
+        return False
+    readonly_suffixes = (
+        "/logs", "/conversation", "/chat-context", "/agent-context",
+        "/iteration-context", "/knowledge-context",
+    )
+    if request.method.upper() == "GET":
+        return False
+    if request.method.upper() == "DELETE":
+        return False
+    return not any(path.endswith(suffix) for suffix in readonly_suffixes)
+
+
 def _is_local_request(request: Request) -> bool:
     return (request.client.host if request.client else "") in {"127.0.0.1", "::1", "localhost", "testclient"}
 
@@ -51,6 +84,10 @@ def require_admin_request(request: Request) -> None:
     if _is_local_request(request):
         return
     api_keys = _configured_admin_api_keys()
+    if _authenticated_admin_role(request):
+        return
+    if _is_project_workspace_write(request) and _authenticated_payload(request):
+        return
     if not api_keys:
         raise HTTPException(403, "Admin API key not configured")
     if _extract_api_key(request) not in api_keys:

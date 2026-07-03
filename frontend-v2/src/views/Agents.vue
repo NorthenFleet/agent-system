@@ -50,6 +50,7 @@
                   group: card.node.node_type === 'group'
                 }"
                 @click="selectNode(card.node)"
+                @dblclick="openMemoryDrawer(card.node)"
               >
                 <span class="card-top">
                   <span class="agent-avatar">{{ nodeEmoji(card.node) }}</span>
@@ -94,6 +95,18 @@
                   <span>{{ card.childCount }} 个下级</span>
                   <span v-if="card.agent?.current_project_id" class="project-link" @click.stop="openAgentProjectTask(card.agent)">查看任务</span>
                 </span>
+
+                <!-- 记忆概览 -->
+                <div v-if="card.agent?.memory && card.agent.memory.length" class="card-memory">
+                  <div class="card-memory-title">记忆 ({{ card.agent.memory.length }})</div>
+                  <div class="card-memory-items">
+                    <div v-for="mem in card.agent.memory.slice(0, 3)" :key="`mem-${String(mem).slice(0,20)}`" class="card-memory-item">
+                      <span class="card-memory-dot"></span>
+                      <span class="card-memory-text">{{ memoryText(mem) }}</span>
+                    </div>
+                  </div>
+                  <span v-if="card.agent.memory.length > 3" class="card-memory-more">+{{ card.agent.memory.length - 3 }} 条</span>
+                </div>
               </button>
             </div>
           </section>
@@ -161,6 +174,44 @@
         </el-card>
       </aside>
     </div>
+
+    <!-- 完整记忆 Drawer -->
+    <el-drawer v-model="memoryDrawerVisible" :title="memoryDrawerTitle" size="600px" direction="rtl" :close-on-click-modal="false">
+      <div v-if="memoryDrawerAgent" class="memory-drawer-content">
+        <div class="memory-drawer-stats">
+          <el-tag size="small">总计 {{ memoryDrawerAgent?.memory?.length || 0 }} 条</el-tag>
+          <el-tag size="small" type="success">短期 {{ shortMemoryOfAgent.length }}</el-tag>
+          <el-tag size="small" type="warning">长期 {{ longMemoryOfAgent.length }}</el-tag>
+        </div>
+
+        <el-divider content-position="left">短期记忆 (最近 {{ shortMemoryOfAgent.length }} 条)</el-divider>
+        <div v-if="shortMemoryOfAgent.length" class="memory-drawer-list">
+          <div v-for="(mem, idx) in shortMemoryOfAgent" :key="`sd-${idx}`" class="memory-drawer-item">
+            <div class="memory-drawer-item-title">{{ memoryText(mem) }}</div>
+            <div class="muted">{{ memoryDate(mem) }}</div>
+          </div>
+        </div>
+        <el-empty v-else :image-size="30" description="暂无短期记忆" />
+
+        <el-divider content-position="left">长期记忆 ({{ longMemoryOfAgent.length }} 条)</el-divider>
+        <div v-if="longMemoryOfAgent.length" class="memory-drawer-list">
+          <div v-for="(mem, idx) in longMemoryOfAgent" :key="`ld-${idx}`" class="memory-drawer-item">
+            <div class="memory-drawer-item-title">{{ memoryText(mem) }}</div>
+            <div class="muted">{{ memoryDate(mem) }}</div>
+          </div>
+        </div>
+        <el-empty v-else :image-size="30" description="暂无长期记忆" />
+
+        <el-divider content-position="left">全部记忆</el-divider>
+        <div v-if="memoryDrawerAgent?.memory?.length" class="memory-drawer-list memory-full-list">
+          <div v-for="(mem, idx) in sortedMemoryOfAgent" :key="`all-${idx}`" class="memory-drawer-item">
+            <div class="memory-drawer-item-title">{{ memoryText(mem) }}</div>
+            <div class="muted">{{ memoryDate(mem) }}</div>
+          </div>
+        </div>
+        <el-empty v-else :image-size="30" description="暂无记忆数据" />
+      </div>
+    </el-drawer>
   </div>
 </template>
 
@@ -197,6 +248,10 @@ const agents = ref<AgentDashboardItem[]>([])
 const organization = ref<AgentOrganization | null>(null)
 const selectedNodeId = ref('')
 const agentMemory = ref<AgentMemoryItem[]>([])
+
+// Memory Drawer state
+const memoryDrawerVisible = ref(false)
+const memoryDrawerAgent = ref<AgentDashboardItem | null>(null)
 
 const agentById = computed(() => {
   const map = new Map<string, AgentDashboardItem>()
@@ -290,6 +345,25 @@ const sortedMemory = computed(() => agentMemory.value.slice().sort((a, b) => {
 }))
 const shortMemory = computed(() => sortedMemory.value.slice(0, 3))
 const longMemory = computed(() => sortedMemory.value.slice(3, 11))
+
+// Agent-scoped memory computations for the drawer
+const sortedMemoryOfAgent = computed(() => {
+  if (!memoryDrawerAgent.value?.memory) return []
+  return memoryDrawerAgent.value.memory.slice().sort((a, b) => {
+    const ad = new Date(memoryDate(a) || 0).getTime()
+    const bd = new Date(memoryDate(b) || 0).getTime()
+    return bd - ad
+  })
+})
+const shortMemoryOfAgent = computed(() => sortedMemoryOfAgent.value.slice(0, 5))
+const longMemoryOfAgent = computed(() => sortedMemoryOfAgent.value.slice(5))
+const memoryDrawerTitle = computed(() => {
+  if (!memoryDrawerAgent.value) return '智能体记忆'
+  const aid = memoryDrawerAgent.value.agent_id
+  const node = organization.value?.nodes.find(n => n.agent_id === aid) || { id: '', node_type: 'person', name: aid || '' }
+  const memCount = (memoryDrawerAgent.value?.memory || []).length
+  return `${nodeEmoji(node)} ${nodeName(node)} — 完整记忆 (${memCount} 条)`
+})
 
 watch(selectedAgent, agent => {
   if (agent) loadAgentMemory(agent)
@@ -406,6 +480,25 @@ async function loadAll() {
   }
 }
 
+function openMemoryDrawer(node: AgentOrganizationNode) {
+  const aid = node.agent_id
+  if (!aid) {
+    ElMessage.warning('该节点未关联智能体，无法查看记忆')
+    return
+  }
+  const agent = agentById.value.get(aid)
+  if (!agent) {
+    ElMessage.warning('智能体不存在，无法查看记忆')
+    return
+  }
+  if (!agent.memory || !agent.memory.length) {
+    ElMessage.info(`${nodeName(node)} 暂无记忆数据`)
+    return
+  }
+  memoryDrawerAgent.value = agent
+  memoryDrawerVisible.value = true
+}
+
 async function loadAgentMemory(agent: AgentDashboardItem | null) {
   if (!agent) {
     agentMemory.value = []
@@ -475,12 +568,12 @@ onMounted(loadAll)
 .stat-card span,
 .muted,
 .field-title {
-  color: #909399;
+  color: #a0a0a0;
   font-size: 13px;
 }
 
 .stat-card strong {
-  color: #303133;
+  color: #e0e0e0;
   font-size: 24px;
 }
 
@@ -494,7 +587,7 @@ onMounted(loadAll)
 }
 
 .overview-title {
-  color: #303133;
+  color: #e0e0e0;
   font-weight: 800;
   margin-bottom: 4px;
 }
@@ -520,9 +613,9 @@ onMounted(loadAll)
 }
 
 .level-row {
-  border: 1px solid #e4e7ed;
+  border: 1px solid #383838;
   border-radius: 8px;
-  background: #fff;
+  background: #1a1a1a;
   padding: 12px;
 }
 
@@ -530,13 +623,13 @@ onMounted(loadAll)
   display: flex;
   align-items: center;
   gap: 10px;
-  color: #909399;
+  color: #a0a0a0;
   font-size: 13px;
   margin-bottom: 10px;
 }
 
 .level-head strong {
-  color: #303133;
+  color: #e0e0e0;
   font-size: 14px;
 }
 
@@ -554,9 +647,9 @@ onMounted(loadAll)
 .agent-card {
   width: 100%;
   min-height: 182px;
-  border: 1px solid #e4e7ed;
+  border: 1px solid #383838;
   border-radius: 8px;
-  background: #fff;
+  background: #242424;
   padding: 12px;
   display: grid;
   grid-template-rows: auto auto 1fr auto;
@@ -569,20 +662,20 @@ onMounted(loadAll)
 .agent-card:hover,
 .agent-card.active {
   border-color: #409eff;
-  box-shadow: 0 4px 16px rgba(64, 158, 255, 0.12);
+  box-shadow: 0 4px 16px rgba(64, 158, 255, 0.18);
 }
 
 .agent-card.active {
-  background: #f5f9ff;
+  background: #2a2f3a;
 }
 
 .agent-card.group {
-  background: #fafafa;
+  background: #2a2a2a;
 }
 
 .agent-card.planned {
   opacity: 0.68;
-  background: #fbfbfb;
+  background: #282828;
 }
 
 .card-top {
@@ -598,7 +691,7 @@ onMounted(loadAll)
   border-radius: 8px;
   display: grid;
   place-items: center;
-  background: #f5f7fa;
+  background: #383838;
   flex: 0 0 auto;
 }
 
@@ -618,7 +711,7 @@ onMounted(loadAll)
 }
 
 .agent-title strong {
-  color: #303133;
+  color: #e8e8e8;
   font-size: 15px;
 }
 
@@ -633,11 +726,11 @@ onMounted(loadAll)
 .agent-title small,
 .card-fields b,
 .card-footer {
-  color: #909399;
+  color: #9a9a9a;
 }
 
 .card-role {
-  color: #606266;
+  color: #b8b8b8;
 }
 
 .card-fields {
@@ -654,7 +747,7 @@ onMounted(loadAll)
 }
 
 .card-fields em {
-  color: #606266;
+  color: #b0b0b0;
   font-style: normal;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -666,7 +759,7 @@ onMounted(loadAll)
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  border-top: 1px dashed #ebeef5;
+  border-top: 1px dashed #404040;
   padding-top: 8px;
 }
 
@@ -683,7 +776,7 @@ onMounted(loadAll)
 }
 
 .selected-name {
-  color: #303133;
+  color: #e0e0e0;
   font-weight: 800;
   margin: 3px 0;
 }
@@ -703,11 +796,11 @@ onMounted(loadAll)
 
 .responsibility-chip,
 .child-chip {
-  border: 1px solid #dcdfe6;
+  border: 1px solid #484848;
   border-radius: 999px;
   padding: 3px 8px;
-  color: #606266;
-  background: #fafafa;
+  color: #b8b8b8;
+  background: #2e2e2e;
   font-size: 12px;
 }
 
@@ -718,13 +811,13 @@ onMounted(loadAll)
 .current-work {
   margin-top: 12px;
   padding: 12px;
-  border: 1px solid rgba(64, 158, 255, 0.24);
+  border: 1px solid rgba(64, 158, 255, 0.32);
   border-radius: 8px;
-  background: rgba(64, 158, 255, 0.08);
+  background: rgba(64, 158, 255, 0.12);
 }
 
 .work-title {
-  color: #303133;
+  color: #e0e0e0;
   font-weight: 700;
   margin-top: 4px;
 }
@@ -735,7 +828,7 @@ onMounted(loadAll)
 }
 
 .memory-section-title {
-  color: #303133;
+  color: #e0e0e0;
   font-weight: 800;
   margin-bottom: 10px;
 }
@@ -746,23 +839,116 @@ onMounted(loadAll)
 }
 
 .memory-item {
-  border: 1px solid #ebeef5;
+  border: 1px solid #404040;
   border-radius: 8px;
   padding: 10px;
 }
 
 .memory-item-title {
-  color: #606266;
+  color: #b0b0b0;
   font-size: 13px;
   line-height: 1.5;
 }
 
 .memory-history-line {
-  color: #606266;
+  color: #b0b0b0;
   font-size: 13px;
   line-height: 1.6;
-  border-bottom: 1px dashed #ebeef5;
+  border-bottom: 1px dashed #404040;
   padding-bottom: 6px;
+}
+
+/* 卡片上的记忆概览 */
+.card-memory {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid #404040;
+}
+
+.card-memory-title {
+  font-size: 11px;
+  color: #888;
+  margin-bottom: 3px;
+  font-weight: 600;
+}
+
+.card-memory-items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.card-memory-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #999;
+}
+
+.card-memory-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #409eff;
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+
+.card-memory-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.card-memory-more {
+  display: block;
+  font-size: 11px;
+  color: #666;
+  margin-top: 2px;
+  text-align: right;
+}
+
+/* 记忆 Drawer */
+.memory-drawer-content {
+  padding: 0 16px;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+}
+
+.memory-drawer-stats {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.memory-drawer-list {
+  max-height: 300px;
+  overflow-y: auto;
+  margin-bottom: 8px;
+}
+
+.memory-full-list {
+  max-height: none;
+}
+
+.memory-drawer-item {
+  padding: 10px;
+  margin-bottom: 8px;
+  border: 1px solid #404040;
+  border-radius: 6px;
+  background: #1a1a2e;
+}
+
+.memory-drawer-item-title {
+  color: #b0b0b0;
+  font-size: 13px;
+  line-height: 1.5;
+  margin-bottom: 4px;
 }
 
 @media (max-width: 1100px) {
