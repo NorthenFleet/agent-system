@@ -34,7 +34,7 @@
       color: var(--text);
     }
     .shell {
-      max-width: 860px;
+      max-width: 1120px;
       margin: 0 auto;
       padding: calc(env(safe-area-inset-top) + 18px) 16px calc(env(safe-area-inset-bottom) + 86px);
     }
@@ -119,6 +119,7 @@
     .actions { display: grid; gap: 9px; padding: 10px; }
     .button {
       display: block;
+      width: 100%;
       text-align: center;
       text-decoration: none;
       color: white;
@@ -127,6 +128,20 @@
       border-radius: 14px;
       padding: 12px;
       font-weight: 700;
+      cursor: pointer;
+      font: inherit;
+    }
+    .button:disabled { opacity: 0.45; cursor: not-allowed; }
+    .button.secondary { background: rgba(255,255,255,0.06); border-color: var(--line); color: var(--text); }
+    .notice {
+      margin-bottom: 14px;
+      border: 1px solid rgba(251,191,36,0.32);
+      background: rgba(251,191,36,0.1);
+      color: #fef3c7;
+      border-radius: 14px;
+      padding: 11px 13px;
+      font-size: 0.84rem;
+      display: none;
     }
     nav {
       position: fixed;
@@ -158,6 +173,10 @@
       .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
       .two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
     }
+    @media (min-width: 960px) {
+      .tablet-grid { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 14px; align-items: start; }
+      #events { grid-column: 1 / -1; }
+    }
   </style>
 </head>
 <body>
@@ -169,43 +188,54 @@
       </div>
       <div class="pill" id="updated">同步中</div>
     </header>
+    <div class="notice" id="offlineNotice">当前显示的是离线缓存状态，网络恢复后会自动刷新。</div>
 
     <section class="panel" id="overview">
       <div class="panel-hd"><h2>运行概览</h2><span class="tag" id="schema">control-plane</span></div>
       <div class="grid" id="metrics"></div>
     </section>
 
-    <div class="two">
-      <section class="panel" id="projects">
-        <div class="panel-hd"><h2>开放项目</h2><a class="tag" href="/?view=tasks">完整看板</a></div>
-        <div class="list" id="projectList"></div>
-      </section>
+    <div class="tablet-grid">
+      <div>
+        <section class="panel" id="attention">
+          <div class="panel-hd"><h2>需要处理</h2><span class="tag amber" id="attentionCount">0 项</span></div>
+          <div class="list" id="attentionList"></div>
+        </section>
 
-      <section class="panel" id="agents">
-        <div class="panel-hd"><h2>智能体</h2><a class="tag" href="/?view=agents">团队页面</a></div>
-        <div class="list" id="agentList"></div>
-      </section>
+        <section class="panel" id="projects">
+          <div class="panel-hd"><h2>开放项目</h2><a class="tag" href="/?view=tasks">完整看板</a></div>
+          <div class="list" id="projectList"></div>
+        </section>
+      </div>
+
+      <div>
+        <section class="panel" id="agents">
+          <div class="panel-hd"><h2>智能体</h2><a class="tag" href="/?view=agents">团队页面</a></div>
+          <div class="list" id="agentList"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-hd"><h2>快速操作</h2><span class="tag amber" id="installHint">可添加到主屏幕</span></div>
+          <div class="actions" id="actions"></div>
+        </section>
+      </div>
     </div>
 
     <section class="panel" id="events">
       <div class="panel-hd"><h2>最近事件</h2><span class="tag">自动刷新</span></div>
       <div class="list" id="eventList"></div>
     </section>
-
-    <section class="panel">
-      <div class="panel-hd"><h2>快速操作</h2><span class="tag amber" id="installHint">可添加到主屏幕</span></div>
-      <div class="actions" id="actions"></div>
-    </section>
   </main>
 
   <nav>
     <a href="#overview" class="active">概览</a>
+    <a href="#attention">处理</a>
     <a href="#projects">项目</a>
     <a href="#agents">智能体</a>
-    <a href="#events">事件</a>
   </nav>
 
   <script>
+    const CACHE_KEY = 'agent-os-mobile-summary-v1';
     const $ = (id) => document.getElementById(id);
     const pct = (v) => Math.max(0, Math.min(100, Number(v || 0)));
     const fmtTime = (value) => value ? new Date(value).toLocaleString('zh-CN', { hour12: false }) : '-';
@@ -216,8 +246,49 @@
       if (['running', 'busy', 'in_progress', 'active'].includes(s)) return 'amber';
       return '';
     };
+    const severityLabel = (value) => ({ blocked: '阻塞', review: '待确认', assign: '待分配' }[value] || value || '待处理');
+
+    function setOfflineMode(enabled) {
+      $('offlineNotice').style.display = enabled ? 'block' : 'none';
+    }
+
+    async function runAction(action) {
+      if (action.disabled) return;
+      if (action.href) {
+        location.href = action.href;
+        return;
+      }
+      if (!action.endpoint || action.method !== 'POST') return;
+      const button = document.querySelector(`[data-action-id="${action.id}"]`);
+      const original = button?.textContent;
+      if (button) {
+        button.disabled = true;
+        button.textContent = '执行中...';
+      }
+      try {
+        const res = await fetch(action.endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(action.body || { requested_by: 'mobile-command' }),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (button) button.textContent = '已记录';
+        setTimeout(refresh, 800);
+      } catch (err) {
+        if (button) button.textContent = `失败：${err.message}`;
+      } finally {
+        setTimeout(() => {
+          if (button) {
+            button.disabled = false;
+            button.textContent = original;
+          }
+        }, 1800);
+      }
+    }
 
     function render(data) {
+      localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+      setOfflineMode(false);
       $('updated').textContent = fmtTime(data.updated_at);
       $('schema').textContent = data.schema || 'control-plane';
       const s = data.summary || {};
@@ -239,6 +310,16 @@
         </article>
       `).join('') : '<div class="empty">暂无开放项目</div>';
 
+      $('attentionCount').textContent = `${(data.attention || []).length} 项`;
+      $('attentionList').innerHTML = (data.attention || []).map((item) => `
+        <article class="item">
+          <div class="row"><div class="title">${item.title || '待处理事项'}</div><span class="tag ${tagClass(item.severity)}">${severityLabel(item.severity)}</span></div>
+          <div class="meta">${item.project_name || ''}</div>
+          <div class="meta">${item.description || ''}</div>
+          <div style="margin-top:10px;"><a class="tag" href="${item.href || '/'}">查看详情</a></div>
+        </article>
+      `).join('') || '<div class="empty">暂无需要处理事项</div>';
+
       $('agentList').innerHTML = (data.agents || []).map((a) => `
         <article class="item">
           <div class="row"><div class="title">${a.emoji || ''} ${a.name || a.id}</div><span class="tag ${tagClass(a.status)}">${a.status}</span></div>
@@ -254,7 +335,16 @@
         </article>
       `).join('') || '<div class="empty">暂无事件</div>';
 
-      $('actions').innerHTML = (data.actions || []).map((a) => `<a class="button" href="${a.href}">${a.label}</a>`).join('');
+      $('actions').innerHTML = (data.actions || []).map((a) => {
+        if (a.method === 'POST') {
+          return `<button class="button" data-action-id="${a.id}" ${a.disabled ? 'disabled' : ''}>${a.label}</button>`;
+        }
+        return `<a class="button secondary" href="${a.href}">${a.label}</a>`;
+      }).join('');
+      (data.actions || []).forEach((action) => {
+        const button = document.querySelector(`[data-action-id="${action.id}"]`);
+        if (button) button.addEventListener('click', () => runAction(action));
+      });
     }
 
     async function refresh() {
@@ -264,7 +354,14 @@
         render(await res.json());
       } catch (err) {
         $('updated').textContent = '离线/连接失败';
-        $('metrics').innerHTML = `<div class="empty" style="grid-column: 1 / -1;">${err.message}</div>`;
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (cached) {
+          render(JSON.parse(cached));
+          $('updated').textContent = '离线缓存';
+          setOfflineMode(true);
+        } else {
+          $('metrics').innerHTML = `<div class="empty" style="grid-column: 1 / -1;">${err.message}</div>`;
+        }
       }
     }
 
