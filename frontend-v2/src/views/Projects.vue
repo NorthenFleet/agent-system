@@ -5,7 +5,7 @@
         <el-card class="panel project-list-panel" shadow="hover">
           <template #header>
             <div class="panel-header">
-              <span>项目</span>
+              <span>{{ projectListTitle }}</span>
               <el-button size="small" type="primary" @click="loadProjects">刷新</el-button>
             </div>
           </template>
@@ -30,7 +30,7 @@
       </el-col>
 
       <el-col :span="12">
-        <el-empty v-if="!selectedProject" description="暂无项目" />
+        <el-empty v-if="!selectedProject" :description="emptyProjectText" />
         <template v-else>
           <el-card class="panel" shadow="hover">
             <template #header>
@@ -403,6 +403,17 @@
                 </div>
                 <div v-else class="muted">暂无最近日志</div>
               </el-collapse-item>
+              <el-collapse-item title="参考仓库" name="repos">
+                <div class="repo-list">
+                  <div v-for="repo in projectRepos" :key="repo.url" class="repo-item">
+                    <div class="repo-item-main">
+                      <a :href="repo.url" target="_blank" rel="noopener" class="repo-link">{{ repo.repo }}</a>
+                      <span class="repo-desc">{{ repo.desc }}</span>
+                    </div>
+                    <el-tag size="small" :type="repoTypeTag(repo.tags)">{{ repo.tags?.join(' / ') || '参考' }}</el-tag>
+                  </div>
+                </div>
+              </el-collapse-item>
             </el-collapse>
           </el-card>
         </aside>
@@ -439,8 +450,47 @@ const projectContext = ref<ProjectChatContext | null>(null)
 const chatMessages = ref<ProjectChatMessage[]>([])
 const chatText = ref('')
 const chatAgent = ref('optimus')
+const workspaceProjectType = computed(() => route.meta.workspaceMode === 'writing' ? 'document' : 'software')
+const isWritingWorkspace = computed(() => workspaceProjectType.value === 'document')
+const projectListTitle = computed(() => isWritingWorkspace.value ? '文档项目' : '开发项目')
+const emptyProjectText = computed(() => isWritingWorkspace.value ? '暂无文档项目' : '暂无开发项目')
+
+// ---- 参考仓库数据 ----
+const ALL_REPOS: { url: string; repo: string; desc: string; tags: string[] }[] = [
+  { url: 'https://github.com/openclaw/openclaw', repo: 'openclaw/openclaw', desc: 'OpenClaw 官方源码', tags: ['平台'] },
+  { url: 'https://github.com/ruvnet/ruflo', repo: 'ruvnet/ruflo', desc: 'Agent meta-harness，本次调研的主题', tags: ['Agent', '框架'] },
+  { url: 'https://github.com/ruvnet/RuVector', repo: 'ruvnet/RuVector', desc: '向量数据库 + 嵌入检索引擎，Ruflo 底层智能层', tags: ['向量', '检索'] },
+  { url: 'https://github.com/ruvnet/claude-flow', repo: 'ruvnet/claude-flow', desc: 'Ruflo 前身（已更名）', tags: ['Agent', '历史'] },
+  { url: 'https://github.com/msitarzewski/agency-agents', repo: 'msitarzewski/agency-agents', desc: '多 Agent 协作框架', tags: ['Agent', '协作'] },
+  { url: 'https://github.com/msitarzewski/agency-agents-app', repo: 'msitarzewski/agency-agents-app', desc: 'agency-agents 的配套应用', tags: ['Agent', '应用'] },
+  { url: 'https://github.com/666ghj/MiroFish', repo: '666ghj/MiroFish', desc: '仿真框架', tags: ['仿真'] },
+  { url: 'https://github.com/yuanye126/MiroFish', repo: 'yuanye126/MiroFish', desc: 'MiroFish fork 版本', tags: ['仿真'] },
+  { url: 'https://github.com/camel-ai/oasis', repo: 'camel-ai/oasis', desc: 'CAMEL-AI 团队的 Oasis 多 Agent 平台', tags: ['Agent', '仿真'] },
+  { url: 'https://github.com/anomalyco/opencode', repo: 'anomalyco/opencode', desc: '开源代码编辑器/IDE 相关', tags: ['工具'] },
+]
+
+const REPO_MAP: Record<string, string[]> = {
+  '看板 V2': ['openclaw/openclaw', 'ruvnet/ruflo', 'ruvnet/RuVector', 'ruvnet/claude-flow', 'msitarzewski/agency-agents', 'msitarzewski/agency-agents-app'],
+  'one-sim 仿真': ['ruvnet/ruflo', 'ruvnet/RuVector', 'ruvnet/claude-flow', '666ghj/MiroFish', 'yuanye126/MiroFish', 'camel-ai/oasis', 'msitarzewski/agency-agents', 'msitarzewski/agency-agents-app', 'anomalyco/opencode', 'openclaw/openclaw'],
+  '博士论文': ['ruvnet/ruflo', 'ruvnet/RuVector', 'ruvnet/claude-flow', 'msitarzewski/agency-agents', 'msitarzewski/agency-agents-app', 'camel-ai/oasis', '666ghj/MiroFish', 'yuanye126/MiroFish', 'anomalyco/opencode', 'openclaw/openclaw'],
+}
+
+const projectRepos = computed(() => {
+  const p = selectedProject.value
+  if (!p) return []
+  const keys = REPO_MAP[p.name] || Object.values(REPO_MAP).flat()
+  const deduped = new Set(keys)
+  return ALL_REPOS.filter(r => deduped.has(r.repo))
+})
+
+function repoTypeTag(tags?: string[]): 'primary' | 'success' | 'info' | 'warning' {
+  if (!tags || tags.length === 0) return 'info'
+  if (tags.includes('平台') || tags.includes('仿真')) return 'success'
+  if (tags.includes('Agent') || tags.includes('框架')) return 'primary'
+  return 'info'
+}
 const chatLoading = ref(false)
-const rightPanelSections = ref(['docs'])
+const rightPanelSections = ref(['docs', 'repos'])
 const taskCodexAgents = reactive<Record<string, string>>({})
 const taskCodexInstructions = reactive<Record<string, string>>({})
 const creatingTaskIds = ref(new Set<string>())
@@ -870,7 +920,7 @@ function progressColor(percentage: number) {
 async function loadProjects() {
   loading.value = true
   try {
-    const data = await getProjects()
+    const data = await getProjects({ project_type: workspaceProjectType.value })
     projects.value = data.projects
     applyRouteSelection()
     for (const project of projects.value) {
@@ -893,8 +943,8 @@ function applyRouteSelection() {
     selectedProjectId.value = routeProjectId
     return
   }
-  if (!selectedProjectId.value && projects.value.length) {
-    selectedProjectId.value = projects.value[0].id
+  if (!projects.value.some(project => project.id === selectedProjectId.value)) {
+    selectedProjectId.value = projects.value[0]?.id || ''
   }
 }
 
@@ -971,6 +1021,12 @@ async function generateTaskFromChat() {
 }
 
 watch(() => route.query.project_id, applyRouteSelection)
+watch(workspaceProjectType, () => {
+  selectedProjectId.value = ''
+  projectContext.value = null
+  chatMessages.value = []
+  loadProjects()
+})
 watch(() => selectedProject.value?.id, projectId => {
   if (projectId) loadProjectSidecar(projectId)
 }, { immediate: true })
@@ -1483,6 +1539,50 @@ onMounted(loadCodexJobs)
 .codex-job small {
   color: var(--text-secondary);
   font-size: 12px;
+}
+
+.repo-list {
+  display: grid;
+  gap: 10px;
+  padding: 4px 0;
+}
+
+.repo-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--view-color-border);
+  border-radius: 6px;
+  background: var(--view-color-faint);
+}
+
+.repo-item-main {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.repo-link {
+  color: var(--view-color-strong);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.repo-link:hover {
+  text-decoration: underline;
+}
+
+.repo-desc {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 :global(.codex-log-dialog .el-message-box__message) {

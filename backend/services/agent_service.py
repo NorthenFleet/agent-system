@@ -4,11 +4,13 @@ AgentService — Agent 业务逻辑
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
+from fastapi import HTTPException
 
 from services.base import BaseService, Cache
 from repositories.agent_repository import AgentRepository
 from repositories.agent_heartbeat_repository import AgentHeartbeatRepository
 from repositories.agent_status_history_repository import AgentStatusHistoryRepository
+from repositories.agent_dispatch_repository import AgentDispatchRepository
 from models.v2_models import Agent
 
 
@@ -21,6 +23,7 @@ class AgentService(BaseService[Agent, AgentRepository]):
         self.repository = AgentRepository()
         self._heartbeat_repo = AgentHeartbeatRepository()
         self._status_history_repo = AgentStatusHistoryRepository()
+        self._dispatch_repo = AgentDispatchRepository()
 
     def get_by_agent_id(self, agent_id: str) -> Optional[Agent]:
         cached = self._cache_get("by_id", agent_id)
@@ -108,3 +111,60 @@ class AgentService(BaseService[Agent, AgentRepository]):
     def get_recent_status_changes(self, minutes: int = 60, skip: int = 0, limit: int = 100) -> List[Any]:
         changes = self._status_history_repo.get_recent_status_changes(self.db, minutes, skip, limit)
         return [c.to_dict() for c in changes]
+
+    def dispatch_task(
+        self,
+        agent_id: str,
+        task_id: str,
+        dispatcher_id: Optional[str] = None,
+        notes: Optional[str] = None,
+    ) -> dict:
+        """派发任务到指定 Agent：
+        1. 校验 Agent 是否存在（Agent 表或心跳记录）
+        2. 更新 Agent current_task
+        3. 插入 agent_dispatches 记录
+        """
+        # 查找 Agent（先查 Agent 表，再查心跳记录）
+        agent = self.repository.get_by_agent_id(self.db, agent_id)
+        if not agent:
+            agent = self.repository.get_by_name(self.db, agent_id)
+        if not agent:
+            # 心跳表中有心跳记录也算 Agent 存在
+            latest_hb = self._heartbeat_repo.get_latest_by_agent(self.db, agent_id, limit=1)
+            if latest_hb:
+                # 自动注册 Agent
+                hb = latest_hb[0]
+                agent = self.repository.create(self.db, {
+                    "agent_id": agent_id,
+                    "name": hb.agent_name,
+                    "status": hb.status,
+                    "current_task": None,
+                })
+                self.db.commit()
+            else:
+                raise HTTPException(404, f"Agent '{agent_id}' 不存在")
+
+        # 更新 Agent current_task
+        self.repository.update(self.db, agent.id, {
+            "current_task": task_id,
+            "updated_at": datetime.now(timezone.utc),
+        })
+        self.db.commit()
+        self._cache_invalidate("by_id", agent_id)
+
+        # 插入 dispatch 记录
+        dispatch = self._dispatch_repo.create_dispatch(self.db, {
+            "agent_id": agent_id,
+            "task_id": task_id,
+            "dispatcher_id": dispatcher_id,
+            "status": "dispatched",
+            "notes": notes,
+        })
+
+        return {
+            "success": True,
+            "dispatch_id": dispatch.id,
+            "agent_id": agent_id,
+            "task_id": task_id,
+            "message": f"任务 {task_id} 已派发至 Agent {agent_id}",
+        }

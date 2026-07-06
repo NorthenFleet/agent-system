@@ -19,6 +19,7 @@ from services.auth_service import (
     verify_password, hash_password, create_access_token, create_refresh_token,
     decode_access_token, revoke_token, generate_default_admin_password
 )
+from services.module_permission_service import get_user_module_keys, modules_for_user
 
 router = APIRouter(prefix="/api/v2/auth", tags=["v2-auth"])
 
@@ -58,6 +59,13 @@ def require_role(*roles):
             raise HTTPException(403, "权限不足")
         return user
     return check
+
+
+def user_payload_with_modules(db: Session, user_obj) -> dict:
+    data = user_obj.to_dict()
+    data["module_keys"] = get_user_module_keys(db, user_obj)
+    data["modules"] = [m for m in modules_for_user(db, user_obj) if m["granted"]]
+    return data
 
 
 class LoginRequest(BaseModel):
@@ -109,7 +117,7 @@ def login(
         "refresh_token": refresh_token,
         "token_type": "Bearer",
         "expires_in": 86400,
-        "user": user.to_dict(),
+        "user": user_payload_with_modules(svc.db, user),
     }
 
 
@@ -128,7 +136,7 @@ def get_me(
     u = svc.get_user_by_id(int(user["sub"]))
     if not u:
         raise HTTPException(404, "用户不存在")
-    return u.to_dict()
+    return user_payload_with_modules(svc.db, u)
 
 
 @router.post("/init-admin")

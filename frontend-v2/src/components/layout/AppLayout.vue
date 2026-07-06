@@ -21,6 +21,8 @@ const route = useRoute()
 const routeThemes: Record<string, { name: string; rgb: string }> = {
   '/': { name: 'dashboard', rgb: '88, 166, 255' },
   '/projects': { name: 'projects', rgb: '88, 166, 255' },
+  '/development': { name: 'development', rgb: '88, 166, 255' },
+  '/writing': { name: 'writing', rgb: '88, 166, 255' },
   '/data-admin': { name: 'data-admin', rgb: '88, 166, 255' },
   '/tasks': { name: 'tasks', rgb: '88, 166, 255' },
   '/tasks/kanban': { name: 'kanban', rgb: '88, 166, 255' },
@@ -28,12 +30,15 @@ const routeThemes: Record<string, { name: string; rgb: string }> = {
   '/agents': { name: 'agents', rgb: '88, 166, 255' },
   '/agent-chat': { name: 'agent-chat', rgb: '88, 166, 255' },
   '/knowledge': { name: 'knowledge', rgb: '88, 166, 255' },
-  '/skills': { name: 'skills', rgb: '88, 166, 255' },
-  '/scheduled': { name: 'scheduled', rgb: '88, 166, 255' },
+  '/tools': { name: 'tools', rgb: '88, 166, 255' },
+  '/skills': { name: 'tools', rgb: '88, 166, 255' },
+  '/scheduled': { name: 'tools', rgb: '88, 166, 255' },
   '/devices': { name: 'devices', rgb: '88, 166, 255' },
   '/community': { name: 'community', rgb: '88, 166, 255' },
-  '/news-center': { name: 'news', rgb: '88, 166, 255' },
-  '/products': { name: 'products', rgb: '88, 166, 255' }
+  '/news-center': { name: 'intelligence', rgb: '88, 166, 255' },
+  '/products': { name: 'products', rgb: '88, 166, 255' },
+  '/monitoring': { name: 'monitoring', rgb: '88, 166, 255' },
+  '/user-admin': { name: 'user-admin', rgb: '88, 166, 255' }
 }
 
 const activeTheme = computed(() => routeThemes[route.path] || routeThemes['/'])

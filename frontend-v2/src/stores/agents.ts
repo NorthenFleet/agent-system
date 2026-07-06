@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { getAgentsLive, getAgentHistory, createWsAgent } from '@/api/agents'
+import { getAgentsLive, getAgentHistory } from '@/api/agents'
+import { getAgentHealth, getHealthTrend, type AgentHealthScore, type HealthTrendPoint } from '@/api/health'
+import { getWsClient } from '@/ws/client'
 
 export interface Agent {
   agent_id: string
@@ -12,6 +14,7 @@ export interface Agent {
   heartbeat_age_seconds: number | null
   seconds_ago?: number
   health: 'healthy' | 'warning' | 'critical' | 'offline'
+  health_score?: number
   cpu_usage: number | null
   memory_usage: number | null
   task_queue_len?: number
@@ -44,8 +47,9 @@ export interface AgentHistoryResponse {
 }
 
 export interface WsMessage {
-  type: 'agent_status_change' | 'task_status_change' | 'heartbeat_update' | 'task_comment'
+  type: 'agent_status_change' | 'task_status_change' | 'heartbeat_update' | 'status_update' | 'task_comment'
   data: Record<string, unknown>
+  timestamp?: string
 }
 
 export const useAgentsStore = defineStore('agents', () => {
@@ -60,19 +64,41 @@ export const useAgentsStore = defineStore('agents', () => {
     timestamp: string
   }>>([])
 
-  let ws: WebSocket | null = null
-  let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+  // 健康度评分数据
+  const healthScores = ref<Map<string, AgentHealthScore>>(new Map())
+  const healthTrend = ref<HealthTrendPoint[]>([])
+  const healthLoading = ref(false)
+
+  let wsClient: ReturnType<typeof getWsClient> | null = null
 
   async function fetchAgents() {
     loading.value = true
     try {
-      const res = await getAgentsLive()
-      // Normalize seconds_ago → heartbeat_age_seconds
-      agents.value = res.agents.map(a => ({
-        ...a,
-        heartbeat_age_seconds: a.seconds_ago ?? a.heartbeat_age_seconds ?? null,
-        health: computeHealth(a.seconds_ago ?? a.heartbeat_age_seconds)
-      }))
+      const [res, healthRes] = await Promise.allSettled([
+        getAgentsLive(),
+        getAgentHealth()
+      ])
+
+      if (res.status === 'fulfilled') {
+        agents.value = res.value.agents.map(a => ({
+          ...a,
+          heartbeat_age_seconds: a.seconds_ago ?? a.heartbeat_age_seconds ?? null,
+          health: computeHealth(a.seconds_ago ?? a.heartbeat_age_seconds)
+        }))
+      }
+
+      if (healthRes.status === 'fulfilled') {
+        const scores = healthRes.value || []
+        const scoreMap = new Map<string, AgentHealthScore>()
+        scores.forEach(s => scoreMap.set(s.agent_id, s))
+        healthScores.value = scoreMap
+
+        // 将评分同步到 agents 中
+        agents.value.forEach(a => {
+          const hs = scoreMap.get(a.agent_id)
+          if (hs) a.health_score = hs.score
+        })
+      }
     } catch {
       agents.value = []
     } finally {
@@ -97,48 +123,55 @@ export const useAgentsStore = defineStore('agents', () => {
     }
   }
 
+  /**
+   * 连接 WebSocket — 使用 WsClient 内置指数退避重连
+   * 重连策略: 1s → 2s → 4s → 8s → 16s → 30s（上限）
+   */
   function connectWebSocket(token: string) {
-    if (ws) {
-      ws.close()
-    }
+    wsClient = getWsClient(token, {
+      baseDelay: 1000,
+      maxDelay: 30000,
+      pongTimeout: 60000,
+      autoPong: true,
+    })
 
-    ws = createWsAgent(token)
-
-    ws.onopen = () => {
+    wsClient.on('connected', () => {
       wsConnected.value = true
-      console.log('[WebSocket] 已连接')
-    }
+      console.log('[WebSocket] 已连接（指数退避重连就绪）')
+    })
 
-    ws.onmessage = (event: MessageEvent) => {
-      try {
-        const message: WsMessage = JSON.parse(event.data)
-        handleWsMessage(message)
-      } catch {
-        console.warn('[WebSocket] 解析消息失败', event.data)
-      }
-    }
+    wsClient.on('heartbeat_update', (msg) => {
+      handleWsMessage({ type: 'heartbeat_update', data: msg.data, timestamp: msg.timestamp })
+    })
 
-    ws.onclose = () => {
+    wsClient.on('status_update', (msg) => {
+      handleWsMessage({ type: 'status_update', data: msg.data, timestamp: msg.timestamp })
+    })
+
+    wsClient.on('agent_status_change', (msg) => {
+      handleWsMessage({ type: 'agent_status_change', data: msg.data, timestamp: msg.timestamp })
+    })
+
+    wsClient.on('task_status_change', (msg) => {
+      handleWsMessage({ type: 'task_status_change', data: msg.data, timestamp: msg.timestamp })
+    })
+
+    wsClient.on('error', (msg) => {
+      console.error('[WebSocket] 连接错误:', msg.data)
+    })
+
+    wsClient.on('disconnected', (msg) => {
       wsConnected.value = false
-      console.log('[WebSocket] 已断开，5秒后重连...')
-      reconnectTimer = setTimeout(() => {
-        if (token) connectWebSocket(token)
-      }, 5000)
-    }
+      console.warn('[WebSocket] 已断开，达到最大重连次数:', msg.data)
+    })
 
-    ws.onerror = () => {
-      console.error('[WebSocket] 连接错误')
-    }
+    wsClient.connect()
   }
 
   function disconnectWebSocket() {
-    if (ws) {
-      ws.close()
-      ws = null
-    }
-    if (reconnectTimer) {
-      clearTimeout(reconnectTimer)
-      reconnectTimer = null
+    if (wsClient) {
+      wsClient.close()
+      wsClient = null
     }
     wsConnected.value = false
   }
@@ -212,6 +245,26 @@ export const useAgentsStore = defineStore('agents', () => {
     return 'critical'
   }
 
+  function getHealthScore(agentId: string): number | undefined {
+    return healthScores.value.get(agentId)?.score
+  }
+
+  async function fetchHealthTrend(agentId: string, hours = 24) {
+    healthLoading.value = true
+    try {
+      const res = await getHealthTrend(agentId, hours)
+      healthTrend.value = res.trend || []
+    } catch {
+      healthTrend.value = []
+    } finally {
+      healthLoading.value = false
+    }
+  }
+
+  function getHealthScoreData(agentId: string): AgentHealthScore | undefined {
+    return healthScores.value.get(agentId)
+  }
+
   function addNotification(notification: { type: string; message: string; timestamp: string }) {
     notifications.value.unshift(notification)
     if (notifications.value.length > 50) {
@@ -226,11 +279,17 @@ export const useAgentsStore = defineStore('agents', () => {
     selectedAgent,
     selectedAgentHistory,
     notifications,
+    healthScores,
+    healthTrend,
+    healthLoading,
     fetchAgents,
     fetchAgentHistory,
     selectAgent,
     connectWebSocket,
     disconnectWebSocket,
-    addNotification
+    addNotification,
+    getHealthScore,
+    fetchHealthTrend,
+    getHealthScoreData
   }
 })

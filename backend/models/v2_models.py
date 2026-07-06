@@ -34,6 +34,12 @@ class User(Base):
     last_login_at = Column(DateTime, nullable=True)
 
     comments = relationship('TaskComment', back_populates='user')
+    module_grants = relationship(
+        'UserFeatureModule',
+        back_populates='user',
+        cascade='all, delete-orphan',
+        foreign_keys='UserFeatureModule.user_id',
+    )
 
     def to_dict(self):
         return {
@@ -45,6 +51,73 @@ class User(Base):
             'is_active': self.is_active,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'last_login_at': self.last_login_at.isoformat() if self.last_login_at else None,
+        }
+
+
+class FeatureModule(Base):
+    """前端功能模块/标签页主数据"""
+    __tablename__ = 'feature_modules'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    module_key = Column(String(64), unique=True, nullable=False, index=True)
+    name = Column(String(128), nullable=False)
+    route_path = Column(String(128), nullable=False)
+    icon = Column(String(64), nullable=True)
+    description = Column(Text, default='')
+    sort_order = Column(Integer, nullable=False, default=100)
+    is_enabled = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc),
+                        onupdate=lambda: datetime.now(timezone.utc))
+
+    user_grants = relationship('UserFeatureModule', back_populates='module', cascade='all, delete-orphan')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'module_key': self.module_key,
+            'name': self.name,
+            'route_path': self.route_path,
+            'icon': self.icon,
+            'description': self.description,
+            'sort_order': self.sort_order,
+            'is_enabled': self.is_enabled,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class UserFeatureModule(Base):
+    """用户可访问功能模块授权"""
+    __tablename__ = 'user_feature_modules'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    module_key = Column(String(64), ForeignKey('feature_modules.module_key', ondelete='CASCADE'), nullable=False, index=True)
+    can_view = Column(Boolean, nullable=False, default=True)
+    can_manage = Column(Boolean, nullable=False, default=False)
+    granted_by = Column(Integer, ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc),
+                        onupdate=lambda: datetime.now(timezone.utc))
+
+    user = relationship('User', foreign_keys=[user_id], back_populates='module_grants')
+    module = relationship('FeatureModule', back_populates='user_grants')
+
+    __table_args__ = (
+        UniqueConstraint('user_id', 'module_key', name='uq_user_feature_module'),
+    )
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'module_key': self.module_key,
+            'can_view': self.can_view,
+            'can_manage': self.can_manage,
+            'granted_by': self.granted_by,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
         }
 
 
@@ -506,11 +579,67 @@ class AlertEvent(Base):
         }
 
 
+class AgentHealthScore(Base):
+    """Agent 健康度评分记录"""
+    __tablename__ = 'agent_health_scores'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    agent_id = Column(String(64), nullable=False, index=True)
+    score = Column(Float, nullable=False, default=0.0)  # 0-100
+    online_status = Column(String(32), nullable=True)   # online|timeout|offline
+    success_rate = Column(Float, nullable=True, default=0.0)  # 0-100
+    response_latency = Column(Float, nullable=True, default=0.0)  # score 0-100
+    backlog_score = Column(Float, nullable=True, default=0.0)  # score 0-100
+    confidence_trend = Column(Float, nullable=True, default=0.0)  # score 0-100
+    calculated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), index=True)
+    updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc),
+                        onupdate=lambda: datetime.now(timezone.utc))
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'agent_id': self.agent_id,
+            'score': round(self.score, 2),
+            'online_status': self.online_status,
+            'success_rate': round(self.success_rate, 2) if self.success_rate else None,
+            'response_latency': round(self.response_latency, 2) if self.response_latency else None,
+            'backlog_score': round(self.backlog_score, 2) if self.backlog_score else None,
+            'confidence_trend': round(self.confidence_trend, 2) if self.confidence_trend else None,
+            'calculated_at': self.calculated_at.isoformat() if self.calculated_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
 # ---------- Database helpers ----------
 
 def get_engine():
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     return create_engine(f'sqlite:///{DB_PATH}', pool_pre_ping=True)
+
+
+# ==================== Agent 任务派发 ====================
+
+class AgentDispatch(Base):
+    __tablename__ = 'agent_dispatches'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    agent_id = Column(String(64), nullable=False, index=True)
+    task_id = Column(String(64), nullable=False, index=True)
+    dispatcher_id = Column(String(64), nullable=True)
+    dispatched_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), index=True)
+    status = Column(String(32), nullable=False, default='pending', index=True)  # pending | dispatched | running | completed | failed | cancelled
+    notes = Column(Text, nullable=True)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'agent_id': self.agent_id,
+            'task_id': self.task_id,
+            'dispatcher_id': self.dispatcher_id,
+            'dispatched_at': self.dispatched_at.isoformat() if self.dispatched_at else None,
+            'status': self.status,
+            'notes': self.notes,
+        }
 
 
 def init_db():

@@ -48,7 +48,7 @@ def _authenticated_admin_role(request: Request) -> bool:
     return bool(payload and payload.get("role") == "admin")
 
 
-def _authenticated_payload(request: Request) -> dict | None:
+def _authenticated_payload(request: Request):  # type: ignore
     token = _extract_api_key(request)
     if not token:
         return None

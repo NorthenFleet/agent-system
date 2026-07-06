@@ -37,11 +37,74 @@ async def _protect_legacy(req: Request, call_next):
     if _is_legacy_admin_write(req):
         try: require_admin_request(req)
         except Exception as exc: return JSONResponse(status_code=getattr(exc, "status_code", 500), content={"detail": getattr(exc, "detail", "error")})
+    blocked = _check_module_access(req)
+    if blocked is not None:
+        return blocked
     return await call_next(req)
 
+
+def _module_for_path(path: str):
+    if not path.startswith("/api/"):
+        return None
+    if path.startswith("/api/v2/auth") or path == "/api/v2/modules/me":
+        return None
+    mapping = [
+        (("/api/v2/users", "/api/v2/modules"), "user-admin"),
+        (("/api/v3/projects", "/api/v2/projects"), "projects"),
+        (("/api/v2/tasks", "/api/tasks", "/api/v2/task-recommend"), "tasks"),
+        (("/api/admin/data", "/api/v2/data", "/api/v3/data"), "data-admin"),
+        (("/api/v3/agents", "/api/v2/agents", "/api/agents", "/api/v2/agent-health"), "agents"),
+        (("/api/v2/codex-jobs",), "agent-dispatch"),
+        (("/api/v2/chat", "/api/chat"), "agent-chat"),
+        (("/api/knowledge", "/api/v3/knowledge"), "knowledge"),
+        (("/api/finance",), "finance"),
+        (("/api/skills",), "skills"),
+        (("/api/scheduled",), "scheduled"),
+        (("/api/devices",), "devices"),
+        (("/api/community", "/api/forum", "/api/bar"), "community"),
+        (("/api/news",), "news-center"),
+        (("/api/products",), "products"),
+        (("/api/v2/monitoring",), "monitoring"),
+    ]
+    for prefixes, module_key in mapping:
+        if any(path.startswith(prefix) for prefix in prefixes):
+            return module_key
+    return None
+
+
+def _check_module_access(req: Request):
+    module_key = _module_for_path(req.url.path)
+    if not module_key:
+        return None
+    auth = req.headers.get("authorization", "")
+    if not auth.startswith("Bearer "):
+        return JSONResponse(status_code=401, content={"detail": "未登录"})
+    try:
+        from services.auth_service import decode_access_token
+        from services.user_service import UserService
+        from services.module_permission_service import user_has_module
+        from models.v2_models import get_session
+
+        payload = decode_access_token(auth[7:])
+        if not payload:
+            return JSONResponse(status_code=401, content={"detail": "Token 无效或已过期"})
+        db = get_session()
+        try:
+            user = UserService(db).get_active_user_by_id(int(payload["sub"]))
+            if not user_has_module(db, user, module_key):
+                return JSONResponse(status_code=403, content={"detail": f"无权访问模块: {module_key}"})
+        finally:
+            db.close()
+    except Exception:
+        return JSONResponse(status_code=403, content={"detail": "模块权限校验失败"})
+    return None
+
 # Routes
-from api.tasks import router as _r0; from api.plans import router as _r1; from routers import loop_queue as _m0, workflow as _m1, openclaw_status as _m2, system_status as _m3, projects_v3 as _m4, knowledge as _m5, knowledge_stack as _m6, data_admin as _m7, products_router as _m8, agent_os as _m9
+from api.tasks import router as _r0; from api.plans import router as _r1; from routers import loop_queue as _m0, workflow as _m1, openclaw_status as _m2, system_status as _m3, projects_v3 as _m4, knowledge as _m5, knowledge_stack as _m6, data_admin as _m7, products_router as _m8, agent_os as _m9, finance as _m10
 from routers.auth_router import router as _r2; from routers.users_router import router as _r3; from routers.tasks_v2 import router as _r4; from routers.agents_router import router as _r5; from routers.customers_router import router as _r6; from routers.v2_chat_router import router as _r16; from routers.codex_jobs_router import router as _r18
+from routers.modules_router import router as _r22
+from routers.task_recommend_router import router as _r19; from routers.agent_health_router import router as _r20
+from routers.monitoring_router import router as _r21
 # Wire legacy managers before router import
 from data_manager import data_manager; from task_queue import task_manager; from device_manager import device_manager
 from idle_agent_manager import idle_agent_manager; from document_manager import doc_manager
@@ -57,11 +120,12 @@ _l12.set_managers(community_manager, chat_manager, forum_manager); _l13.set_mana
 _l14.set_managers(task_manager, plan_manager, auto_plan_manager)
 
 from routers.legacy_tasks_router import router as _r7; from routers.legacy_agents_router import router as _r8; from routers.legacy_bar_router import router as _r9; from routers.legacy_idle_agents_router import router as _r10; from routers.legacy_agent_docs_router import router as _r11; from routers.legacy_community_router import router as _r12; from routers.legacy_news_router import router as _r13; from routers.legacy_plans_auto_router import router as _r14; from routers.legacy_scheduled_tasks_router import router as _r15
-for r in (_r0, _r1, _m0.router, _m1.router, _m2.router, _m3.router, _m4.router, _m5.router, _m6.router, _m7.router, _m8.router, _m9.router, _r2, _r3, _r4, _r5, _r6, _r16, _r18, _r7, _r8, _r9, _r10, _r11, _r12, _r13, _r14, _r15): app.include_router(r)
+for r in (_r0, _r1, _m0.router, _m1.router, _m2.router, _m3.router, _m4.router, _m5.router, _m6.router, _m7.router, _m8.router, _m9.router, _m10.router, _r2, _r3, _r4, _r5, _r6, _r16, _r18, _r19, _r20, _r21, _r22, _r7, _r8, _r9, _r10, _r11, _r12, _r13, _r14, _r15): app.include_router(r)
 
 # Pages
 app.get("/")(lambda: _r(_fe())); app.get("/index-old")(lambda: _r(_fe())); app.get("/legacy")(lambda: _r(_fe())); app.get("/modular")(lambda: _r(_fe())); app.get("/projects")(lambda: _r(_fe()))
 app.get("/products")(lambda: _r(_fe())); app.get("/data-admin")(lambda: _r(_fe())); app.get("/dataAdmin")(lambda: _r(_fe()))
+app.get("/user-admin")(lambda: _r(_fe()))
 app.get("/login")(lambda: _r(_fe()))
 app.get("/mobile")(lambda: _r(os.path.join(FD, "mobile.html")))
 app.get("/manifest.json")(lambda: _r(os.path.join(FD, "manifest.json")))
@@ -88,7 +152,7 @@ def _spa(full_path: str): return _r(os.path.join(FD2, "index.html")) if V2 and o
 async def ws_ep(ws: WebSocket):
     await manager.connect(ws)
     try:
-        await manager.send_status_update(data_manager.get_agents(), data_manager.get_merged_tasks())
+        await manager.push_status_update(data_manager.get_agents(), data_manager.get_merged_tasks())
         while True: await ws.receive_text()
     except WebSocketDisconnect: manager.disconnect(ws)
 
@@ -96,10 +160,24 @@ async def ws_ep(ws: WebSocket):
 async def startup():
     print("=" * 50 + "\n团队看板 API 启动 (Slim)\n" + "=" * 50)
     try:
+        from models.v2_models import init_db, get_session
+        from services.module_permission_service import ensure_default_modules
+        init_db()
+        db = get_session()
+        try: ensure_default_modules(db)
+        finally: db.close()
+    except Exception as e:
+        print(f"[Permissions] 初始化失败: {e}")
+    try:
         interval = int(os.getenv("DEVICE_HEALTH_INTERVAL", "30"))
         await device_manager.start_health_monitoring(interval=interval)
     except Exception as e:
         print(f"[DeviceManager] 健康监控启动失败: {e}")
+
+    try:
+        _m4.start_elastic_agent_runner()
+    except Exception as e:
+        print(f"[ElasticAgentRunner] 启动失败: {e}")
 
     if os.getenv("DISABLE_SCHEDULER", "false").lower() == "true":
         print("[Scheduler] 已禁用（DISABLE_SCHEDULER=true）")
@@ -115,6 +193,9 @@ async def shutdown():
     try:
         device_manager.stop_health_monitoring()
     except Exception as e: print(f"[DeviceManager] 健康监控关闭异常: {e}")
+    try:
+        await _m4.stop_elastic_agent_runner()
+    except Exception as e: print(f"[ElasticAgentRunner] 关闭异常: {e}")
     try:
         from services.scheduler_service import scheduler_service; scheduler_service.shutdown_scheduler(wait=True)
     except Exception as e: print(f"[Scheduler] 关闭异常: {e}")

@@ -14,6 +14,15 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => !!token.value)
   const isAdmin = computed(() => user.value?.role === 'admin')
   const displayName = computed(() => user.value?.display_name || '用户')
+  const modules = computed(() => user.value?.modules || [])
+  const moduleKeys = computed(() => user.value?.module_keys || modules.value.map(item => item.module_key))
+  const firstAllowedPath = computed(() => modules.value[0]?.route_path || '/')
+
+  function canAccessModule(moduleKey?: string) {
+    if (!moduleKey) return true
+    if (isAdmin.value) return true
+    return moduleKeys.value.includes(moduleKey)
+  }
 
   async function login(username: string, password: string) {
     loading.value = true
@@ -85,6 +94,10 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated,
     isAdmin,
     displayName,
+    modules,
+    moduleKeys,
+    firstAllowedPath,
+    canAccessModule,
     login,
     logout,
     fetchMe,

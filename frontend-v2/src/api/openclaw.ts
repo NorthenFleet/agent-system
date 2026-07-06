@@ -92,6 +92,10 @@ export interface KnowledgeStats {
   build_time?: string
   vault_path?: string
   index_path?: string
+  concept_moc_path?: string
+  concept_count?: number
+  attached_count?: number
+  source_stats?: KnowledgeStats
   available: boolean
 }
 
@@ -102,6 +106,9 @@ export interface KnowledgeNode {
   path: string
   score?: number
   matched_keyword?: string
+  backbone?: boolean
+  layer?: string
+  domain?: string
 }
 
 export interface KnowledgeRelation {
@@ -110,9 +117,11 @@ export interface KnowledgeRelation {
   type?: string
   relation?: string
   weight?: number
+  backbone?: boolean
 }
 
 export interface KnowledgeGraph {
+  mode?: 'concept_backbone' | 'full'
   stats: KnowledgeStats
   nodes: KnowledgeNode[]
   relations: KnowledgeRelation[]
@@ -272,9 +281,9 @@ export function getKnowledgeNodes(limit = 500, offset = 0, type?: string, q?: st
   }).then(r => r.data)
 }
 
-export function getKnowledgeGraph(limitEdges = 260, type?: string) {
+export function getKnowledgeGraph(limitEdges = 260, type?: string, mode: 'concept_backbone' | 'full' = 'concept_backbone') {
   return apiClient.get<KnowledgeGraph>('/api/knowledge/graph', {
-    params: { limit_edges: limitEdges, type: type || undefined }
+    params: { limit_edges: limitEdges, type: type || undefined, mode }
   }).then(r => r.data)
 }
 

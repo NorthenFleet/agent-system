@@ -1,413 +1,370 @@
 <template>
   <div class="agents-page">
+    <!-- 页面标题 + 统计卡片 -->
+    <div class="page-header">
+      <div class="page-title">
+        <h1>🤖 智能体管理</h1>
+        <p class="page-desc">Agent 状态监控 · 实时状态 · 任务追踪</p>
+      </div>
+      <div class="page-actions">
+        <el-button
+          type="primary"
+          size="small"
+          :loading="agentsStore.loading"
+          :icon="Refresh"
+          @click="refresh"
+        >
+          刷新
+        </el-button>
+        <span class="ws-indicator" :class="{ connected: agentsStore.wsConnected }">
+          <span class="ws-dot"></span>
+          {{ agentsStore.wsConnected ? '实时推送' : '轮询模式' }}
+        </span>
+      </div>
+    </div>
+
+    <!-- 统计摘要 -->
     <el-row :gutter="16" class="stats-row">
-      <el-col :xs="12" :md="6">
-        <el-card class="stat-card" shadow="hover"><span>注册智能体</span><strong>{{ registeredAgentCount }}</strong></el-card>
+      <el-col :xs="12" :sm="6">
+        <div class="stat-card stat-total">
+          <span class="stat-label">全部</span>
+          <span class="stat-value">{{ total }}</span>
+        </div>
       </el-col>
-      <el-col :xs="12" :md="6">
-        <el-card class="stat-card" shadow="hover"><span>项目中</span><strong>{{ busyAgentCount }}</strong></el-card>
+      <el-col :xs="12" :sm="6">
+        <div class="stat-card stat-online">
+          <span class="stat-label">在线</span>
+          <span class="stat-value">{{ onlineCount }}</span>
+        </div>
       </el-col>
-      <el-col :xs="12" :md="6">
-        <el-card class="stat-card" shadow="hover"><span>组织节点</span><strong>{{ visibleNodeCount }}</strong></el-card>
+      <el-col :xs="12" :sm="6">
+        <div class="stat-card stat-busy">
+          <span class="stat-label">忙碌</span>
+          <span class="stat-value">{{ busyCount }}</span>
+        </div>
       </el-col>
-      <el-col :xs="12" :md="6">
-        <el-card class="stat-card" shadow="hover"><span>规划占位</span><strong>{{ plannedNodeCount }}</strong></el-card>
+      <el-col :xs="12" :sm="6">
+        <div class="stat-card stat-offline">
+          <span class="stat-label">离线</span>
+          <span class="stat-value">{{ offlineCount }}</span>
+        </div>
       </el-col>
     </el-row>
 
-    <el-card class="overview-panel" shadow="hover">
-      <div class="overview-head">
-        <div>
-          <div class="overview-title">智能体组织看板</div>
-          <div class="muted">每一行表示一个组织层级；卡片保留角色、状态、职责、当前项目任务和下级关系。</div>
-        </div>
-        <div class="overview-actions">
-          <el-switch v-model="showPlanned" size="small" active-text="显示规划节点" />
-          <el-button size="small" type="primary" :loading="loading" @click="loadAll">刷新</el-button>
-        </div>
-      </div>
-    </el-card>
-
-    <div class="agent-board-layout">
-      <section>
-        <el-skeleton v-if="loading" :rows="12" animated />
-        <el-empty v-else-if="!hierarchyRows.length" description="暂无组织数据" />
-        <div v-else class="hierarchy-board">
-          <section v-for="level in hierarchyRows" :key="level.depth" class="level-row">
-            <div class="level-head">
-              <span class="level-index">第 {{ level.depth + 1 }} 层</span>
-              <strong>{{ levelTitle(level.depth) }}</strong>
-              <span>{{ level.cards.length }} 个节点</span>
-            </div>
-            <div class="agent-card-grid">
-              <button
-                v-for="card in level.cards"
-                :key="card.node.id"
-                class="agent-card"
-                :class="{
-                  active: selectedNodeId === card.node.id,
-                  planned: card.node.planned,
-                  group: card.node.node_type === 'group'
-                }"
-                @click="selectNode(card.node)"
-                @dblclick="openMemoryDrawer(card.node)"
-              >
-                <span class="card-top">
-                  <span class="agent-avatar">{{ nodeEmoji(card.node) }}</span>
-                  <span class="agent-title">
-                    <strong>{{ nodeName(card.node) }}</strong>
-                    <small>{{ card.node.agent_id || card.node.id }}</small>
-                  </span>
-                  <el-tag v-if="card.node.planned" size="small" type="info">规划</el-tag>
-                  <el-tag v-else-if="card.agent" size="small" :type="statusType(card.agent.status)">{{ statusLabel(card.agent.status) }}</el-tag>
-                  <el-tag v-else size="small" type="info">{{ card.node.node_type === 'group' ? '分组' : '节点' }}</el-tag>
-                </span>
-
-                <span class="card-role">{{ nodeSubtitle(card.node, card.agent, card.childCount) }}</span>
-
-                <span v-if="card.agent" class="card-fields">
-                  <span>
-                    <b>职责</b>
-                    <em>{{ responsibilities(card.agent).slice(0, 2).join(' / ') }}</em>
-                  </span>
-                  <span>
-                    <b>当前任务</b>
-                    <em>{{ card.agent.current_task_title || card.agent.current_task || '待分配' }}</em>
-                  </span>
-                  <span>
-                    <b>项目</b>
-                    <em>{{ card.agent.current_project_name || '暂无项目' }}</em>
-                  </span>
-                </span>
-
-                <span v-else class="card-fields">
-                  <span>
-                    <b>类型</b>
-                    <em>{{ card.node.node_type === 'group' ? '组织分组' : '组织成员' }}</em>
-                  </span>
-                  <span>
-                    <b>说明</b>
-                    <em>{{ card.node.title || '待配置' }}</em>
-                  </span>
-                </span>
-
-                <span class="card-footer">
-                  <span>{{ card.childCount }} 个下级</span>
-                  <span v-if="card.agent?.current_project_id" class="project-link" @click.stop="openAgentProjectTask(card.agent)">查看任务</span>
-                </span>
-
-                <!-- 记忆概览 -->
-                <div v-if="card.agent?.memory && card.agent.memory.length" class="card-memory">
-                  <div class="card-memory-title">记忆 ({{ card.agent.memory.length }})</div>
-                  <div class="card-memory-items">
-                    <div v-for="mem in card.agent.memory.slice(0, 3)" :key="`mem-${String(mem).slice(0,20)}`" class="card-memory-item">
-                      <span class="card-memory-dot"></span>
-                      <span class="card-memory-text">{{ memoryText(mem) }}</span>
-                    </div>
-                  </div>
-                  <span v-if="card.agent.memory.length > 3" class="card-memory-more">+{{ card.agent.memory.length - 3 }} 条</span>
-                </div>
-              </button>
-            </div>
-          </section>
-        </div>
-      </section>
-
-      <aside class="agent-memory-panel">
-        <el-card class="memory-card" shadow="hover">
-          <div class="selected-head">
-            <div>
-              <div class="field-title">{{ selectedAgent ? '智能体档案' : '组织节点' }}</div>
-              <div class="selected-name">{{ selectedTitle }}</div>
-              <div class="muted">{{ selectedSubtitle }}</div>
-            </div>
-            <el-tag v-if="selectedAgent" :type="statusType(selectedAgent.status)" size="small">{{ statusLabel(selectedAgent.status) }}</el-tag>
-            <el-tag v-else-if="selectedNode?.planned" size="small" type="info">规划占位</el-tag>
-          </div>
-
-          <div v-if="selectedAgent" class="detail-block">
-            <div class="field-title">职责</div>
-            <div class="responsibility-list">
-              <span v-for="item in responsibilities(selectedAgent)" :key="`selected-${item}`" class="responsibility-chip">{{ item }}</span>
-            </div>
-          </div>
-
-          <div v-if="selectedAgent?.current_project_id" class="current-work">
-            <div class="field-title">当前项目任务</div>
-            <div class="work-title">{{ selectedAgent.current_task_title || selectedAgent.current_task || '未命名任务' }}</div>
-            <div class="muted">{{ selectedAgent.current_development_point_title || selectedAgent.current_project_name }}</div>
-            <el-button size="small" type="primary" class="work-button" @click="openAgentProjectTask(selectedAgent)">跳转到项目任务</el-button>
-          </div>
-
-          <div v-if="selectedChildren.length" class="detail-block">
-            <div class="field-title">下级节点</div>
-            <div class="child-list">
-              <button v-for="child in selectedChildren" :key="child.id" class="child-chip" @click="selectNode(child)">
-                {{ nodeEmoji(child) }} {{ nodeName(child) }}
-              </button>
-            </div>
-          </div>
-        </el-card>
-
-        <el-card class="memory-card" shadow="hover">
-          <div class="memory-section-title">
-            <span>短期记忆</span>
-            <el-button size="small" text :loading="memoryLoading" :disabled="!selectedAgent" @click="loadAgentMemory(selectedAgent)">刷新</el-button>
-          </div>
-          <div v-if="shortMemory.length" class="memory-list">
-            <div v-for="(mem, idx) in shortMemory" :key="`short-${idx}`" class="memory-item">
-              <div class="memory-item-title">{{ memoryText(mem) }}</div>
-              <div class="muted">{{ memoryDate(mem) }}</div>
-            </div>
-          </div>
-          <div v-else class="muted">{{ selectedAgent ? '暂无短期记忆' : '请选择一个已注册智能体查看记忆' }}</div>
-        </el-card>
-
-        <el-card class="memory-card" shadow="hover">
-          <div class="memory-section-title">长期记忆 / 历史</div>
-          <div v-if="longMemory.length" class="memory-list">
-            <div v-for="(mem, idx) in longMemory" :key="`long-${idx}`" class="memory-history-line">
-              {{ memoryDate(mem) }} · {{ memoryText(mem) }}
-            </div>
-          </div>
-          <div v-else class="muted">暂无长期记忆</div>
-        </el-card>
-      </aside>
+    <!-- 状态筛选 -->
+    <div class="filter-bar">
+      <el-button-group>
+        <el-button
+          v-for="f in filterOptions"
+          :key="f.value"
+          :type="activeFilter === f.value ? 'primary' : 'default'"
+          :plain="activeFilter !== f.value"
+          size="small"
+          @click="activeFilter = f.value"
+        >
+          {{ f.icon }} {{ f.label }}
+          <span class="filter-badge">{{ filterCount(f.value) }}</span>
+        </el-button>
+      </el-button-group>
     </div>
 
-    <!-- 完整记忆 Drawer -->
-    <el-drawer v-model="memoryDrawerVisible" :title="memoryDrawerTitle" size="600px" direction="rtl" :close-on-click-modal="false">
-      <div v-if="memoryDrawerAgent" class="memory-drawer-content">
-        <div class="memory-drawer-stats">
-          <el-tag size="small">总计 {{ memoryDrawerAgent?.memory?.length || 0 }} 条</el-tag>
-          <el-tag size="small" type="success">短期 {{ shortMemoryOfAgent.length }}</el-tag>
-          <el-tag size="small" type="warning">长期 {{ longMemoryOfAgent.length }}</el-tag>
-        </div>
+    <!-- Loading 状态 -->
+    <div v-if="agentsStore.loading && filteredAgents.length === 0" class="loading-wrapper">
+      <el-icon class="loading-spinner" :size="40"><Loading /></el-icon>
+      <p class="loading-text">加载智能体数据...</p>
+    </div>
 
-        <el-divider content-position="left">短期记忆 (最近 {{ shortMemoryOfAgent.length }} 条)</el-divider>
-        <div v-if="shortMemoryOfAgent.length" class="memory-drawer-list">
-          <div v-for="(mem, idx) in shortMemoryOfAgent" :key="`sd-${idx}`" class="memory-drawer-item">
-            <div class="memory-drawer-item-title">{{ memoryText(mem) }}</div>
-            <div class="muted">{{ memoryDate(mem) }}</div>
+    <!-- 空状态 -->
+    <el-empty
+      v-else-if="filteredAgents.length === 0"
+      description="暂无匹配的智能体"
+      :image-size="100"
+    />
+
+    <!-- Agent 卡片列表 -->
+    <div v-else class="agent-grid">
+      <el-card
+        v-for="agent in filteredAgents"
+        :key="agent.agent_id"
+        class="agent-card"
+        shadow="hover"
+        @click="selectAgent(agent.agent_id)"
+      >
+        <!-- 卡片头部：头像 + 名称 + 状态 -->
+        <div class="agent-card-header">
+          <div class="agent-avatar" :style="{ background: avatarColor(agent.agent_id) }">
+            <span>{{ agentEmoji(agent.agent_id) }}</span>
+          </div>
+          <div class="agent-info">
+            <div class="agent-name">
+              {{ agent.agent_name || agent.agent_id }}
+              <el-tag
+                :type="statusType(agent.status)"
+                size="small"
+                class="status-tag"
+              >
+                {{ statusLabel(agent.status) }}
+              </el-tag>
+            </div>
+            <div class="agent-id muted">{{ agent.agent_id }}</div>
           </div>
         </div>
-        <el-empty v-else :image-size="30" description="暂无短期记忆" />
 
-        <el-divider content-position="left">长期记忆 ({{ longMemoryOfAgent.length }} 条)</el-divider>
-        <div v-if="longMemoryOfAgent.length" class="memory-drawer-list">
-          <div v-for="(mem, idx) in longMemoryOfAgent" :key="`ld-${idx}`" class="memory-drawer-item">
-            <div class="memory-drawer-item-title">{{ memoryText(mem) }}</div>
-            <div class="muted">{{ memoryDate(mem) }}</div>
+        <!-- 当前任务 -->
+        <div class="agent-task">
+          <span class="task-label">📋 当前任务</span>
+          <span class="task-value">{{ agent.current_task || '待分配' }}</span>
+        </div>
+
+        <!-- 资源指标 -->
+        <div class="agent-metrics">
+          <div class="metric-item">
+            <span class="metric-label">CPU</span>
+            <el-progress
+              :percentage="agent.cpu_usage ?? 0"
+              :stroke-width="4"
+              :show-text="false"
+              :status="metricStatus(agent.cpu_usage, 80)"
+            />
+            <span class="metric-value">{{ agent.cpu_usage != null ? `${agent.cpu_usage}%` : '—' }}</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-label">内存</span>
+            <el-progress
+              :percentage="agent.memory_usage ?? 0"
+              :stroke-width="4"
+              :show-text="false"
+              :status="metricStatus(agent.memory_usage, 80)"
+            />
+            <span class="metric-value">{{ agent.memory_usage != null ? `${agent.memory_usage}%` : '—' }}</span>
           </div>
         </div>
-        <el-empty v-else :image-size="30" description="暂无长期记忆" />
 
-        <el-divider content-position="left">全部记忆</el-divider>
-        <div v-if="memoryDrawerAgent?.memory?.length" class="memory-drawer-list memory-full-list">
-          <div v-for="(mem, idx) in sortedMemoryOfAgent" :key="`all-${idx}`" class="memory-drawer-item">
-            <div class="memory-drawer-item-title">{{ memoryText(mem) }}</div>
-            <div class="muted">{{ memoryDate(mem) }}</div>
+        <!-- 心跳 + 健康度 -->
+        <div class="agent-footer">
+          <span class="heartbeat" :class="heartbeatClass(agent)">
+            <span class="heartbeat-dot"></span>
+            {{ heartbeatText(agent) }}
+          </span>
+          <span v-if="agent.health_score != null" class="health-score">
+            健康度 {{ agent.health_score }}
+          </span>
+        </div>
+      </el-card>
+    </div>
+
+    <!-- Agent 详情 Drawer -->
+    <el-drawer
+      v-model="drawerVisible"
+      :title="drawerTitle"
+      size="480px"
+      direction="rtl"
+    >
+      <template v-if="selectedAgent">
+        <div class="drawer-agent-header">
+          <div class="drawer-avatar" :style="{ background: avatarColor(selectedAgent.agent_id) }">
+            <span>{{ agentEmoji(selectedAgent.agent_id) }}</span>
+          </div>
+          <div>
+            <div class="drawer-agent-name">{{ selectedAgent.agent_name || selectedAgent.agent_id }}</div>
+            <el-tag :type="statusType(selectedAgent.status)" size="small">
+              {{ statusLabel(selectedAgent.status) }}
+            </el-tag>
           </div>
         </div>
-        <el-empty v-else :image-size="30" description="暂无记忆数据" />
-      </div>
+
+        <el-divider />
+
+        <div class="drawer-section">
+          <h3>📋 当前任务</h3>
+          <p>{{ selectedAgent.current_task || '暂无任务' }}</p>
+        </div>
+
+        <div class="drawer-section">
+          <h3>💓 心跳信息</h3>
+          <el-descriptions :column="1" size="small">
+            <el-descriptions-item label="最后心跳">
+              {{ selectedAgent.last_heartbeat || '无' }}
+            </el-descriptions-item>
+            <el-descriptions-item label="心跳延迟">
+              {{ heartbeatText(selectedAgent) }}
+            </el-descriptions-item>
+            <el-descriptions-item label="健康状态">
+              {{ healthLabel(selectedAgent.health) }}
+            </el-descriptions-item>
+          </el-descriptions>
+        </div>
+
+        <div class="drawer-section">
+          <h3>📊 资源使用</h3>
+          <el-descriptions :column="1" size="small">
+            <el-descriptions-item label="CPU">
+              {{ selectedAgent.cpu_usage != null ? `${selectedAgent.cpu_usage}%` : '—' }}
+            </el-descriptions-item>
+            <el-descriptions-item label="内存">
+              {{ selectedAgent.memory_usage != null ? `${selectedAgent.memory_usage}%` : '—' }}
+            </el-descriptions-item>
+          </el-descriptions>
+        </div>
+
+        <div v-if="selectedAgent.metadata && Object.keys(selectedAgent.metadata).length" class="drawer-section">
+          <h3>📝 元数据</h3>
+          <el-descriptions :column="1" size="small">
+            <el-descriptions-item
+              v-for="(val, key) in selectedAgent.metadata"
+              :key="key"
+              :label="key"
+            >
+              {{ typeof val === 'string' ? val : JSON.stringify(val) }}
+            </el-descriptions-item>
+          </el-descriptions>
+        </div>
+
+        <!-- 状态变更历史 -->
+        <div v-if="agentsStore.selectedAgentHistory.length" class="drawer-section">
+          <h3>📜 状态变更历史</h3>
+          <el-timeline size="small">
+            <el-timeline-item
+              v-for="h in agentsStore.selectedAgentHistory.slice(0, 10)"
+              :key="h.id"
+              :type="statusType(h.to_status)"
+              placement="top"
+            >
+              <div class="history-item">
+                <span class="history-status">
+                  {{ statusLabel(h.from_status ?? '') }} → {{ statusLabel(h.to_status ?? '') }}
+                </span>
+                <span class="history-task" v-if="h.current_task">{{ h.current_task }}</span>
+                <span class="history-time">{{ formatTime(h.changed_at) }}</span>
+              </div>
+            </el-timeline-item>
+          </el-timeline>
+        </div>
+      </template>
     </el-drawer>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { Loading, Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import {
-  getAgentDashboard,
-  getAgentMemory,
-  getAgentOrganization,
-  type AgentDashboardItem,
-  type AgentMemoryItem,
-  type AgentOrganization,
-  type AgentOrganizationNode
-} from '@/api/openclaw'
+import { useAgentsStore, type Agent } from '@/stores/agents'
 
-interface HierarchyCard {
-  node: AgentOrganizationNode
-  agent?: AgentDashboardItem
-  childCount: number
-}
+const agentsStore = useAgentsStore()
 
-interface HierarchyRow {
-  depth: number
-  cards: HierarchyCard[]
-}
+// ===================== 状态 =====================
+const activeFilter = ref<'all' | 'online' | 'busy' | 'offline' | 'idle'>('all')
+const drawerVisible = ref(false)
 
-const router = useRouter()
-const loading = ref(false)
-const memoryLoading = ref(false)
-const showPlanned = ref(true)
-const agents = ref<AgentDashboardItem[]>([])
-const organization = ref<AgentOrganization | null>(null)
-const selectedNodeId = ref('')
-const agentMemory = ref<AgentMemoryItem[]>([])
+const filterOptions = [
+  { label: '全部', value: 'all' as const, icon: '📊' },
+  { label: '在线', value: 'online' as const, icon: '🟢' },
+  { label: '忙碌', value: 'busy' as const, icon: '🟡' },
+  { label: '空闲', value: 'idle' as const, icon: '🔵' },
+  { label: '离线', value: 'offline' as const, icon: '⚫' }
+]
 
-// Memory Drawer state
-const memoryDrawerVisible = ref(false)
-const memoryDrawerAgent = ref<AgentDashboardItem | null>(null)
+// ===================== 计算属性 =====================
+const total = computed(() => agentsStore.agents.length)
+const onlineCount = computed(() => agentsStore.agents.filter(a => a.status === 'online').length)
+const busyCount = computed(() => agentsStore.agents.filter(a => a.status === 'busy').length)
+const offlineCount = computed(() => agentsStore.agents.filter(a => a.status === 'offline').length)
 
-const agentById = computed(() => {
-  const map = new Map<string, AgentDashboardItem>()
-  agents.value.forEach(agent => map.set(agentId(agent), agent))
-  return map
+const filteredAgents = computed(() => {
+  const agents = agentsStore.agents
+  if (activeFilter.value === 'all') return agents
+  return agents.filter(a => a.status === activeFilter.value)
 })
 
-const childrenByParent = computed(() => {
-  const map = new Map<string, AgentOrganizationNode[]>()
-  for (const node of organization.value?.nodes || []) {
-    if (!showPlanned.value && node.planned) continue
-    const key = node.parent_id || ''
-    if (!map.has(key)) map.set(key, [])
-    map.get(key)!.push(node)
+const selectedAgent = computed(() => agentsStore.selectedAgent)
+
+const drawerTitle = computed(() => {
+  if (!selectedAgent.value) return '智能体详情'
+  return `${agentEmoji(selectedAgent.value.agent_id)} ${selectedAgent.value.agent_name || selectedAgent.value.agent_id}`
+})
+
+function filterCount(value: string): number {
+  switch (value) {
+    case 'all': return agentsStore.agents.length
+    case 'online': return onlineCount.value
+    case 'busy': return busyCount.value
+    case 'idle': return agentsStore.agents.filter(a => a.status === 'idle').length
+    case 'offline': return offlineCount.value
+    default: return 0
   }
-  for (const list of map.values()) {
-    list.sort((a, b) => (a.order || 999) - (b.order || 999) || a.name.localeCompare(b.name, 'zh-CN'))
+}
+
+// ===================== 工具函数 =====================
+function statusType(status: string): '' | 'success' | 'warning' | 'info' | 'danger' {
+  const map: Record<string, '' | 'success' | 'warning' | 'info' | 'danger'> = {
+    online: 'success',
+    busy: 'warning',
+    idle: 'info',
+    offline: 'danger'
   }
-  return map
-})
+  return map[status] || 'info'
+}
 
-const hierarchyRows = computed(() => {
-  if (!organization.value) return []
-  const rows: HierarchyRow[] = []
-  const pendingLevels: AgentOrganizationNode[][] = [[organization.value.root]]
-  let depth = 0
-
-  while (pendingLevels.length) {
-    const currentLevel = expandStructuralGroups(pendingLevels.shift() || [])
-    if (!currentLevel.length) continue
-
-    const displayNodes = currentLevel.filter(node => node.node_type !== 'group')
-    if (displayNodes.length) {
-      rows.push({
-        depth,
-        cards: displayNodes.map(node => ({
-          node,
-          agent: node.agent_id ? agentById.value.get(node.agent_id) : undefined,
-          childCount: visibleChildren(node).length
-        }))
-      })
-      depth += 1
-    }
-
-    const children = currentLevel.flatMap(node => childrenByParent.value.get(node.id) || [])
-    if (children.length) pendingLevels.push(children)
+function statusLabel(status: string): string {
+  const map: Record<string, string> = {
+    online: '在线',
+    busy: '忙碌',
+    idle: '空闲',
+    pending: '待命',
+    offline: '离线'
   }
-  return rows
-})
+  return map[status] || status || '未知'
+}
 
-function expandStructuralGroups(nodes: AgentOrganizationNode[]) {
-  let expanded = nodes
-  while (expanded.length && expanded.every(node => node.node_type === 'group')) {
-    expanded = expanded.flatMap(node => childrenByParent.value.get(node.id) || [])
+function healthLabel(health: string): string {
+  const map: Record<string, string> = {
+    healthy: '健康',
+    warning: '警告',
+    critical: '严重',
+    offline: '离线'
   }
-  return expanded
+  return map[health] || health
 }
 
-function visibleChildren(node: AgentOrganizationNode): AgentOrganizationNode[] {
-  const direct = childrenByParent.value.get(node.id) || []
-  return direct.flatMap(child => {
-    if (child.node_type !== 'group') return [child]
-    return (childrenByParent.value.get(child.id) || []).filter(grandchild => grandchild.node_type !== 'group')
-  })
+function metricStatus(value: number | null, threshold: number): '' | 'success' | 'warning' | 'exception' {
+  if (value == null) return ''
+  if (value >= threshold) return 'exception'
+  if (value >= threshold * 0.7) return 'warning'
+  return 'success'
 }
 
-const visibleNodeCount = computed(() => hierarchyRows.value.reduce((total, row) => total + row.cards.length, 0))
-const visibleAgents = computed(() => hierarchyRows.value.flatMap(row => row.cards.map(card => card.agent).filter(Boolean) as AgentDashboardItem[]))
-const registeredAgentCount = computed(() => visibleAgents.value.length)
-const busyAgentCount = computed(() => visibleAgents.value.filter(hasCurrentWork).length)
-const plannedNodeCount = computed(() => (organization.value?.nodes || []).filter(node => node.planned).length)
-const selectedNode = computed(() => {
-  if (!organization.value) return null
-  if (selectedNodeId.value === organization.value.root.id) return organization.value.root
-  return organization.value.nodes.find(node => node.id === selectedNodeId.value) || organization.value.root
-})
-const selectedAgent = computed(() => selectedNode.value?.agent_id ? agentById.value.get(selectedNode.value.agent_id) || null : null)
-const selectedChildren = computed(() => selectedNode.value ? visibleChildren(selectedNode.value) : [])
-const selectedTitle = computed(() => selectedNode.value ? `${nodeEmoji(selectedNode.value)} ${nodeName(selectedNode.value)}` : '未选择')
-const selectedSubtitle = computed(() => {
-  if (!selectedNode.value) return ''
-  if (selectedAgent.value) return `${selectedNode.value.title || selectedAgent.value.role || '未配置角色'} · ${selectedAgent.value.current_task_title || selectedAgent.value.current_task || '待分配'}`
-  return selectedNode.value.title || `${selectedChildren.value.length} 个下级节点`
-})
-
-
-const sortedMemory = computed(() => agentMemory.value.slice().sort((a, b) => {
-  const ad = new Date(memoryDate(a) || 0).getTime()
-  const bd = new Date(memoryDate(b) || 0).getTime()
-  return bd - ad
-}))
-const shortMemory = computed(() => sortedMemory.value.slice(0, 3))
-const longMemory = computed(() => sortedMemory.value.slice(3, 11))
-
-// Agent-scoped memory computations for the drawer
-const sortedMemoryOfAgent = computed(() => {
-  if (!memoryDrawerAgent.value?.memory) return []
-  return memoryDrawerAgent.value.memory.slice().sort((a, b) => {
-    const ad = new Date(memoryDate(a) || 0).getTime()
-    const bd = new Date(memoryDate(b) || 0).getTime()
-    return bd - ad
-  })
-})
-const shortMemoryOfAgent = computed(() => sortedMemoryOfAgent.value.slice(0, 5))
-const longMemoryOfAgent = computed(() => sortedMemoryOfAgent.value.slice(5))
-const memoryDrawerTitle = computed(() => {
-  if (!memoryDrawerAgent.value) return '智能体记忆'
-  const aid = memoryDrawerAgent.value.agent_id
-  const node = organization.value?.nodes.find(n => n.agent_id === aid) || { id: '', node_type: 'person', name: aid || '' }
-  const memCount = (memoryDrawerAgent.value?.memory || []).length
-  return `${nodeEmoji(node)} ${nodeName(node)} — 完整记忆 (${memCount} 条)`
-})
-
-watch(selectedAgent, agent => {
-  if (agent) loadAgentMemory(agent)
-  else agentMemory.value = []
-})
-
-function agentId(agent: AgentDashboardItem) {
-  return agent.id || agent.agent_id || agent.name
+function heartbeatText(agent: Agent): string {
+  if (agent.status === 'offline') return '离线'
+  if (agent.heartbeat_age_seconds == null) return '未知'
+  const s = agent.heartbeat_age_seconds
+  if (s < 10) return '刚刚'
+  if (s < 60) return `${Math.round(s)}秒前`
+  if (s < 3600) return `${Math.round(s / 60)}分钟前`
+  return `${Math.round(s / 3600)}小时前`
 }
 
-function nodeName(node: AgentOrganizationNode) {
-  const agent = node.agent_id ? agentById.value.get(node.agent_id) : null
-  return node.name || agent?.name || agent?.agent_name || node.id
+function heartbeatClass(agent: Agent): string {
+  if (agent.status === 'offline') return 'heartbeat-offline'
+  const s = agent.heartbeat_age_seconds ?? Infinity
+  if (s <= 60) return 'heartbeat-ok'
+  if (s <= 300) return 'heartbeat-warn'
+  return 'heartbeat-critical'
 }
 
-function nodeEmoji(node: AgentOrganizationNode) {
-  if (node.emoji) return node.emoji
-  if (node.agent_id) return agentEmoji(node.agent_id)
-  return node.node_type === 'group' ? '📂' : '👤'
-}
-
-function nodeSubtitle(node: AgentOrganizationNode, agent?: AgentDashboardItem, childCount = 0) {
-  if (node.planned) return `${node.title || '规划节点'} · 未注册`
-  if (agent) return `${node.title || agent.role || '未配置角色'} · ${agent.current_task_title || agent.current_task || '待分配'}`
-  if (node.node_type === 'group') return `${node.title || '组织分组'} · ${childCount} 个节点`
-  return node.title || '组织节点'
-}
-
-function levelTitle(depth: number) {
-  const labels: Record<number, string> = {
-    0: '负责人',
-    1: '总协调',
-    2: '项目经理',
-    3: '开发执行',
-    4: '保障'
+function formatTime(iso: string): string {
+  if (!iso) return ''
+  try {
+    const d = new Date(iso)
+    return d.toLocaleString('zh-CN', { hour12: false })
+  } catch {
+    return iso
   }
-  return labels[depth] || '扩展层级'
 }
 
-function agentEmoji(id: string) {
+function agentEmoji(id: string): string {
   const map: Record<string, string> = {
     optimus: '🤖',
-    main: '🌙',
-    bumblebee: '🐝',
     leonardo: '🟦',
     raphael: '🟥',
     donatello: '🟪',
@@ -415,9 +372,10 @@ function agentEmoji(id: string) {
     ironhide: '🛡️',
     perceptor: '🚗',
     ratchet: '🚑',
-    jazz: '🎷',
-    soundwave: '🔷',
     wheeljack: '🔧',
+    soundwave: '🔷',
+    jazz: '🎷',
+    bumblebee: '🐝',
     shockwave: '🟣',
     'ultra-magnus': '🔵',
     'wheeljack-leonardo': '🟦',
@@ -425,539 +383,439 @@ function agentEmoji(id: string) {
     'wheeljack-donatello': '🟪',
     'wheeljack-michelangelo': '🟧'
   }
-  return map[id] || '👤'
+  return map[id] || '🤖'
 }
 
-function hasCurrentWork(agent: AgentDashboardItem) {
-  return Boolean(agent.current_project_id || agent.current_task_id || agent.current_development_point_id)
-}
-
-function statusType(status: string): '' | 'success' | 'warning' | 'info' | 'danger' {
-  const map: Record<string, '' | 'success' | 'warning' | 'info' | 'danger'> = {
-    online: 'success',
-    busy: 'warning',
-    idle: 'info',
-    pending: 'warning',
-    offline: 'danger'
+function avatarColor(id: string): string {
+  let hash = 0
+  for (let i = 0; i < id.length; i++) {
+    hash = id.charCodeAt(i) + ((hash << 5) - hash)
   }
-  return map[status] || 'info'
+  const h = Math.abs(hash) % 360
+  return `hsl(${h}, 45%, 35%)`
 }
 
-function statusLabel(status: string) {
-  const map: Record<string, string> = {
-    online: '在线',
-    busy: '忙碌',
-    idle: '空闲',
-    pending: '待命',
-    offline: '离线',
-    unknown: '未知'
+// ===================== 操作 =====================
+function selectAgent(agentId: string) {
+  agentsStore.selectAgent(agentId)
+  drawerVisible.value = true
+}
+
+async function refresh() {
+  await agentsStore.fetchAgents()
+  ElMessage.success('刷新完成')
+}
+
+// ===================== 生命周期 =====================
+onMounted(async () => {
+  // 加载 Agent 数据
+  await agentsStore.fetchAgents()
+
+  // 尝试连接 WebSocket 获取实时推送
+  const token = localStorage.getItem('jwt_token')
+  if (token) {
+    agentsStore.connectWebSocket(token)
   }
-  return map[status] || status || '未知'
-}
+})
 
-function responsibilities(agent: AgentDashboardItem) {
-  const direct = agent.responsibilities || agent.profile?.responsibilities || agent.metadata?.responsibilities
-  if (Array.isArray(direct) && direct.length) return direct.map(item => String(item).trim()).filter(Boolean)
-  if (agent.role && String(agent.role).trim()) return [String(agent.role).trim()]
-  return ['待配置职责']
-}
-
-function selectNode(node: AgentOrganizationNode) {
-  selectedNodeId.value = node.id
-}
-
-async function loadAll() {
-  loading.value = true
-  try {
-    const [orgData, agentData] = await Promise.all([getAgentOrganization(), getAgentDashboard()])
-    organization.value = orgData
-    agents.value = agentData.agents || []
-    if (!selectedNodeId.value) selectedNodeId.value = orgData.root.id
-  } catch {
-    ElMessage.error('智能体组织数据加载失败')
-  } finally {
-    loading.value = false
-  }
-}
-
-function openMemoryDrawer(node: AgentOrganizationNode) {
-  const aid = node.agent_id
-  if (!aid) {
-    ElMessage.warning('该节点未关联智能体，无法查看记忆')
-    return
-  }
-  const agent = agentById.value.get(aid)
-  if (!agent) {
-    ElMessage.warning('智能体不存在，无法查看记忆')
-    return
-  }
-  if (!agent.memory || !agent.memory.length) {
-    ElMessage.info(`${nodeName(node)} 暂无记忆数据`)
-    return
-  }
-  memoryDrawerAgent.value = agent
-  memoryDrawerVisible.value = true
-}
-
-async function loadAgentMemory(agent: AgentDashboardItem | null) {
-  if (!agent) {
-    agentMemory.value = []
-    return
-  }
-  memoryLoading.value = true
-  try {
-    const data = await getAgentMemory(agentId(agent))
-    agentMemory.value = Array.isArray(data.memory) ? data.memory : []
-  } catch {
-    agentMemory.value = Array.isArray(agent.memory) ? agent.memory : []
-  } finally {
-    memoryLoading.value = false
-  }
-}
-
-function memoryText(item: AgentMemoryItem) {
-  if (!item) return '-'
-  if (typeof item === 'string') return item
-  return item.text || item.title || item.content || item.summary || JSON.stringify(item)
-}
-
-function memoryDate(item: AgentMemoryItem) {
-  if (!item || typeof item === 'string') return ''
-  return item.date || item.created_at || item.updated_at || item.section || ''
-}
-
-function openAgentProjectTask(agent: AgentDashboardItem) {
-  if (!agent.current_project_id) {
-    ElMessage.warning('该智能体当前没有匹配的项目任务')
-    return
-  }
-  router.push({
-    path: '/projects',
-    query: {
-      project_id: agent.current_project_id,
-      task_id: agent.current_task_id || undefined,
-      agent_id: agentId(agent)
-    }
-  })
-}
-
-onMounted(loadAll)
+onUnmounted(() => {
+  agentsStore.disconnectWebSocket()
+})
 </script>
 
 <style scoped>
 .agents-page {
-  display: grid;
-  gap: 16px;
+  padding: 16px;
+  min-height: 100%;
 }
 
-.stats-row {
-  margin-bottom: 0;
-}
-
-.stat-card,
-.overview-panel,
-.memory-card {
-  border-radius: 8px;
-}
-
-.stat-card :deep(.el-card__body) {
-  display: grid;
-  gap: 8px;
-}
-
-.stat-card span,
-.muted,
-.field-title {
-  color: #a0a0a0;
-  font-size: 13px;
-}
-
-.stat-card strong {
-  color: #e0e0e0;
-  font-size: 24px;
-}
-
-.overview-head,
-.selected-head,
-.memory-section-title {
+/* ===================== 页面头部 ===================== */
+.page-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-}
-
-.overview-title {
-  color: #e0e0e0;
-  font-weight: 800;
-  margin-bottom: 4px;
-}
-
-.overview-actions {
-  display: flex;
+  margin-bottom: 16px;
   flex-wrap: wrap;
   gap: 12px;
-  justify-content: flex-end;
-  align-items: center;
 }
 
-.agent-board-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
-  gap: 16px;
-  align-items: start;
+.page-title h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  color: #e0e0e0;
 }
 
-.hierarchy-board {
-  display: grid;
-  gap: 14px;
+.page-desc {
+  margin: 4px 0 0;
+  color: #888;
+  font-size: 13px;
 }
 
-.level-row {
-  border: 1px solid #383838;
-  border-radius: 8px;
-  background: #1a1a1a;
-  padding: 12px;
-}
-
-.level-head {
+.page-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
-  color: #a0a0a0;
-  font-size: 13px;
-  margin-bottom: 10px;
+  gap: 12px;
 }
 
-.level-head strong {
+.ws-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #888;
+}
+
+.ws-indicator.connected {
+  color: #67c23a;
+}
+
+.ws-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #888;
+}
+
+.ws-indicator.connected .ws-dot {
+  background: #67c23a;
+  box-shadow: 0 0 6px #67c23a;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ===================== 统计卡片 ===================== */
+.stats-row {
+  margin-bottom: 16px;
+}
+
+.stat-card {
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #333;
+  background: #1a1a1a;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.stat-label {
+  color: #888;
+  font-size: 13px;
+}
+
+.stat-value {
   color: #e0e0e0;
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.stat-total .stat-value { color: #409eff; }
+.stat-online .stat-value { color: #67c23a; }
+.stat-busy .stat-value { color: #e6a23c; }
+.stat-offline .stat-value { color: #909399; }
+
+/* ===================== 筛选栏 ===================== */
+.filter-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.filter-badge {
+  margin-left: 4px;
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+/* ===================== Loading ===================== */
+.loading-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 0;
+  color: #888;
+}
+
+.loading-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  margin-top: 12px;
   font-size: 14px;
 }
 
-.level-index {
-  color: #409eff;
-  font-weight: 800;
-}
-
-.agent-card-grid {
+/* ===================== Agent 卡片网格 ===================== */
+.agent-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
 }
 
 .agent-card {
-  width: 100%;
-  min-height: 182px;
-  border: 1px solid #383838;
-  border-radius: 8px;
-  background: #242424;
-  padding: 12px;
-  display: grid;
-  grid-template-rows: auto auto 1fr auto;
-  gap: 10px;
-  text-align: left;
   cursor: pointer;
-  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+  transition: transform 0.15s, box-shadow 0.15s;
+  border-radius: 10px;
+  border: 1px solid #333;
+  background: #1a1a1a;
 }
 
-.agent-card:hover,
-.agent-card.active {
+.agent-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(64, 158, 255, 0.15);
   border-color: #409eff;
-  box-shadow: 0 4px 16px rgba(64, 158, 255, 0.18);
 }
 
-.agent-card.active {
-  background: #2a2f3a;
+:deep(.el-card__body) {
+  padding: 16px;
 }
 
-.agent-card.group {
-  background: #2a2a2a;
-}
-
-.agent-card.planned {
-  opacity: 0.68;
-  background: #282828;
-}
-
-.card-top {
+/* 卡片头部 */
+.agent-card-header {
   display: flex;
   align-items: center;
-  gap: 9px;
-  min-width: 0;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
 .agent-avatar {
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
   display: grid;
   place-items: center;
-  background: #383838;
-  flex: 0 0 auto;
+  font-size: 20px;
+  flex-shrink: 0;
+  color: #fff;
 }
 
-.agent-title {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
+.agent-info {
   flex: 1;
-}
-
-.agent-title strong,
-.card-role,
-.work-title {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.agent-title strong {
-  color: #e8e8e8;
-  font-size: 15px;
-}
-
-.agent-title small,
-.card-role,
-.card-fields b,
-.card-fields em,
-.card-footer {
-  font-size: 12px;
-}
-
-.agent-title small,
-.card-fields b,
-.card-footer {
-  color: #9a9a9a;
-}
-
-.card-role {
-  color: #b8b8b8;
-}
-
-.card-fields {
-  display: grid;
-  gap: 6px;
-}
-
-.card-fields span {
   min-width: 0;
-  display: grid;
-  grid-template-columns: 56px minmax(0, 1fr);
-  gap: 8px;
-  align-items: baseline;
 }
 
-.card-fields em {
-  color: #b0b0b0;
-  font-style: normal;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.card-footer {
+.agent-name {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
-  border-top: 1px dashed #404040;
-  padding-top: 8px;
-}
-
-.project-link {
-  color: #409eff;
+  font-size: 15px;
   font-weight: 700;
-}
-
-.agent-memory-panel {
-  position: sticky;
-  top: 12px;
-  display: grid;
-  gap: 14px;
-}
-
-.selected-name {
   color: #e0e0e0;
-  font-weight: 800;
-  margin: 3px 0;
 }
 
-.detail-block {
-  margin-top: 12px;
-  display: grid;
-  gap: 7px;
-}
-
-.responsibility-list,
-.child-list {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.responsibility-chip,
-.child-chip {
-  border: 1px solid #484848;
-  border-radius: 999px;
-  padding: 3px 8px;
-  color: #b8b8b8;
-  background: #2e2e2e;
+.agent-id {
   font-size: 12px;
+  color: #666;
+  margin-top: 2px;
 }
 
-.child-chip {
-  cursor: pointer;
-}
+.muted { color: #888; }
 
-.current-work {
-  margin-top: 12px;
-  padding: 12px;
-  border: 1px solid rgba(64, 158, 255, 0.32);
-  border-radius: 8px;
-  background: rgba(64, 158, 255, 0.12);
-}
-
-.work-title {
-  color: #e0e0e0;
-  font-weight: 700;
-  margin-top: 4px;
-}
-
-.work-button {
-  width: 100%;
-  margin-top: 10px;
-}
-
-.memory-section-title {
-  color: #e0e0e0;
-  font-weight: 800;
+/* 当前任务 */
+.agent-task {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-top: 1px solid #2a2a2a;
+  border-bottom: 1px solid #2a2a2a;
   margin-bottom: 10px;
 }
 
-.memory-list {
+.task-label {
+  font-size: 12px;
+  color: #888;
+  flex-shrink: 0;
+}
+
+.task-value {
+  font-size: 13px;
+  color: #b0b0b0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+/* 资源指标 */
+.agent-metrics {
   display: grid;
   gap: 8px;
+  margin-bottom: 10px;
 }
 
-.memory-item {
-  border: 1px solid #404040;
-  border-radius: 8px;
-  padding: 10px;
+.metric-item {
+  display: grid;
+  grid-template-columns: 36px 1fr 40px;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
 }
 
-.memory-item-title {
-  color: #b0b0b0;
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.memory-history-line {
-  color: #b0b0b0;
-  font-size: 13px;
-  line-height: 1.6;
-  border-bottom: 1px dashed #404040;
-  padding-bottom: 6px;
-}
-
-/* 卡片上的记忆概览 */
-.card-memory {
-  margin-top: 6px;
-  padding-top: 6px;
-  border-top: 1px solid #404040;
-}
-
-.card-memory-title {
-  font-size: 11px;
+.metric-label {
   color: #888;
-  margin-bottom: 3px;
+}
+
+.metric-value {
+  color: #b0b0b0;
+  text-align: right;
+  font-size: 11px;
+}
+
+:deep(.el-progress-bar__outer) {
+  border-radius: 2px;
+}
+
+/* 卡片底部 */
+.agent-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 8px;
+  border-top: 1px solid #2a2a2a;
+  font-size: 12px;
+}
+
+.heartbeat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #888;
+}
+
+.heartbeat-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #888;
+}
+
+.heartbeat-ok .heartbeat-dot {
+  background: #67c23a;
+  box-shadow: 0 0 4px #67c23a;
+}
+
+.heartbeat-warn .heartbeat-dot {
+  background: #e6a23c;
+  box-shadow: 0 0 4px #e6a23c;
+}
+
+.heartbeat-critical .heartbeat-dot {
+  background: #f56c6c;
+  box-shadow: 0 0 4px #f56c6c;
+}
+
+.heartbeat-offline .heartbeat-dot {
+  background: #909399;
+}
+
+.health-score {
+  color: #67c23a;
   font-weight: 600;
 }
 
-.card-memory-items {
+/* ===================== Drawer ===================== */
+.drawer-agent-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.drawer-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-size: 26px;
+  color: #fff;
+}
+
+.drawer-agent-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: #e0e0e0;
+  margin-bottom: 6px;
+}
+
+.drawer-section {
+  margin-bottom: 20px;
+}
+
+.drawer-section h3 {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #e0e0e0;
+}
+
+.drawer-section p {
+  margin: 0;
+  color: #b0b0b0;
+  font-size: 13px;
+}
+
+.history-item {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.card-memory-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 4px;
+.history-status {
+  font-size: 13px;
+  color: #b0b0b0;
+}
+
+.history-task {
   font-size: 12px;
-  line-height: 1.4;
-  color: #999;
+  color: #888;
 }
 
-.card-memory-dot {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: #409eff;
-  flex-shrink: 0;
-  margin-top: 5px;
-}
-
-.card-memory-text {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  flex: 1;
-  min-width: 0;
-}
-
-.card-memory-more {
-  display: block;
+.history-time {
   font-size: 11px;
   color: #666;
-  margin-top: 2px;
-  text-align: right;
 }
 
-/* 记忆 Drawer */
-.memory-drawer-content {
-  padding: 0 16px;
-  max-height: calc(100vh - 100px);
-  overflow-y: auto;
-}
+/* ===================== 响应式 ===================== */
+@media (max-width: 768px) {
+  .agents-page {
+    padding: 12px;
+  }
 
-.memory-drawer-stats {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-  flex-wrap: wrap;
-}
-
-.memory-drawer-list {
-  max-height: 300px;
-  overflow-y: auto;
-  margin-bottom: 8px;
-}
-
-.memory-full-list {
-  max-height: none;
-}
-
-.memory-drawer-item {
-  padding: 10px;
-  margin-bottom: 8px;
-  border: 1px solid #404040;
-  border-radius: 6px;
-  background: #1a1a2e;
-}
-
-.memory-drawer-item-title {
-  color: #b0b0b0;
-  font-size: 13px;
-  line-height: 1.5;
-  margin-bottom: 4px;
-}
-
-@media (max-width: 1100px) {
-  .agent-board-layout {
+  .agent-grid {
     grid-template-columns: 1fr;
   }
 
-  .agent-memory-panel {
-    position: static;
+  .page-title h1 {
+    font-size: 18px;
+  }
+
+  .stat-value {
+    font-size: 22px;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-row .el-col {
+    margin-bottom: 8px;
   }
 }
 </style>

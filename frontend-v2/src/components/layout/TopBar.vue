@@ -30,7 +30,9 @@ const themeStore = useThemeStore()
 const pageTitle = computed(() => {
   const names: Record<string, string> = {
     '/': '仪表盘',
-    '/projects': '项目管理',
+    '/projects': '项目中枢',
+    '/development': '程序开发',
+    '/writing': '文档撰写',
     '/data-admin': '数据管理',
     '/tasks': '任务管理',
     '/tasks/kanban': '看板视图',
@@ -38,11 +40,13 @@ const pageTitle = computed(() => {
     '/agents': '智能体团队',
     '/agent-chat': '智能体对话',
     '/knowledge': '知识库',
-    '/skills': '技能管理',
-    '/scheduled': '定时任务',
+    '/finance': '财务管理',
+    '/tools': '工具管理',
+    '/skills': '工具管理',
+    '/scheduled': '工具管理',
     '/devices': '设备清单',
     '/community': '活动社区',
-    '/news-center': '新闻资讯',
+    '/news-center': '情报信息',
     '/products': '产品矩阵'
   }
   return names[route.path] || 'OpenClaw'

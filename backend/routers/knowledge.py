@@ -17,8 +17,9 @@ def get_knowledge_stats():
 def get_knowledge_graph(
     limit_edges: int = Query(500, ge=1, le=5000),
     node_type: str | None = None,
+    mode: str = Query("concept_backbone", description="Graph mode: concept_backbone or full"),
 ):
-    return knowledge_manager.graph(limit_edges=limit_edges, node_type=node_type)
+    return knowledge_manager.graph(limit_edges=limit_edges, node_type=node_type, mode=mode)
 
 
 @router.get("/nodes")
@@ -45,9 +46,6 @@ def get_knowledge_node_content(
     node_id: str,
     max_chars: int = Query(6000, ge=200, le=20000),
 ):
-    node = knowledge_manager.get_node(node_id)
-    if not node:
-        raise HTTPException(status_code=404, detail="Knowledge node not found")
     return knowledge_manager.node_content(node_id=node_id, max_chars=max_chars)
 
 

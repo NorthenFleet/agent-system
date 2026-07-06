@@ -9,6 +9,20 @@ export interface User {
   role: UserRole
   is_active: boolean
   last_login_at: string | null
+  module_keys?: string[]
+  modules?: FeatureModule[]
+}
+
+export interface FeatureModule {
+  id: number
+  module_key: string
+  name: string
+  route_path: string
+  icon?: string
+  description?: string
+  sort_order: number
+  is_enabled: boolean
+  granted?: boolean
 }
 
 export interface LoginResponse {

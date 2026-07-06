@@ -92,8 +92,8 @@ export interface ProjectChatMessage {
   created_at?: string
 }
 
-export function getProjects() {
-  return apiClient.get<{ projects: Project[]; total: number }>('/api/v3/projects').then(r => r.data)
+export function getProjects(params?: { project_type?: 'software' | 'document' }) {
+  return apiClient.get<{ projects: Project[]; total: number }>('/api/v3/projects', { params }).then(r => r.data)
 }
 
 export function getProjectChatContext(projectId: string) {

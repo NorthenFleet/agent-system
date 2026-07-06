@@ -27,10 +27,16 @@
             planned: node.planned
           }"
           :style="{ '--depth': node.depth }"
-          :disabled="!node.agent"
-          @click="node.agent && selectAgent(node.agent)"
+          :disabled="!node.agent && !hasTreeChildren(node)"
+          :aria-expanded="hasTreeChildren(node) ? !isTreeCollapsed(node.id) : undefined"
+          @click="handleTreeNodeClick(node)"
         >
           <span class="tree-line" />
+          <el-icon v-if="hasTreeChildren(node)" class="tree-toggle">
+            <CaretRight v-if="isTreeCollapsed(node.id)" />
+            <CaretBottom v-else />
+          </el-icon>
+          <span v-else class="tree-toggle-spacer" />
           <span class="avatar">{{ node.emoji || agentInitial(node.agent || node) }}</span>
           <span class="agent-main">
             <span class="agent-name">{{ node.name }}</span>
@@ -223,7 +229,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Delete, Paperclip, Promotion, Refresh, Search } from '@element-plus/icons-vue'
+import { CaretBottom, CaretRight, Delete, Paperclip, Promotion, Refresh, Search } from '@element-plus/icons-vue'
 import {
   clearAgentMessages,
   getAgentMessages,
@@ -253,6 +259,7 @@ const messages = ref<ChatMessage[]>([])
 const draft = ref('')
 const mode = ref('business')
 const agentQuery = ref('')
+const collapsedTreeNodeIds = ref(new Set<string>())
 const sending = ref(false)
 const loadingMessages = ref(false)
 const messagesEl = ref<HTMLElement | null>(null)
@@ -288,25 +295,34 @@ const activePrompts = computed(() => prompts[mode.value as keyof typeof prompts]
 const developmentAgentIds = new Set(['leonardo', 'donatello', 'raphael', 'michelangelo'])
 const isDevelopmentAgent = computed(() => Boolean(selectedAgent.value && developmentAgentIds.has(selectedAgent.value.id)))
 const codexLogsText = computed(() => codexLogs.value.join('').slice(-12000) || '暂无日志')
+const treeChildrenByParent = computed(() => {
+  const map = new Map<string, ChatAgentNode[]>()
+  for (const node of agentTreeNodes.value) {
+    const key = node.parent_id || ''
+    if (!map.has(key)) map.set(key, [])
+    map.get(key)!.push(node)
+  }
+  return map
+})
+const treeNodeById = computed(() => {
+  const map = new Map<string, ChatAgentNode>()
+  for (const node of agentTreeNodes.value) map.set(node.id, node)
+  return map
+})
 const filteredTreeNodes = computed(() => {
   const q = agentQuery.value.trim().toLowerCase()
-  if (!q) return agentTreeNodes.value
-  const matchedAgentIds = new Set<string>()
-  const matchedNodeIds = new Set<string>()
+  if (!q) return agentTreeNodes.value.filter(isTreeNodeVisible)
+  const visibleNodeIds = new Set<string>()
 
   for (const node of agentTreeNodes.value) {
     const text = `${node.name} ${node.agent_id || ''} ${node.title || ''} ${node.agent?.role || ''} ${(node.path || []).join(' ')}`.toLowerCase()
     if (text.includes(q)) {
-      matchedNodeIds.add(node.id)
-      if (node.agent?.id) matchedAgentIds.add(node.agent.id)
-      for (const pathName of node.path || []) {
-        const ancestor = agentTreeNodes.value.find(item => item.name === pathName)
-        if (ancestor) matchedNodeIds.add(ancestor.id)
-      }
+      addNodeWithAncestors(node, visibleNodeIds)
+      if (!node.agent) addDescendants(node.id, visibleNodeIds)
     }
   }
 
-  return agentTreeNodes.value.filter(node => matchedNodeIds.has(node.id) || (node.agent?.id && matchedAgentIds.has(node.agent.id)))
+  return agentTreeNodes.value.filter(node => visibleNodeIds.has(node.id))
 })
 const canSend = computed(() => Boolean(selectedAgent.value && (draft.value.trim() || selectedAttachments.value.length) && !sending.value))
 
@@ -480,6 +496,54 @@ function selectConversation(agentId: string) {
   if (agent) selectAgent(agent)
 }
 
+function handleTreeNodeClick(node: ChatAgentNode) {
+  if (node.agent) {
+    selectAgent(node.agent)
+    return
+  }
+  if (hasTreeChildren(node)) toggleTreeNode(node.id)
+}
+
+function hasTreeChildren(node: ChatAgentNode) {
+  return Boolean(treeChildrenByParent.value.get(node.id)?.length)
+}
+
+function isTreeCollapsed(nodeId: string) {
+  return collapsedTreeNodeIds.value.has(nodeId)
+}
+
+function toggleTreeNode(nodeId: string) {
+  const next = new Set(collapsedTreeNodeIds.value)
+  if (next.has(nodeId)) next.delete(nodeId)
+  else next.add(nodeId)
+  collapsedTreeNodeIds.value = next
+}
+
+function isTreeNodeVisible(node: ChatAgentNode) {
+  let parentId = node.parent_id
+  while (parentId) {
+    if (collapsedTreeNodeIds.value.has(parentId)) return false
+    parentId = treeNodeById.value.get(parentId)?.parent_id
+  }
+  return true
+}
+
+function addNodeWithAncestors(node: ChatAgentNode, ids: Set<string>) {
+  ids.add(node.id)
+  let parentId = node.parent_id
+  while (parentId) {
+    ids.add(parentId)
+    parentId = treeNodeById.value.get(parentId)?.parent_id
+  }
+}
+
+function addDescendants(nodeId: string, ids: Set<string>) {
+  for (const child of treeChildrenByParent.value.get(nodeId) || []) {
+    ids.add(child.id)
+    addDescendants(child.id, ids)
+  }
+}
+
 function agentName(agentId: string) {
   return agents.value.find(agent => agent.id === agentId)?.name || agentId
 }
@@ -588,12 +652,15 @@ async function scrollToBottom() {
   display: grid;
   grid-template-columns: minmax(220px, 280px) minmax(420px, 1fr) minmax(240px, 300px);
   gap: 16px;
-  min-height: calc(100vh - 96px);
+  height: calc(100vh - 96px);
+  min-height: 0;
+  overflow: hidden;
 }
 
 .agent-rail,
 .chat-panel,
 .context-panel {
+  min-height: 0;
   border: 1px solid var(--line-color);
   background: var(--panel-bg);
 }
@@ -601,6 +668,11 @@ async function scrollToBottom() {
 .agent-rail,
 .context-panel {
   padding: 16px;
+}
+
+.agent-rail {
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
 
@@ -647,10 +719,12 @@ h3 {
 .agent-tree {
   display: flex;
   flex-direction: column;
+  flex: 1;
   gap: 6px;
   margin-top: 14px;
-  max-height: calc(100vh - 210px);
+  min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .agent-row,
@@ -665,7 +739,7 @@ h3 {
 
 .agent-row {
   display: grid;
-  grid-template-columns: calc(var(--depth, 0) * 14px) 32px 1fr 10px;
+  grid-template-columns: calc(var(--depth, 0) * 14px) 16px 32px minmax(0, 1fr) 10px;
   align-items: center;
   gap: 8px;
   width: 100%;
@@ -701,6 +775,20 @@ h3 {
   width: 100%;
   height: 1px;
   border-top: 1px solid rgba(139, 148, 158, 0.24);
+}
+
+.tree-toggle,
+.tree-toggle-spacer {
+  width: 16px;
+  height: 16px;
+}
+
+.tree-toggle {
+  color: var(--text-secondary);
+}
+
+.tree-toggle-spacer {
+  display: block;
 }
 
 .avatar {
@@ -760,6 +848,7 @@ h3 {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  overflow: hidden;
 }
 
 .chat-head {
@@ -775,9 +864,10 @@ h3 {
 
 .messages {
   flex: 1;
-  min-height: 380px;
+  min-height: 0;
   padding: 18px;
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .empty-state {
@@ -944,6 +1034,8 @@ h3 {
   display: flex;
   flex-direction: column;
   gap: 22px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .codex-panel,
@@ -1084,10 +1176,14 @@ h3 {
 @media (max-width: 1180px) {
   .agent-chat-page {
     grid-template-columns: 240px 1fr;
+    height: auto;
+    min-height: calc(100vh - 96px);
+    overflow: visible;
   }
 
   .context-panel {
     grid-column: 1 / -1;
+    max-height: 360px;
   }
 }
 
@@ -1097,6 +1193,7 @@ h3 {
   }
 
   .agent-tree {
+    flex: none;
     max-height: 260px;
   }
 

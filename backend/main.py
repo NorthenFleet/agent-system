@@ -1,5 +1,6 @@
 """团队状态看板 API — app init + middleware + routes + lifecycle"""
 import os
+import json
 import logging
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -50,6 +51,7 @@ Authorization: Bearer <token>
         {"name": "v2-alerts", "description": "告警系统 API"},
         {"name": "v2-auth", "description": "认证授权 API"},
         {"name": "v2-websocket", "description": "WebSocket 实时推送"},
+        {"name": "v2-monitoring", "description": "监控数据聚合 API"},
     ],
 )
 
@@ -113,6 +115,7 @@ from routers.users_router import router as _r3
 from routers.tasks_v2 import router as _r4
 from routers.agents_router import router as _r5
 from routers.customers_router import router as _r6
+from routers.monitoring_router import router as _r7
 
 import routers.legacy_tasks_router as _l7
 import routers.legacy_agents_router as _l8
@@ -127,7 +130,8 @@ import routers.legacy_scheduled_tasks_router as _l15
 for r in (
     _r0, _r1, _m0.router, _m1.router, _m2.router, _m3.router,
     _m4.router, _m5.router, _m6.router, _m7.router, _m8.router,
-    _m9.router, _r2, _r3, _r4, _r5, _r6, _l7.router, _l8.router,
+    _m9.router, _r2, _r3, _r4, _r5, _r6, _r7,
+    _l7.router, _l8.router,
     _l9.router, _l10.router, _l11.router, _l12.router, _l13.router,
     _l14.router, _l15.router
 ):
@@ -194,13 +198,29 @@ def _spa(full_path: str):
 
 @app.websocket("/ws/status")
 async def ws_ep(ws: WebSocket):
-    await manager.connect(ws)
+    conn_id = await manager.connect(ws)
     try:
-        await manager.send_status_update(data_manager.get_agents(), data_manager.get_merged_tasks())
+        # 连接成功后推送当前状态快照
+        await manager.send_to_all({
+            "type": "status_update",
+            "data": {
+                "agents": data_manager.get_agents(),
+                "tasks": data_manager.get_merged_tasks(),
+                "conn_id": conn_id,
+            },
+        })
         while True:
-            await ws.receive_text()
+            raw = await ws.receive_text()
+            # 处理客户端 pong 响应
+            try:
+                data = json.loads(raw)
+                if data.get("type") == "pong":
+                    manager.record_pong(ws)
+            except json.JSONDecodeError:
+                pass
     except WebSocketDisconnect:
         manager.disconnect(ws)
+        print(f"[WS] 连接 {conn_id} 已断开")
 
 
 @app.on_event("startup")
@@ -209,6 +229,11 @@ async def startup():
     logger.info("团队看板 API 启动")
     logger.info(f"日志级别: {logging.getLevelName(logger.getEffectiveLevel())}")
     logger.info(f"前端版本: {'V2' if V2 else 'Legacy'}")
+
+    # 启动 WebSocket 服务端心跳保活循环
+    import asyncio
+    asyncio.create_task(manager.start_heartbeat_loop(interval=25.0, timeout=60.0))
+    logger.info("[WS] 服务端心跳保活已启动 (25s ping / 60s timeout)")
 
     try:
         interval = int(os.getenv("DEVICE_HEALTH_INTERVAL", "30"))
@@ -223,7 +248,6 @@ async def startup():
 
     try:
         from services.scheduler_service import scheduler_service
-        import asyncio
         scheduler_service.init_scheduler(asyncio.get_event_loop())
         scheduler_service.load_active_tasks()
         logger.info("调度器启动成功")

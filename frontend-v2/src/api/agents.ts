@@ -45,6 +45,14 @@ export function getAgentTasks(agentId: string) {
   return apiClient.get<AgentTaskResponse>(`/api/v2/agents/${agentId}/tasks`).then(r => r.data)
 }
 
+// Agent 任务派发
+export function dispatchAgent(agentId: string, data: {
+  task_id: string
+  notes?: string
+}) {
+  return apiClient.post(`/api/v2/agents/${agentId}/dispatch`, data).then(r => r.data)
+}
+
 // WebSocket 连接
 export function createWsAgent(token: string): WebSocket {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'

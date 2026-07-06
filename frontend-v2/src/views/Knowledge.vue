@@ -23,8 +23,7 @@
       :closable="false"
     />
 
-    <div class="workspace-grid">
-      <section class="main-column">
+    <section class="graph-section">
         <el-card class="panel graph-panel" shadow="hover">
           <template #header>
             <div class="panel-header">
@@ -33,6 +32,7 @@
                 <span class="muted"> {{ graphMeta }}</span>
               </div>
               <div class="toolbar">
+                <el-segmented v-model="graphMode" :options="graphModeOptions" size="small" @change="refreshGraph" />
                 <el-select v-model="typeFilter" size="small" clearable placeholder="全部类型" style="width: 128px" @change="refreshGraph">
                   <el-option v-for="[name] in typeEntries" :key="name" :label="name" :value="name" />
                 </el-select>
@@ -42,7 +42,10 @@
           </template>
           <div ref="graphRef" class="graph-canvas" />
         </el-card>
+    </section>
 
+    <div class="workspace-grid">
+      <section class="main-column">
         <el-card class="panel" shadow="hover">
           <template #header>
             <div class="panel-header">
@@ -237,10 +240,15 @@ const error = ref('')
 const graphRef = ref<HTMLElement>()
 const smartQuery = ref('')
 const smartMode = ref('mix')
+const graphMode = ref<'concept_backbone' | 'full'>('concept_backbone')
 const smartLoading = ref(false)
 const smartError = ref('')
 const smartNodes = ref<KnowledgeNode[]>([])
 const smartModeOptions = ['mix', 'local', 'global']
+const graphModeOptions = [
+  { label: '概念骨干', value: 'concept_backbone' },
+  { label: '全量图谱', value: 'full' }
+]
 
 let chart: echarts.EChartsType | null = null
 
@@ -257,7 +265,9 @@ const filteredNodes = computed(() => {
 })
 const graphMeta = computed(() => {
   if (!graph.value) return ''
-  return `${graph.value.nodes.length} 节点 · ${graph.value.total_relations} 关系`
+  const prefix = graph.value.mode === 'full' ? '全量' : '概念骨干'
+  const conceptCount = graph.value.stats?.concept_count ? ` · ${graph.value.stats.concept_count} 概念` : ''
+  return `${prefix} · ${graph.value.nodes.length} 节点 · ${graph.value.total_relations} 关系${conceptCount}`
 })
 
 function typePercent(value: number) {
@@ -302,7 +312,7 @@ async function loadKnowledge() {
 async function refreshGraph() {
   graphLoading.value = true
   try {
-    graph.value = await getKnowledgeGraph(520, typeFilter.value || undefined)
+    graph.value = await getKnowledgeGraph(520, typeFilter.value || undefined, graphMode.value)
     await nextTick()
     renderGraph()
   } catch {
@@ -330,9 +340,9 @@ function renderGraph() {
     relationIds.add(relation.source)
     relationIds.add(relation.target)
   }
-  const visibleNodes = graph.value.nodes
-    .filter(node => relationIds.has(node.id) || typeFilter.value)
-    .slice(0, 360)
+  const visibleNodes = graph.value.mode === 'concept_backbone'
+    ? graph.value.nodes.filter(node => node.backbone || relationIds.has(node.id)).slice(0, 420)
+    : graph.value.nodes.filter(node => relationIds.has(node.id) || typeFilter.value).slice(0, 360)
   const categories = Array.from(new Set(visibleNodes.map(node => node.type || '知识'))).map(name => ({ name }))
   const categoryIndex = new Map(categories.map((item, index) => [item.name, index]))
   const allowed = new Set(visibleNodes.map(node => node.id))
@@ -340,7 +350,8 @@ function renderGraph() {
     tooltip: {
       formatter(value) {
         const data = (Array.isArray(value) ? value[0]?.data : value.data) as KnowledgeNode
-        return `${data.title || data.id}<br/>${data.type || '知识'}`
+        const domain = data.domain ? `<br/>${data.domain}` : ''
+        return `${data.title || data.id}<br/>${data.type || '知识'}${domain}`
       }
     },
     legend: { top: 0, type: 'scroll' },
@@ -358,7 +369,9 @@ function renderGraph() {
           type: node.type,
           path: node.path,
           category: categoryIndex.get(node.type || '知识') || 0,
-          symbolSize: Math.max(12, Math.min(34, 12 + (stats.value?.entity_types?.[node.type] || 1) / 24))
+          symbolSize: node.backbone
+            ? Math.max(22, Math.min(42, 24 + (node.domain ? 4 : 0)))
+            : Math.max(10, Math.min(26, 10 + (stats.value?.entity_types?.[node.type] || 1) / 36))
         })),
         links: graph.value.relations
           .filter(relation => allowed.has(relation.source) && allowed.has(relation.target))
@@ -369,13 +382,18 @@ function renderGraph() {
             name: relation.type || relation.relation || '关联',
             value: relation.weight || 1
           })),
-        force: { repulsion: 120, edgeLength: 88 },
+        force: {
+          repulsion: graph.value.mode === 'concept_backbone' ? 260 : 180,
+          edgeLength: graph.value.mode === 'concept_backbone' ? 128 : 104,
+          gravity: 0.08
+        },
         label: { show: true, fontSize: 10, overflow: 'truncate', width: 90 },
         lineStyle: { color: 'source', opacity: 0.34, curveness: 0.12 },
         emphasis: { focus: 'adjacency' }
       }
     ]
   }
+  chart.resize()
   chart.setOption(option, true)
 }
 
@@ -478,7 +496,7 @@ onUnmounted(() => {
 <style scoped>
 .knowledge-page {
   display: grid;
-  gap: 14px;
+  gap: 12px;
 }
 
 .stats-row {
@@ -492,8 +510,9 @@ onUnmounted(() => {
 
 .stat-card :deep(.el-card__body) {
   display: grid;
-  gap: 6px;
-  min-height: 78px;
+  gap: 4px;
+  min-height: 58px;
+  padding: 12px 16px;
 }
 
 .stat-card span,
@@ -504,12 +523,16 @@ onUnmounted(() => {
 
 .stat-card strong {
   color: #303133;
-  font-size: 24px;
+  font-size: 22px;
+}
+
+.graph-section {
+  display: grid;
 }
 
 .workspace-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 360px;
+  grid-template-columns: minmax(640px, 1fr) minmax(360px, 420px);
   gap: 14px;
   align-items: start;
 }
@@ -541,8 +564,13 @@ onUnmounted(() => {
 }
 
 .graph-canvas {
-  height: 420px;
+  height: clamp(560px, calc(100vh - 300px), 760px);
+  min-height: 560px;
   width: 100%;
+}
+
+.graph-panel :deep(.el-card__body) {
+  padding: 10px 14px 14px;
 }
 
 .domain-card,

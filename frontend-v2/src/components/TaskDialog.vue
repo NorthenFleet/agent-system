@@ -2,7 +2,8 @@
   <el-dialog
     v-model="visible"
     :title="isEdit ? '编辑任务' : '创建任务'"
-    width="560px"
+    width="600px"
+    class="task-dialog"
     @close="handleClose"
   >
     <el-form
@@ -61,12 +62,31 @@
         </el-col>
         <el-col :span="12">
           <el-form-item label="负责人">
-            <el-select v-model="form.assignee" placeholder="选择负责人" clearable style="width: 100%">
-              <el-option label="🟦 李奥纳多" value="leonardo" />
-              <el-option label="🟥 拉斐尔" value="raphael" />
-              <el-option label="🟪 多纳泰罗" value="donatello" />
-              <el-option label="🟧 米开朗基罗" value="michelangelo" />
-              <el-option label="🔧 千斤顶" value="wheeljack" />
+            <el-select
+              v-model="form.assignee"
+              placeholder="选择负责人"
+              clearable
+              style="width: 100%"
+              @visible-change="onAssigneeDropdownVisible"
+            >
+              <el-option-group
+                v-for="group in assigneeGroups"
+                :key="group.label"
+                :label="group.label"
+              >
+                <el-option
+                  v-for="opt in group.options"
+                  :key="opt.value"
+                  :label="opt.label"
+                  :value="opt.value"
+                >
+                  <span class="assignee-option">
+                    <span v-if="opt.isRecommended" class="assignee-star">★</span>
+                    <span>{{ opt.label }}</span>
+                    <span v-if="opt.score != null" class="assignee-score">{{ Math.round(opt.score * 100) }}%</span>
+                  </span>
+                </el-option>
+              </el-option-group>
             </el-select>
           </el-form-item>
         </el-col>
@@ -96,6 +116,17 @@
         </el-col>
       </el-row>
     </el-form>
+
+    <!-- 智能推荐区域 -->
+    <TaskRecommendation
+      v-if="!isEdit"
+      ref="recommendRef"
+      :task-type="form.type"
+      :priority="form.priority"
+      :tags="[]"
+      @select="onRecommendSelect"
+    />
+
     <template #footer>
       <el-button @click="handleClose">取消</el-button>
       <el-button type="primary" :loading="loading" @click="handleSubmit">
@@ -106,11 +137,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { FormInstance } from 'element-plus'
 import type { Task, TaskCreate, TaskUpdate } from '@/stores/tasks'
 import { useTasksStore } from '@/stores/tasks'
+import TaskRecommendation from './task/TaskRecommendation.vue'
+import { recommendAgent, type RecommendAgent } from '@/api/recommendation'
 
 const props = defineProps<{
   modelValue: boolean
@@ -123,7 +156,10 @@ const emit = defineEmits<{
 
 const tasksStore = useTasksStore()
 const formRef = ref<FormInstance>()
+const recommendRef = ref<InstanceType<typeof TaskRecommendation>>()
+void recommendRef
 const loading = ref(false)
+const recommendAgents = ref<RecommendAgent[]>([])
 
 const visible = computed({
   get: () => props.modelValue,
@@ -161,6 +197,81 @@ watch(() => props.task, (task) => {
     resetForm()
   }
 }, { immediate: true })
+
+// ===== 负责人选项（含推荐） =====
+interface AssigneeOption {
+  value: string
+  label: string
+  score?: number
+  isRecommended: boolean
+}
+
+const baseAgents: Array<{ value: string; label: string }> = [
+  { value: 'leonardo', label: '🟦 李奥纳多' },
+  { value: 'raphael', label: '🟥 拉斐尔' },
+  { value: 'donatello', label: '🟪 多纳泰罗' },
+  { value: 'michelangelo', label: '🟧 米开朗基罗' },
+  { value: 'wheeljack', label: '🔧 千斤顶' }
+]
+
+const assigneeGroups = computed<
+  Array<{ label: string; options: AssigneeOption[] }>
+>(() => {
+  const recMap = new Map<string, number>()
+  recommendAgents.value.forEach(a => recMap.set(a.agent_id, a.score))
+
+  const recommended: AssigneeOption[] = []
+  const others: AssigneeOption[] = []
+
+  for (const base of baseAgents) {
+    const score = recMap.get(base.value)
+    if (score != null) {
+      recommended.push({
+        value: base.value,
+        label: base.label,
+        score,
+        isRecommended: true
+      })
+    } else {
+      others.push({
+        value: base.value,
+        label: base.label,
+        isRecommended: false
+      })
+    }
+  }
+
+  recommended.sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+
+  const groups: Array<{ label: string; options: AssigneeOption[] }> = []
+  if (recommended.length) {
+    groups.push({ label: '⭐ 推荐', options: recommended })
+  }
+  if (others.length) {
+    groups.push({ label: '全部', options: others })
+  }
+  return groups
+})
+
+function onRecommendSelect(agentId: string) {
+  form.assignee = agentId
+  ElMessage.success(`已选择推荐 Agent: ${agentId}`)
+}
+
+async function onAssigneeDropdownVisible(visible: boolean) {
+  if (!visible || isEdit.value) return
+  if (recommendAgents.value.length > 0) return
+  try {
+    const res = await recommendAgent({
+      task_type: form.type,
+      priority: form.priority,
+      tags: []
+    })
+    recommendAgents.value = res.agents || []
+  } catch {
+    // 静默失败
+  }
+}
 
 function resetForm() {
   form.title = ''
@@ -218,4 +329,31 @@ async function handleSubmit() {
     loading.value = false
   }
 }
+
+onMounted(() => {
+  if (!isEdit.value) {
+    recommendAgents.value = []
+  }
+})
 </script>
+
+<style scoped>
+.assignee-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.assignee-star {
+  color: #eab308;
+  font-size: 14px;
+  filter: drop-shadow(0 1px 2px rgba(234, 179, 8, 0.4));
+}
+
+.assignee-score {
+  margin-left: auto;
+  font-size: 11px;
+  color: #909399;
+  font-weight: 600;
+}
+</style>

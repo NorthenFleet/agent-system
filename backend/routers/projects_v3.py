@@ -3,6 +3,7 @@ V3 project/task/development-point API for agent-driven development iteration.
 """
 
 import os
+import asyncio
 import json
 import shlex
 import shutil
@@ -32,6 +33,25 @@ AGENT_RUNNER_FILE = BASE_DIR / "data" / "agent_runner.json"
 OPENCLAW_WORKSPACE = Path.home() / ".openclaw" / "workspace"
 OPENCLAW_AGENTS_DIR = OPENCLAW_WORKSPACE / "agents"
 NINJA_TURTLES_QUEUE_FILE = OPENCLAW_AGENTS_DIR / "ninja-turtles" / "dev-loop" / "queue.json"
+DEFAULT_CODEX_BIN = os.getenv("CODEX_BIN", "/opt/homebrew/bin/codex")
+DEFAULT_CODEX_PATH = os.getenv(
+    "CODEX_PATH",
+    "/opt/homebrew/bin:/opt/homebrew/opt/node/bin:/opt/homebrew/Cellar/node/25.6.1_1/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+)
+DEFAULT_TEAM_DASHBOARD_REPO = OPENCLAW_WORKSPACE / "team-dashboard"
+DEFAULT_CODEX_REPO = os.getenv(
+    "CODEX_DEFAULT_REPO",
+    str(DEFAULT_TEAM_DASHBOARD_REPO if DEFAULT_TEAM_DASHBOARD_REPO.exists() else BASE_DIR.parent),
+)
+_ELASTIC_RUNNER_TASK: Optional[asyncio.Task] = None
+_ELASTIC_RUNNER_STOP: Optional[asyncio.Event] = None
+_ELASTIC_RUNNER_STATE: dict[str, Any] = {
+    "enabled": False,
+    "running": False,
+    "last_tick_at": None,
+    "last_claimed": False,
+    "last_error": "",
+}
 
 
 class DesignDocument(BaseModel):
@@ -417,37 +437,7 @@ def _template_by_id() -> dict[str, dict[str, Any]]:
 
 
 def _bootstrap_agent_instances() -> list[dict[str, Any]]:
-    templates = _template_by_id()
-    defaults = [
-        ("wheeljack-leonardo", "leonardo", "wheeljack"),
-        ("wheeljack-raphael", "raphael", "wheeljack"),
-        ("wheeljack-donatello", "donatello", "wheeljack"),
-        ("wheeljack-michelangelo", "michelangelo", "wheeljack"),
-    ]
-    now = _now_utc()
-    rows = []
-    for instance_id, base_agent_id, requested_by in defaults:
-        template = templates.get(base_agent_id, {})
-        rows.append({
-            "id": instance_id,
-            "instance_id": instance_id,
-            "type": "elastic",
-            "status": "idle",
-            "base_agent_id": base_agent_id,
-            "base_agent_name": template.get("name", base_agent_id),
-            "requested_by": requested_by,
-            "project_id": "",
-            "task_id": "",
-            "development_point_id": "",
-            "role": template.get("role", ""),
-            "capabilities": template.get("capabilities", []),
-            "reason": "bootstrap_registered_openclaw_instance",
-            "release_policy": "task_completed",
-            "created_at": now,
-            "updated_at": now,
-            "source": "agent-instance-registry",
-        })
-    return rows
+    return []
 
 
 def _load_agent_instance_store() -> dict[str, Any]:
@@ -663,12 +653,79 @@ def _save_runner_state(state: dict[str, Any]) -> dict[str, Any]:
 def _runner_executor_status() -> dict[str, Any]:
     configured = os.getenv("ELASTIC_AGENT_EXECUTOR_CMD", "").strip()
     first = shlex.split(configured)[0] if configured else ""
+    codex_bin = os.getenv("ELASTIC_AGENT_CODEX_BIN", DEFAULT_CODEX_BIN).strip()
+    codex_available = bool(codex_bin and (Path(codex_bin).is_file() or shutil.which(codex_bin)))
     return {
-        "configured": bool(configured),
-        "command": configured.split()[0] if configured else "",
-        "available": bool(first and shutil.which(first)),
-        "mode": "external-command" if configured else "claim-only",
+        "configured": bool(configured or codex_available),
+        "command": configured.split()[0] if configured else codex_bin,
+        "available": bool((first and shutil.which(first)) or codex_available),
+        "mode": "external-command" if configured else ("codex-cli" if codex_available else "claim-only"),
+        "codex_bin": codex_bin,
+        "codex_available": codex_available,
     }
+
+
+def _elastic_runner_status() -> dict[str, Any]:
+    data = dict(_ELASTIC_RUNNER_STATE)
+    data["task_active"] = bool(_ELASTIC_RUNNER_TASK and not _ELASTIC_RUNNER_TASK.done())
+    data["interval_seconds"] = int(os.getenv("ELASTIC_AGENT_RUNNER_INTERVAL", "15"))
+    data["execute"] = os.getenv("ELASTIC_AGENT_RUNNER_EXECUTE", "true").lower() != "false"
+    return data
+
+
+async def _elastic_agent_runner_loop(interval_seconds: int, execute: bool, max_seconds: int) -> None:
+    assert _ELASTIC_RUNNER_STOP is not None
+    _ELASTIC_RUNNER_STATE.update({"enabled": True, "running": True, "last_error": ""})
+    while not _ELASTIC_RUNNER_STOP.is_set():
+        _ELASTIC_RUNNER_STATE["last_tick_at"] = _now_utc()
+        try:
+            result = await asyncio.to_thread(
+                _runner_tick,
+                AgentRunnerTickRequest(execute=execute, max_seconds=max_seconds),
+            )
+            _ELASTIC_RUNNER_STATE["last_claimed"] = bool(result.get("claimed"))
+            _ELASTIC_RUNNER_STATE["last_error"] = ""
+            if result.get("claimed"):
+                run = result.get("run") or {}
+                print(f"[ElasticAgentRunner] claimed {run.get('task_id')} status={run.get('status')}")
+        except Exception as exc:
+            _ELASTIC_RUNNER_STATE["last_error"] = str(exc)
+            print(f"[ElasticAgentRunner] tick failed: {exc}")
+        try:
+            await asyncio.wait_for(_ELASTIC_RUNNER_STOP.wait(), timeout=interval_seconds)
+        except asyncio.TimeoutError:
+            pass
+    _ELASTIC_RUNNER_STATE["running"] = False
+
+
+def start_elastic_agent_runner() -> None:
+    global _ELASTIC_RUNNER_TASK, _ELASTIC_RUNNER_STOP
+    if os.getenv("ELASTIC_AGENT_RUNNER_ENABLED", "true").lower() == "false":
+        _ELASTIC_RUNNER_STATE.update({"enabled": False, "running": False, "last_error": "disabled"})
+        print("[ElasticAgentRunner] disabled")
+        return
+    if _ELASTIC_RUNNER_TASK and not _ELASTIC_RUNNER_TASK.done():
+        return
+    interval_seconds = int(os.getenv("ELASTIC_AGENT_RUNNER_INTERVAL", "15"))
+    max_seconds = int(os.getenv("ELASTIC_AGENT_RUNNER_MAX_SECONDS", "1200"))
+    execute = os.getenv("ELASTIC_AGENT_RUNNER_EXECUTE", "true").lower() != "false"
+    _ELASTIC_RUNNER_STOP = asyncio.Event()
+    _ELASTIC_RUNNER_TASK = asyncio.create_task(_elastic_agent_runner_loop(interval_seconds, execute, max_seconds))
+    print(f"[ElasticAgentRunner] started interval={interval_seconds}s execute={execute}")
+
+
+async def stop_elastic_agent_runner() -> None:
+    global _ELASTIC_RUNNER_TASK, _ELASTIC_RUNNER_STOP
+    if not _ELASTIC_RUNNER_TASK:
+        return
+    if _ELASTIC_RUNNER_STOP:
+        _ELASTIC_RUNNER_STOP.set()
+    try:
+        await asyncio.wait_for(_ELASTIC_RUNNER_TASK, timeout=5)
+    except asyncio.TimeoutError:
+        _ELASTIC_RUNNER_TASK.cancel()
+    _ELASTIC_RUNNER_TASK = None
+    _ELASTIC_RUNNER_STOP = None
 
 
 def _read_execution_context(queue_task: dict[str, Any]) -> dict[str, Any]:
@@ -688,12 +745,30 @@ def _workspace_for_queue_task(queue_task: dict[str, Any]) -> Path:
     return OPENCLAW_AGENTS_DIR / queue_task.get("assignee", "unknown") / "workspace"
 
 
+def _codex_repo_for_queue_task(queue_task: dict[str, Any], context: Optional[dict[str, Any]] = None) -> Path:
+    context = context or _read_execution_context(queue_task)
+    project = context.get("project") or {}
+    task = context.get("task") or {}
+    task_context = task.get("context") if isinstance(task.get("context"), dict) else {}
+    project_context = project.get("context") if isinstance(project.get("context"), dict) else {}
+    candidate_keys = ("repo", "repository", "repo_path", "workspace_path", "code_path")
+    for source in (queue_task, task_context, project_context, task, project):
+        for key in candidate_keys:
+            value = source.get(key) if isinstance(source, dict) else None
+            if value:
+                path = Path(str(value)).expanduser()
+                if path.exists():
+                    return path
+    return Path(DEFAULT_CODEX_REPO).expanduser()
+
+
 def _render_runner_prompt(queue_task: dict[str, Any], context: dict[str, Any]) -> str:
     instance = context.get("instance") or {}
     template = context.get("template") or {}
     project = context.get("project") or {}
     task = context.get("task") or {}
     point = context.get("development_point") or {}
+    repo = _codex_repo_for_queue_task(queue_task, context)
     capabilities = ", ".join(template.get("capabilities", []) or instance.get("capabilities", []))
     return f"""# OpenClaw 弹性智能体执行任务
 
@@ -709,6 +784,7 @@ def _render_runner_prompt(queue_task: dict[str, Any], context: dict[str, Any]) -
 ## 项目任务
 - 项目：{project.get('name', queue_task.get('project_name', ''))}
 - 项目 ID：{queue_task.get('project_id', '')}
+- 代码仓库：{repo}
 - 任务：{task.get('title', queue_task.get('title', ''))}
 - 任务 ID：{queue_task.get('task_id', '')}
 - 开发要点：{point.get('title', queue_task.get('development_point_title', '')) or '未指定'}
@@ -726,6 +802,12 @@ def _render_runner_prompt(queue_task: dict[str, Any], context: dict[str, Any]) -
 3. blockers：阻塞点
 4. next_actions：下一步建议
 5. memory_summary：需要回写到项目和基础智能体长期记忆的摘要
+
+## 执行约束
+- 请在上述代码仓库中完成最小必要修改。
+- 不要提交 git commit，不要推送。
+- 不要回退或覆盖与本任务无关的现有改动。
+- 尽量运行能证明修改正确的构建或测试，并在结果中写明。
 """
 
 
@@ -766,29 +848,77 @@ def _claim_next_elastic_task(instance_id: Optional[str] = None) -> Optional[dict
 
 def _run_external_executor(queue_task: dict[str, Any], prompt_path: Path, max_seconds: int) -> dict[str, Any]:
     configured = os.getenv("ELASTIC_AGENT_EXECUTOR_CMD", "").strip()
+    instance_workspace = _workspace_for_queue_task(queue_task)
+    context = _read_execution_context(queue_task)
+    repo = _codex_repo_for_queue_task(queue_task, context)
+    result_path = instance_workspace / "RUNNER_RESULT.md"
+    output_path = instance_workspace / "RUNNER_OUTPUT.log"
+    env = os.environ.copy()
+    env["PATH"] = os.getenv("ELASTIC_AGENT_EXECUTOR_PATH", DEFAULT_CODEX_PATH)
+
     if not configured:
-        return {"status": "skipped", "reason": "ELASTIC_AGENT_EXECUTOR_CMD not configured"}
-    workspace = _workspace_for_queue_task(queue_task)
-    context_path = queue_task.get("execution_context", "")
-    formatted = configured.format(
-        prompt=str(prompt_path),
-        context=context_path,
-        workspace=str(workspace),
-        instance_id=queue_task.get("assignee", ""),
-    )
-    args = shlex.split(formatted)
-    if not args or not shutil.which(args[0]):
+        codex_bin = os.getenv("ELASTIC_AGENT_CODEX_BIN", DEFAULT_CODEX_BIN).strip()
+        codex_path = Path(codex_bin)
+        resolved_codex = codex_bin if codex_path.is_file() else (shutil.which(codex_bin, path=env["PATH"]) or "")
+        if not resolved_codex:
+            return {
+                "status": "skipped",
+                "reason": "Codex CLI not found; set ELASTIC_AGENT_CODEX_BIN or ELASTIC_AGENT_EXECUTOR_CMD",
+                "command": codex_bin,
+            }
+        prompt = prompt_path.read_text(encoding="utf-8")
+        args = [
+            resolved_codex,
+            "--ask-for-approval",
+            "never",
+            "exec",
+            "--cd",
+            str(repo),
+            "--sandbox",
+            "workspace-write",
+            "--output-last-message",
+            str(result_path),
+            prompt,
+        ]
+    else:
+        context_path = queue_task.get("execution_context", "")
+        formatted = configured.format(
+            prompt=str(prompt_path),
+            context=context_path,
+            workspace=str(instance_workspace),
+            repo=str(repo),
+            instance_id=queue_task.get("assignee", ""),
+            output=str(result_path),
+        )
+        args = shlex.split(formatted)
+
+    if not args or not shutil.which(args[0], path=env["PATH"]):
         return {"status": "blocked", "reason": "executor command not found", "command": args[0] if args else ""}
-    result = subprocess.run(args, cwd=str(workspace), text=True, capture_output=True, timeout=max_seconds)
-    output_path = workspace / "RUNNER_OUTPUT.log"
+    result = subprocess.run(args, cwd=str(repo), text=True, capture_output=True, timeout=max_seconds, env=env)
     output_path.write_text(
         f"$ {' '.join(args)}\n\n[stdout]\n{result.stdout}\n\n[stderr]\n{result.stderr}\n",
         encoding="utf-8",
     )
+    final_message = result_path.read_text(encoding="utf-8") if result_path.exists() else ""
+    if not final_message.strip() and result.returncode != 0:
+        stderr_tail = result.stderr.strip()[-2000:]
+        stdout_tail = result.stdout.strip()[-1000:]
+        final_message = "\n".join(
+            part for part in [
+                f"Codex CLI 执行失败，退出码：{result.returncode}",
+                f"stderr 摘要：\n{stderr_tail}" if stderr_tail else "",
+                f"stdout 摘要：\n{stdout_tail}" if stdout_tail else "",
+            ]
+            if part
+        )
     return {
         "status": "completed" if result.returncode == 0 else "failed",
         "returncode": result.returncode,
         "output": str(output_path),
+        "result": str(result_path) if result_path.exists() else "",
+        "summary": final_message[:2000],
+        "repo": str(repo),
+        "workspace": str(instance_workspace),
     }
 
 
@@ -820,6 +950,26 @@ def _runner_tick(req: AgentRunnerTickRequest) -> dict[str, Any]:
         if execution.get("status") == "completed":
             task["status"] = "review"
             task["updated_at"] = _now_utc()
+            task["result_summary"] = execution.get("summary", "")
+            _update_instance_runtime_status(
+                task.get("assignee", ""),
+                "review",
+                {"runner_status": "completed", "last_result_summary": execution.get("summary", "")},
+            )
+            queue = _load_dispatch_queue()
+            existing = next((row for row in queue.get("tasks", []) if row.get("id") == task.get("id")), None)
+            if existing:
+                existing.update(task)
+                _save_dispatch_queue(queue)
+        elif execution.get("status") in {"failed", "blocked"}:
+            task["status"] = "blocked"
+            task["updated_at"] = _now_utc()
+            task["result_summary"] = execution.get("summary") or execution.get("reason", "")
+            _update_instance_runtime_status(
+                task.get("assignee", ""),
+                "blocked",
+                {"runner_status": execution.get("status"), "last_result_summary": task["result_summary"]},
+            )
             queue = _load_dispatch_queue()
             existing = next((row for row in queue.get("tasks", []) if row.get("id") == task.get("id")), None)
             if existing:
@@ -835,8 +985,16 @@ def _runner_tick(req: AgentRunnerTickRequest) -> dict[str, Any]:
 
 
 @router.get("/projects")
-def list_projects():
+def list_projects(project_type: Optional[str] = Query(None, description="Filter projects by type: software or document")):
     projects = project_manager.list_projects()
+    if project_type:
+        normalized_type = project_type.strip().lower()
+        if normalized_type not in {"software", "document"}:
+            raise HTTPException(status_code=400, detail="project_type must be software or document")
+        projects = [
+            project for project in projects
+            if str(project.get("project_type") or project.get("type") or "software").lower() == normalized_type
+        ]
     return {"projects": projects, "total": len(projects)}
 
 
@@ -1454,6 +1612,7 @@ def get_agent_runner_status():
     return {
         "runner": state,
         "executor": _runner_executor_status(),
+        "background": _elastic_runner_status(),
         "queue": {
             "assigned": len(assigned),
             "in_progress": len(in_progress),

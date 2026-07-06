@@ -1,43 +1,54 @@
 {
-  "version": 3,
+  "version": 5,
   "root": {
     "id": "sun",
     "name": "孙总",
     "node_type": "person",
-    "registered": false
+    "registered": false,
+    "order": 0
   },
   "nodes": [
     {
-      "id": "optimus",
+      "id": "executive-office",
       "parent_id": "sun",
+      "node_type": "group",
+      "name": "总经理 / 助手",
+      "emoji": "🏢",
+      "title": "总经理与个人助手",
+      "registered": false,
+      "order": 10
+    },
+    {
+      "id": "optimus",
+      "parent_id": "executive-office",
       "node_type": "agent",
       "agent_id": "optimus",
       "name": "擎天柱",
       "emoji": "🤖",
-      "title": "总项目管理",
+      "title": "总经理",
       "registered": true,
       "order": 10
     },
     {
       "id": "main",
-      "parent_id": "sun",
+      "parent_id": "executive-office",
       "node_type": "assistant",
       "agent_id": "main",
       "name": "小梦",
       "emoji": "🌙",
-      "title": "个人助理",
+      "title": "孙总个人助手",
       "registered": false,
       "order": 20
     },
     {
       "id": "project-managers",
-      "parent_id": "optimus",
+      "parent_id": "sun",
       "node_type": "group",
       "name": "项目经理",
       "emoji": "📁",
       "title": "三个项目经理负责项目推进与任务拆分",
       "registered": false,
-      "order": 10
+      "order": 20
     },
     {
       "id": "wheeljack",
@@ -73,18 +84,18 @@
       "order": 30
     },
     {
-      "id": "ninja-turtles",
-      "parent_id": "project-managers",
+      "id": "development",
+      "parent_id": "sun",
       "node_type": "group",
-      "name": "忍者神龟开发组",
+      "name": "开发组",
       "emoji": "🐢",
-      "title": "项目经理下方的开发执行能力池",
+      "title": "忍者神龟开发团队",
       "registered": false,
-      "order": 40
+      "order": 30
     },
     {
       "id": "leonardo",
-      "parent_id": "ninja-turtles",
+      "parent_id": "development",
       "node_type": "agent",
       "agent_id": "leonardo",
       "name": "李奥纳多",
@@ -95,7 +106,7 @@
     },
     {
       "id": "raphael",
-      "parent_id": "ninja-turtles",
+      "parent_id": "development",
       "node_type": "agent",
       "agent_id": "raphael",
       "name": "拉斐尔",
@@ -106,7 +117,7 @@
     },
     {
       "id": "donatello",
-      "parent_id": "ninja-turtles",
+      "parent_id": "development",
       "node_type": "agent",
       "agent_id": "donatello",
       "name": "多纳泰罗",
@@ -117,7 +128,7 @@
     },
     {
       "id": "michelangelo",
-      "parent_id": "ninja-turtles",
+      "parent_id": "development",
       "node_type": "agent",
       "agent_id": "michelangelo",
       "name": "米开朗基罗",
@@ -127,18 +138,18 @@
       "order": 40
     },
     {
-      "id": "support",
-      "parent_id": "ninja-turtles",
+      "id": "business-support",
+      "parent_id": "sun",
       "node_type": "group",
-      "name": "保障",
+      "name": "业务保障组",
       "emoji": "🧰",
-      "title": "运维、情报、知识库、财务、客户与团队治理保障",
+      "title": "其余智能体负责运维、情报、知识库、财务、客户与团队治理保障",
       "registered": false,
-      "order": 50
+      "order": 40
     },
     {
       "id": "bumblebee",
-      "parent_id": "support",
+      "parent_id": "business-support",
       "node_type": "agent",
       "agent_id": "bumblebee",
       "name": "大黄蜂",
@@ -149,7 +160,7 @@
     },
     {
       "id": "perceptor",
-      "parent_id": "support",
+      "parent_id": "business-support",
       "node_type": "agent",
       "agent_id": "perceptor",
       "name": "感知器",
@@ -160,7 +171,7 @@
     },
     {
       "id": "ratchet",
-      "parent_id": "support",
+      "parent_id": "business-support",
       "node_type": "agent",
       "agent_id": "ratchet",
       "name": "救护车",
@@ -171,7 +182,7 @@
     },
     {
       "id": "jazz",
-      "parent_id": "support",
+      "parent_id": "business-support",
       "node_type": "agent",
       "agent_id": "jazz",
       "name": "爵士",
@@ -182,7 +193,7 @@
     },
     {
       "id": "shockwave",
-      "parent_id": "support",
+      "parent_id": "business-support",
       "node_type": "agent",
       "agent_id": "shockwave",
       "name": "震荡波",
@@ -193,7 +204,7 @@
     },
     {
       "id": "soundwave",
-      "parent_id": "support",
+      "parent_id": "business-support",
       "node_type": "agent",
       "agent_id": "soundwave",
       "name": "声波",
@@ -201,19 +212,139 @@
       "title": "财务管理",
       "registered": true,
       "order": 60
+    },
+    {
+      "id": "inspector",
+      "parent_id": "business-support",
+      "node_type": "agent",
+      "agent_id": "inspector",
+      "name": "Inspector",
+      "emoji": "🔎",
+      "title": "检查与观察",
+      "registered": true,
+      "order": 70
     }
   ],
   "relations": [
-    { "from": "sun", "to": "optimus", "type": "direct", "label": "总项目管理" },
-    { "from": "sun", "to": "main", "type": "direct", "label": "个人助理" },
-    { "from": "optimus", "to": "project-managers", "type": "manages", "label": "项目经理管理" },
-    { "from": "project-managers", "to": "wheeljack", "type": "project_manager", "label": "看板 V2 PM" },
-    { "from": "project-managers", "to": "ironhide", "type": "project_manager", "label": "one-sim 仿真 PM" },
-    { "from": "project-managers", "to": "ultra-magnus", "type": "project_manager", "label": "博士论文 PM" },
-    { "from": "project-managers", "to": "ninja-turtles", "type": "delivery_pool", "label": "开发执行能力池" },
-    { "from": "ninja-turtles", "to": "support", "type": "support", "label": "底层保障" },
-    { "from": "support", "to": "jazz", "type": "support", "label": "客户关系保障" },
-    { "from": "support", "to": "shockwave", "type": "support", "label": "团队治理保障" },
-    { "from": "support", "to": "soundwave", "type": "support", "label": "财务保障" }
+    {
+      "from": "sun",
+      "to": "executive-office",
+      "type": "executive_group",
+      "label": "总经理 / 助手"
+    },
+    {
+      "from": "sun",
+      "to": "project-managers",
+      "type": "management_group",
+      "label": "项目经理"
+    },
+    {
+      "from": "sun",
+      "to": "development",
+      "type": "development_group",
+      "label": "开发组"
+    },
+    {
+      "from": "sun",
+      "to": "business-support",
+      "type": "support_group",
+      "label": "业务保障组"
+    },
+    {
+      "from": "project-managers",
+      "to": "wheeljack",
+      "type": "project_manager",
+      "label": "看板 V2 PM"
+    },
+    {
+      "from": "project-managers",
+      "to": "ironhide",
+      "type": "project_manager",
+      "label": "one-sim 仿真 PM"
+    },
+    {
+      "from": "project-managers",
+      "to": "ultra-magnus",
+      "type": "project_manager",
+      "label": "博士论文 PM"
+    },
+    {
+      "from": "executive-office",
+      "to": "optimus",
+      "type": "general_manager",
+      "label": "总经理"
+    },
+    {
+      "from": "executive-office",
+      "to": "main",
+      "type": "personal_assistant",
+      "label": "孙总个人助手"
+    },
+    {
+      "from": "business-support",
+      "to": "bumblebee",
+      "type": "support",
+      "label": "运维"
+    },
+    {
+      "from": "business-support",
+      "to": "perceptor",
+      "type": "support",
+      "label": "资讯 / 情报"
+    },
+    {
+      "from": "business-support",
+      "to": "ratchet",
+      "type": "support",
+      "label": "知识库"
+    },
+    {
+      "from": "business-support",
+      "to": "jazz",
+      "type": "support",
+      "label": "客户关系保障"
+    },
+    {
+      "from": "business-support",
+      "to": "shockwave",
+      "type": "support",
+      "label": "团队治理保障"
+    },
+    {
+      "from": "business-support",
+      "to": "soundwave",
+      "type": "support",
+      "label": "财务保障"
+    },
+    {
+      "from": "business-support",
+      "to": "inspector",
+      "type": "support",
+      "label": "检查与观察"
+    },
+    {
+      "from": "development",
+      "to": "leonardo",
+      "type": "developer",
+      "label": "架构师 / 开发负责人"
+    },
+    {
+      "from": "development",
+      "to": "raphael",
+      "type": "developer",
+      "label": "后端开发"
+    },
+    {
+      "from": "development",
+      "to": "donatello",
+      "type": "developer",
+      "label": "前端开发"
+    },
+    {
+      "from": "development",
+      "to": "michelangelo",
+      "type": "developer",
+      "label": "测试工程"
+    }
   ]
 }

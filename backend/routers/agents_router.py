@@ -5,6 +5,7 @@ V2 Agent 实时监控 API 路由 (Service 层重构版)
 API 路径和请求/响应格式保持不变（前端兼容）。
 
 POST /api/v2/agents/{id}/heartbeat   — Agent 心跳上报
+POST /api/v2/agents/{id}/dispatch    — Agent 任务派发（需 Admin）
 GET  /api/v2/agents/live             — 所有 Agent 最新状态
 GET  /api/v2/agents/{id}/history     — Agent 状态变更历史
 GET  /api/v2/agents/{id}/tasks       — Agent 关联任务列表
@@ -12,7 +13,7 @@ GET  /api/v2/agents/{id}/tasks       — Agent 关联任务列表
 @author 🟥 拉斐尔 (后端开发)
 """
 from fastapi import APIRouter, HTTPException, Depends, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone, timedelta
 from sqlalchemy.orm import Session
@@ -21,6 +22,7 @@ from models.v2_models import get_session
 from services.agent_service import AgentService
 from services.task_service import TaskService
 from routers.auth_router import get_current_user, require_role
+from websocket_manager import manager as ws_manager
 
 router = APIRouter(prefix="/api/v2/agents", tags=["v2-agents"])
 
@@ -68,6 +70,24 @@ def submit_heartbeat(
         "task_queue_len": req.task_queue_len or 0,
         "metadata": req.metadata or {},
     })
+
+    # 心跳变化实时推送（通过后台线程安全调用）
+    import asyncio
+    try:
+        loop = asyncio.get_running_loop()
+        loop.create_task(ws_manager.push_heartbeat_change({
+            "agent_id": req.agent_id,
+            "agent_name": req.agent_name,
+            "status": req.status,
+            "current_task": req.current_task,
+            "cpu_usage": req.cpu_usage,
+            "memory_usage": req.memory_usage,
+            "task_queue_len": req.task_queue_len or 0,
+        }))
+    except RuntimeError:
+        # 不在事件循环中（不太可能，但安全起见）
+        pass
+
     return {
         "success": True,
         "message": f"Agent {agent_id} 心跳已记录",
@@ -154,3 +174,25 @@ def get_agent_tasks(
         "tasks": [t.to_dict() for t in tasks],
         "total": len(tasks),
     }
+
+
+class DispatchRequest(BaseModel):
+    task_id: str = Field(..., min_length=1, description="要派发的任务 ID")
+    notes: Optional[str] = Field(None, description="派发备注")
+
+
+@router.post("/{agent_id}/dispatch")
+def dispatch_task(
+    agent_id: str,
+    req: DispatchRequest,
+    _user: dict = Depends(require_role("admin")),
+    svc: AgentService = Depends(get_agent_service),
+):
+    """派发任务到指定 Agent（仅 Admin 可操作）"""
+    dispatcher_id = _user.get("username") or _user.get("user_id")
+    return svc.dispatch_task(
+        agent_id=agent_id,
+        task_id=req.task_id,
+        dispatcher_id=dispatcher_id,
+        notes=req.notes,
+    )

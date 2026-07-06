@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional
@@ -16,6 +17,7 @@ from typing import Any, Optional
 
 DEFAULT_VAULT_PATH = "~/工作桌面/knowledge"
 DEFAULT_INDEX_RELATIVE_PATH = "14-映射库-Maps/graph-index.json"
+DEFAULT_CONCEPT_MOC_RELATIVE_PATH = "03-概念库-Concepts/MOC-概念总索引.md"
 
 
 @dataclass
@@ -84,7 +86,7 @@ class KnowledgeManager:
         limit: int = 100,
         offset: int = 0,
     ) -> dict[str, Any]:
-        nodes = self._all_nodes()
+        nodes = self._all_nodes(include_concept_files=True)
         if node_type:
             nodes = [n for n in nodes if n.get("type") == node_type]
         if q:
@@ -94,7 +96,7 @@ class KnowledgeManager:
         return {"nodes": nodes[offset : offset + limit], "total": total, "limit": limit, "offset": offset}
 
     def get_node(self, node_id: str) -> Optional[dict[str, Any]]:
-        for node in self._all_nodes():
+        for node in self._all_nodes(include_concept_files=True):
             if node.get("id") == node_id or node.get("title") == node_id:
                 return node
         return None
@@ -103,7 +105,7 @@ class KnowledgeManager:
         query = (q or "").strip().lower()
         if not query:
             return {"query": q, "nodes": [], "total": 0}
-        nodes = self._all_nodes()
+        nodes = self._all_nodes(include_concept_files=True)
         if node_type:
             nodes = [n for n in nodes if n.get("type") == node_type]
         ranked = []
@@ -198,7 +200,15 @@ class KnowledgeManager:
         excerpt = " ".join(cleaned)
         return excerpt[:max_len].strip()
 
-    def graph(self, limit_edges: int = 500, node_type: str | None = None) -> dict[str, Any]:
+    def graph(
+        self,
+        limit_edges: int = 500,
+        node_type: str | None = None,
+        mode: str = "concept_backbone",
+    ) -> dict[str, Any]:
+        if mode == "concept_backbone":
+            return self.concept_backbone_graph(limit_edges=limit_edges, node_type=node_type)
+
         index = self.load_index()
         nodes = self._all_nodes()
         if node_type:
@@ -210,7 +220,106 @@ class KnowledgeManager:
         else:
             relations = list(index.get("relations", []))
         return {
+            "mode": "full",
             "stats": self.get_stats(),
+            "nodes": nodes,
+            "relations": relations[:limit_edges],
+            "total_relations": len(relations),
+            "limit_edges": limit_edges,
+        }
+
+    def concept_backbone_graph(self, limit_edges: int = 500, node_type: str | None = None) -> dict[str, Any]:
+        index = self.load_index()
+        all_nodes = self._all_nodes(include_concept_files=True)
+        nodes_by_id = {node["id"]: node for node in all_nodes}
+        lookup = self._node_lookup(all_nodes)
+        moc_text = self._read_concept_moc()
+        concept_ids, concept_domains = self._extract_moc_concepts(moc_text, lookup)
+
+        for node in all_nodes:
+            if self._is_concept_node(node):
+                concept_ids.add(node["id"])
+
+        backbone_nodes: dict[str, dict[str, Any]] = {}
+        for node_id in concept_ids:
+            node = nodes_by_id.get(node_id)
+            if not node or not self._is_concept_node(node):
+                continue
+            backbone_nodes[node_id] = {
+                **node,
+                "backbone": True,
+                "layer": "concept",
+                "domain": concept_domains.get(node_id, ""),
+            }
+
+        relations = []
+        for relation in index.get("relations", []):
+            source = relation.get("source")
+            target = relation.get("target")
+            if source in backbone_nodes and target in backbone_nodes:
+                relations.append({**relation, "backbone": True})
+
+        relations.extend(self._extract_moc_relations(moc_text, lookup, set(backbone_nodes)))
+
+        attached_nodes: dict[str, dict[str, Any]] = {}
+        attachment_types = {"项目", "文献", "成果", "规范", "模型", "工具", "论文", "教学", "映射", "文档"}
+        max_attached = 260
+        for relation in index.get("relations", []):
+            source = relation.get("source")
+            target = relation.get("target")
+            if source in backbone_nodes and target not in backbone_nodes:
+                concept_id, attached_id = source, target
+            elif target in backbone_nodes and source not in backbone_nodes:
+                concept_id, attached_id = target, source
+            else:
+                continue
+
+            attached = nodes_by_id.get(attached_id)
+            if not attached or attached.get("type") not in attachment_types:
+                continue
+            if node_type and node_type != "概念" and attached.get("type") != node_type:
+                continue
+            if len(attached_nodes) >= max_attached and attached_id not in attached_nodes:
+                continue
+
+            attached_nodes[attached_id] = {**attached, "backbone": False, "layer": "attachment"}
+            relations.append(
+                {
+                    **relation,
+                    "source": concept_id if source == concept_id else source,
+                    "target": attached_id if target == attached_id else target,
+                    "backbone": False,
+                }
+            )
+
+        nodes = list(backbone_nodes.values())
+        if node_type and node_type != "概念":
+            nodes.extend(attached_nodes.values())
+        elif not node_type:
+            nodes.extend(attached_nodes.values())
+
+        allowed = {node["id"] for node in nodes}
+        relations = [
+            relation
+            for relation in self._dedupe_relations(relations)
+            if relation.get("source") in allowed and relation.get("target") in allowed
+        ]
+        stats = self._graph_stats(nodes, relations)
+        stats.update(
+            {
+                "build_time": index.get("build_time"),
+                "vault_path": str(self.vault_path),
+                "index_path": str(self.index_path),
+                "concept_moc_path": str(self._concept_moc_path()),
+                "available": self.index_path.exists(),
+                "concept_count": len(backbone_nodes),
+                "attached_count": len(attached_nodes) if node_type != "概念" else 0,
+                "source_stats": self.get_stats(),
+            }
+        )
+        return {
+            "mode": "concept_backbone",
+            "stats": stats,
             "nodes": nodes,
             "relations": relations[:limit_edges],
             "total_relations": len(relations),
@@ -241,7 +350,7 @@ class KnowledgeManager:
             "stats": self.get_stats(),
         }
 
-    def _all_nodes(self) -> list[dict[str, Any]]:
+    def _all_nodes(self, include_concept_files: bool = False) -> list[dict[str, Any]]:
         index = self.load_index()
         nodes_by_id: dict[str, dict[str, Any]] = {}
         for title, entity in (index.get("entities") or {}).items():
@@ -262,7 +371,183 @@ class KnowledgeManager:
                         "type": "引用" if node_id.startswith("_unlinked/") else "文档",
                         "path": "",
                     }
+        if include_concept_files:
+            for node in self._concept_file_nodes():
+                existing = nodes_by_id.get(node["id"])
+                if existing:
+                    existing.update({key: value for key, value in node.items() if value})
+                else:
+                    nodes_by_id[node["id"]] = node
         return list(nodes_by_id.values())
+
+    def _concept_moc_path(self) -> Path:
+        return self.vault_path / DEFAULT_CONCEPT_MOC_RELATIVE_PATH
+
+    def _is_concept_node(self, node: dict[str, Any]) -> bool:
+        return node.get("type") == "概念" or str(node.get("id", "")).startswith("03-概念库-Concepts/")
+
+    def _concept_dir(self) -> Path:
+        return self.vault_path / "03-概念库-Concepts"
+
+    def _concept_file_nodes(self) -> list[dict[str, Any]]:
+        concept_dir = self._concept_dir()
+        if not concept_dir.exists():
+            return []
+        nodes = []
+        for path in sorted(concept_dir.rglob("*.md")):
+            if path.name.startswith(".") or path.stem.lower() in {"readme", "index"} or path.name.startswith("MOC-"):
+                continue
+            try:
+                node_id = str(path.relative_to(self.vault_path))
+            except ValueError:
+                node_id = str(path)
+            nodes.append({"id": node_id, "title": path.stem, "type": "概念", "path": str(path)})
+        return nodes
+
+    def _read_concept_moc(self) -> str:
+        try:
+            return self._concept_moc_path().read_text(encoding="utf-8", errors="ignore")
+        except OSError:
+            return ""
+
+    def _node_lookup(self, nodes: list[dict[str, Any]]) -> dict[str, str]:
+        lookup: dict[str, str] = {}
+        for node in nodes:
+            node_id = str(node.get("id") or "")
+            title = str(node.get("title") or "")
+            path = str(node.get("path") or "")
+            is_concept = node.get("type") == "概念" or node_id.startswith("03-概念库-Concepts/")
+            candidates = {
+                node_id,
+                title,
+                Path(node_id).stem,
+                Path(path).stem,
+                node_id.removesuffix(".md"),
+                title.removesuffix(".md"),
+            }
+            for candidate in candidates:
+                normalized = self._normalize_key(candidate)
+                if normalized and (normalized not in lookup or is_concept):
+                    lookup[normalized] = node_id
+        return lookup
+
+    def _normalize_key(self, value: str) -> str:
+        return value.strip().strip("#").strip("/").removesuffix(".md").lower()
+
+    def _resolve_node_id(self, raw_name: str, lookup: dict[str, str]) -> str | None:
+        name = raw_name.split("|", 1)[0].strip()
+        name = re.sub(r"[#^].*$", "", name).strip()
+        if not name:
+            return None
+        direct = lookup.get(self._normalize_key(name))
+        if direct:
+            return direct
+        return lookup.get(self._normalize_key(Path(name).stem))
+
+    def _extract_moc_concepts(
+        self,
+        moc_text: str,
+        lookup: dict[str, str],
+    ) -> tuple[set[str], dict[str, str]]:
+        concept_ids: set[str] = set()
+        domains: dict[str, str] = {}
+        current_domain = ""
+        for line in moc_text.splitlines():
+            heading = re.match(r"^##+\s+(?:[一二三四五六七八九十]+[、.]\s*)?(.*)$", line.strip())
+            if heading:
+                current_domain = heading.group(1).strip()
+                continue
+            for raw_link in re.findall(r"\[\[([^\]]+)\]\]", line):
+                if current_domain in {"概念关系速查", "子目录索引"}:
+                    continue
+                node_id = self._resolve_node_id(raw_link, lookup)
+                if not node_id:
+                    continue
+                concept_ids.add(node_id)
+                if current_domain:
+                    domains[node_id] = current_domain
+        return concept_ids, domains
+
+    def _extract_moc_relations(
+        self,
+        moc_text: str,
+        lookup: dict[str, str],
+        concept_ids: set[str],
+    ) -> list[dict[str, Any]]:
+        relations: list[dict[str, Any]] = []
+        blocks = re.findall(r"```(.*?)```", moc_text, flags=re.S)
+        if not blocks:
+            return relations
+
+        anchors_by_indent: dict[int, str] = {}
+        for raw_line in blocks[-1].splitlines():
+            if not raw_line.strip():
+                continue
+            indent = len(raw_line) - len(raw_line.lstrip(" "))
+            line_concepts = [
+                node_id for node_id in self._line_concepts(raw_line, lookup, concept_ids) if node_id in concept_ids
+            ]
+            if not line_concepts:
+                continue
+
+            parent = self._nearest_anchor(anchors_by_indent, indent)
+            relation_name = "概念耦合" if "↔" in raw_line else "概念骨干"
+            if parent and parent != line_concepts[0]:
+                relations.append({"source": parent, "target": line_concepts[0], "relation": relation_name, "weight": 2, "backbone": True})
+            for source, target in zip(line_concepts, line_concepts[1:]):
+                if source != target:
+                    relations.append({"source": source, "target": target, "relation": relation_name, "weight": 2, "backbone": True})
+
+            anchors_by_indent[indent] = line_concepts[-1]
+            for child_indent in [key for key in anchors_by_indent if key > indent]:
+                anchors_by_indent.pop(child_indent, None)
+        return relations
+
+    def _line_concepts(
+        self,
+        line: str,
+        lookup: dict[str, str],
+        concept_ids: set[str],
+    ) -> list[str]:
+        matches: list[tuple[int, str]] = []
+        for key, node_id in lookup.items():
+            if node_id not in concept_ids or len(key) < 2:
+                continue
+            pos = line.lower().find(key)
+            if pos >= 0:
+                matches.append((pos, node_id))
+        ordered: list[str] = []
+        for _, node_id in sorted(matches, key=lambda item: item[0]):
+            if node_id not in ordered:
+                ordered.append(node_id)
+        return ordered
+
+    def _nearest_anchor(self, anchors_by_indent: dict[int, str], indent: int) -> str | None:
+        lower_indents = [key for key in anchors_by_indent if key < indent]
+        if not lower_indents:
+            return None
+        return anchors_by_indent[max(lower_indents)]
+
+    def _dedupe_relations(self, relations: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        seen: set[tuple[str, str, str]] = set()
+        unique = []
+        for relation in relations:
+            source = str(relation.get("source") or "")
+            target = str(relation.get("target") or "")
+            name = str(relation.get("relation") or relation.get("type") or "关联")
+            key = (source, target, name)
+            if not source or not target or source == target or key in seen:
+                continue
+            seen.add(key)
+            unique.append(relation)
+        return unique
+
+    def _graph_stats(self, nodes: list[dict[str, Any]], relations: list[dict[str, Any]]) -> dict[str, Any]:
+        entity_types: dict[str, int] = {}
+        for node in nodes:
+            node_type = str(node.get("type") or "知识")
+            entity_types[node_type] = entity_types.get(node_type, 0) + 1
+        return {"nodes": len(nodes), "edges": len(relations), "entity_types": entity_types}
 
     def _node_matches(self, node: dict[str, Any], query: str) -> bool:
         haystack = " ".join(str(node.get(k, "")) for k in ("id", "title", "type", "path")).lower()

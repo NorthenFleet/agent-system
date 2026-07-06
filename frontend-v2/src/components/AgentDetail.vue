@@ -27,6 +27,9 @@
         <el-descriptions-item label="健康度">
           <HeartbeatIndicator :agent="agent" />
           <span class="health-text">{{ getHealthLabel(agent.health) }}</span>
+          <span v-if="agentsStore.getHealthScore(agent.agent_id) != null" class="health-score-inline">
+            <HealthBar :score="agentsStore.getHealthScore(agent.agent_id)" :agent-id="agent.agent_id" />
+          </span>
         </el-descriptions-item>
         <el-descriptions-item label="当前任务">
           {{ agent.current_task || '—' }}
@@ -41,6 +44,16 @@
           {{ agent.memory_usage != null ? agent.memory_usage.toFixed(1) + '%' : '—' }}
         </el-descriptions-item>
       </el-descriptions>
+
+      <el-divider />
+
+      <!-- 健康度趋势 -->
+      <h4>📈 健康度趋势 (24h)</h4>
+      <div v-if="agentsStore.healthLoading" class="health-chart-loading">
+        <el-skeleton :rows="4" animated />
+      </div>
+      <VChart v-else-if="trendOption" :option="trendOption" autoresize class="health-trend-chart" />
+      <el-empty v-else description="暂无趋势数据" :image-size="40" />
 
       <el-divider />
 
@@ -95,9 +108,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useAgentsStore, type Agent } from '@/stores/agents'
 import HeartbeatIndicator from './common/HeartbeatIndicator.vue'
+import HealthBar from './agent/HealthBar.vue'
+import VChart from 'vue-echarts'
+import { use } from 'echarts/core'
+import { CanvasRenderer } from 'echarts/renderers'
+import { LineChart } from 'echarts/charts'
+import { TooltipComponent, GridComponent } from 'echarts/components'
+
+use([CanvasRenderer, LineChart, TooltipComponent, GridComponent])
 
 const props = defineProps<{
   modelValue: boolean
@@ -113,6 +134,73 @@ const agentsStore = useAgentsStore()
 const visible = computed({
   get: () => props.modelValue,
   set: (v) => emit('update:modelValue', v)
+})
+
+// 健康度趋势图
+watch(
+  () => props.agent?.agent_id,
+  (agentId) => {
+    if (agentId) {
+      agentsStore.fetchHealthTrend(agentId, 24)
+    }
+  },
+  { immediate: true }
+)
+
+const trendOption = computed(() => {
+  const data = agentsStore.healthTrend
+  if (!data.length) return null
+
+  const times = data.map(p => {
+    const d = new Date(p.timestamp)
+    return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
+  })
+  const scores = data.map(p => p.score)
+
+  const lastScore = scores[scores.length - 1]
+  const lineColor = lastScore >= 80 ? '#22c55e' : lastScore >= 50 ? '#eab308' : '#ef4444'
+
+  return {
+    tooltip: {
+      trigger: 'axis',
+      formatter: (params: any) => {
+        const item = params[0]
+        return `${item.axisValue}<br/>健康度: ${item.value}`
+      }
+    },
+    grid: { left: 40, right: 16, top: 12, bottom: 28 },
+    xAxis: {
+      type: 'category',
+      data: times,
+      axisLabel: { color: '#909399', fontSize: 10 },
+      axisLine: { lineStyle: { color: '#404040' } },
+      splitLine: { show: false }
+    },
+    yAxis: {
+      type: 'value',
+      min: 0,
+      max: 100,
+      axisLabel: { color: '#909399', fontSize: 10, formatter: '{value}' },
+      splitLine: { lineStyle: { color: 'rgba(255,255,255,0.06)' } }
+    },
+    series: [{
+      type: 'line',
+      data: scores,
+      smooth: true,
+      symbol: 'none',
+      lineStyle: { color: lineColor, width: 2 },
+      areaStyle: {
+        color: {
+          type: 'linear',
+          x: 0, y: 0, x2: 0, y2: 1,
+          colorStops: [
+            { offset: 0, color: `${lineColor}44` },
+            { offset: 1, color: `${lineColor}08` }
+          ]
+        }
+      }
+    }]
+  }
 })
 
 const agentEmoji = computed(() => {
@@ -192,6 +280,23 @@ function formatTime(time: string): string {
   margin-left: 8px;
   font-size: 13px;
   color: #606266;
+}
+
+.health-score-inline {
+  display: block;
+  margin-top: 6px;
+}
+
+.health-chart-loading {
+  padding: 12px 0;
+}
+
+.health-trend-chart {
+  height: 180px;
+  background: var(--card-bg, #1a1a2e);
+  border-radius: 8px;
+  border: 1px solid var(--line-color, #333);
+  padding: 8px;
 }
 
 h4 {
