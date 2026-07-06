@@ -259,6 +259,17 @@ export interface NewsItem {
   fetched_at?: string
 }
 
+export interface NewsLocation {
+  lat: number
+  lng: number
+  name: string
+  country?: string
+}
+
+export interface NewsLocationPoint extends NewsLocation {
+  news?: NewsItem
+}
+
 export function getAgentDashboard() {
   return apiClient.get<{ agents: AgentDashboardItem[] }>('/api/v3/agents/dashboard').then(r => r.data)
 }
@@ -343,4 +354,12 @@ export function getCommunityStats() {
 
 export function getNews(limit = 80) {
   return apiClient.get<{ news: NewsItem[]; total?: number }>('/api/news', { params: { limit } }).then(r => r.data)
+}
+
+export function getNewsLocations() {
+  return apiClient.get<{ locations: Record<string, NewsLocation> }>('/api/news/locations').then(r => r.data)
+}
+
+export function getLocationNews() {
+  return apiClient.get<{ data: NewsLocationPoint[] }>('/api/news/location-news').then(r => r.data)
 }

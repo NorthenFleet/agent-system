@@ -44,10 +44,12 @@ const pageTitle = computed(() => {
     '/tools': '工具管理',
     '/skills': '工具管理',
     '/scheduled': '工具管理',
-    '/devices': '设备清单',
+    '/devices': '系统监视',
     '/community': '活动社区',
-    '/news-center': '情报信息',
-    '/products': '产品矩阵'
+    '/intelligence': '情报信息',
+    '/news-center': '新闻资讯',
+    '/products': '产品矩阵',
+    '/monitoring': '系统监视'
   }
   return names[route.path] || 'OpenClaw'
 })

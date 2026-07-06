@@ -116,15 +116,19 @@ const routes: RouteRecordRaw[] = [
       },
       {
         path: 'devices',
-        name: 'Devices',
-        component: () => import('@/views/Devices.vue'),
-        meta: { module: 'devices' }
+        redirect: '/monitoring'
       },
       {
         path: 'community',
         name: 'Community',
         component: () => import('@/views/Community.vue'),
         meta: { module: 'community' }
+      },
+      {
+        path: 'intelligence',
+        name: 'Intelligence',
+        component: () => import('@/views/Intelligence.vue'),
+        meta: { module: 'intelligence' }
       },
       {
         path: 'news-center',

@@ -33,9 +33,10 @@ const routeThemes: Record<string, { name: string; rgb: string }> = {
   '/tools': { name: 'tools', rgb: '88, 166, 255' },
   '/skills': { name: 'tools', rgb: '88, 166, 255' },
   '/scheduled': { name: 'tools', rgb: '88, 166, 255' },
-  '/devices': { name: 'devices', rgb: '88, 166, 255' },
+  '/devices': { name: 'monitoring', rgb: '88, 166, 255' },
   '/community': { name: 'community', rgb: '88, 166, 255' },
-  '/news-center': { name: 'intelligence', rgb: '88, 166, 255' },
+  '/intelligence': { name: 'intelligence', rgb: '88, 166, 255' },
+  '/news-center': { name: 'news', rgb: '88, 166, 255' },
   '/products': { name: 'products', rgb: '88, 166, 255' },
   '/monitoring': { name: 'monitoring', rgb: '88, 166, 255' },
   '/user-admin': { name: 'user-admin', rgb: '88, 166, 255' }

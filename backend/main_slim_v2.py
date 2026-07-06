@@ -60,7 +60,7 @@ def _module_for_path(path: str):
         (("/api/finance",), "finance"),
         (("/api/skills",), "skills"),
         (("/api/scheduled",), "scheduled"),
-        (("/api/devices",), "devices"),
+        (("/api/devices",), "monitoring"),
         (("/api/community", "/api/forum", "/api/bar"), "community"),
         (("/api/news",), "news-center"),
         (("/api/products",), "products"),

@@ -61,10 +61,11 @@ const productionModuleKeys = [
   'tools',
   'devices',
   'community',
+  'intelligence',
   'news-center',
-  'tasks',
-  'monitoring'
+  'tasks'
 ]
+const systemModuleKeys = ['monitoring', 'user-admin']
 
 const iconMap: Record<string, Component> = {
   Calendar,
@@ -99,12 +100,15 @@ const menuItems = computed(() => {
 const menuSections = computed(() => {
   const byKey = new Map(menuItems.value.map(item => [item.module_key, item]))
   const sectionItems = (keys: string[]) => keys.map(key => byKey.get(key)).filter(Boolean) as typeof menuItems.value
-  const sectioned = new Set([...productModuleKeys, ...productionModuleKeys])
+  const sectioned = new Set([...productModuleKeys, ...productionModuleKeys, ...systemModuleKeys])
   return [
     { key: 'home', title: '总览', items: sectionItems(['dashboard']) },
     { key: 'product', title: '产品侧', items: sectionItems(productModuleKeys) },
     { key: 'production', title: '生产侧', items: sectionItems(productionModuleKeys) },
-    { key: 'system', title: '系统', items: menuItems.value.filter(item => !sectioned.has(item.module_key) && item.module_key !== 'dashboard') }
+    { key: 'system', title: '系统', items: [
+      ...sectionItems(systemModuleKeys),
+      ...menuItems.value.filter(item => !sectioned.has(item.module_key) && item.module_key !== 'dashboard')
+    ] }
   ]
 })
 

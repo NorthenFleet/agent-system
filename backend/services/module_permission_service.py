@@ -25,23 +25,23 @@ DEFAULT_MODULES = [
     {"module_key": "agent-chat", "name": "智能体对话", "route_path": "/agent-chat", "icon": "ChatLineRound", "sort_order": 140, "description": "与智能体进行上下文对话"},
     {"module_key": "knowledge", "name": "知识库", "route_path": "/knowledge", "icon": "Collection", "sort_order": 150, "description": "知识节点和资料上下文"},
     {"module_key": "tools", "name": "工具管理", "route_path": "/tools", "icon": "Tools", "sort_order": 160, "description": "智能体技能、工具和定时任务"},
-    {"module_key": "devices", "name": "设备清单", "route_path": "/devices", "icon": "Platform", "sort_order": 170, "description": "机器设备、健康检查和在线状态"},
     {"module_key": "community", "name": "活动社区", "route_path": "/community", "icon": "ChatLineRound", "sort_order": 180, "description": "社区、论坛和互动信息"},
-    {"module_key": "news-center", "name": "情报信息", "route_path": "/news-center", "icon": "MapLocation", "sort_order": 190, "description": "全球资讯、情报和 RSS"},
+    {"module_key": "intelligence", "name": "情报信息", "route_path": "/intelligence", "icon": "MapLocation", "sort_order": 190, "description": "特定领域长期数据积累、空间态势和专题情报"},
+    {"module_key": "news-center", "name": "新闻资讯", "route_path": "/news-center", "icon": "Document", "sort_order": 195, "description": "每日要闻、新闻资讯和 RSS"},
     {"module_key": "tasks", "name": "任务列表", "route_path": "/tasks", "icon": "List", "sort_order": 200, "description": "独立任务列表和详情"},
-    {"module_key": "monitoring", "name": "系统监控", "route_path": "/monitoring", "icon": "Monitor", "sort_order": 210, "description": "系统监控和运行指标"},
+    {"module_key": "monitoring", "name": "系统监视", "route_path": "/monitoring", "icon": "Monitor", "sort_order": 170, "description": "系统监视、设备清单、健康检查和运行指标"},
     {"module_key": "user-admin", "name": "用户管理", "route_path": "/user-admin", "icon": "User", "sort_order": 900, "description": "用户、角色和模块授权"},
 ]
 
-LEGACY_DISABLED_MODULE_KEYS = {"skills", "scheduled"}
+LEGACY_DISABLED_MODULE_KEYS = {"skills", "scheduled", "devices"}
 
 ROLE_DEFAULT_MODULES = {
     "admin": [m["module_key"] for m in DEFAULT_MODULES],
     "agent": [
         "dashboard", "projects", "development", "writing", "agents", "agent-dispatch",
-        "agent-chat", "knowledge", "tools", "tasks", "products", "devices",
+        "agent-chat", "knowledge", "tools", "intelligence", "tasks", "products", "monitoring",
     ],
-    "viewer": ["dashboard", "projects", "development", "writing", "knowledge", "news-center", "products"],
+    "viewer": ["dashboard", "projects", "development", "writing", "knowledge", "intelligence", "news-center", "products"],
 }
 
 
@@ -64,6 +64,38 @@ def ensure_default_modules(db: Session) -> None:
         if module and module.is_enabled:
             module.is_enabled = False
             changed = True
+    if changed:
+        db.commit()
+    _migrate_merged_module_grants(db)
+
+
+def _migrate_merged_module_grants(db: Session) -> None:
+    """Move legacy device-list grants into the unified monitoring module."""
+    legacy_rows = (
+        db.query(UserFeatureModule)
+        .filter(UserFeatureModule.module_key == "devices", UserFeatureModule.can_view == True)
+        .all()
+    )
+    changed = False
+    for legacy in legacy_rows:
+        exists = (
+            db.query(UserFeatureModule)
+            .filter(
+                UserFeatureModule.user_id == legacy.user_id,
+                UserFeatureModule.module_key == "monitoring",
+            )
+            .first()
+        )
+        if exists:
+            continue
+        db.add(UserFeatureModule(
+            user_id=legacy.user_id,
+            module_key="monitoring",
+            can_view=True,
+            can_manage=legacy.can_manage,
+            granted_by=legacy.granted_by,
+        ))
+        changed = True
     if changed:
         db.commit()
 

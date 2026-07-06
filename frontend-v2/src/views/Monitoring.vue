@@ -134,6 +134,61 @@
       </el-col>
     </el-row>
 
+    <div class="section-header">
+      <h2>🖥️ 设备与节点</h2>
+      <span class="refresh-hint">{{ devices.length }} 台设备 · 已并入系统监视</span>
+    </div>
+
+    <el-row :gutter="16" class="device-cards-row">
+      <el-col
+        v-for="device in devices"
+        :key="device.id"
+        :xs="24"
+        :sm="12"
+        :lg="8"
+      >
+        <div class="device-card" :class="`status-${device.status || 'unknown'}`">
+          <div class="device-header">
+            <div>
+              <div class="device-name">{{ device.name }}</div>
+              <div class="device-address">{{ device.ip }} · {{ device.location || '未知位置' }}</div>
+            </div>
+            <span class="status-badge" :class="device.status || 'unknown'">
+              {{ statusLabel(device.status || 'unknown') }}
+            </span>
+          </div>
+
+          <div class="device-meta">
+            <div>
+              <span>系统</span>
+              <strong>{{ device.os || '未知' }}</strong>
+            </div>
+            <div>
+              <span>角色</span>
+              <strong>{{ device.role || '未设置' }}</strong>
+            </div>
+            <div>
+              <span>端口</span>
+              <strong>{{ device.ports?.length ? device.ports.join(', ') : '无' }}</strong>
+            </div>
+          </div>
+
+          <div class="device-agents">
+            <span
+              v-for="agent in device.assigned_agents_details || []"
+              :key="agent.id"
+              class="agent-chip"
+            >
+              {{ agent.name }}
+            </span>
+            <span v-if="!device.assigned_agents_details?.length" class="empty-chip">
+              暂无绑定智能体
+            </span>
+          </div>
+        </div>
+      </el-col>
+    </el-row>
+
     <!-- ECharts 图表区域 -->
     <el-row :gutter="16" class="charts-row">
       <!-- CPU 趋势 -->
@@ -175,10 +230,12 @@ import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
 import type { EChartsOption } from 'echarts'
 import { getMonitoringLive, createMonitoringWs, type MonitoringAgent } from '@/api/monitoring'
+import { getDevices, type DeviceItem } from '@/api/openclaw'
 
 // ─── Reactive State ─────────────────────────────────────────────────────────
 
 const agents = ref<MonitoringAgent[]>([])
+const devices = ref<DeviceItem[]>([])
 const loading = ref(false)
 const wsConnected = ref(false)
 const wsConnecting = ref(false)
@@ -186,6 +243,7 @@ const autoRefresh = ref(true)
 const lastRefreshTime = ref('--:--:--')
 
 let refreshTimer: ReturnType<typeof setInterval> | null = null
+let deviceRefreshTimer: ReturnType<typeof setInterval> | null = null
 let ws: WebSocket | null = null
 let wsReconnectTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -240,6 +298,12 @@ const summaryStats = computed(() => [
     class: 'stat-offline'
   },
   {
+    label: '设备',
+    value: devices.value.length,
+    icon: '🖥️',
+    class: 'stat-devices'
+  },
+  {
     label: '平均CPU',
     value: avgCpu.value,
     icon: '🔥',
@@ -261,7 +325,8 @@ function statusLabel(status: string): string {
     online: '在线',
     busy: '忙碌',
     idle: '空闲',
-    offline: '离线'
+    offline: '离线',
+    unknown: '未知'
   }
   return map[status] || status
 }
@@ -361,6 +426,15 @@ async function fetchMonitoringData() {
   }
 }
 
+async function fetchDevices() {
+  try {
+    const data = await getDevices()
+    devices.value = data.devices
+  } catch {
+    ElMessage.error('设备数据加载失败')
+  }
+}
+
 function computeHealth(ageSeconds: number | null | undefined): MonitoringAgent['health'] {
   if (ageSeconds == null) return 'offline'
   if (ageSeconds <= 60) return 'healthy'
@@ -370,6 +444,7 @@ function computeHealth(ageSeconds: number | null | undefined): MonitoringAgent['
 
 function refreshData() {
   fetchMonitoringData()
+  fetchDevices()
 }
 
 // ─── Auto Refresh (3s interval) ──────────────────────────────────────────────
@@ -387,6 +462,18 @@ function stopAutoRefresh() {
   if (refreshTimer) {
     clearInterval(refreshTimer)
     refreshTimer = null
+  }
+}
+
+function startDeviceRefresh() {
+  stopDeviceRefresh()
+  deviceRefreshTimer = setInterval(fetchDevices, 15000)
+}
+
+function stopDeviceRefresh() {
+  if (deviceRefreshTimer) {
+    clearInterval(deviceRefreshTimer)
+    deviceRefreshTimer = null
   }
 }
 
@@ -595,13 +682,16 @@ function updateHealthPie() {
 
 onMounted(async () => {
   await fetchMonitoringData()
+  await fetchDevices()
   initCharts()
   startAutoRefresh()
+  startDeviceRefresh()
   connectWebSocket()
 })
 
 onUnmounted(() => {
   stopAutoRefresh()
+  stopDeviceRefresh()
   disconnectWebSocket()
   cpuChart?.dispose()
   memoryChart?.dispose()
@@ -737,6 +827,7 @@ onUnmounted(() => {
 .stat-busy .stat-value { color: #409EFF; }
 .stat-idle .stat-value { color: #E6A23C; }
 .stat-offline .stat-value { color: #909399; }
+.stat-devices .stat-value { color: #409EFF; }
 .stat-avg-cpu .stat-value { color: #E6A23C; }
 
 /* ─── Section Header ──────────────────────────────────────────── */
@@ -854,6 +945,11 @@ onUnmounted(() => {
   color: #909399;
 }
 
+.status-badge.unknown {
+  background: #f4f4f5;
+  color: #909399;
+}
+
 .card-section {
   margin-bottom: 10px;
 }
@@ -935,6 +1031,108 @@ onUnmounted(() => {
 .score-max {
   font-size: 12px;
   color: #909399;
+}
+
+/* ─── Device Cards ───────────────────────────────────────────── */
+.device-cards-row {
+  margin-bottom: 28px;
+}
+
+.device-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  border-left: 4px solid #909399;
+  transition: all 0.2s;
+}
+
+.device-card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  transform: translateY(-2px);
+}
+
+.device-card.status-online { border-left-color: #67C23A; }
+.device-card.status-busy { border-left-color: #409EFF; }
+.device-card.status-idle { border-left-color: #E6A23C; }
+.device-card.status-offline,
+.device-card.status-unknown { border-left-color: #909399; }
+
+.device-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.device-name {
+  color: #1d2b3a;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.device-address {
+  color: #909399;
+  font-size: 12px;
+  margin-top: 3px;
+}
+
+.device-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 12px;
+  border-radius: 10px;
+  background: #f7f9fc;
+}
+
+.device-meta div {
+  min-width: 0;
+}
+
+.device-meta span {
+  display: block;
+  color: #909399;
+  font-size: 11px;
+  margin-bottom: 4px;
+}
+
+.device-meta strong {
+  display: block;
+  color: #303133;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.device-agents {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.agent-chip,
+.empty-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+}
+
+.agent-chip {
+  color: #1d5fa7;
+  background: #ecf5ff;
+}
+
+.empty-chip {
+  color: #909399;
+  background: #f4f4f5;
 }
 
 /* ─── Charts ──────────────────────────────────────────────────── */
