@@ -56,7 +56,6 @@ const productionModuleKeys = [
   'data-admin',
   'agents',
   'agent-dispatch',
-  'agent-chat',
   'knowledge',
   'tools',
   'devices',

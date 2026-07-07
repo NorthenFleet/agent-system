@@ -13,6 +13,7 @@ from typing import Any, Dict, List, Optional
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data", "codex_jobs")
 INDEX_FILE = os.path.join(DATA_DIR, "jobs.json")
+LOOP_INDEX_FILE = os.path.join(DATA_DIR, "loops.json")
 DEFAULT_REPO = os.getenv("CODEX_DEFAULT_REPO", "/Users/apple/.openclaw/workspace/team-dashboard")
 CODEX_BIN = os.getenv("CODEX_BIN", "/opt/homebrew/bin/codex")
 CODEX_PATH = os.getenv(
@@ -22,11 +23,15 @@ CODEX_PATH = os.getenv(
 
 
 DEVELOPMENT_AGENTS = {
+    "optimus": "总项目管理 / Loop 控制者",
+    "wheeljack": "方案设计 / 技术架构",
     "leonardo": "架构师 / 开发负责人",
     "donatello": "前端开发",
     "raphael": "后端开发",
     "michelangelo": "测试工程",
 }
+
+TERMINAL_STATUSES = {"succeeded", "failed", "cancelled"}
 
 
 class CodexJobService:
@@ -56,7 +61,64 @@ class CodexJobService:
         logs = self._read_log(job_id)
         return {"job": self._public_job(job), "logs": logs[-tail:]}
 
-    def create_job(self, agent_id: str, instruction: str, repo: Optional[str] = None, task_id: Optional[str] = None) -> Dict[str, Any]:
+    def list_loops(self, task_id: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
+        loops = self._load_loops()
+        if task_id:
+            loops = [loop for loop in loops if loop.get("task_id") == task_id]
+        loops.sort(key=lambda loop: loop.get("created_at") or "", reverse=True)
+        return loops[:limit]
+
+    def get_loop(self, loop_id: str) -> Optional[Dict[str, Any]]:
+        return self._find_loop(loop_id)
+
+    def create_loop(
+        self,
+        task_id: str,
+        instruction: str,
+        title: str = "",
+        repo: Optional[str] = None,
+        developer_agent_id: str = "leonardo",
+        planner_agent_id: str = "leonardo",
+        evaluator_agent_id: str = "michelangelo",
+        max_rounds: int = 2,
+    ) -> Dict[str, Any]:
+        if not instruction.strip():
+            raise ValueError("instruction is required")
+        loop_id = f"loop-{datetime.now().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:8]}"
+        now = self._now()
+        loop = {
+            "id": loop_id,
+            "task_id": task_id,
+            "title": title or task_id,
+            "instruction": instruction.strip(),
+            "repo": os.path.abspath(repo or DEFAULT_REPO),
+            "status": "queued",
+            "current_round": 0,
+            "current_stage": "queued",
+            "max_rounds": max(1, min(int(max_rounds or 2), 5)),
+            "planner_agent_id": planner_agent_id,
+            "developer_agent_id": developer_agent_id,
+            "evaluator_agent_id": evaluator_agent_id,
+            "rounds": [],
+            "created_at": now,
+            "updated_at": now,
+            "finished_at": None,
+            "summary": "",
+            "error": None,
+        }
+        self._append_loop(loop)
+        thread = threading.Thread(target=self._run_loop, args=(loop_id,), daemon=True)
+        thread.start()
+        return loop
+
+    def create_job(
+        self,
+        agent_id: str,
+        instruction: str,
+        repo: Optional[str] = None,
+        task_id: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
         if not instruction.strip():
             raise ValueError("instruction is required")
         job_id = f"codex-{datetime.now().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:8]}"
@@ -98,10 +160,82 @@ class CodexJobService:
             "final_file": final_file,
             "summary": "",
         }
+        if metadata:
+            job.update(metadata)
         self._append_job(job)
         thread = threading.Thread(target=self._run_job, args=(job_id,), daemon=True)
         thread.start()
         return self._public_job(job)
+
+    def _run_loop(self, loop_id: str) -> None:
+        loop = self._find_loop(loop_id)
+        if not loop:
+            return
+        try:
+            previous_feedback = ""
+            loop["status"] = "running"
+            loop["updated_at"] = self._now()
+            self._replace_loop(loop)
+            for round_index in range(1, int(loop.get("max_rounds") or 1) + 1):
+                loop = self._find_loop(loop_id) or loop
+                loop["current_round"] = round_index
+                loop["current_stage"] = "plan"
+                round_data = {"round": round_index, "stage": "plan", "jobs": []}
+                loop.setdefault("rounds", []).append(round_data)
+                self._replace_loop(loop)
+
+                plan_job = self.create_job(
+                    loop.get("planner_agent_id") or "leonardo",
+                    self._build_loop_stage_instruction(loop, round_index, "plan", previous_feedback),
+                    repo=loop.get("repo"),
+                    task_id=loop.get("task_id"),
+                    metadata=self._loop_job_metadata(loop_id, round_index, "plan", loop.get("task_id")),
+                )
+                self._append_loop_round_job(loop_id, round_index, plan_job.get("id"))
+                plan_job = self._wait_for_job(plan_job["id"])
+                if plan_job.get("status") != "succeeded":
+                    self._finish_loop(loop_id, "failed", f"方案阶段失败：{plan_job.get('error') or plan_job.get('status')}")
+                    return
+
+                loop = self._find_loop(loop_id) or loop
+                loop["current_stage"] = "develop"
+                self._replace_loop(loop)
+                develop_job = self.create_job(
+                    loop.get("developer_agent_id") or "leonardo",
+                    self._build_loop_stage_instruction(loop, round_index, "develop", self._job_feedback(plan_job)),
+                    repo=loop.get("repo"),
+                    task_id=loop.get("task_id"),
+                    metadata=self._loop_job_metadata(loop_id, round_index, "develop", loop.get("task_id")),
+                )
+                self._append_loop_round_job(loop_id, round_index, develop_job.get("id"))
+                develop_job = self._wait_for_job(develop_job["id"])
+                if develop_job.get("status") != "succeeded":
+                    previous_feedback = self._job_feedback(develop_job)
+                    if round_index >= loop.get("max_rounds", 1):
+                        self._finish_loop(loop_id, "failed", f"开发阶段失败：{develop_job.get('error') or develop_job.get('status')}")
+                        return
+                    continue
+
+                loop = self._find_loop(loop_id) or loop
+                loop["current_stage"] = "evaluate"
+                self._replace_loop(loop)
+                evaluate_job = self.create_job(
+                    loop.get("evaluator_agent_id") or "michelangelo",
+                    self._build_loop_stage_instruction(loop, round_index, "evaluate", self._job_feedback(develop_job)),
+                    repo=loop.get("repo"),
+                    task_id=loop.get("task_id"),
+                    metadata=self._loop_job_metadata(loop_id, round_index, "evaluate", loop.get("task_id")),
+                )
+                self._append_loop_round_job(loop_id, round_index, evaluate_job.get("id"))
+                evaluate_job = self._wait_for_job(evaluate_job["id"])
+                previous_feedback = self._job_feedback(evaluate_job)
+                if evaluate_job.get("status") == "succeeded" and self._evaluation_passed(previous_feedback):
+                    self._finish_loop(loop_id, "succeeded", previous_feedback)
+                    return
+
+            self._finish_loop(loop_id, "failed", previous_feedback or "达到最大轮次，评估仍未通过。")
+        except Exception as exc:
+            self._finish_loop(loop_id, "failed", str(exc))
 
     def cancel_job(self, job_id: str) -> Dict[str, Any]:
         job = self._find_job(job_id)
@@ -187,19 +321,136 @@ class CodexJobService:
 
     def _build_prompt(self, agent_id: str, role: str, instruction: str, task_id: Optional[str]) -> str:
         return "\n".join([
-            f"你现在代表 OpenClaw 智能体 {agent_id}（{role}）执行一次受控开发任务。",
+            f"你现在代表 OpenClaw 智能体 {agent_id}（{role}）执行一次程序开发 Loop。",
             f"任务编号：{task_id or '未绑定'}",
             "",
-            "要求：",
+            "Loop 要求：",
             "1. 先阅读相关代码，再做最小必要修改。",
             "2. 不要提交 git commit，不要推送。",
             "3. 不要回退或覆盖与本任务无关的现有改动。",
-            "4. 尽量运行能证明修改正确的构建或测试。",
-            "5. 最终反馈必须包含：改了什么、改了哪些文件、验证结果、风险/后续建议。",
+            "4. 修改后必须优先运行最贴近任务的构建、测试或接口验证。",
+            "5. 如果验证失败，基于错误信息继续修正一轮；仍失败则停止扩大改动并清楚记录阻塞点。",
+            "6. 最终反馈必须包含：改了什么、改了哪些文件、验证结果、失败/风险、下一轮建议。",
             "",
             "用户任务：",
             instruction.strip(),
         ])
+
+    def _build_loop_stage_instruction(self, loop: Dict[str, Any], round_index: int, stage: str, feedback: str) -> str:
+        stage_name = {
+            "plan": "方案编写",
+            "develop": "开发实现",
+            "evaluate": "测试评估",
+        }[stage]
+        common = [
+            f"协同 Loop：{loop.get('title') or loop.get('task_id')}",
+            f"Loop ID：{loop.get('id')}",
+            f"第 {round_index} 轮 / 阶段：{stage_name}",
+            f"任务编号：{loop.get('task_id') or '未绑定'}",
+            "",
+            "原始目标：",
+            loop.get("instruction", ""),
+        ]
+        if feedback:
+            common.extend(["", "上一阶段反馈：", feedback[:4000]])
+        if stage == "plan":
+            common.extend([
+                "",
+                "你的角色：方案编写者。请输出本轮开发方案。",
+                "必须包含：目标边界、涉及文件/模块、实现步骤、验收标准、风险和交给开发者的明确指令。",
+                "不要直接修改代码，除非发现方案所需的极小配置错误。",
+            ])
+        elif stage == "develop":
+            common.extend([
+                "",
+                "你的角色：开发执行者。请按方案完成最小闭环开发。",
+                "必须执行：阅读相关代码 -> 实现最小修改 -> 运行最贴近的构建/测试/接口验证。",
+                "验证失败时基于错误修正一轮；仍失败则停止扩大范围并记录阻塞点。",
+            ])
+        else:
+            common.extend([
+                "",
+                "你的角色：测试评估者。请评估本轮开发是否满足验收标准。",
+                "必须执行：检查改动、运行或说明最贴近的验证方式、判断是否通过。",
+                "最终第一行必须写：评估结论：通过 或 评估结论：不通过。",
+                "如果不通过，请给出下一轮需要修复的问题清单。",
+            ])
+        return "\n".join(common)
+
+    def _loop_job_metadata(self, loop_id: str, round_index: int, stage: str, parent_task_id: Optional[str]) -> Dict[str, Any]:
+        return {
+            "loop_id": loop_id,
+            "loop_round": round_index,
+            "loop_stage": stage,
+            "parent_task_id": parent_task_id,
+        }
+
+    def _wait_for_job(self, job_id: str, timeout_seconds: int = 60 * 60) -> Dict[str, Any]:
+        start = time.monotonic()
+        while time.monotonic() - start < timeout_seconds:
+            job = self._find_job(job_id)
+            if job and job.get("status") in TERMINAL_STATUSES:
+                return self._public_job(job)
+            time.sleep(2)
+        job = self._find_job(job_id) or {"id": job_id}
+        job["status"] = "failed"
+        job["error"] = "Loop 等待 Codex Job 超时"
+        job["finished_at"] = self._now()
+        job["updated_at"] = job["finished_at"]
+        self._replace_job(job)
+        return self._public_job(job)
+
+    def _job_feedback(self, job: Dict[str, Any]) -> str:
+        parts = [
+            f"Job：{job.get('id')}",
+            f"状态：{job.get('status')}",
+        ]
+        if job.get("error"):
+            parts.append(f"错误：{job.get('error')}")
+        if job.get("summary"):
+            parts.append(str(job.get("summary"))[:6000])
+        elif job.get("id"):
+            parts.append("".join(self._read_log(job["id"])[-120:])[:6000])
+        return "\n".join(parts)
+
+    def _evaluation_passed(self, feedback: str) -> bool:
+        text = (feedback or "").lower()
+        if "评估结论：不通过" in feedback or "评估结论: 不通过" in feedback:
+            return False
+        if "不通过" in feedback[:500] or "未通过" in feedback[:500]:
+            return False
+        if any(word in text[:1000] for word in ["failed", "failure", "error", "阻塞"]):
+            return False
+        return True
+
+    def _finish_loop(self, loop_id: str, status: str, summary: str = "") -> None:
+        loop = self._find_loop(loop_id)
+        if not loop:
+            return
+        loop["status"] = status
+        loop["current_stage"] = "done" if status == "succeeded" else "failed"
+        loop["summary"] = summary[:12000] if summary else ""
+        loop["error"] = "" if status == "succeeded" else (summary[:1200] if summary else "Loop 执行失败")
+        loop["finished_at"] = self._now()
+        loop["updated_at"] = loop["finished_at"]
+        self._replace_loop(loop)
+
+    def _append_loop_round_job(self, loop_id: str, round_index: int, job_id: Optional[str]) -> None:
+        if not job_id:
+            return
+        loop = self._find_loop(loop_id)
+        if not loop:
+            return
+        rounds = loop.setdefault("rounds", [])
+        target = next((item for item in rounds if item.get("round") == round_index), None)
+        if not target:
+            target = {"round": round_index, "stage": loop.get("current_stage", ""), "jobs": []}
+            rounds.append(target)
+        jobs = target.setdefault("jobs", [])
+        if job_id not in jobs:
+            jobs.append(job_id)
+        loop["updated_at"] = self._now()
+        self._replace_loop(loop)
 
     def _public_job(self, job: Dict[str, Any]) -> Dict[str, Any]:
         data = {key: value for key, value in job.items() if key not in {"command"}}
@@ -245,6 +496,13 @@ class CodexJobService:
             data = json.load(f)
         return data if isinstance(data, list) else []
 
+    def _load_loops(self) -> List[Dict[str, Any]]:
+        if not os.path.exists(LOOP_INDEX_FILE):
+            return []
+        with open(LOOP_INDEX_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, list) else []
+
     def _save_jobs(self, jobs: List[Dict[str, Any]]) -> None:
         os.makedirs(DATA_DIR, exist_ok=True)
         tmp = f"{INDEX_FILE}.tmp"
@@ -252,11 +510,24 @@ class CodexJobService:
             json.dump(jobs, f, ensure_ascii=False, indent=2)
         os.replace(tmp, INDEX_FILE)
 
+    def _save_loops(self, loops: List[Dict[str, Any]]) -> None:
+        os.makedirs(DATA_DIR, exist_ok=True)
+        tmp = f"{LOOP_INDEX_FILE}.tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(loops, f, ensure_ascii=False, indent=2)
+        os.replace(tmp, LOOP_INDEX_FILE)
+
     def _append_job(self, job: Dict[str, Any]) -> None:
         with self._lock:
             jobs = self._load_jobs()
             jobs.append(job)
             self._save_jobs(jobs)
+
+    def _append_loop(self, loop: Dict[str, Any]) -> None:
+        with self._lock:
+            loops = self._load_loops()
+            loops.append(loop)
+            self._save_loops(loops)
 
     def _replace_job(self, job: Dict[str, Any]) -> None:
         with self._lock:
@@ -269,8 +540,22 @@ class CodexJobService:
                 jobs.append(job)
             self._save_jobs(jobs)
 
+    def _replace_loop(self, loop: Dict[str, Any]) -> None:
+        with self._lock:
+            loops = self._load_loops()
+            for idx, item in enumerate(loops):
+                if item.get("id") == loop.get("id"):
+                    loops[idx] = loop
+                    break
+            else:
+                loops.append(loop)
+            self._save_loops(loops)
+
     def _find_job(self, job_id: str) -> Optional[Dict[str, Any]]:
         return next((job for job in self._load_jobs() if job.get("id") == job_id), None)
+
+    def _find_loop(self, loop_id: str) -> Optional[Dict[str, Any]]:
+        return next((loop for loop in self._load_loops() if loop.get("id") == loop_id), None)
 
     def _append_log(self, job_id: str, text: str) -> None:
         with open(os.path.join(DATA_DIR, f"{job_id}.log"), "a", encoding="utf-8") as f:

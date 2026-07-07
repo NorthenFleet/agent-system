@@ -16,6 +16,17 @@ class CodexJobCreate(BaseModel):
     task_id: Optional[str] = None
 
 
+class CodexLoopCreate(BaseModel):
+    task_id: str
+    instruction: str
+    title: Optional[str] = None
+    repo: Optional[str] = None
+    developer_agent_id: str = "leonardo"
+    planner_agent_id: str = "leonardo"
+    evaluator_agent_id: str = "michelangelo"
+    max_rounds: int = 2
+
+
 @router.get("/status")
 def codex_status():
     return {
@@ -30,6 +41,36 @@ def codex_status():
 @router.get("/jobs")
 def list_jobs(agent_id: Optional[str] = Query(None), limit: int = Query(50, ge=1, le=200)):
     return {"jobs": codex_job_service.list_jobs(agent_id=agent_id, limit=limit)}
+
+
+@router.get("/loops")
+def list_loops(task_id: Optional[str] = Query(None), limit: int = Query(50, ge=1, le=200)):
+    return {"loops": codex_job_service.list_loops(task_id=task_id, limit=limit)}
+
+
+@router.post("/loops", status_code=201)
+def create_loop(request: CodexLoopCreate):
+    try:
+        return {"loop": codex_job_service.create_loop(
+            task_id=request.task_id,
+            title=request.title or request.task_id,
+            instruction=request.instruction,
+            repo=request.repo,
+            developer_agent_id=request.developer_agent_id,
+            planner_agent_id=request.planner_agent_id,
+            evaluator_agent_id=request.evaluator_agent_id,
+            max_rounds=request.max_rounds,
+        )}
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.get("/loops/{loop_id}")
+def get_loop(loop_id: str):
+    loop = codex_job_service.get_loop(loop_id)
+    if not loop:
+        raise HTTPException(status_code=404, detail="Codex Loop 不存在")
+    return {"loop": loop}
 
 
 @router.post("/jobs", status_code=201)

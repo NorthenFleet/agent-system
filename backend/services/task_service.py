@@ -69,6 +69,7 @@ class TaskService(BaseService[Task, TaskRepository]):
         assignee: Optional[str] = None,
         sprint: Optional[int] = None,
         search: Optional[str] = None,
+        source: Optional[str] = None,
         page: int = 1,
         page_size: int = 20,
         sort_by: str = "created_at",
@@ -76,7 +77,7 @@ class TaskService(BaseService[Task, TaskRepository]):
     ) -> Dict[str, Any]:
         result = self.repository.search_tasks(
             self.db, status=status, priority=priority, assignee=assignee,
-            sprint=sprint, search=search, page=page, page_size=page_size,
+            sprint=sprint, search=search, source=source, page=page, page_size=page_size,
             sort_by=sort_by, sort_order=sort_order
         )
         return {

@@ -36,6 +36,19 @@
           <el-option label="高" value="high" />
           <el-option label="紧急" value="critical" />
         </el-select>
+        <el-select
+          v-model="tasksStore.filters.source"
+          placeholder="来源"
+          clearable
+          style="width: 120px; margin-right: 8px"
+          @change="tasksStore.fetchTasks"
+        >
+          <el-option label="全部" value="" />
+          <el-option label="程序开发" value="project-dev" />
+          <el-option label="文档撰写" value="project-doc" />
+          <el-option label="手动创建" value="manual" />
+          <el-option label="系统" value="system" />
+        </el-select>
         <el-button type="primary" @click="openCreate">
           <el-icon><Plus /></el-icon> 新建任务
         </el-button>
@@ -63,6 +76,13 @@
         <template #default="{ row }">
           <el-tag :type="getPriorityType(row.priority)" size="small">
             {{ getPriorityLabel(row.priority) }}
+          </el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column prop="source" label="来源" width="90">
+        <template #default="{ row }">
+          <el-tag :type="getSourceType(row.source)" size="small">
+            {{ getSourceLabel(row.source) }}
           </el-tag>
         </template>
       </el-table-column>
@@ -189,6 +209,26 @@ function getPriorityLabel(priority: string): string {
     low: '低', medium: '中', high: '高', critical: '紧急'
   }
   return map[priority] || priority
+}
+
+function getSourceType(source: string): '' | 'success' | 'warning' | 'info' | 'danger' {
+  const map: Record<string, '' | 'success' | 'warning' | 'info' | 'danger'> = {
+    'project-dev': 'success',
+    'project-doc': 'warning',
+    'manual': 'info',
+    'system': '',
+  }
+  return map[source] || 'info'
+}
+
+function getSourceLabel(source: string): string {
+  const map: Record<string, string> = {
+    'project-dev': '程序开发',
+    'project-doc': '文档撰写',
+    'manual': '手动',
+    'system': '系统',
+  }
+  return map[source] || source || '—'
 }
 </script>
 

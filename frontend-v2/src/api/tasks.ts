@@ -14,6 +14,7 @@ export function getTasks(params?: {
   status?: string
   priority?: string
   assignee?: string
+  source?: string
   search?: string
   page?: number
   page_size?: number

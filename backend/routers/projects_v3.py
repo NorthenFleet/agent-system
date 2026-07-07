@@ -20,6 +20,7 @@ from project_manager import project_manager
 from knowledge_manager import knowledge_manager
 from openclaw_integration import openclaw_integration
 from unified_data_manager import unified_data_manager
+from services.project_task_sync import sync_v3_task_to_v2
 import skill_manager
 
 
@@ -1082,6 +1083,15 @@ def create_project_task(project_id: str, req: TaskCreate):
     task = project_manager.add_task(project_id, _model_dict(req))
     if not task:
         raise HTTPException(status_code=404, detail="Project not found")
+    # 同步到 V2 任务列表
+    project = project_manager.get_project(project_id)
+    if project:
+        sync_v3_task_to_v2(
+            task,
+            project_id=project_id,
+            project_name=project.get("name", ""),
+            project_type=project.get("project_type", "software"),
+        )
     return task
 
 
@@ -1090,6 +1100,43 @@ def update_task(task_id: str, req: TaskUpdate):
     task = project_manager.update_task(task_id, _model_dict(req, exclude_unset=True))
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
+    # 同步状态/进度变更到 V2 任务列表
+    try:
+        from project_manager import _as_list
+        from services.project_task_sync import map_v3_status, map_v3_priority
+        from database import get_session
+        from services.task_service import TaskService
+
+        # 查找所属项目
+        all_projects = project_manager.list_projects()
+        for p in all_projects:
+            for t in p.get("tasks", []):
+                if t.get("id") == task_id:
+                    v2_task_id = f"v3-{p['id']}-{task_id}"
+                    db = get_session()
+                    try:
+                        svc = TaskService(db)
+                        updates = {}
+                        if req.status is not None:
+                            updates["status"] = map_v3_status(req.status)
+                        if req.progress is not None:
+                            updates["progress"] = int(req.progress)
+                            if req.status in ("done", "completed"):
+                                updates["progress"] = 100
+                        if req.priority is not None:
+                            updates["priority"] = map_v3_priority(req.priority)
+                        if req.title is not None:
+                            updates["title"] = req.title
+                        if req.description is not None:
+                            updates["description"] = req.description
+                        if updates:
+                            svc.update_task_by_task_id(v2_task_id, updates, changed_by="system-sync")
+                    finally:
+                        db.close()
+                    break
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).error(f"V3→V2 状态同步失败: {exc}")
     return task
 
 
@@ -1099,6 +1146,34 @@ def assign_task(task_id: str, req: AssignRequest):
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     return task
+
+
+@router.post("/projects/sync-all-tasks")
+def sync_all_project_tasks_to_v2():
+    """一键批量同步：将所有 V3 项目任务同步到 V2 任务列表"""
+    results = []
+    projects = project_manager.list_projects()
+    for project in projects:
+        pid = project.get("id", "")
+        pname = project.get("name", "")
+        ptype = project.get("project_type", "software")
+        tasks = project.get("tasks", [])
+        synced = 0
+        failed = 0
+        for task in tasks:
+            result = sync_v3_task_to_v2(task, pid, pname, ptype)
+            if result:
+                synced += 1
+            else:
+                failed += 1
+        results.append({
+            "project_id": pid,
+            "project_name": pname,
+            "synced": synced,
+            "failed": failed,
+            "total": len(tasks),
+        })
+    return {"results": results}
 
 
 @router.get("/tasks/{task_id}/points")

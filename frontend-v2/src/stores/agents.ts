@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { getAgentsLive, getAgentHistory } from '@/api/agents'
 import { getAgentHealth, getHealthTrend, type AgentHealthScore, type HealthTrendPoint } from '@/api/health'
+import { getAgentDashboard, getAgentOrganization, type AgentDashboardItem, type AgentOrganization } from '@/api/openclaw'
 import { getWsClient } from '@/ws/client'
 
 export interface Agent {
@@ -58,6 +59,7 @@ export const useAgentsStore = defineStore('agents', () => {
   const wsConnected = ref(false)
   const selectedAgent = ref<Agent | null>(null)
   const selectedAgentHistory = ref<AgentStatusHistory[]>([])
+  const organization = ref<AgentOrganization | null>(null)
   const notifications = ref<Array<{
     type: string
     message: string
@@ -74,17 +76,28 @@ export const useAgentsStore = defineStore('agents', () => {
   async function fetchAgents() {
     loading.value = true
     try {
-      const [res, healthRes] = await Promise.allSettled([
+      const [res, dashboardRes, organizationRes, healthRes] = await Promise.allSettled([
         getAgentsLive(),
+        getAgentDashboard(),
+        getAgentOrganization(),
         getAgentHealth()
       ])
 
+      const liveAgents = res.status === 'fulfilled' ? res.value.agents : []
+      const dashboardAgents = dashboardRes.status === 'fulfilled' ? dashboardRes.value.agents : []
+      if (organizationRes.status === 'fulfilled') {
+        organization.value = organizationRes.value
+      }
+
+      agents.value = mergeAgentSources(liveAgents, dashboardAgents, organization.value)
+
       if (res.status === 'fulfilled') {
-        agents.value = res.value.agents.map(a => ({
+        const normalizedLiveAgents = res.value.agents.map(a => ({
           ...a,
           heartbeat_age_seconds: a.seconds_ago ?? a.heartbeat_age_seconds ?? null,
           health: computeHealth(a.seconds_ago ?? a.heartbeat_age_seconds)
         }))
+        agents.value = mergeAgentSources(normalizedLiveAgents, dashboardAgents, organization.value)
       }
 
       if (healthRes.status === 'fulfilled') {
@@ -104,6 +117,73 @@ export const useAgentsStore = defineStore('agents', () => {
     } finally {
       loading.value = false
     }
+  }
+
+  function mergeAgentSources(liveAgents: Agent[], dashboardAgents: AgentDashboardItem[], org: AgentOrganization | null): Agent[] {
+    const liveById = new Map(liveAgents.map(agent => [agent.agent_id, agent]))
+    const dashboardById = new Map(dashboardAgents.map(agent => [agent.agent_id || agent.id, agent]))
+    const orgNodes = [org?.root, ...(org?.nodes || [])].filter(Boolean)
+    const orgAgentNodes = orgNodes.filter(node => ['agent', 'assistant', 'person'].includes(node?.node_type || ''))
+    const parentNames = new Map((org?.nodes || []).map(node => [node.id, node.name]))
+    if (org?.root) parentNames.set(org.root.id, org.root.name)
+
+    const ids = new Set<string>()
+    liveAgents.forEach(agent => ids.add(agent.agent_id))
+    dashboardAgents.forEach(agent => ids.add(agent.agent_id || agent.id))
+    orgAgentNodes.forEach(node => ids.add(node?.agent_id || node?.id || ''))
+    ids.delete('')
+
+    return Array.from(ids)
+      .map(id => {
+        const live = liveById.get(id)
+        const dashboard = dashboardById.get(id)
+        const orgNode = orgAgentNodes.find(node => (node?.agent_id || node?.id) === id)
+        return normalizeAgent(id, live, dashboard, orgNode, parentNames)
+      })
+      .filter(Boolean) as Agent[]
+  }
+
+  function normalizeAgent(
+    id: string,
+    live?: Agent,
+    dashboard?: AgentDashboardItem,
+    orgNode?: NonNullable<AgentOrganization['root']>,
+    parentNames?: Map<string, string>
+  ): Agent {
+    const rawStatus = live?.status || dashboard?.status || 'offline'
+    const heartbeatAge = live?.seconds_ago ?? live?.heartbeat_age_seconds ?? null
+    const metadata = {
+      ...(live?.metadata || {}),
+      role: dashboard?.role || dashboard?.profile?.role || orgNode?.title || live?.metadata?.role,
+      team: dashboard?.team || dashboard?.profile?.team || (orgNode?.parent_id ? parentNames?.get(orgNode.parent_id) : undefined),
+      organization_title: orgNode?.title,
+      node_type: orgNode?.node_type,
+      source: dashboard?.source || 'agent-organization',
+    }
+    return {
+      agent_id: id,
+      agent_name: live?.agent_name || dashboard?.agent_name || dashboard?.name || orgNode?.name || id,
+      status: normalizeStatus(rawStatus),
+      raw_status: rawStatus,
+      current_task: live?.current_task || dashboard?.current_task || dashboard?.current_task_title || null,
+      last_heartbeat: live?.last_heartbeat || dashboard?.last_seen || dashboard?.updated_at || null,
+      heartbeat_age_seconds: heartbeatAge,
+      seconds_ago: live?.seconds_ago,
+      health: live?.health || computeHealth(heartbeatAge),
+      health_score: live?.health_score,
+      cpu_usage: live?.cpu_usage ?? null,
+      memory_usage: live?.memory_usage ?? null,
+      task_queue_len: live?.task_queue_len,
+      metadata,
+    }
+  }
+
+  function normalizeStatus(status: string | undefined): Agent['status'] {
+    const normalized = String(status || '').toLowerCase()
+    if (['online', 'running', 'active', 'healthy'].includes(normalized)) return 'online'
+    if (['busy', 'working', 'review'].includes(normalized)) return 'busy'
+    if (['idle', 'available', 'pending', 'standby'].includes(normalized)) return 'idle'
+    return 'offline'
   }
 
   async function fetchAgentHistory(agentId: string) {
@@ -278,6 +358,7 @@ export const useAgentsStore = defineStore('agents', () => {
     wsConnected,
     selectedAgent,
     selectedAgentHistory,
+    organization,
     notifications,
     healthScores,
     healthTrend,

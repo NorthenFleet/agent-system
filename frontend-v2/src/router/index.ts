@@ -78,15 +78,11 @@ const routes: RouteRecordRaw[] = [
       },
       {
         path: 'agent-dispatch',
-        name: 'AgentDispatch',
-        component: () => import('@/views/AgentDispatchPanel.vue'),
-        meta: { module: 'agent-dispatch' }
+        redirect: '/development'
       },
       {
         path: 'agent-chat',
-        name: 'AgentChat',
-        component: () => import('@/views/AgentChat.vue'),
-        meta: { module: 'agent-chat' }
+        redirect: { path: '/agents', query: { tab: 'chat' } }
       },
       {
         path: 'knowledge',

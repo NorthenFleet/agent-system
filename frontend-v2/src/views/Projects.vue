@@ -171,17 +171,18 @@
           <el-card class="panel tasks-panel" shadow="hover">
             <template #header>
               <div class="panel-header">
-                <span>{{ isDocumentProject ? '并行写作任务' : '并行开发任务' }}</span>
+                <span>{{ isDocumentProject ? '并行写作任务' : 'Loop 自主迭代开发' }}</span>
                 <div class="panel-header-actions">
                   <el-tag>{{ selectedProject.tasks.length }} 个任务</el-tag>
                   <el-tag type="success">{{ executablePointCount }} 个待执行子项</el-tag>
+                  <el-tag v-if="!isDocumentProject" type="warning">{{ loopActiveCount }} 个 Codex 执行中</el-tag>
                   <el-button
                     size="small"
                     type="primary"
                     :loading="autoDispatchingProject"
                     @click="autoDispatchProject"
                   >
-                    自动派发项目
+                    启动项目 Loop
                   </el-button>
                   <el-button size="small" :loading="loadingCodexJobs" @click="loadCodexJobs">刷新反馈</el-button>
                 </div>
@@ -203,8 +204,8 @@
                 <el-progress :percentage="Math.round(task.progress || 0)" :color="progressColor" />
                 <div class="execution-list">
                 <div class="execution-list-head">
-                  <strong>执行子项看板</strong>
-                  <small>每个{{ pointLabel }}单独派发给{{ isDocumentProject ? '文档协作智能体' : '忍者神龟开发组' }}，并绑定 Codex 执行反馈</small>
+                  <strong>{{ isDocumentProject ? '执行子项看板' : 'Loop 执行子项' }}</strong>
+                  <small>每个{{ pointLabel }}单独交给{{ isDocumentProject ? '文档协作智能体' : '忍者神龟开发组' }}，通过 Codex 执行、反馈、验证并进入下一轮</small>
                 </div>
                   <div v-if="task.development_points.length === 0" class="muted">暂无可执行子项</div>
                   <div v-for="point in task.development_points" :key="point.id" class="execution-row">
@@ -219,6 +220,9 @@
                       <el-tag size="small" :type="codexStatusType(latestJobForPoint(point.id)?.status)">
                         {{ latestJobForPoint(point.id) ? codexStatusLabel(latestJobForPoint(point.id)!.status) : '未启动' }}
                       </el-tag>
+                      <el-tag v-if="latestLoopForPoint(point.id)" size="small" type="warning">
+                        协同 {{ loopStageLabel(latestLoopForPoint(point.id)!.current_stage) }}
+                      </el-tag>
                       <span>{{ latestCodexFeedback(point.id) }}</span>
                     </div>
                     <div class="execution-actions">
@@ -229,6 +233,15 @@
                         @click="startPointCodexJob(task, point)"
                       >
                         {{ isExecutablePoint(point) ? '执行子项' : '已完成' }}
+                      </el-button>
+                      <el-button
+                        size="small"
+                        type="primary"
+                        :loading="creatingLoopIds.has(point.id)"
+                        :disabled="!isExecutablePoint(point) || hasActiveLoop(point.id)"
+                        @click="startCollaborativePointLoop(task, point)"
+                      >
+                        协同 Loop
                       </el-button>
                       <el-button
                         v-if="latestJobForPoint(point.id)"
@@ -243,8 +256,8 @@
                 <div class="codex-task-panel">
                   <div class="codex-task-head">
                     <div>
-                      <strong>任务派发控制</strong>
-                      <small>项目经理可一键派发本任务全部未完成子项，也可保留整任务指令</small>
+                      <strong>{{ isDocumentProject ? '任务派发控制' : 'Loop 迭代控制' }}</strong>
+                      <small>{{ isDocumentProject ? '项目经理可一键派发本任务全部未完成子项，也可保留整任务指令' : '按开发要点自动创建 Codex Job，多轮读代码、修改、验证、反馈' }}</small>
                     </div>
                     <el-select v-model="taskCodexAgents[task.id]" size="small" style="width: 138px">
                       <el-option label="擎天柱" value="optimus" />
@@ -269,17 +282,25 @@
                     <el-button
                       size="small"
                       type="primary"
+                      :loading="creatingLoopIds.has(task.id)"
+                      :disabled="hasActiveLoop(task.id)"
+                      @click="startCollaborativeTaskLoop(task)"
+                    >
+                      启动协同 Loop
+                    </el-button>
+                    <el-button
+                      size="small"
                       :loading="creatingTaskIds.has(task.id)"
                       @click="autoDispatchTask(task)"
                     >
-                      派发任务子项
+                      启动任务 Loop
                     </el-button>
                     <el-button
                       size="small"
                       :loading="creatingTaskIds.has(task.id)"
                       @click="startProjectCodexJob(task)"
                     >
-                      发起整任务
+                      整任务迭代
                     </el-button>
                     <el-button size="small" :loading="loadingCodexJobs" @click="loadCodexJobs">刷新反馈</el-button>
                   </div>
@@ -287,6 +308,16 @@
                     <button v-for="job in jobsForTask(task.id)" :key="job.id" class="codex-job" @click="selectCodexJob(job)">
                       <span>{{ agentLabel(job.agent_id) }} · {{ codexStatusLabel(job.status) }}</span>
                       <small>{{ formatTime(job.created_at) }} · {{ job.error || job.summary || job.instruction }}</small>
+                    </button>
+                  </div>
+                  <div v-if="loopsForTask(task.id).length" class="codex-job-list">
+                    <button v-for="loop in loopsForTask(task.id)" :key="loop.id" class="codex-job">
+                      <span>{{ loop.title }} · {{ loopStatusLabel(loop.status) }}</span>
+                      <small>
+                        第 {{ loop.current_round || 0 }} / {{ loop.max_rounds }} 轮 ·
+                        {{ loopStageLabel(loop.current_stage) }} ·
+                        方案 {{ agentLabel(loop.planner_agent_id) }} → 开发 {{ agentLabel(loop.developer_agent_id) }} → 评估 {{ agentLabel(loop.evaluator_agent_id) }}
+                      </small>
                     </button>
                   </div>
                 </div>
@@ -423,7 +454,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
@@ -438,14 +469,25 @@ import {
   type ProjectChatMessage,
   type ProjectTask
 } from '@/api/projects'
-import { createCodexJob, getCodexJobLogs, listCodexJobs, type CodexJob, type CodexJobStatus } from '@/api/codex'
+import {
+  createCodexJob,
+  createCodexLoop,
+  getCodexJobLogs,
+  listCodexJobs,
+  listCodexLoops,
+  type CodexJob,
+  type CodexJobStatus,
+  type CodexLoop
+} from '@/api/codex'
 
 const route = useRoute()
 const loading = ref(false)
 const loadingCodexJobs = ref(false)
+const loadingCodexLoops = ref(false)
 const projects = ref<Project[]>([])
 const selectedProjectId = ref('')
 const codexJobs = ref<CodexJob[]>([])
+const codexLoops = ref<CodexLoop[]>([])
 const projectContext = ref<ProjectChatContext | null>(null)
 const chatMessages = ref<ProjectChatMessage[]>([])
 const chatText = ref('')
@@ -495,7 +537,9 @@ const taskCodexAgents = reactive<Record<string, string>>({})
 const taskCodexInstructions = reactive<Record<string, string>>({})
 const creatingTaskIds = ref(new Set<string>())
 const creatingPointIds = ref(new Set<string>())
+const creatingLoopIds = ref(new Set<string>())
 const autoDispatchingProject = ref(false)
+let codexRefreshTimer: number | undefined
 
 const selectedProject = computed(() => projects.value.find(project => project.id === selectedProjectId.value) || projects.value[0])
 const isDocumentProject = computed(() => projectTypeValue(selectedProject.value) === 'document')
@@ -505,6 +549,10 @@ const executablePointCount = computed(() => (selectedProject.value?.tasks || [])
   (sum, task) => sum + (task.development_points || []).filter(point => isExecutablePoint(point) && !hasActiveJob(point.id)).length,
   0
 ))
+const loopActiveCount = computed(() =>
+  codexJobs.value.filter(job => ['queued', 'running'].includes(job.status)).length +
+  codexLoops.value.filter(loop => ['queued', 'running'].includes(loop.status)).length
+)
 const usageRequirements = computed(() => {
   const items = selectedProject.value?.design_doc?.usage_requirements || []
   return items.map(item => typeof item === 'string' ? item : JSON.stringify(item))
@@ -575,6 +623,19 @@ function jobsForPoint(pointId: string) {
     .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
 }
 
+function loopsForTask(taskId: string) {
+  return codexLoops.value
+    .filter(loop => loop.task_id === taskId)
+    .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
+    .slice(0, 3)
+}
+
+function loopsForPoint(pointId: string) {
+  return codexLoops.value
+    .filter(loop => loop.task_id === pointId)
+    .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
+}
+
 function executionLabel(id?: string) {
   if (!id) return ''
   for (const task of selectedProject.value?.tasks || []) {
@@ -587,6 +648,10 @@ function executionLabel(id?: string) {
 
 function latestJobForPoint(pointId: string) {
   return jobsForPoint(pointId)[0]
+}
+
+function latestLoopForPoint(pointId: string) {
+  return loopsForPoint(pointId)[0]
 }
 
 function latestCodexFeedback(pointId: string) {
@@ -605,6 +670,10 @@ function isExecutablePoint(point: DevelopmentPoint) {
 
 function hasActiveJob(pointId: string) {
   return jobsForPoint(pointId).some(job => ['queued', 'running'].includes(job.status))
+}
+
+function hasActiveLoop(taskId: string) {
+  return codexLoops.value.some(loop => loop.task_id === taskId && ['queued', 'running'].includes(loop.status))
 }
 
 function defaultCodexAgent(task: ProjectTask) {
@@ -641,6 +710,12 @@ function pointAgent(task: ProjectTask, point: DevelopmentPoint) {
   return 'leonardo'
 }
 
+function plannerAgent(task: ProjectTask, point?: DevelopmentPoint) {
+  const text = `${task.title} ${task.description || ''} ${point?.title || ''}`
+  if (/架构|方案|系统|数据结构|接口设计|architecture|design/i.test(text)) return 'wheeljack'
+  return 'leonardo'
+}
+
 function defaultCodexInstruction(task: ProjectTask) {
   const project = selectedProject.value
   const points = task.development_points.map(point => `- ${point.title}（${statusLabel(point.status)}）`).join('\n')
@@ -652,7 +727,7 @@ function defaultCodexInstruction(task: ProjectTask) {
     points ? `${documentProject ? '写作要点' : '开发要点'}：\n${points}` : '',
     documentProject
       ? '请阅读当前文档结构、章节目标和引用材料，完成最小必要写作或资料整理，最后反馈更新内容、引用/图表建议和待审校风险。'
-      : '请阅读相关代码，完成最小必要修改，最后反馈改动文件、验证结果和风险。'
+      : '请按 Loop 开发执行：阅读相关代码 -> 定位最小闭环 -> 修改实现 -> 运行构建/测试验证 -> 如失败继续修正一轮 -> 最后反馈改动文件、验证结果和风险。'
   ].filter(Boolean).join('\n')
 }
 
@@ -681,7 +756,8 @@ function defaultPointCodexInstruction(task: ProjectTask, point: DevelopmentPoint
     '执行要求：',
     '- 先阅读相关代码和接口，不要做无关重构。',
     '- 完成该子项所需的最小代码修改。',
-    '- 如需验证，请运行最贴近该子项的构建或测试命令。',
+    '- 按 Loop 开发执行：实现后立即运行最贴近该子项的构建或测试命令。',
+    '- 如果验证失败，基于错误继续修正一轮；仍失败则保留失败原因和下一步建议。',
     '- 最后反馈：改动文件、完成情况、验证结果、遗留风险。'
   ].join('\n')
 }
@@ -695,6 +771,94 @@ async function loadCodexJobs() {
     codexJobs.value = []
   } finally {
     loadingCodexJobs.value = false
+  }
+}
+
+async function loadCodexLoops() {
+  loadingCodexLoops.value = true
+  try {
+    const res = await listCodexLoops()
+    codexLoops.value = res.loops || []
+  } catch {
+    codexLoops.value = []
+  } finally {
+    loadingCodexLoops.value = false
+  }
+}
+
+function startCodexLoopPolling() {
+  stopCodexLoopPolling()
+  codexRefreshTimer = window.setInterval(() => {
+    if (loopActiveCount.value > 0) {
+      loadCodexJobs()
+      loadCodexLoops()
+    }
+  }, 5000)
+}
+
+async function startCollaborativeTaskLoop(task: ProjectTask) {
+  if (hasActiveLoop(task.id)) {
+    ElMessage.warning('该任务已有执行中的协同 Loop')
+    return
+  }
+  const next = new Set(creatingLoopIds.value)
+  next.add(task.id)
+  creatingLoopIds.value = next
+  try {
+    await createCodexLoop({
+      task_id: task.id,
+      title: task.title,
+      instruction: taskCodexInstructions[task.id]?.trim() || defaultCodexInstruction(task),
+      developer_agent_id: taskCodexAgents[task.id] || task.assignee_agent || defaultCodexAgent(task),
+      planner_agent_id: plannerAgent(task),
+      evaluator_agent_id: 'michelangelo',
+      max_rounds: 2
+    })
+    taskCodexInstructions[task.id] = ''
+    ElMessage.success('已启动角色协同型 Loop：方案 → 开发 → 评估')
+    await Promise.all([loadCodexJobs(), loadCodexLoops()])
+  } catch {
+    ElMessage.error('协同 Loop 启动失败')
+  } finally {
+    const done = new Set(creatingLoopIds.value)
+    done.delete(task.id)
+    creatingLoopIds.value = done
+  }
+}
+
+async function startCollaborativePointLoop(task: ProjectTask, point: DevelopmentPoint) {
+  if (hasActiveLoop(point.id)) {
+    ElMessage.warning('该子项已有执行中的协同 Loop')
+    return
+  }
+  const next = new Set(creatingLoopIds.value)
+  next.add(point.id)
+  creatingLoopIds.value = next
+  try {
+    await createCodexLoop({
+      task_id: point.id,
+      title: `${task.title} / ${point.title}`,
+      instruction: defaultPointCodexInstruction(task, point),
+      developer_agent_id: pointAgent(task, point),
+      planner_agent_id: plannerAgent(task, point),
+      evaluator_agent_id: 'michelangelo',
+      max_rounds: 2
+    })
+    ElMessage.success('已启动子项协同 Loop')
+    await Promise.all([loadCodexJobs(), loadCodexLoops()])
+  } catch {
+    ElMessage.error('子项协同 Loop 启动失败')
+  } finally {
+    const done = new Set(creatingLoopIds.value)
+    done.delete(point.id)
+    creatingLoopIds.value = done
+  }
+}
+
+function stopCodexLoopPolling() {
+  if (codexRefreshTimer) {
+    window.clearInterval(codexRefreshTimer)
+    codexRefreshTimer = undefined
   }
 }
 
@@ -712,7 +876,7 @@ async function startProjectCodexJob(task: ProjectTask) {
     })
     taskCodexAgents[task.id] = agentId
     taskCodexInstructions[task.id] = ''
-    ElMessage.success(`已派给 ${agentLabel(agentId)} 执行`)
+    ElMessage.success(`已交给 ${agentLabel(agentId)} 启动 Codex 迭代`)
     await loadCodexJobs()
   } catch {
     ElMessage.error('Codex 任务创建失败')
@@ -734,7 +898,7 @@ async function dispatchPointCodexJob(task: ProjectTask, point: DevelopmentPoint,
       task_id: point.id,
       instruction: defaultPointCodexInstruction(task, point)
     })
-    if (notify) ElMessage.success(`已派给 ${agentLabel(agentId)}：${point.title}`)
+    if (notify) ElMessage.success(`已交给 ${agentLabel(agentId)} 迭代：${point.title}`)
   } finally {
     const done = new Set(creatingPointIds.value)
     done.delete(point.id)
@@ -744,7 +908,7 @@ async function dispatchPointCodexJob(task: ProjectTask, point: DevelopmentPoint,
 
 async function startPointCodexJob(task: ProjectTask, point: DevelopmentPoint) {
   if (hasActiveJob(point.id)) {
-    ElMessage.warning('该子项已有排队或执行中的 Codex 任务')
+    ElMessage.warning('该子项已有排队或执行中的 Codex 迭代')
     return
   }
   try {
@@ -758,7 +922,7 @@ async function startPointCodexJob(task: ProjectTask, point: DevelopmentPoint) {
 async function autoDispatchTask(task: ProjectTask) {
   const candidates = (task.development_points || []).filter(point => isExecutablePoint(point) && !hasActiveJob(point.id))
   if (!candidates.length) {
-    ElMessage.info('该任务暂无需要派发的子项')
+    ElMessage.info('该任务暂无需要启动 Loop 的子项')
     return
   }
   const next = new Set(creatingTaskIds.value)
@@ -770,10 +934,10 @@ async function autoDispatchTask(task: ProjectTask) {
       await dispatchPointCodexJob(task, point, false)
       successCount += 1
     }
-    ElMessage.success(`已派发 ${successCount} 个子项给${isDocumentProject.value ? '文档协作智能体' : '忍者神龟团队'}`)
+    ElMessage.success(`已启动 ${successCount} 个子项 Loop，交给${isDocumentProject.value ? '文档协作智能体' : '忍者神龟团队'}`)
     await loadCodexJobs()
   } catch {
-    ElMessage.error(`已派发 ${successCount} 个子项，后续子项派发失败`)
+    ElMessage.error(`已启动 ${successCount} 个子项，后续 Loop 启动失败`)
     await loadCodexJobs()
   } finally {
     const done = new Set(creatingTaskIds.value)
@@ -791,7 +955,7 @@ async function autoDispatchProject() {
       .map(point => ({ task, point }))
   )
   if (!candidates.length) {
-    ElMessage.info('当前项目暂无需要派发的子项')
+    ElMessage.info('当前项目暂无需要启动 Loop 的子项')
     return
   }
   autoDispatchingProject.value = true
@@ -801,10 +965,10 @@ async function autoDispatchProject() {
       await dispatchPointCodexJob(item.task, item.point, false)
       successCount += 1
     }
-    ElMessage.success(`已派发 ${successCount} 个项目子项给${isDocumentProject.value ? '文档协作智能体' : '忍者神龟团队'}`)
+    ElMessage.success(`已启动 ${successCount} 个项目子项 Loop，交给${isDocumentProject.value ? '文档协作智能体' : '忍者神龟团队'}`)
     await loadCodexJobs()
   } catch {
-    ElMessage.error(`已派发 ${successCount} 个子项，后续子项派发失败`)
+    ElMessage.error(`已启动 ${successCount} 个子项，后续 Loop 启动失败`)
     await loadCodexJobs()
   } finally {
     autoDispatchingProject.value = false
@@ -892,6 +1056,27 @@ function codexStatusType(status?: CodexJobStatus) {
   if (status === 'failed' || status === 'cancelled') return 'danger'
   if (status === 'running' || status === 'queued') return 'warning'
   return 'info'
+}
+
+function loopStatusLabel(status: string) {
+  return {
+    queued: '排队中',
+    running: '协同中',
+    succeeded: '已通过',
+    failed: '未通过',
+    cancelled: '已取消'
+  }[status] || status
+}
+
+function loopStageLabel(stage: string) {
+  return {
+    queued: '等待启动',
+    plan: '方案编写',
+    develop: '开发实现',
+    evaluate: '测试评估',
+    done: '完成',
+    failed: '待下一轮'
+  }[stage] || stage
 }
 
 function formatTime(value: string) {
@@ -1033,6 +1218,9 @@ watch(() => selectedProject.value?.id, projectId => {
 
 onMounted(loadProjects)
 onMounted(loadCodexJobs)
+onMounted(loadCodexLoops)
+onMounted(startCodexLoopPolling)
+onUnmounted(stopCodexLoopPolling)
 </script>
 
 <style scoped>

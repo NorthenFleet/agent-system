@@ -97,7 +97,18 @@
           <el-table :data="budgetRows" size="small" class="budget-table">
             <el-table-column prop="category" label="经费类别" min-width="130" />
             <el-table-column prop="budget" label="预算额度" min-width="120">
-              <template #default="{ row }">{{ row.budgetLabel }}</template>
+              <template #default="{ row }">
+                <el-input-number
+                  v-if="row.editable"
+                  v-model="budgetDrafts[row.category]"
+                  :min="0"
+                  :step="1000"
+                  :precision="2"
+                  size="small"
+                  controls-position="right"
+                />
+                <span v-else>{{ row.budgetLabel }}</span>
+              </template>
             </el-table-column>
             <el-table-column label="已报销" min-width="120" align="right">
               <template #default="{ row }">{{ money(row.spent) }}</template>
@@ -110,6 +121,20 @@
             <el-table-column prop="status" label="状态" width="110">
               <template #default="{ row }">
                 <el-tag :type="row.spent > 0 ? 'warning' : 'info'" effect="plain">{{ row.status }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="110" fixed="right">
+              <template #default="{ row }">
+                <el-button
+                  v-if="row.editable"
+                  size="small"
+                  type="primary"
+                  :loading="budgetSaving === row.category"
+                  @click="saveBudgetCategory(row.category)"
+                >
+                  保存
+                </el-button>
+                <span v-else>-</span>
               </template>
             </el-table-column>
           </el-table>
@@ -145,9 +170,23 @@
         </div>
         <div class="reimbursement-detail" v-if="selectedReimbursement">
           <div class="reimbursement-total">
-            <span>选中报销单</span>
-            <strong>{{ money(selectedReimbursement.total_amount) }}</strong>
-            <small>{{ selectedReimbursement.source_path }}</small>
+            <div>
+              <span>选中报销单</span>
+              <strong>{{ money(selectedReimbursement.total_amount) }}</strong>
+              <small>{{ selectedReimbursement.source_path }}</small>
+            </div>
+            <div class="status-actions">
+              <el-button
+                v-for="action in reimbursementActions"
+                :key="action.status"
+                size="small"
+                :type="action.type"
+                :loading="statusSaving === action.status"
+                @click="transitionReimbursement(action.status)"
+              >
+                {{ action.label }}
+              </el-button>
+            </div>
           </div>
           <el-table :data="selectedReimbursementItems" size="small">
             <el-table-column prop="item_key" label="票据" width="100" />
@@ -396,7 +435,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
   getFinanceDashboard,
@@ -405,6 +444,8 @@ import {
   getFinanceSchema,
   getFinanceTable,
   runFinanceEnrichment,
+  transitionFinanceReimbursementStatus,
+  updateFinanceBudgetCategory,
   type FinanceDashboard,
   type FinanceEnrichmentReport,
   type FinanceQualityReport,
@@ -420,11 +461,14 @@ const enrichment = ref<FinanceEnrichmentReport | null>(null)
 const loading = ref(false)
 const tableLoading = ref(false)
 const enrichmentLoading = ref(false)
+const budgetSaving = ref('')
+const statusSaving = ref('')
 const query = ref('')
 const activeTable = ref('')
 const activeSection = ref('quality')
 const activeBudgetProjectKey = ref('all')
 const selectedReimbursementKey = ref('')
+const budgetDrafts = ref<Record<string, number>>({})
 
 const budgetCategories = ['差旅费', '设备费', '会议费', '外协费', '管理费', '材料费', '劳务费', '其他']
 
@@ -460,6 +504,17 @@ const selectedInvoiceSources = computed(() => (data.value?.reimbursements?.sourc
   .filter(item => item.reimbursement_key === selectedReimbursement.value?.reimbursement_key))
 const selectedApprovalEvents = computed(() => (data.value?.reimbursements?.events || [])
   .filter(item => item.reimbursement_key === selectedReimbursement.value?.reimbursement_key))
+const reimbursementActions = computed(() => {
+  const status = selectedReimbursement.value?.status || ''
+  const actions: Record<string, Array<{ status: string; label: string; type: 'primary' | 'success' | 'warning' | 'info' }>> = {
+    draft: [{ status: 'submitted', label: '提交审核', type: 'primary' }],
+    submitted: [{ status: 'reviewed', label: '复核通过', type: 'primary' }],
+    reviewed: [{ status: 'confirmed', label: '确认报销', type: 'success' }],
+    confirmed: [{ status: 'paid', label: '登记支付', type: 'success' }, { status: 'reviewed', label: '退回复核', type: 'warning' }],
+    paid: [{ status: 'archived', label: '归档', type: 'primary' }],
+  }
+  return actions[status] || []
+})
 const activeSchema = computed(() => schema.value?.tables.find(item => item.name === activeTable.value))
 const activeColumns = computed(() => activeSchema.value?.columns || [])
 const databaseRows = computed(() => tableData.value?.rows || [])
@@ -520,6 +575,7 @@ const budgetRows = computed(() => {
       spent: value,
       percent: budgetValue > 0 ? Math.min(100, Math.round((value / budgetValue) * 100)) : 0,
       status: budgetValue > 0 ? '已编制' : value > 0 ? '待匹配预算' : '待编制',
+      editable: activeBudgetProjectKey.value !== 'all',
     }
   })
 })
@@ -596,6 +652,56 @@ async function loadEnrichment() {
   enrichment.value = await getFinanceEnrichment()
 }
 
+function syncBudgetDrafts() {
+  if (activeBudgetProjectKey.value === 'all') {
+    budgetDrafts.value = {}
+    return
+  }
+  const drafts: Record<string, number> = {}
+  for (const item of data.value?.budget?.categories || []) {
+    if (item.project_key === activeBudgetProjectKey.value) {
+      drafts[item.category] = Number(item.budget_amount || 0)
+    }
+  }
+  budgetDrafts.value = drafts
+}
+
+async function saveBudgetCategory(category: string) {
+  if (activeBudgetProjectKey.value === 'all') return
+  budgetSaving.value = category
+  try {
+    await updateFinanceBudgetCategory(activeBudgetProjectKey.value, category, {
+      budget_amount: Number(budgetDrafts.value[category] || 0),
+      actor: 'user',
+      reason: '前端预算编制',
+    })
+    ElMessage.success('预算科目已保存')
+    await loadFinance()
+  } catch {
+    ElMessage.error('预算科目保存失败')
+  } finally {
+    budgetSaving.value = ''
+  }
+}
+
+async function transitionReimbursement(status: string) {
+  if (!selectedReimbursement.value) return
+  statusSaving.value = status
+  try {
+    await transitionFinanceReimbursementStatus(selectedReimbursement.value.reimbursement_key, {
+      status,
+      actor: 'user',
+      comment: '前端状态流转',
+    })
+    ElMessage.success('报销单状态已更新')
+    await loadFinance()
+  } catch {
+    ElMessage.error('报销单状态更新失败')
+  } finally {
+    statusSaving.value = ''
+  }
+}
+
 async function runEnrichment() {
   enrichmentLoading.value = true
   try {
@@ -648,6 +754,7 @@ async function loadFinance() {
     if (!selectedReimbursementKey.value && dashboard.reimbursements?.records?.length) {
       selectedReimbursementKey.value = dashboard.reimbursements.records[0].reimbursement_key
     }
+    syncBudgetDrafts()
     await loadDatabaseSchema()
   } catch {
     ElMessage.error('财务数据加载失败')
@@ -657,6 +764,8 @@ async function loadFinance() {
 }
 
 onMounted(loadFinance)
+
+watch(activeBudgetProjectKey, syncBudgetDrafts)
 </script>
 
 <style scoped>
@@ -881,6 +990,12 @@ onMounted(loadFinance)
 
 .reimbursement-total strong {
   font-size: 24px;
+}
+
+.status-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .reimbursement-total small {

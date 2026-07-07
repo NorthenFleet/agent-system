@@ -96,6 +96,7 @@ export const useTasksStore = defineStore('tasks', () => {
     status: '',
     priority: '',
     assignee: '',
+    source: '',
     search: ''
   })
   const pagination = ref({
@@ -110,6 +111,7 @@ export const useTasksStore = defineStore('tasks', () => {
         status: filters.value.status || undefined,
         priority: filters.value.priority || undefined,
         assignee: filters.value.assignee || undefined,
+        source: filters.value.source || undefined,
         search: filters.value.search || undefined,
         page: pagination.value.page,
         page_size: pagination.value.pageSize
@@ -197,7 +199,7 @@ export const useTasksStore = defineStore('tasks', () => {
   }
 
   function clearFilters() {
-    filters.value = { status: '', priority: '', assignee: '', search: '' }
+    filters.value = { status: '', priority: '', assignee: '', source: '', search: '' }
     pagination.value.page = 1
     fetchTasks()
   }

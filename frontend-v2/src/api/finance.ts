@@ -281,6 +281,18 @@ export interface FinanceEnrichmentRunResult {
   generated_at: string
 }
 
+export interface FinanceBudgetUpdatePayload {
+  budget_amount: number
+  actor?: string
+  reason?: string
+}
+
+export interface FinanceReimbursementStatusPayload {
+  status: string
+  actor?: string
+  comment?: string
+}
+
 export async function getFinanceDashboard(limit = 120): Promise<FinanceDashboard> {
   const response = await apiClient.get<FinanceDashboard>('/api/finance/summary', { params: { limit } })
   return response.data
@@ -288,6 +300,23 @@ export async function getFinanceDashboard(limit = 120): Promise<FinanceDashboard
 
 export async function getFinanceSchema(): Promise<FinanceSchema> {
   const response = await apiClient.get<FinanceSchema>('/api/finance/schema')
+  return response.data
+}
+
+export async function updateFinanceBudgetCategory(
+  projectKey: string,
+  category: string,
+  payload: FinanceBudgetUpdatePayload,
+): Promise<{ budget: FinanceBudget }> {
+  const response = await apiClient.put(`/api/finance/budget/categories/${projectKey}/${encodeURIComponent(category)}`, payload)
+  return response.data
+}
+
+export async function transitionFinanceReimbursementStatus(
+  reimbursementKey: string,
+  payload: FinanceReimbursementStatusPayload,
+): Promise<{ reimbursements: FinanceReimbursements }> {
+  const response = await apiClient.post(`/api/finance/reimbursements/${reimbursementKey}/status`, payload)
   return response.data
 }
 

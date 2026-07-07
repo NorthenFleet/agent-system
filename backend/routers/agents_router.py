@@ -51,7 +51,7 @@ def get_task_service(db: Session = Depends(get_session)) -> TaskService:
 
 
 @router.post("/{agent_id}/heartbeat")
-def submit_heartbeat(
+async def submit_heartbeat(
     agent_id: str,
     req: HeartbeatRequest,
     _user: dict = Depends(get_current_user),
@@ -71,26 +71,23 @@ def submit_heartbeat(
         "metadata": req.metadata or {},
     })
 
-    # 心跳变化实时推送（通过后台线程安全调用）
-    import asyncio
-    try:
-        loop = asyncio.get_running_loop()
-        loop.create_task(ws_manager.push_heartbeat_change({
-            "agent_id": req.agent_id,
-            "agent_name": req.agent_name,
-            "status": req.status,
-            "current_task": req.current_task,
-            "cpu_usage": req.cpu_usage,
-            "memory_usage": req.memory_usage,
-            "task_queue_len": req.task_queue_len or 0,
-        }))
-    except RuntimeError:
-        # 不在事件循环中（不太可能，但安全起见）
-        pass
+    # 心跳上报成功后，WS 推送心跳变更给所有连接的客户端
+    pushed = await ws_manager.push_heartbeat_change({
+        "agent_id": req.agent_id,
+        "agent_name": req.agent_name,
+        "status": req.status,
+        "current_task": req.current_task,
+        "cpu_usage": req.cpu_usage,
+        "memory_usage": req.memory_usage,
+        "task_queue_len": req.task_queue_len or 0,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    })
 
     return {
         "success": True,
         "message": f"Agent {agent_id} 心跳已记录",
+        "ws_pushed": pushed > 0,
+        "ws_clients_notified": pushed,
     }
 
 

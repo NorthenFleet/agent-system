@@ -41,6 +41,7 @@ MISSING_VALUES = {"", "none", "null", "n/a", "na", "nan", "未注明", "无"}
 FINANCE_TABLES = {
     "budget_projects": "finance_budget_projects",
     "budget_categories": "finance_budget_categories",
+    "budget_adjustments": "finance_budget_adjustments",
     "reimbursements": "finance_reimbursements",
     "reimbursement_items": "finance_reimbursement_items",
     "invoice_sources": "finance_invoice_sources",
@@ -55,6 +56,7 @@ FINANCE_TABLES = {
 TABLE_ORDERING = {
     "finance_budget_projects": "updated_at DESC, id DESC",
     "finance_budget_categories": "project_key ASC, id ASC",
+    "finance_budget_adjustments": "created_at DESC, id DESC",
     "finance_reimbursements": "submitted_at DESC, updated_at DESC, id DESC",
     "finance_reimbursement_items": "reimbursement_key ASC, id ASC",
     "finance_invoice_sources": "created_at DESC, id DESC",
@@ -181,6 +183,17 @@ class FinanceService:
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL,
                     UNIQUE(project_key, category)
+                );
+                CREATE TABLE IF NOT EXISTS finance_budget_adjustments (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    project_key TEXT NOT NULL,
+                    category TEXT,
+                    before_amount REAL NOT NULL DEFAULT 0,
+                    after_amount REAL NOT NULL DEFAULT 0,
+                    delta_amount REAL NOT NULL DEFAULT 0,
+                    actor TEXT,
+                    reason TEXT,
+                    created_at TEXT NOT NULL
                 );
                 CREATE TABLE IF NOT EXISTS finance_reimbursements (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -336,6 +349,8 @@ class FinanceService:
             self._ensure_column(conn, "finance_reimbursements", "total_amount", "REAL NOT NULL DEFAULT 0")
             self._ensure_column(conn, "finance_reimbursements", "item_count", "INTEGER NOT NULL DEFAULT 0")
             self._ensure_column(conn, "finance_reimbursements", "confirmed_at", "TEXT")
+            self._ensure_column(conn, "finance_reimbursements", "paid_at", "TEXT")
+            self._ensure_column(conn, "finance_reimbursements", "archived_at", "TEXT")
             self._ensure_column(conn, "finance_reimbursements", "raw_json", "TEXT")
             self._ensure_budget_seed(conn)
 
@@ -443,6 +458,67 @@ class FinanceService:
             "generated_at": _now(),
         }
 
+    def update_budget_category(
+        self,
+        project_key: str,
+        category: str,
+        budget_amount: float,
+        actor: str = "user",
+        reason: str = "",
+    ) -> dict[str, Any]:
+        self.ensure_schema()
+        if category not in DEFAULT_BUDGET_CATEGORIES:
+            return {"status": "error", "message": f"Unknown budget category: {category}"}
+        amount = round(max(float(budget_amount or 0), 0), 2)
+        now = _now()
+        with self.connect() as conn:
+            project = self._one(conn, "SELECT * FROM finance_budget_projects WHERE project_key=?", (project_key,))
+            if not project:
+                return {"status": "error", "message": f"Unknown budget project: {project_key}"}
+            current = self._one(
+                conn,
+                "SELECT * FROM finance_budget_categories WHERE project_key=? AND category=?",
+                (project_key, category),
+            )
+            before = float(current.get("budget_amount") or 0) if current else 0.0
+            spent = float(current.get("spent_amount") or 0) if current else 0.0
+            conn.execute(
+                """
+                INSERT INTO finance_budget_categories(
+                  project_key, category, budget_amount, spent_amount, remaining_amount, note, created_at, updated_at
+                )
+                VALUES(?,?,?,?,?,?,?,?)
+                ON CONFLICT(project_key, category) DO UPDATE SET
+                  budget_amount=excluded.budget_amount,
+                  remaining_amount=excluded.remaining_amount,
+                  note=excluded.note,
+                  updated_at=excluded.updated_at
+                """,
+                (
+                    project_key,
+                    category,
+                    amount,
+                    spent,
+                    round(amount - spent, 2),
+                    "已编制",
+                    now,
+                    now,
+                ),
+            )
+            conn.execute(
+                """
+                INSERT INTO finance_budget_adjustments(project_key,category,before_amount,after_amount,delta_amount,actor,reason,created_at)
+                VALUES(?,?,?,?,?,?,?,?)
+                """,
+                (project_key, category, before, amount, round(amount - before, 2), actor, reason, now),
+            )
+        self.record_audit("update_budget_category", actor, f"{project_key}:{category}", {
+            "before_amount": before,
+            "after_amount": amount,
+            "reason": reason,
+        })
+        return self.budget_report()
+
     def refresh_budget_spending(self) -> None:
         with self.connect() as conn:
             item_rows = self._all(
@@ -471,6 +547,12 @@ class FinanceService:
                 )
                 for category in DEFAULT_BUDGET_CATEGORIES:
                     spent = spent_by_category.get(category, 0.0) if project_key == DEFAULT_BUDGET_PROJECT_KEY else 0.0
+                    current = self._one(
+                        conn,
+                        "SELECT budget_amount FROM finance_budget_categories WHERE project_key=? AND category=?",
+                        (project_key, category),
+                    )
+                    category_budget = float(current.get("budget_amount") or 0) if current else 0.0
                     conn.execute(
                         """
                         INSERT INTO finance_budget_categories(
@@ -485,10 +567,10 @@ class FinanceService:
                         (
                             project_key,
                             category,
-                            0.0,
+                            category_budget,
                             spent,
-                            0.0,
-                            "预算额度待编制",
+                            round(category_budget - spent, 2),
+                            "预算额度待编制" if category_budget <= 0 else "已编制",
                             now,
                             now,
                         ),
@@ -987,6 +1069,64 @@ class FinanceService:
             "events": events,
             "generated_at": _now(),
         }
+
+    def transition_reimbursement_status(
+        self,
+        reimbursement_key: str,
+        to_status: str,
+        actor: str = "user",
+        comment: str = "",
+    ) -> dict[str, Any]:
+        allowed = {
+            "draft": {"submitted", "cancelled"},
+            "submitted": {"reviewed", "cancelled"},
+            "reviewed": {"confirmed", "submitted", "cancelled"},
+            "confirmed": {"paid", "reviewed"},
+            "paid": {"archived"},
+            "archived": set(),
+            "cancelled": set(),
+        }
+        if to_status not in set(allowed) | {"submitted", "reviewed", "confirmed", "paid", "archived", "cancelled"}:
+            return {"status": "error", "message": f"Unknown reimbursement status: {to_status}"}
+        now = _now()
+        with self.connect() as conn:
+            row = self._one(conn, "SELECT * FROM finance_reimbursements WHERE reimbursement_key=?", (reimbursement_key,))
+            if not row:
+                return {"status": "error", "message": f"Unknown reimbursement: {reimbursement_key}"}
+            from_status = row.get("status") or "draft"
+            if to_status != from_status and to_status not in allowed.get(from_status, set()):
+                return {
+                    "status": "error",
+                    "message": f"Illegal status transition: {from_status} -> {to_status}",
+                    "from_status": from_status,
+                    "to_status": to_status,
+                }
+            submitted_at = row.get("submitted_at") or (now if to_status == "submitted" else None)
+            confirmed_at = row.get("confirmed_at") or (now if to_status == "confirmed" else None)
+            paid_at = row.get("paid_at") or (now if to_status == "paid" else None)
+            archived_at = row.get("archived_at") or (now if to_status == "archived" else None)
+            conn.execute(
+                """
+                UPDATE finance_reimbursements
+                SET status=?, submitted_at=COALESCE(?, submitted_at), confirmed_at=COALESCE(?, confirmed_at),
+                    paid_at=COALESCE(?, paid_at), archived_at=COALESCE(?, archived_at), updated_at=?
+                WHERE reimbursement_key=?
+                """,
+                (to_status, submitted_at, confirmed_at, paid_at, archived_at, now, reimbursement_key),
+            )
+            conn.execute(
+                """
+                INSERT INTO finance_approval_events(reimbursement_key,event_type,actor,from_status,to_status,comment,created_at)
+                VALUES(?,?,?,?,?,?,?)
+                """,
+                (reimbursement_key, "status_transition", actor, from_status, to_status, comment, now),
+            )
+        self.record_audit("transition_reimbursement_status", actor, reimbursement_key, {
+            "from_status": from_status,
+            "to_status": to_status,
+            "comment": comment,
+        })
+        return self.reimbursements_report()
 
     def _upsert_reimbursement_from_batch(
         self,

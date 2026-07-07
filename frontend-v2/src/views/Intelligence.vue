@@ -22,11 +22,16 @@
         <div class="globe-head">
           <div>
             <h2>空间态势地球</h2>
-            <p>橙色为长期情报专题，蓝色为新闻热点；点击卡片或点位会联动定位</p>
+            <p>橙色为长期情报专题，蓝色为新闻热点，绿色为 AIS 舰艇坐标，青色为航迹</p>
           </div>
-          <el-tag :type="threeReady ? 'success' : 'warning'" effect="plain">
-            {{ threeReady ? '地球已加载' : globeStatus }}
-          </el-tag>
+          <div class="globe-tools">
+            <el-switch v-model="showAisLayer" size="small" active-text="舰艇" />
+            <el-switch v-model="showTrackLayer" size="small" active-text="航迹" />
+            <el-switch v-model="showNewsLayer" size="small" active-text="新闻" />
+            <el-tag :type="threeReady ? 'success' : 'warning'" effect="plain">
+              {{ threeReady ? '地球已加载' : globeStatus }}
+            </el-tag>
+          </div>
         </div>
         <div ref="globeContainer" class="globe-canvas">
           <div v-if="!threeReady" class="globe-fallback">
@@ -37,6 +42,8 @@
         <div class="space-legend">
           <span><i class="dot dot-domain"></i>长期情报</span>
           <span><i class="dot dot-news"></i>新闻资讯</span>
+          <span><i class="dot dot-vessel"></i>AIS 舰艇</span>
+          <span><i class="line-sample"></i>航迹</span>
           <span><i class="dot dot-active"></i>当前聚焦</span>
         </div>
       </article>
@@ -58,12 +65,26 @@
           >
             <div>
               <strong>{{ item.name }}</strong>
-              <span>{{ item.type === 'domain' ? '长期情报' : '新闻热点' }} · {{ item.locationLabel }}</span>
+              <span>{{ spatialTypeLabel(item.type) }} · {{ item.locationLabel }}</span>
             </div>
-            <el-tag size="small" :type="item.type === 'domain' ? 'warning' : 'primary'" effect="plain">
+            <el-tag size="small" :type="spatialTypeTag(item.type)" effect="plain">
               {{ item.countLabel }}
             </el-tag>
           </article>
+        </div>
+        <div v-if="activeVessel" class="vessel-detail">
+          <div class="detail-title">
+            <strong>{{ activeVessel.name }}</strong>
+            <el-tag size="small" :type="vesselStatusType(activeVessel.status)" effect="plain">
+              {{ vesselStatusLabel(activeVessel.status) }}
+            </el-tag>
+          </div>
+          <div class="detail-grid">
+            <span>MMSI</span><strong>{{ activeVessel.mmsi }}</strong>
+            <span>航速</span><strong>{{ currentVesselPoint(activeVessel)?.speed || '--' }} kn</strong>
+            <span>航向</span><strong>{{ currentVesselPoint(activeVessel)?.course || '--' }}°</strong>
+            <span>坐标</span><strong>{{ vesselCoordinate(activeVessel) }}</strong>
+          </div>
         </div>
       </aside>
     </section>
@@ -75,6 +96,11 @@
         <small>{{ activeDomains }} 个持续采集中</small>
       </article>
       <article class="metric-card">
+        <span>AIS 舰艇</span>
+        <strong>{{ aisVessels.length }}</strong>
+        <small>{{ trackPointCount }} 个历史轨迹点</small>
+      </article>
+      <article class="metric-card">
         <span>空间点位</span>
         <strong>{{ spatialItems.length }}</strong>
         <small>专题点位与新闻热点合并显示</small>
@@ -84,6 +110,43 @@
         <strong>{{ relatedNews.length }}</strong>
         <small>来自新闻资讯模块的位置数据</small>
       </article>
+    </section>
+
+    <section class="section-panel">
+      <div class="section-head">
+        <div>
+          <h2>AIS 舰艇坐标与航迹</h2>
+          <p>当前为示例数据结构，已支持舰艇点、航迹线、状态、航速航向和时间点切换</p>
+        </div>
+        <div class="time-control">
+          <span>{{ selectedTrackTime }}</span>
+          <el-slider v-model="trackTimeIndex" :min="0" :max="maxTrackIndex" :show-tooltip="false" size="small" />
+        </div>
+      </div>
+      <div class="vessel-grid">
+        <article
+          v-for="vessel in aisVessels"
+          :key="vessel.id"
+          class="vessel-card"
+          :class="{ active: activeVesselId === vessel.id }"
+          @click="focusVessel(vessel)"
+        >
+          <div class="vessel-head">
+            <div>
+              <h3>{{ vessel.name }}</h3>
+              <span>{{ vessel.type }} · {{ vessel.area }}</span>
+            </div>
+            <el-tag size="small" :type="vesselStatusType(vessel.status)" effect="plain">
+              {{ vesselStatusLabel(vessel.status) }}
+            </el-tag>
+          </div>
+          <div class="domain-meta">
+            <span>MMSI</span><strong>{{ vessel.mmsi }}</strong>
+            <span>最新点</span><strong>{{ vesselCoordinate(vessel) }}</strong>
+            <span>轨迹点</span><strong>{{ vessel.track.length }} 个</strong>
+          </div>
+        </article>
+      </div>
     </section>
 
     <section class="section-panel">
@@ -192,7 +255,8 @@ import { Search } from '@element-plus/icons-vue'
 import { getLocationNews, getNews, getNewsLocations, type NewsItem, type NewsLocation } from '@/api/openclaw'
 
 type DomainStatus = 'active' | 'planning' | 'paused'
-type SpatialType = 'domain' | 'news'
+type SpatialType = 'domain' | 'news' | 'vessel'
+type VesselStatus = 'underway' | 'loitering' | 'silent'
 
 interface IntelligenceDomain {
   id: string
@@ -222,6 +286,24 @@ interface SpatialItem {
   countLabel: string
 }
 
+interface AisTrackPoint {
+  time: string
+  lat: number
+  lng: number
+  speed: number
+  course: number
+}
+
+interface AisVessel {
+  id: string
+  name: string
+  mmsi: string
+  type: string
+  area: string
+  status: VesselStatus
+  track: AisTrackPoint[]
+}
+
 declare global {
   interface Window {
     THREE?: any
@@ -236,6 +318,11 @@ const activeSpatialKey = ref('domain:task-planning')
 const activeDomainId = ref('task-planning')
 const news = ref<NewsItem[]>([])
 const newsLocations = ref<Record<string, NewsLocation>>({})
+const showAisLayer = ref(true)
+const showTrackLayer = ref(true)
+const showNewsLayer = ref(true)
+const trackTimeIndex = ref(3)
+const activeVesselId = ref('ddg-172')
 
 let scene: any
 let camera: any
@@ -245,6 +332,7 @@ let animationId = 0
 let isDragging = false
 let previousMouse = { x: 0, y: 0 }
 let markerObjects: any[] = []
+let trackObjects: any[] = []
 let raycaster: any
 let mouse: any
 
@@ -322,6 +410,51 @@ const pipeline = [
   { index: '04', name: '历史分析', description: '按时间线、实体、地点和项目关系做检索、回溯与趋势判断。' }
 ]
 
+const aisVessels = ref<AisVessel[]>([
+  {
+    id: 'ddg-172',
+    name: '示例驱逐舰 DDG-172',
+    mmsi: '412001172',
+    type: '水面舰艇',
+    area: '台湾以东海域',
+    status: 'underway',
+    track: [
+      { time: '00:00', lat: 23.9, lng: 121.2, speed: 14.2, course: 42 },
+      { time: '02:00', lat: 24.2, lng: 121.8, speed: 15.1, course: 48 },
+      { time: '04:00', lat: 24.55, lng: 122.25, speed: 14.8, course: 53 },
+      { time: '06:00', lat: 24.9, lng: 122.74, speed: 16.0, course: 58 }
+    ]
+  },
+  {
+    id: 'ffg-529',
+    name: '示例护卫舰 FFG-529',
+    mmsi: '412001529',
+    type: '护卫舰',
+    area: '巴士海峡',
+    status: 'loitering',
+    track: [
+      { time: '00:00', lat: 20.8, lng: 119.3, speed: 9.4, course: 95 },
+      { time: '02:00', lat: 20.75, lng: 120.0, speed: 8.9, course: 100 },
+      { time: '04:00', lat: 20.7, lng: 120.62, speed: 7.8, course: 94 },
+      { time: '06:00', lat: 20.82, lng: 121.18, speed: 8.1, course: 76 }
+    ]
+  },
+  {
+    id: 'aux-886',
+    name: '示例补给舰 AUX-886',
+    mmsi: '412001886',
+    type: '辅助舰',
+    area: '南海北部',
+    status: 'silent',
+    track: [
+      { time: '00:00', lat: 18.4, lng: 113.5, speed: 11.2, course: 22 },
+      { time: '02:00', lat: 18.75, lng: 113.72, speed: 10.8, course: 28 },
+      { time: '04:00', lat: 19.05, lng: 113.95, speed: 0, course: 0 },
+      { time: '06:00', lat: 19.05, lng: 113.95, speed: 0, course: 0 }
+    ]
+  }
+])
+
 const filteredDomains = computed(() => {
   const key = keyword.value.trim().toLowerCase()
   if (!key) return domains.value
@@ -348,6 +481,7 @@ const spatialItems = computed<SpatialItem[]>(() => {
   }))
   const seen = new Set<string>()
   const newsItems = news.value
+    .filter(() => showNewsLayer.value)
     .filter(item => item.location && newsLocations.value[item.location])
     .filter(item => {
       const key = item.location || ''
@@ -370,15 +504,37 @@ const spatialItems = computed<SpatialItem[]>(() => {
         countLabel: `${count} 条`
       }
     })
-  return [...domainItems, ...newsItems]
+  const vesselItems = showAisLayer.value
+    ? aisVessels.value.map(vessel => {
+      const point = currentVesselPoint(vessel) || vessel.track[vessel.track.length - 1]
+      return {
+        key: `vessel:${vessel.id}`,
+        type: 'vessel' as const,
+        id: vessel.id,
+        name: vessel.name,
+        lat: point.lat,
+        lng: point.lng,
+        locationLabel: `${vessel.area} · ${point.speed} kn / ${point.course}°`,
+        countLabel: `${vessel.track.length} 点`
+      }
+    })
+    : []
+  return [...domainItems, ...vesselItems, ...newsItems]
 })
 
 const activeDomains = computed(() => domains.value.filter(domain => domain.status === 'active').length)
+const maxTrackIndex = computed(() => Math.max(0, Math.max(...aisVessels.value.map(vessel => vessel.track.length - 1))))
+const selectedTrackTime = computed(() => aisVessels.value[0]?.track[Math.min(trackTimeIndex.value, maxTrackIndex.value)]?.time || '--:--')
+const trackPointCount = computed(() => aisVessels.value.reduce((sum, vessel) => sum + vessel.track.length, 0))
+const activeVessel = computed(() => aisVessels.value.find(vessel => vessel.id === activeVesselId.value))
 const relatedNews = computed(() => {
   const active = activeSpatialKey.value
   const key = active.replace(/^news:/, '').replace(/^domain:/, '')
   if (active.startsWith('news:')) {
     return news.value.filter(item => item.location === key).slice(0, 12)
+  }
+  if (active.startsWith('vessel:')) {
+    return news.value.filter(item => ['tokyo', 'shenzhen', 'singapore'].includes(item.location || '')).slice(0, 12)
   }
   const domain = domains.value.find(item => item.id === key)
   if (!domain) return news.value.slice(0, 8)
@@ -404,6 +560,44 @@ function statusType(status: DomainStatus) {
   if (status === 'active') return 'success'
   if (status === 'planning') return 'warning'
   return 'info'
+}
+
+function spatialTypeLabel(type: SpatialType) {
+  if (type === 'domain') return '长期情报'
+  if (type === 'vessel') return 'AIS 舰艇'
+  return '新闻热点'
+}
+
+function spatialTypeTag(type: SpatialType) {
+  if (type === 'domain') return 'warning'
+  if (type === 'vessel') return 'success'
+  return 'primary'
+}
+
+function vesselStatusLabel(status: VesselStatus) {
+  const labels: Record<VesselStatus, string> = {
+    underway: '航行中',
+    loitering: '盘旋/巡弋',
+    silent: '静默/停留'
+  }
+  return labels[status]
+}
+
+function vesselStatusType(status: VesselStatus) {
+  if (status === 'underway') return 'success'
+  if (status === 'loitering') return 'warning'
+  return 'info'
+}
+
+function currentVesselPoint(vessel: AisVessel) {
+  const index = Math.min(trackTimeIndex.value, vessel.track.length - 1)
+  return vessel.track[index]
+}
+
+function vesselCoordinate(vessel: AisVessel) {
+  const point = currentVesselPoint(vessel)
+  if (!point) return '--'
+  return `${point.lat.toFixed(2)}, ${point.lng.toFixed(2)}`
 }
 
 function locationName(locationKey?: string) {
@@ -547,15 +741,21 @@ function renderMarkers() {
   if (!earth || !window.THREE) return
   markerObjects.forEach(marker => earth.remove(marker))
   markerObjects = []
+  trackObjects.forEach(track => earth.remove(track))
+  trackObjects = []
+  if (showTrackLayer.value) {
+    aisVessels.value.forEach(vessel => addTrackLine(vessel))
+  }
   spatialItems.value.forEach(item => addMarker(item))
 }
 
 function addMarker(item: SpatialItem) {
   const THREE = window.THREE
   const active = item.key === activeSpatialKey.value
-  const color = active ? 0xf78166 : item.type === 'domain' ? 0xffb020 : 0x58a6ff
-  const position = latLngToVector3(item.lat, item.lng, active ? 1.07 : 1.035)
-  const geometry = new THREE.SphereGeometry(active ? 0.045 : 0.032, 16, 16)
+  const color = active ? 0xf78166 : item.type === 'domain' ? 0xffb020 : item.type === 'vessel' ? 0x39d98a : 0x58a6ff
+  const radius = item.type === 'vessel' ? 1.08 : active ? 1.07 : 1.035
+  const position = latLngToVector3(item.lat, item.lng, radius)
+  const geometry = new THREE.SphereGeometry(item.type === 'vessel' ? 0.04 : active ? 0.045 : 0.032, 16, 16)
   const material = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: active ? 1 : 0.85 })
   const marker = new THREE.Mesh(geometry, material)
   marker.position.copy(position)
@@ -571,6 +771,22 @@ function addMarker(item: SpatialItem) {
   ring.userData = { spatialKey: item.key }
   earth.add(ring)
   markerObjects.push(ring)
+}
+
+function addTrackLine(vessel: AisVessel) {
+  if (!window.THREE || !earth || vessel.track.length < 2) return
+  const THREE = window.THREE
+  const active = vessel.id === activeVesselId.value
+  const color = active ? 0x7ce7ff : 0x2bbbd8
+  const points = vessel.track
+    .slice(0, Math.min(trackTimeIndex.value + 1, vessel.track.length))
+    .map(point => latLngToVector3(point.lat, point.lng, active ? 1.065 : 1.052))
+  if (points.length < 2) return
+  const geometry = new THREE.BufferGeometry().setFromPoints(points)
+  const material = new THREE.LineBasicMaterial({ color, transparent: true, opacity: active ? 0.95 : 0.58 })
+  const line = new THREE.Line(geometry, material)
+  earth.add(line)
+  trackObjects.push(line)
 }
 
 function handleGlobeClick(event: MouseEvent) {
@@ -591,6 +807,7 @@ function handleGlobeClick(event: MouseEvent) {
 function focusSpatialItem(item: SpatialItem) {
   activeSpatialKey.value = item.key
   activeDomainId.value = item.type === 'domain' ? item.id : ''
+  activeVesselId.value = item.type === 'vessel' ? item.id : activeVesselId.value
   rotateGlobeTo(item.lat, item.lng)
   renderMarkers()
 }
@@ -623,6 +840,20 @@ function focusNews(item: NewsItem) {
   })
 }
 
+function focusVessel(vessel: AisVessel) {
+  const point = currentVesselPoint(vessel) || vessel.track[vessel.track.length - 1]
+  focusSpatialItem({
+    key: `vessel:${vessel.id}`,
+    type: 'vessel',
+    id: vessel.id,
+    name: vessel.name,
+    lat: point.lat,
+    lng: point.lng,
+    locationLabel: `${vessel.area} · ${point.speed} kn / ${point.course}°`,
+    countLabel: `${vessel.track.length} 点`
+  })
+}
+
 function rotateGlobeTo(lat: number, lng: number) {
   if (!earth) return
   earth.rotation.y = -lng * (Math.PI / 180) - Math.PI / 2
@@ -635,6 +866,7 @@ onMounted(async () => {
 })
 
 watch(spatialItems, () => renderMarkers())
+watch([trackTimeIndex, showAisLayer, showTrackLayer, showNewsLayer], () => renderMarkers())
 
 onUnmounted(() => {
   if (animationId) cancelAnimationFrame(animationId)
@@ -656,6 +888,7 @@ onUnmounted(() => {
 .metric-card,
 .section-panel,
 .domain-card,
+.vessel-card,
 .pipeline-card,
 .globe-panel,
 .linked-panel,
@@ -742,6 +975,15 @@ onUnmounted(() => {
   margin-bottom: 14px;
 }
 
+.globe-tools {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  min-width: 260px;
+}
+
 .globe-head h2,
 .section-head h2 {
   font-size: 16px;
@@ -805,8 +1047,22 @@ onUnmounted(() => {
   background: #58a6ff;
 }
 
+.dot-vessel {
+  background: #39d98a;
+}
+
 .dot-active {
   background: #f78166;
+}
+
+.line-sample {
+  display: inline-block;
+  width: 18px;
+  height: 2px;
+  margin: 0 6px 3px 0;
+  background: #7ce7ff;
+  box-shadow: 0 0 8px rgba(124, 231, 255, 0.55);
+  vertical-align: middle;
 }
 
 .linked-list {
@@ -843,10 +1099,47 @@ onUnmounted(() => {
   font-size: 12px;
 }
 
+.vessel-detail {
+  margin-top: 12px;
+  padding: 12px;
+  background: rgba(57, 217, 138, 0.055);
+  border: 1px solid rgba(57, 217, 138, 0.22);
+  border-radius: 8px;
+}
+
+.detail-title,
+.vessel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 8px 10px;
+  margin-top: 12px;
+  font-size: 12px;
+}
+
+.detail-grid span,
+.vessel-head span {
+  color: var(--text-secondary);
+}
+
+.detail-grid strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
 .metric-grid,
 .pipeline-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -868,13 +1161,15 @@ onUnmounted(() => {
 }
 
 .domain-grid,
-.news-grid {
+.news-grid,
+.vessel-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 12px;
 }
 
 .domain-card,
+.vessel-card,
 .news-card {
   display: flex;
   flex-direction: column;
@@ -882,6 +1177,25 @@ onUnmounted(() => {
   padding: 14px;
   background: var(--card-bg-soft);
   cursor: pointer;
+}
+
+.vessel-card.active {
+  border-color: rgba(124, 231, 255, 0.58);
+  background: rgba(124, 231, 255, 0.055);
+}
+
+.vessel-head h3 {
+  margin: 0 0 5px;
+  font-size: 15px;
+}
+
+.time-control {
+  display: grid;
+  grid-template-columns: 54px minmax(160px, 240px);
+  align-items: center;
+  gap: 10px;
+  color: var(--text-secondary);
+  font-size: 12px;
 }
 
 .title-wrap {
@@ -998,8 +1312,18 @@ onUnmounted(() => {
 
 @media (max-width: 1180px) {
   .space-grid,
+  .metric-grid,
   .pipeline-grid {
     grid-template-columns: 1fr;
+  }
+
+  .globe-head {
+    flex-direction: column;
+  }
+
+  .globe-tools {
+    justify-content: flex-start;
+    min-width: 0;
   }
 
   .linked-list {
@@ -1022,8 +1346,14 @@ onUnmounted(() => {
   }
 
   .domain-grid,
-  .news-grid {
+  .news-grid,
+  .vessel-grid {
     grid-template-columns: 1fr;
+  }
+
+  .time-control {
+    width: 100%;
+    grid-template-columns: 48px minmax(0, 1fr);
   }
 }
 </style>

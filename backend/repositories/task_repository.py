@@ -68,6 +68,7 @@ class TaskRepository(BaseRepository[Task]):
         assignee: Optional[str] = None,
         sprint: Optional[int] = None,
         search: Optional[str] = None,
+        source: Optional[str] = None,
         page: int = 1,
         page_size: int = 20,
         sort_by: str = "created_at",
@@ -84,6 +85,8 @@ class TaskRepository(BaseRepository[Task]):
             query = query.filter(Task.assignee == assignee)
         if sprint:
             query = query.filter(Task.sprint == sprint)
+        if source:
+            query = query.filter(Task.source == source)
         if search:
             query = query.filter(Task.title.contains(search) | Task.description.contains(search))
 

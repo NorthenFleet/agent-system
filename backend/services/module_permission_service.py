@@ -21,7 +21,6 @@ DEFAULT_MODULES = [
     {"module_key": "products", "name": "产品矩阵", "route_path": "/products", "icon": "Grid", "sort_order": 60, "description": "产品、依赖和推进状态"},
     {"module_key": "data-admin", "name": "数据管理", "route_path": "/data-admin", "icon": "Coin", "sort_order": 110, "description": "统一数据源、备份和数据健康"},
     {"module_key": "agents", "name": "智能体团队", "route_path": "/agents", "icon": "Cpu", "sort_order": 120, "description": "智能体组织、状态和能力"},
-    {"module_key": "agent-dispatch", "name": "任务派发", "route_path": "/agent-dispatch", "icon": "Promotion", "sort_order": 130, "description": "智能体任务派发与执行跟踪"},
     {"module_key": "agent-chat", "name": "智能体对话", "route_path": "/agent-chat", "icon": "ChatLineRound", "sort_order": 140, "description": "与智能体进行上下文对话"},
     {"module_key": "knowledge", "name": "知识库", "route_path": "/knowledge", "icon": "Collection", "sort_order": 150, "description": "知识节点和资料上下文"},
     {"module_key": "tools", "name": "工具管理", "route_path": "/tools", "icon": "Tools", "sort_order": 160, "description": "智能体技能、工具和定时任务"},
@@ -33,13 +32,13 @@ DEFAULT_MODULES = [
     {"module_key": "user-admin", "name": "用户管理", "route_path": "/user-admin", "icon": "User", "sort_order": 900, "description": "用户、角色和模块授权"},
 ]
 
-LEGACY_DISABLED_MODULE_KEYS = {"skills", "scheduled", "devices"}
+LEGACY_DISABLED_MODULE_KEYS = {"skills", "scheduled", "devices", "agent-dispatch", "agent-chat"}
 
 ROLE_DEFAULT_MODULES = {
     "admin": [m["module_key"] for m in DEFAULT_MODULES],
     "agent": [
-        "dashboard", "projects", "development", "writing", "agents", "agent-dispatch",
-        "agent-chat", "knowledge", "tools", "intelligence", "tasks", "products", "monitoring",
+        "dashboard", "projects", "development", "writing", "agents",
+        "knowledge", "tools", "intelligence", "tasks", "products", "monitoring",
     ],
     "viewer": ["dashboard", "projects", "development", "writing", "knowledge", "intelligence", "news-center", "products"],
 }
@@ -70,10 +69,14 @@ def ensure_default_modules(db: Session) -> None:
 
 
 def _migrate_merged_module_grants(db: Session) -> None:
-    """Move legacy device-list grants into the unified monitoring module."""
+    """Move legacy standalone module grants into their unified parent modules."""
+    merged_modules = {
+        "devices": "monitoring",
+        "agent-dispatch": "development",
+    }
     legacy_rows = (
         db.query(UserFeatureModule)
-        .filter(UserFeatureModule.module_key == "devices", UserFeatureModule.can_view == True)
+        .filter(UserFeatureModule.module_key.in_(merged_modules.keys()), UserFeatureModule.can_view == True)
         .all()
     )
     changed = False
@@ -82,7 +85,7 @@ def _migrate_merged_module_grants(db: Session) -> None:
             db.query(UserFeatureModule)
             .filter(
                 UserFeatureModule.user_id == legacy.user_id,
-                UserFeatureModule.module_key == "monitoring",
+                UserFeatureModule.module_key == merged_modules[legacy.module_key],
             )
             .first()
         )
@@ -90,7 +93,7 @@ def _migrate_merged_module_grants(db: Session) -> None:
             continue
         db.add(UserFeatureModule(
             user_id=legacy.user_id,
-            module_key="monitoring",
+            module_key=merged_modules[legacy.module_key],
             can_view=True,
             can_manage=legacy.can_manage,
             granted_by=legacy.granted_by,

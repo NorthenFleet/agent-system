@@ -23,6 +23,8 @@
       </div>
     </div>
 
+    <el-tabs v-model="activeTab" class="agents-tabs">
+      <el-tab-pane label="组织架构" name="team">
     <!-- 统计摘要 -->
     <el-row :gutter="16" class="stats-row">
       <el-col :xs="12" :sm="6">
@@ -67,6 +69,43 @@
         </el-button>
       </el-button-group>
     </div>
+
+    <section v-if="activeFilter === 'all' && organizationGroups.length" class="organization-board">
+      <div class="section-head">
+        <div>
+          <h2>组织架构</h2>
+          <p>来自智能体组织配置，运行态心跳会自动合并到对应成员。</p>
+        </div>
+        <el-tag type="info">{{ organizationAgentCount }} 个成员</el-tag>
+      </div>
+      <div class="organization-grid">
+        <article v-for="group in organizationGroups" :key="group.id" class="organization-group">
+          <header>
+            <strong>{{ group.name }}</strong>
+            <span>{{ group.title || `${group.members.length} 个成员` }}</span>
+          </header>
+          <div class="organization-members">
+            <button
+              v-for="member in group.members"
+              :key="member.id"
+              class="org-member"
+              @click="selectAgent(member.agent.agent_id)"
+            >
+              <span class="org-avatar" :style="{ background: avatarColor(member.agent.agent_id) }">
+                {{ member.emoji || agentEmoji(member.agent.agent_id) }}
+              </span>
+              <span class="org-member-main">
+                <strong>{{ member.name }}</strong>
+                <small>{{ member.title || member.agent.metadata?.role || member.agent.agent_id }}</small>
+              </span>
+              <el-tag size="small" :type="statusType(member.agent.status)">
+                {{ statusLabel(member.agent.status) }}
+              </el-tag>
+            </button>
+          </div>
+        </article>
+      </div>
+    </section>
 
     <!-- Loading 状态 -->
     <div v-if="agentsStore.loading && filteredAgents.length === 0" class="loading-wrapper">
@@ -152,6 +191,11 @@
         </div>
       </el-card>
     </div>
+      </el-tab-pane>
+      <el-tab-pane label="智能体对话" name="chat">
+        <AgentChat />
+      </el-tab-pane>
+    </el-tabs>
 
     <!-- Agent 详情 Drawer -->
     <el-drawer
@@ -246,14 +290,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { Loading, Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useAgentsStore, type Agent } from '@/stores/agents'
+import AgentChat from './AgentChat.vue'
 
 const agentsStore = useAgentsStore()
+const route = useRoute()
+const router = useRouter()
 
 // ===================== 状态 =====================
+const activeTab = ref(route.query.tab === 'chat' ? 'chat' : 'team')
 const activeFilter = ref<'all' | 'online' | 'busy' | 'offline' | 'idle'>('all')
 const drawerVisible = ref(false)
 
@@ -270,6 +319,8 @@ const total = computed(() => agentsStore.agents.length)
 const onlineCount = computed(() => agentsStore.agents.filter(a => a.status === 'online').length)
 const busyCount = computed(() => agentsStore.agents.filter(a => a.status === 'busy').length)
 const offlineCount = computed(() => agentsStore.agents.filter(a => a.status === 'offline').length)
+const agentById = computed(() => new Map(agentsStore.agents.map(agent => [agent.agent_id, agent])))
+const organizationAgentCount = computed(() => organizationGroups.value.reduce((sum, group) => sum + group.members.length, 0))
 
 const filteredAgents = computed(() => {
   const agents = agentsStore.agents
@@ -278,6 +329,30 @@ const filteredAgents = computed(() => {
 })
 
 const selectedAgent = computed(() => agentsStore.selectedAgent)
+const organizationGroups = computed(() => {
+  const org = agentsStore.organization
+  if (!org) return []
+  const nodes = [org.root, ...(org.nodes || [])].filter(Boolean)
+  const groups = nodes.filter(node => node.node_type === 'group')
+  return groups.map(group => {
+    const members = nodes
+      .filter(node => node.parent_id === group.id && ['agent', 'assistant', 'person'].includes(node.node_type))
+      .map(node => {
+        const id = node.agent_id || node.id
+        const agent = agentById.value.get(id)
+        if (!agent) return null
+        return {
+          id,
+          name: node.name || agent.agent_name || id,
+          title: node.title,
+          emoji: node.emoji,
+          agent,
+        }
+      })
+      .filter(Boolean) as Array<{ id: string; name: string; title?: string; emoji?: string; agent: Agent }>
+    return { id: group.id, name: group.name, title: group.title, members }
+  }).filter(group => group.members.length)
+})
 
 const drawerTitle = computed(() => {
   if (!selectedAgent.value) return '智能体详情'
@@ -406,6 +481,19 @@ async function refresh() {
   ElMessage.success('刷新完成')
 }
 
+watch(() => route.query.tab, tab => {
+  activeTab.value = tab === 'chat' ? 'chat' : 'team'
+})
+
+watch(activeTab, tab => {
+  const rest = { ...route.query }
+  delete rest.tab
+  void router.replace({
+    path: '/agents',
+    query: tab === 'chat' ? { ...rest, tab: 'chat' } : rest
+  })
+})
+
 // ===================== 生命周期 =====================
 onMounted(async () => {
   // 加载 Agent 数据
@@ -427,6 +515,14 @@ onUnmounted(() => {
 .agents-page {
   padding: 16px;
   min-height: 100%;
+}
+
+.agents-tabs {
+  margin-top: 4px;
+}
+
+:deep(.agents-tabs > .el-tabs__header) {
+  margin-bottom: 16px;
 }
 
 /* ===================== 页面头部 ===================== */
@@ -537,6 +633,120 @@ onUnmounted(() => {
   margin-left: 4px;
   font-size: 11px;
   opacity: 0.8;
+}
+
+/* ===================== 组织架构 ===================== */
+.organization-board {
+  margin-bottom: 18px;
+  padding: 16px;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  background: #161b22;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.section-head h2 {
+  margin: 0 0 4px;
+  color: #e0e0e0;
+  font-size: 16px;
+}
+
+.section-head p {
+  margin: 0;
+  color: #888;
+  font-size: 12px;
+}
+
+.organization-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.organization-group {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  background: #0d1117;
+}
+
+.organization-group header {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.organization-group header strong {
+  color: #e0e0e0;
+  font-size: 14px;
+}
+
+.organization-group header span {
+  color: #888;
+  font-size: 12px;
+}
+
+.organization-members {
+  display: grid;
+  gap: 8px;
+}
+
+.org-member {
+  min-height: 54px;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  color: inherit;
+  background: #1a1f27;
+  cursor: pointer;
+  text-align: left;
+}
+
+.org-member:hover {
+  border-color: #409eff;
+  background: rgba(64, 158, 255, 0.08);
+}
+
+.org-avatar {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 17px;
+}
+
+.org-member-main {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.org-member-main strong {
+  color: #e0e0e0;
+  font-size: 13px;
+}
+
+.org-member-main small {
+  color: #888;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ===================== Loading ===================== */
@@ -801,6 +1011,10 @@ onUnmounted(() => {
   }
 
   .agent-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .organization-grid {
     grid-template-columns: 1fr;
   }
 
