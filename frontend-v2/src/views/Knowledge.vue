@@ -23,13 +23,14 @@
       :closable="false"
     />
 
-    <section class="graph-section">
-        <el-card class="panel graph-panel" shadow="hover">
+    <div class="workspace-grid">
+      <section class="main-column">
+        <el-card class="panel workspace-panel" shadow="hover">
           <template #header>
             <div class="panel-header">
               <div>
-                <strong>知识图谱</strong>
-                <span class="muted"> {{ graphMeta }}</span>
+                <strong>知识工作区</strong>
+                <span class="muted"> {{ graphMeta || `当前显示 ${filteredNodes.length} 个节点` }}</span>
               </div>
               <div class="toolbar">
                 <el-segmented v-model="graphMode" :options="graphModeOptions" size="small" @change="refreshGraph" />
@@ -40,107 +41,133 @@
               </div>
             </div>
           </template>
-          <div ref="graphRef" class="graph-canvas" />
-        </el-card>
-    </section>
 
-    <div class="workspace-grid">
-      <section class="main-column">
-        <el-card class="panel" shadow="hover">
-          <template #header>
-            <div class="panel-header">
-              <div>
-                <strong>{{ typeFilter || '全部知识节点' }}</strong>
-                <span class="muted"> 当前显示 {{ filteredNodes.length }} 个</span>
-              </div>
-              <div class="toolbar">
+          <el-tabs v-model="mainTab" class="workspace-tabs" @tab-change="handleMainTabChange">
+            <el-tab-pane label="知识图谱" name="graph">
+              <div ref="graphRef" class="graph-canvas" />
+            </el-tab-pane>
+            <el-tab-pane :label="`节点表 ${filteredNodes.length}`" name="nodes">
+              <div class="table-toolbar">
                 <el-input
                   v-model="keyword"
                   size="small"
                   clearable
                   placeholder="搜索标题、类型或路径"
-                  style="width: 240px"
                   @keyup.enter="searchNodes"
                 />
                 <el-button size="small" :loading="loading" @click="searchNodes">搜索</el-button>
               </div>
-            </div>
-          </template>
+              <el-table
+                v-if="filteredNodes.length"
+                :data="filteredNodes"
+                size="small"
+                height="680"
+                highlight-current-row
+                @row-click="selectNode"
+              >
+                <el-table-column label="标题" min-width="260" show-overflow-tooltip>
+                  <template #default="{ row }">
+                    <div class="node-title">{{ row.title || row.id }}</div>
+                    <div class="muted path-text">{{ compactPath(row.path || row.id) }}</div>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="type" label="类型" width="108">
+                  <template #default="{ row }">
+                    <el-tag size="small" :type="typeTag(row.type)">{{ row.type || '知识' }}</el-tag>
+                  </template>
+                </el-table-column>
+              </el-table>
+              <el-empty v-else description="暂无匹配知识节点" />
+            </el-tab-pane>
 
-          <el-table
-            v-if="filteredNodes.length"
-            :data="filteredNodes"
-            size="small"
-            height="360"
-            highlight-current-row
-            @row-click="selectNode"
-          >
-            <el-table-column label="标题" min-width="260" show-overflow-tooltip>
-              <template #default="{ row }">
-                <div class="node-title">{{ row.title || row.id }}</div>
-                <div class="muted path-text">{{ compactPath(row.path || row.id) }}</div>
-              </template>
-            </el-table-column>
-            <el-table-column prop="type" label="类型" width="108">
-              <template #default="{ row }">
-                <el-tag size="small" :type="typeTag(row.type)">{{ row.type || '知识' }}</el-tag>
-              </template>
-            </el-table-column>
-          </el-table>
-          <el-empty v-else description="暂无匹配知识节点" />
+            <el-tab-pane label="知识域" name="domains">
+              <div class="domain-grid">
+                <button type="button" class="domain-card" :class="{ active: !typeFilter }" @click="setTypeFilter('')">
+                  <span>全部知识</span><strong>{{ stats?.nodes || 0 }}</strong>
+                </button>
+                <button
+                  v-for="[name, count] in typeEntries"
+                  :key="name"
+                  type="button"
+                  class="domain-card"
+                  :class="{ active: typeFilter === name }"
+                  @click="setTypeFilter(name)"
+                >
+                  <span>{{ name }}</span><strong>{{ count }}</strong>
+                  <el-progress :percentage="typePercent(count)" :show-text="false" />
+                </button>
+              </div>
+            </el-tab-pane>
+
+            <el-tab-pane label="节点详情" name="detail">
+              <div v-if="selectedNode" class="detail-box detail-box--large">
+                <el-tag size="small" :type="typeTag(selectedNode.type)">{{ selectedNode.type || '知识' }}</el-tag>
+                <h3>{{ selectedNode.title || selectedNode.id }}</h3>
+                <p class="muted">{{ compactPath(selectedNode.path || selectedNode.id) }}</p>
+                <el-skeleton v-if="detailLoading" :rows="6" animated />
+                <p v-else class="excerpt">{{ selectedContent?.excerpt || '暂无摘要。' }}</p>
+              </div>
+              <el-empty v-else description="选择一个知识节点查看详情" />
+            </el-tab-pane>
+
+            <el-tab-pane :label="`关联节点 ${neighbors.length}`" name="neighbors">
+              <div v-if="neighbors.length" class="neighbor-list neighbor-list--grid">
+                <button v-for="node in neighbors.slice(0, 36)" :key="node.id" type="button" class="neighbor-item" @click="selectNode(node)">
+                  <span>{{ node.title || node.id }}</span>
+                  <el-tag size="small">{{ node.type || '知识' }}</el-tag>
+                </button>
+              </div>
+              <el-empty v-else description="暂无局部关系" />
+            </el-tab-pane>
+          </el-tabs>
         </el-card>
       </section>
 
       <aside class="side-column">
-        <el-card class="panel" shadow="hover">
+        <el-card class="panel directory-panel" shadow="hover">
           <template #header>
             <div class="panel-header">
-              <strong>知识域</strong>
-              <el-tag size="small" type="info">{{ typeEntries.length }}</el-tag>
+              <div>
+                <strong>知识库目录</strong>
+                <span class="muted"> 后端 Vault</span>
+              </div>
+              <div class="toolbar">
+                <el-tag size="small" type="info">{{ treeSummary }}</el-tag>
+                <el-button size="small" text :loading="treeLoading" @click="loadKnowledgeTree">刷新</el-button>
+              </div>
             </div>
           </template>
-          <button type="button" class="domain-card" :class="{ active: !typeFilter }" @click="setTypeFilter('')">
-            <span>全部知识</span><strong>{{ stats?.nodes || 0 }}</strong>
-          </button>
-          <button
-            v-for="[name, count] in typeEntries"
-            :key="name"
-            type="button"
-            class="domain-card"
-            :class="{ active: typeFilter === name }"
-            @click="setTypeFilter(name)"
-          >
-            <span>{{ name }}</span><strong>{{ count }}</strong>
-            <el-progress :percentage="typePercent(count)" :show-text="false" />
-          </button>
-        </el-card>
-
-        <el-card class="panel" shadow="hover">
-          <template #header><strong>节点详情</strong></template>
-          <div v-if="selectedNode" class="detail-box">
-            <el-tag size="small" :type="typeTag(selectedNode.type)">{{ selectedNode.type || '知识' }}</el-tag>
-            <h3>{{ selectedNode.title || selectedNode.id }}</h3>
-            <p class="muted">{{ compactPath(selectedNode.path || selectedNode.id) }}</p>
-            <el-skeleton v-if="detailLoading" :rows="4" animated />
-            <p v-else class="excerpt">{{ selectedContent?.excerpt || '暂无摘要。' }}</p>
-          </div>
-          <el-empty v-else description="选择一个知识节点查看详情" />
-        </el-card>
-
-        <el-card class="panel" shadow="hover">
-          <template #header>
-            <div class="panel-header">
-              <strong>关联节点</strong>
-              <el-tag size="small" type="info">{{ neighbors.length }}</el-tag>
-            </div>
-          </template>
-          <div v-if="neighbors.length" class="neighbor-list">
-            <button v-for="node in neighbors.slice(0, 12)" :key="node.id" type="button" class="neighbor-item" @click="selectNode(node)">
-              <span>{{ node.title || node.id }}</span>
-              <el-tag size="small">{{ node.type || '知识' }}</el-tag>
+          <el-skeleton v-if="treeLoading" :rows="4" animated />
+          <div v-else-if="knowledgeTree?.available" class="tree-box">
+            <button
+              v-for="row in directoryRows"
+              :key="row.node.id"
+              type="button"
+              class="directory-row"
+              :class="{ 'directory-row--file': row.node.type === 'file' }"
+              :style="{ paddingLeft: `${8 + row.depth * 16}px` }"
+              @click="selectTreeNode(row.node)"
+            >
+              <button
+                v-if="row.node.type === 'directory'"
+                type="button"
+                class="directory-row__toggle"
+                @click.stop="toggleDirectoryNode(row.node)"
+              >
+                {{ isDirectoryExpanded(row.node) ? '▾' : '▸' }}
+              </button>
+              <span v-else class="directory-row__toggle directory-row__toggle--blank" />
+              <span class="directory-row__icon">{{ row.node.type === 'directory' ? '目录' : '文件' }}</span>
+              <span class="directory-row__name">{{ row.node.name }}</span>
+              <el-tag v-if="row.node.type === 'directory'" size="small" type="info">
+                {{ row.node.file_count || 0 }}
+              </el-tag>
+              <el-tag v-else-if="row.node.node_type" size="small">
+                {{ row.node.node_type }}
+              </el-tag>
             </button>
           </div>
-          <el-empty v-else description="暂无局部关系" />
+          <el-empty v-else description="暂无知识库目录" />
         </el-card>
       </aside>
     </div>
@@ -149,11 +176,31 @@
       <el-card class="panel" shadow="hover">
         <template #header>
           <div class="panel-header">
-            <strong>知识系统栈</strong>
+            <strong>智能检索</strong>
+            <el-segmented v-model="smartMode" :options="smartModeOptions" size="small" />
+          </div>
+        </template>
+        <div class="smart-search">
+          <el-input v-model="smartQuery" placeholder="输入问题或关键词" clearable @keyup.enter="runSmartQuery" />
+          <el-button type="primary" :loading="smartLoading" @click="runSmartQuery">检索</el-button>
+        </div>
+        <div v-if="smartError" class="error-text">{{ smartError }}</div>
+        <div v-if="smartNodes.length" class="smart-results">
+          <button v-for="node in smartNodes" :key="node.id" type="button" class="neighbor-item" @click="selectNode(node)">
+            <span>{{ node.title || node.id }}</span>
+            <el-tag size="small">{{ node.type || '知识' }}</el-tag>
+          </button>
+        </div>
+      </el-card>
+
+      <el-card class="panel" shadow="hover">
+        <template #header>
+          <div class="panel-header">
+            <strong>知识服务状态</strong>
             <el-button size="small" text @click="loadStackStatus">刷新</el-button>
           </div>
         </template>
-        <div class="stack-grid">
+        <div class="stack-grid compact-stack">
           <div class="stack-item">
             <strong>Obsidian 图谱</strong>
             <el-tag size="small" :type="stackStatus?.local?.available ? 'success' : 'danger'">
@@ -177,22 +224,6 @@
           </div>
         </div>
       </el-card>
-
-      <el-card class="panel" shadow="hover">
-        <template #header><strong>智能检索</strong></template>
-        <div class="smart-search">
-          <el-segmented v-model="smartMode" :options="smartModeOptions" size="small" />
-          <el-input v-model="smartQuery" placeholder="输入问题或关键词" clearable @keyup.enter="runSmartQuery" />
-          <el-button type="primary" :loading="smartLoading" @click="runSmartQuery">检索</el-button>
-        </div>
-        <div v-if="smartError" class="error-text">{{ smartError }}</div>
-        <div v-if="smartNodes.length" class="smart-results">
-          <button v-for="node in smartNodes" :key="node.id" type="button" class="neighbor-item" @click="selectNode(node)">
-            <span>{{ node.title || node.id }}</span>
-            <el-tag size="small">{{ node.type || '知识' }}</el-tag>
-          </button>
-        </div>
-      </el-card>
     </div>
   </div>
 </template>
@@ -212,6 +243,7 @@ import {
   getKnowledgeNodes,
   getKnowledgeStackStatus,
   getKnowledgeStats,
+  getKnowledgeTree,
   queryKnowledgeStack,
   searchKnowledge,
   type KnowledgeGraph,
@@ -219,7 +251,9 @@ import {
   type KnowledgeNode,
   type KnowledgeNodeContent,
   type KnowledgeStackStatus,
-  type KnowledgeStats
+  type KnowledgeStats,
+  type KnowledgeTree,
+  type KnowledgeTreeNode
 } from '@/api/openclaw'
 
 echarts.use([CanvasRenderer, GraphChart, LegendComponent, TitleComponent, TooltipComponent])
@@ -228,6 +262,7 @@ const stats = ref<KnowledgeStats | null>(null)
 const nodes = ref<KnowledgeNode[]>([])
 const graph = ref<KnowledgeGraph | null>(null)
 const stackStatus = ref<KnowledgeStackStatus | null>(null)
+const knowledgeTree = ref<KnowledgeTree | null>(null)
 const selectedNode = ref<KnowledgeNode | null>(null)
 const selectedContent = ref<KnowledgeNodeContent | null>(null)
 const neighbors = ref<KnowledgeNode[]>([])
@@ -235,9 +270,12 @@ const keyword = ref('')
 const typeFilter = ref('')
 const loading = ref(false)
 const graphLoading = ref(false)
+const treeLoading = ref(false)
 const detailLoading = ref(false)
 const error = ref('')
 const graphRef = ref<HTMLElement>()
+const mainTab = ref('graph')
+const expandedDirectoryIds = ref<Set<string>>(new Set())
 const smartQuery = ref('')
 const smartMode = ref('mix')
 const graphMode = ref<'concept_backbone' | 'full'>('concept_backbone')
@@ -254,6 +292,24 @@ let chart: echarts.EChartsType | null = null
 
 const typeCount = computed(() => Object.keys(stats.value?.entity_types || {}).length)
 const typeEntries = computed(() => Object.entries(stats.value?.entity_types || {}).sort((a, b) => b[1] - a[1]))
+const treeSummary = computed(() => {
+  if (!knowledgeTree.value?.available) return '未加载'
+  return `${knowledgeTree.value.total_directories} 目录 · ${knowledgeTree.value.total_files} 文件`
+})
+const directoryRows = computed(() => {
+  const rows: Array<{ node: KnowledgeTreeNode; depth: number }> = []
+  const walk = (items: KnowledgeTreeNode[] = [], depth = 0) => {
+    for (const node of items) {
+      rows.push({ node, depth })
+      if (node.type === 'directory' && expandedDirectoryIds.value.has(node.id)) {
+        walk(node.children || [], depth + 1)
+      }
+      if (rows.length >= 260) return
+    }
+  }
+  walk(knowledgeTree.value?.root?.children || [])
+  return rows
+})
 const filteredNodes = computed(() => {
   const key = keyword.value.trim().toLowerCase()
   let list = nodes.value
@@ -306,6 +362,18 @@ async function loadKnowledge() {
     ElMessage.error(error.value)
   } finally {
     loading.value = false
+  }
+}
+
+async function loadKnowledgeTree() {
+  treeLoading.value = true
+  try {
+    knowledgeTree.value = await getKnowledgeTree(4, true, 1600)
+    expandedDirectoryIds.value = new Set()
+  } catch {
+    ElMessage.error('知识库目录加载失败')
+  } finally {
+    treeLoading.value = false
   }
 }
 
@@ -420,6 +488,51 @@ async function setTypeFilter(type: string) {
   await refreshGraph()
 }
 
+async function handleMainTabChange() {
+  await nextTick()
+  resizeGraph()
+}
+
+function isDirectoryExpanded(node: KnowledgeTreeNode) {
+  return expandedDirectoryIds.value.has(node.id)
+}
+
+function toggleDirectoryNode(node: KnowledgeTreeNode) {
+  if (node.type !== 'directory') return
+  const next = new Set(expandedDirectoryIds.value)
+  if (next.has(node.id)) next.delete(node.id)
+  else next.add(node.id)
+  expandedDirectoryIds.value = next
+}
+
+async function selectTreeNode(item: KnowledgeTreeNode) {
+  if (item.type === 'directory') {
+    keyword.value = item.relative_path || ''
+    if (keyword.value) await searchNodes()
+    else await loadKnowledge()
+    return
+  }
+  const matched = findNodeForTreeItem(item)
+  await selectNode(matched)
+}
+
+function findNodeForTreeItem(item: KnowledgeTreeNode): KnowledgeNode {
+  const relative = item.relative_path || ''
+  const stem = relative.replace(/\.[^.]+$/, '')
+  const candidates = new Set([item.node_id, relative, stem].filter(Boolean) as string[])
+  const matched = nodes.value.find(node => {
+    const nodePath = compactPath(node.path || node.id)
+    return candidates.has(node.id) || candidates.has(node.title) || nodePath === relative || nodePath === stem
+  })
+  if (matched) return matched
+  return {
+    id: item.node_id || relative,
+    title: item.name.replace(/\.[^.]+$/, ''),
+    type: item.node_type || '文档',
+    path: item.path
+  }
+}
+
 async function selectNode(node: KnowledgeNode) {
   selectedNode.value = node
   selectedContent.value = null
@@ -482,7 +595,7 @@ function resizeGraph() {
 }
 
 onMounted(async () => {
-  await Promise.all([loadKnowledge(), refreshGraph(), loadStackStatus()])
+  await Promise.all([loadKnowledge(), loadKnowledgeTree(), refreshGraph(), loadStackStatus()])
   window.addEventListener('resize', resizeGraph)
 })
 
@@ -526,14 +639,10 @@ onUnmounted(() => {
   font-size: 22px;
 }
 
-.graph-section {
-  display: grid;
-}
-
 .workspace-grid {
   display: grid;
-  grid-template-columns: minmax(640px, 1fr) minmax(360px, 420px);
-  gap: 14px;
+  grid-template-columns: minmax(720px, 1fr) minmax(460px, 520px);
+  gap: 16px;
   align-items: start;
 }
 
@@ -546,6 +655,7 @@ onUnmounted(() => {
 
 .bottom-grid {
   grid-template-columns: minmax(0, 1fr) minmax(360px, 0.8fr);
+  align-items: start;
 }
 
 .panel-header,
@@ -563,13 +673,40 @@ onUnmounted(() => {
   flex-wrap: wrap;
 }
 
+.workspace-panel,
+.directory-panel {
+  min-height: 760px;
+}
+
+.workspace-tabs :deep(.el-tabs__header) {
+  margin-bottom: 10px;
+}
+
+.workspace-tabs :deep(.el-tabs__content) {
+  min-height: 678px;
+}
+
+.table-toolbar,
+.tab-header-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.table-toolbar :deep(.el-input) {
+  max-width: 360px;
+}
+
 .graph-canvas {
-  height: clamp(560px, calc(100vh - 300px), 760px);
-  min-height: 560px;
+  height: 678px;
+  min-height: 678px;
   width: 100%;
 }
 
-.graph-panel :deep(.el-card__body) {
+.workspace-panel :deep(.el-card__body),
+.directory-panel :deep(.el-card__body) {
   padding: 10px 14px 14px;
 }
 
@@ -606,6 +743,125 @@ onUnmounted(() => {
   background: #ecf5ff;
 }
 
+.tree-box {
+  max-height: 674px;
+  overflow: auto;
+}
+
+.tree-box :deep(.el-tree) {
+  background: transparent;
+}
+
+.tree-box :deep(.el-tree-node__content) {
+  min-height: 30px;
+  border-radius: 6px;
+}
+
+.tree-box :deep(.el-tree-node__content:hover) {
+  background: #ecf5ff;
+}
+
+.directory-row {
+  width: 100%;
+  min-height: 30px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.directory-row:hover {
+  background: #ecf5ff;
+}
+
+.directory-row__toggle {
+  width: 18px;
+  height: 22px;
+  border: 0;
+  padding: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #909399;
+  cursor: pointer;
+  line-height: 20px;
+}
+
+.directory-row__toggle:hover {
+  background: #d9ecff;
+  color: #409eff;
+}
+
+.directory-row__toggle--blank {
+  flex: 0 0 18px;
+}
+
+.directory-row--file {
+  color: #606266;
+}
+
+.directory-row__icon {
+  flex: 0 0 auto;
+  color: #909399;
+  font-size: 12px;
+  width: 26px;
+}
+
+.directory-row__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tree-node {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.tree-node::before {
+  flex: 0 0 auto;
+  color: #909399;
+  font-size: 12px;
+}
+
+.tree-node--directory::before {
+  content: '目录';
+}
+
+.tree-node--file::before {
+  content: '文件';
+}
+
+.tree-node__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.domain-grid,
+.neighbor-list--grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.domain-grid .domain-card + .domain-card,
+.neighbor-list--grid .neighbor-item + .neighbor-item {
+  margin-top: 0;
+}
+
 .node-title {
   font-weight: 700;
   overflow-wrap: anywhere;
@@ -621,6 +877,10 @@ onUnmounted(() => {
   overflow-wrap: anywhere;
 }
 
+.detail-box--large {
+  max-width: 860px;
+}
+
 .excerpt {
   margin: 12px 0 0;
   line-height: 1.65;
@@ -632,6 +892,8 @@ onUnmounted(() => {
 .smart-results {
   display: grid;
   gap: 8px;
+  max-height: 180px;
+  overflow: auto;
 }
 
 .neighbor-item {
@@ -647,13 +909,17 @@ onUnmounted(() => {
   align-items: stretch;
 }
 
+.compact-stack {
+  flex-direction: column;
+}
+
 .stack-item {
   flex: 1;
   border: 1px solid #e4e7ed;
   border-radius: 8px;
-  padding: 12px;
+  padding: 10px;
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .smart-search {
@@ -677,7 +943,12 @@ onUnmounted(() => {
   }
 
   .side-column {
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-panel,
+  .directory-panel {
+    min-height: auto;
   }
 }
 
@@ -685,14 +956,24 @@ onUnmounted(() => {
   .panel-header,
   .toolbar,
   .smart-search,
-  .stack-grid {
+  .stack-grid,
+  .table-toolbar,
+  .tab-header-line {
     align-items: stretch;
     flex-direction: column;
   }
 
   .toolbar :deep(.el-input),
-  .toolbar :deep(.el-select) {
+  .toolbar :deep(.el-select),
+  .table-toolbar :deep(.el-input) {
     width: 100% !important;
+    max-width: none;
+  }
+
+  .graph-canvas,
+  .workspace-tabs :deep(.el-tabs__content) {
+    min-height: 420px;
+    height: 420px;
   }
 }
 </style>

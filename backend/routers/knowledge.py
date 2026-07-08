@@ -32,6 +32,19 @@ def list_knowledge_nodes(
     return knowledge_manager.list_nodes(node_type=type, q=q, limit=limit, offset=offset)
 
 
+@router.get("/tree")
+def get_knowledge_tree(
+    max_depth: int = Query(4, ge=1, le=8),
+    include_files: bool = Query(True),
+    max_entries: int = Query(1200, ge=100, le=5000),
+):
+    return knowledge_manager.directory_tree(
+        max_depth=max_depth,
+        include_files=include_files,
+        max_entries=max_entries,
+    )
+
+
 @router.get("/search")
 def search_knowledge(
     q: str = Query(..., min_length=1),

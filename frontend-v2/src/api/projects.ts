@@ -111,3 +111,7 @@ export function sendProjectChat(projectId: string, payload: { agent_id?: string;
 export function createProjectAgentAction(projectId: string, payload: Record<string, unknown>) {
   return apiClient.post(`/api/v3/projects/${encodeURIComponent(projectId)}/agent-actions`, payload).then(r => r.data)
 }
+
+export function deleteProjectTask(projectId: string, taskId: string) {
+  return apiClient.delete(`/api/v3/projects/${encodeURIComponent(projectId)}/tasks/${encodeURIComponent(taskId)}`).then(r => r.data)
+}

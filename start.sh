@@ -19,6 +19,12 @@ BACKEND_DIR="$PROJECT_DIR/backend"
 FRONTEND_DIR="$PROJECT_DIR/frontend"
 JWT_SECRET_FILE="$BACKEND_DIR/data/.dashboard_jwt_secret"
 
+if [ -f "$PROJECT_DIR/.env" ]; then
+    set -a
+    source "$PROJECT_DIR/.env"
+    set +a
+fi
+
 # 默认配置
 API_PORT="${API_PORT:-3021}"
 LEGACY_API_PORT="${LEGACY_API_PORT:-3020}"

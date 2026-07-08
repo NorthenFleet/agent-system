@@ -16,9 +16,9 @@
 
     <div class="login-card">
       <div class="login-header">
-        <span class="login-logo">🤖</span>
-        <h2>OpenClaw</h2>
-        <p class="login-subtitle">智能体项目管理平台</p>
+        <img class="login-logo" src="/favicon.svg" alt="Logo" />
+        <h2>智能体集群系统</h2>
+        <p class="login-subtitle">一叶科技</p>
       </div>
       <el-form
         ref="formRef"
@@ -216,9 +216,10 @@ async function handleLogin() {
 }
 
 .login-logo {
-  font-size: 56px;
+  width: 64px;
+  height: 64px;
   display: block;
-  margin-bottom: 8px;
+  margin: 0 auto 8px;
   animation: bounce-logo 2s ease-in-out infinite;
 }
 
@@ -276,7 +277,8 @@ async function handleLogin() {
     font-size: 22px;
   }
   .login-logo {
-    font-size: 44px;
+    width: 48px;
+    height: 48px;
   }
 }
 </style>

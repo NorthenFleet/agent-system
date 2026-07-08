@@ -25,8 +25,13 @@ export interface HealthTrendResponse {
   trend: HealthTrendPoint[]
 }
 
+export interface AgentHealthResponse {
+  agents: AgentHealthScore[]
+  count?: number
+}
+
 export const getAgentHealth = () =>
-  apiClient.get<AgentHealthScore[]>('/api/v2/agents/health').then(r => r.data)
+  apiClient.get<AgentHealthResponse>('/api/v2/agents/health').then(r => r.data)
 
 export const getAgentHealthById = (agentId: string) =>
   apiClient.get<AgentHealthScore>(`/api/v2/agents/${agentId}/health`).then(r => r.data)

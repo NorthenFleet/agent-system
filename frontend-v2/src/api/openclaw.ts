@@ -145,6 +145,30 @@ export interface KnowledgeNeighbors {
   total: number
 }
 
+export interface KnowledgeTreeNode {
+  id: string
+  name: string
+  path: string
+  relative_path: string
+  type: 'directory' | 'file'
+  extension?: string
+  node_id?: string
+  node_type?: string
+  file_count?: number
+  dir_count?: number
+  children?: KnowledgeTreeNode[]
+}
+
+export interface KnowledgeTree {
+  available: boolean
+  vault_path: string
+  root: KnowledgeTreeNode
+  total_files: number
+  total_directories: number
+  truncated: boolean
+  max_depth: number
+}
+
 export interface KnowledgeStackStatus {
   local?: {
     name: string
@@ -270,6 +294,68 @@ export interface NewsLocationPoint extends NewsLocation {
   news?: NewsItem
 }
 
+export interface AisTrackPoint {
+  timestamp: string
+  time?: string
+  lat: number
+  lng: number
+  speed: number
+  course: number
+  heading?: number | null
+  nav_status?: string
+  source?: string
+}
+
+export interface AisVessel {
+  id: string
+  mmsi: string
+  name: string
+  type: string
+  flag?: string
+  area?: string
+  status: string
+  notes?: string
+  latest?: {
+    timestamp: string
+    lat: number
+    lng: number
+    speed: number
+    course: number
+  }
+  track?: AisTrackPoint[]
+}
+
+export interface AisPointRecord extends AisTrackPoint {
+  id: number
+  vessel_id: string
+  vessel_name?: string
+  created_at?: string
+}
+
+export interface AisImportResult {
+  inserted: number
+  skipped: number
+  rows?: number
+  errors?: Array<{ index: number; reason: string }>
+}
+
+export interface AisSource {
+  id: string
+  name: string
+  source_type: string
+  url: string
+  method: string
+  format: 'csv' | 'json'
+  headers?: Record<string, string>
+  enabled: boolean
+  poll_interval_seconds: number
+  last_run_at?: string
+  last_status?: string
+  last_message?: string
+  created_at?: string
+  updated_at?: string
+}
+
 export function getAgentDashboard() {
   return apiClient.get<{ agents: AgentDashboardItem[] }>('/api/v3/agents/dashboard').then(r => r.data)
 }
@@ -313,6 +399,12 @@ export function getKnowledgeNodeContent(nodeId: string, maxChars = 5000) {
 export function getKnowledgeNeighbors(nodeId: string, limit = 60) {
   return apiClient.get<KnowledgeNeighbors>(`/api/knowledge/neighbors/${encodeURIComponent(nodeId)}`, {
     params: { limit }
+  }).then(r => r.data)
+}
+
+export function getKnowledgeTree(maxDepth = 4, includeFiles = true, maxEntries = 1200) {
+  return apiClient.get<KnowledgeTree>('/api/knowledge/tree', {
+    params: { max_depth: maxDepth, include_files: includeFiles, max_entries: maxEntries }
   }).then(r => r.data)
 }
 
@@ -362,4 +454,74 @@ export function getNewsLocations() {
 
 export function getLocationNews() {
   return apiClient.get<{ data: NewsLocationPoint[] }>('/api/news/location-news').then(r => r.data)
+}
+
+export function getIntelligenceSummary() {
+  return apiClient.get<{
+    vessels: number
+    points: number
+    latest_timestamp?: string
+    sources?: Array<{ source: string; count: number }>
+    database?: string
+  }>('/api/intelligence/summary').then(r => r.data)
+}
+
+export function getAisVessels(includeTrack = true, limit = 200) {
+  return apiClient.get<{ vessels: AisVessel[] }>('/api/intelligence/ais/vessels', {
+    params: { include_track: includeTrack, limit }
+  }).then(r => r.data)
+}
+
+export function getAisTrack(vesselId: string, params?: { start?: string; end?: string; limit?: number }) {
+  return apiClient.get<{ vessel: AisVessel; track: AisTrackPoint[] }>(
+    `/api/intelligence/ais/vessels/${encodeURIComponent(vesselId)}/track`,
+    { params }
+  ).then(r => r.data)
+}
+
+export function ingestAisPoints(points: AisTrackPoint[], source = 'frontend') {
+  return apiClient.post<AisImportResult>('/api/intelligence/ais/points', {
+    points,
+    source
+  }).then(r => r.data)
+}
+
+export function getAisPoints(params?: {
+  vessel_id?: string
+  mmsi?: string
+  start?: string
+  end?: string
+  limit?: number
+  offset?: number
+}) {
+  return apiClient.get<{ points: AisPointRecord[]; total: number; limit: number; offset: number }>(
+    '/api/intelligence/ais/points',
+    { params }
+  ).then(r => r.data)
+}
+
+export function importAisPayload(content: string, format: 'csv' | 'json' = 'csv', source = 'manual-import') {
+  return apiClient.post<AisImportResult>('/api/intelligence/ais/import', {
+    content,
+    format,
+    source
+  }).then(r => r.data)
+}
+
+export function getAisSources() {
+  return apiClient.get<{ sources: AisSource[] }>('/api/intelligence/ais/sources').then(r => r.data)
+}
+
+export function saveAisSource(source: Partial<AisSource>) {
+  return apiClient.post<{ status: string; source: AisSource }>('/api/intelligence/ais/sources', source).then(r => r.data)
+}
+
+export function deleteAisSource(sourceId: string) {
+  return apiClient.delete<{ status: string }>(`/api/intelligence/ais/sources/${encodeURIComponent(sourceId)}`).then(r => r.data)
+}
+
+export function syncAisSource(sourceId: string) {
+  return apiClient.post<AisImportResult & { status: string; duration_ms?: number }>(
+    `/api/intelligence/ais/sources/${encodeURIComponent(sourceId)}/sync`
+  ).then(r => r.data)
 }

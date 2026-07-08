@@ -451,6 +451,23 @@ class ProjectManager:
 
         return self._with_data(mutate)
 
+    def delete_task(self, project_id: str, task_id: str) -> Optional[dict]:
+        def mutate(data):
+            project = self._find_project_unlocked(data, project_id)
+            if not project:
+                return None
+            tasks = _as_list(project.get("tasks"))
+            kept = [task for task in tasks if task.get("id") != task_id]
+            if len(kept) == len(tasks):
+                return None
+            removed = next(task for task in tasks if task.get("id") == task_id)
+            project["tasks"] = kept
+            project["updated_at"] = _now_iso()
+            self._append_log(data, project_id, task_id, "system", "task_deleted", f"任务删除：{removed.get('title', task_id)}")
+            return removed
+
+        return self._with_data(mutate)
+
     def assign_task(self, task_id: str, assignee_agent: str) -> Optional[dict]:
         return self.update_task(task_id, {"assignee_agent": assignee_agent})
 

@@ -43,6 +43,7 @@ import {
   Monitor,
   Platform,
   Promotion,
+  Reading,
   Tools,
   User
 } from '@element-plus/icons-vue'
@@ -82,6 +83,7 @@ const iconMap: Record<string, Component> = {
   Monitor,
   Platform,
   Promotion,
+  Reading,
   Tools,
   User
 }

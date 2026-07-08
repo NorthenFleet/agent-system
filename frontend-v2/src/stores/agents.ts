@@ -101,7 +101,7 @@ export const useAgentsStore = defineStore('agents', () => {
       }
 
       if (healthRes.status === 'fulfilled') {
-        const scores = healthRes.value || []
+        const scores = Array.isArray(healthRes.value) ? healthRes.value : (healthRes.value.agents || [])
         const scoreMap = new Map<string, AgentHealthScore>()
         scores.forEach(s => scoreMap.set(s.agent_id, s))
         healthScores.value = scoreMap

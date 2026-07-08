@@ -18,6 +18,22 @@ from typing import Any, Optional
 DEFAULT_VAULT_PATH = "~/工作桌面/knowledge"
 DEFAULT_INDEX_RELATIVE_PATH = "14-映射库-Maps/graph-index.json"
 DEFAULT_CONCEPT_MOC_RELATIVE_PATH = "03-概念库-Concepts/MOC-概念总索引.md"
+TREE_SKIP_NAMES = {
+    ".agents",
+    ".claude",
+    ".cursor",
+    ".git",
+    ".obsidian",
+    ".smart-env",
+    ".smtcmp_json_db",
+    ".stfolder",
+    ".trae",
+    ".uploads",
+    ".vault-meta",
+    "__pycache__",
+    "node_modules",
+}
+TREE_FILE_EXTENSIONS = {".md", ".markdown", ".pdf", ".docx", ".xlsx", ".csv", ".json"}
 
 
 @dataclass
@@ -78,6 +94,46 @@ class KnowledgeManager:
         stats["index_path"] = str(self.index_path)
         stats["available"] = self.index_path.exists()
         return stats
+
+    def directory_tree(
+        self,
+        max_depth: int = 4,
+        include_files: bool = True,
+        max_entries: int = 1200,
+    ) -> dict[str, Any]:
+        root = self.vault_path
+        if not root.exists() or not root.is_dir():
+            return {
+                "available": False,
+                "vault_path": str(root),
+                "root": self._tree_node(root, root, "directory", children=[]),
+                "total_files": 0,
+                "total_directories": 0,
+                "truncated": False,
+                "max_depth": max_depth,
+            }
+
+        indexed_nodes = self._indexed_nodes_by_relative_path()
+        counters = {"entries": 0, "files": 0, "directories": 0}
+        tree = self._build_tree_node(
+            root,
+            root,
+            depth=0,
+            max_depth=max_depth,
+            include_files=include_files,
+            max_entries=max_entries,
+            counters=counters,
+            indexed_nodes=indexed_nodes,
+        )
+        return {
+            "available": True,
+            "vault_path": str(root),
+            "root": tree,
+            "total_files": counters["files"],
+            "total_directories": counters["directories"],
+            "truncated": counters["entries"] >= max_entries,
+            "max_depth": max_depth,
+        }
 
     def list_nodes(
         self,
@@ -379,6 +435,131 @@ class KnowledgeManager:
                 else:
                     nodes_by_id[node["id"]] = node
         return list(nodes_by_id.values())
+
+    def _indexed_nodes_by_relative_path(self) -> dict[str, dict[str, Any]]:
+        mapping: dict[str, dict[str, Any]] = {}
+        for node in self._all_nodes(include_concept_files=True):
+            candidates = [str(node.get("id") or ""), str(node.get("path") or "")]
+            for candidate in candidates:
+                if not candidate:
+                    continue
+                path = Path(os.path.expanduser(candidate))
+                try:
+                    if path.is_absolute():
+                        relative = path.resolve().relative_to(self.vault_path.resolve())
+                    else:
+                        relative = path
+                except (OSError, ValueError):
+                    continue
+                key = relative.as_posix()
+                mapping[key] = node
+                if not key.endswith(".md"):
+                    mapping[f"{key}.md"] = node
+        return mapping
+
+    def _build_tree_node(
+        self,
+        path: Path,
+        root: Path,
+        depth: int,
+        max_depth: int,
+        include_files: bool,
+        max_entries: int,
+        counters: dict[str, int],
+        indexed_nodes: dict[str, dict[str, Any]],
+    ) -> dict[str, Any]:
+        children = []
+        file_count = 0
+        dir_count = 0
+        if depth < max_depth and counters["entries"] < max_entries:
+            for child in self._iter_tree_children(path, include_files):
+                if counters["entries"] >= max_entries:
+                    break
+                counters["entries"] += 1
+                if child.is_dir():
+                    counters["directories"] += 1
+                    dir_count += 1
+                    children.append(
+                        self._build_tree_node(
+                            child,
+                            root,
+                            depth + 1,
+                            max_depth,
+                            include_files,
+                            max_entries,
+                            counters,
+                            indexed_nodes,
+                        )
+                    )
+                elif include_files and child.is_file():
+                    counters["files"] += 1
+                    file_count += 1
+                    relative = self._safe_relative(child, root)
+                    node = indexed_nodes.get(relative)
+                    children.append(
+                        self._tree_node(
+                            child,
+                            root,
+                            "file",
+                            extension=child.suffix.lower(),
+                            node_id=node.get("id") if node else None,
+                            node_type_name=node.get("type") if node else None,
+                            children=[],
+                        )
+                    )
+        node = self._tree_node(path, root, "directory", children=children)
+        node["file_count"] = file_count + sum(int(item.get("file_count", 0)) for item in children)
+        node["dir_count"] = dir_count + sum(int(item.get("dir_count", 0)) for item in children)
+        return node
+
+    def _iter_tree_children(self, path: Path, include_files: bool) -> list[Path]:
+        try:
+            children = list(path.iterdir())
+        except OSError:
+            return []
+        visible = []
+        for child in children:
+            if child.name.startswith(".") or child.name in TREE_SKIP_NAMES:
+                continue
+            if child.is_dir():
+                visible.append(child)
+            elif include_files and child.suffix.lower() in TREE_FILE_EXTENSIONS:
+                visible.append(child)
+        return sorted(visible, key=lambda item: (not item.is_dir(), item.name.lower()))
+
+    def _tree_node(
+        self,
+        path: Path,
+        root: Path,
+        kind: str,
+        children: list[dict[str, Any]] | None = None,
+        extension: str | None = None,
+        node_id: str | None = None,
+        node_type_name: str | None = None,
+    ) -> dict[str, Any]:
+        relative = self._safe_relative(path, root)
+        node: dict[str, Any] = {
+            "id": relative or "__root__",
+            "name": path.name or "知识库",
+            "path": str(path),
+            "relative_path": relative,
+            "type": kind,
+        }
+        if children is not None:
+            node["children"] = children
+        if extension:
+            node["extension"] = extension
+        if node_id:
+            node["node_id"] = node_id
+        if node_type_name:
+            node["node_type"] = node_type_name
+        return node
+
+    def _safe_relative(self, path: Path, root: Path) -> str:
+        try:
+            return path.resolve().relative_to(root.resolve()).as_posix()
+        except (OSError, ValueError):
+            return ""
 
     def _concept_moc_path(self) -> Path:
         return self.vault_path / DEFAULT_CONCEPT_MOC_RELATIVE_PATH

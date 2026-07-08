@@ -63,6 +63,7 @@ def _module_for_path(path: str):
         (("/api/devices",), "monitoring"),
         (("/api/community", "/api/forum", "/api/bar"), "community"),
         (("/api/news",), "news-center"),
+        (("/api/intelligence",), "intelligence"),
         (("/api/products",), "products"),
         (("/api/v2/monitoring",), "monitoring"),
     ]
@@ -100,10 +101,10 @@ def _check_module_access(req: Request):
     return None
 
 # Routes
-from api.tasks import router as _r0; from api.plans import router as _r1; from routers import loop_queue as _m0, workflow as _m1, openclaw_status as _m2, system_status as _m3, projects_v3 as _m4, knowledge as _m5, knowledge_stack as _m6, data_admin as _m7, products_router as _m8, agent_os as _m9, finance as _m10
+from api.tasks import router as _r0; from api.plans import router as _r1; from routers import loop_queue as _m0, workflow as _m1, openclaw_status as _m2, system_status as _m3, projects_v3 as _m4, knowledge as _m5, knowledge_stack as _m6, data_admin as _m7, products_router as _m8, agent_os as _m9, finance as _m10, intelligence as _m11
 from routers.auth_router import router as _r2; from routers.users_router import router as _r3; from routers.tasks_v2 import router as _r4; from routers.agents_router import router as _r5; from routers.customers_router import router as _r6; from routers.v2_chat_router import router as _r16; from routers.codex_jobs_router import router as _r18
 from routers.modules_router import router as _r22
-from routers.task_recommend_router import router as _r19; from routers.agent_health_router import router as _r20
+from routers.task_recommend_router import router as _r19; from routers.agent_health_router import router as _r20; from routers.task_webhook_router import router as _r23
 from routers.monitoring_router import router as _r21
 # Wire legacy managers before router import
 from data_manager import data_manager; from task_queue import task_manager; from device_manager import device_manager
@@ -120,7 +121,7 @@ _l12.set_managers(community_manager, chat_manager, forum_manager); _l13.set_mana
 _l14.set_managers(task_manager, plan_manager, auto_plan_manager)
 
 from routers.legacy_tasks_router import router as _r7; from routers.legacy_agents_router import router as _r8; from routers.legacy_bar_router import router as _r9; from routers.legacy_idle_agents_router import router as _r10; from routers.legacy_agent_docs_router import router as _r11; from routers.legacy_community_router import router as _r12; from routers.legacy_news_router import router as _r13; from routers.legacy_plans_auto_router import router as _r14; from routers.legacy_scheduled_tasks_router import router as _r15
-for r in (_r0, _r1, _m0.router, _m1.router, _m2.router, _m3.router, _m4.router, _m5.router, _m6.router, _m7.router, _m8.router, _m9.router, _m10.router, _r2, _r3, _r4, _r5, _r6, _r16, _r18, _r19, _r20, _r21, _r22, _r7, _r8, _r9, _r10, _r11, _r12, _r13, _r14, _r15): app.include_router(r)
+for r in (_r0, _r1, _m0.router, _m1.router, _m2.router, _m3.router, _m4.router, _m5.router, _m6.router, _m7.router, _m8.router, _m9.router, _m10.router, _m11.router, _r2, _r3, _r4, _r5, _r6, _r16, _r18, _r19, _r20, _r21, _r22, _r23, _r7, _r8, _r9, _r10, _r11, _r12, _r13, _r14, _r15): app.include_router(r)
 
 # Pages
 app.get("/")(lambda: _r(_fe())); app.get("/index-old")(lambda: _r(_fe())); app.get("/legacy")(lambda: _r(_fe())); app.get("/modular")(lambda: _r(_fe())); app.get("/projects")(lambda: _r(_fe()))

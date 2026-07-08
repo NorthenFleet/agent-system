@@ -50,6 +50,7 @@
     <section class="chat-panel">
       <div class="chat-head">
         <div>
+          <span class="chat-window-kicker">对话窗口</span>
           <h1>{{ selectedAgent?.name || '选择智能体' }}</h1>
           <p>{{ selectedAgent ? `${selectedAgent.role || '团队智能体'} · ${selectedAgent.id}` : '从左侧选择一个智能体开始对话' }}</p>
         </div>
@@ -650,8 +651,8 @@ async function scrollToBottom() {
 <style scoped>
 .agent-chat-page {
   display: grid;
-  grid-template-columns: minmax(220px, 280px) minmax(420px, 1fr) minmax(240px, 300px);
-  gap: 16px;
+  grid-template-columns: clamp(210px, 18vw, 260px) minmax(0, 1fr) clamp(170px, 15vw, 220px);
+  gap: 12px;
   height: calc(100vh - 96px);
   min-height: 0;
   overflow: hidden;
@@ -848,12 +849,23 @@ h3 {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  border-color: rgba(var(--view-rgb), 0.52);
   overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(var(--view-rgb), 0.12);
 }
 
 .chat-head {
-  padding: 16px 18px;
+  padding: 14px 16px;
   border-bottom: 1px solid var(--line-color);
+  background: rgba(var(--view-rgb), 0.08);
+}
+
+.chat-window-kicker {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--view-color);
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .head-actions {
@@ -865,9 +877,12 @@ h3 {
 .messages {
   flex: 1;
   min-height: 0;
-  padding: 18px;
+  padding: 18px 20px;
   overflow-y: auto;
   overscroll-behavior: contain;
+  background:
+    linear-gradient(180deg, rgba(13, 17, 23, 0.18), rgba(13, 17, 23, 0)),
+    var(--panel-bg);
 }
 
 .empty-state {
@@ -885,7 +900,7 @@ h3 {
 }
 
 .message {
-  max-width: min(76%, 760px);
+  max-width: min(94%, 1120px);
   margin-bottom: 14px;
   padding: 12px 14px;
   border: 1px solid var(--line-color);
@@ -972,7 +987,7 @@ h3 {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 10px;
-  padding: 14px;
+  padding: 14px 16px;
   border-top: 1px solid var(--line-color);
   background: #0d1117;
 }
@@ -1033,7 +1048,8 @@ h3 {
 .context-panel {
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 16px;
+  padding: 12px;
   overflow-y: auto;
   overscroll-behavior: contain;
 }
@@ -1176,20 +1192,28 @@ h3 {
 @media (max-width: 1180px) {
   .agent-chat-page {
     grid-template-columns: 240px 1fr;
-    height: auto;
-    min-height: calc(100vh - 96px);
-    overflow: visible;
   }
 
   .context-panel {
     grid-column: 1 / -1;
-    max-height: 360px;
+    max-height: 300px;
   }
 }
 
 @media (max-width: 820px) {
   .agent-chat-page {
     grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(520px, 1fr) auto;
+    height: auto;
+    min-height: calc(100vh - 96px);
+    overflow: visible;
+  }
+
+  .agent-rail,
+  .chat-panel,
+  .context-panel {
+    grid-column: 1;
+    grid-row: auto;
   }
 
   .agent-tree {

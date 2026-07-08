@@ -1,7 +1,7 @@
 <template>
   <div class="projects-page">
-    <el-row :gutter="18">
-      <el-col :span="6">
+    <div class="development-shell">
+      <aside class="project-list-column">
         <el-card class="panel project-list-panel" shadow="hover">
           <template #header>
             <div class="panel-header">
@@ -27,9 +27,9 @@
             </button>
           </div>
         </el-card>
-      </el-col>
+      </aside>
 
-      <el-col :span="12">
+      <main class="project-main-column">
         <el-empty v-if="!selectedProject" :description="emptyProjectText" />
         <template v-else>
           <el-card class="panel" shadow="hover">
@@ -192,21 +192,45 @@
             <div class="task-list">
               <div v-for="task in selectedProject.tasks" :key="task.id" class="task-card">
                 <div class="task-main">
-                  <div>
+                  <button
+                    type="button"
+                    class="task-summary-button"
+                    :aria-expanded="!isTaskCollapsed(task.id)"
+                    @click="toggleTaskCollapsed(task.id)"
+                  >
                     <div class="task-title">{{ task.title }}</div>
                     <div class="muted">{{ task.description || '暂无任务描述' }}</div>
-                  </div>
+                  </button>
                   <div class="task-status">
                     <el-tag :type="statusType(task.status)" size="small">{{ statusLabel(task.status) }}</el-tag>
                     <span>{{ Math.round(task.progress || 0) }}%</span>
+                    <el-button
+                      size="small"
+                      text
+                      :icon="isTaskCollapsed(task.id) ? ArrowDown : ArrowUp"
+                      :title="isTaskCollapsed(task.id) ? '展开任务' : '收起任务'"
+                      :aria-label="isTaskCollapsed(task.id) ? '展开任务' : '收起任务'"
+                      @click="toggleTaskCollapsed(task.id)"
+                    />
+                    <el-button
+                      size="small"
+                      text
+                      type="danger"
+                      :icon="Delete"
+                      :loading="deletingTaskIds.has(task.id)"
+                      title="删除任务"
+                      aria-label="删除任务"
+                      @click="confirmDeleteTask(task)"
+                    />
                   </div>
                 </div>
                 <el-progress :percentage="Math.round(task.progress || 0)" :color="progressColor" />
-                <div class="execution-list">
-                <div class="execution-list-head">
-                  <strong>{{ isDocumentProject ? '执行子项看板' : 'Loop 执行子项' }}</strong>
-                  <small>每个{{ pointLabel }}单独交给{{ isDocumentProject ? '文档协作智能体' : '忍者神龟开发组' }}，通过 Codex 执行、反馈、验证并进入下一轮</small>
-                </div>
+                <div v-show="!isTaskCollapsed(task.id)" class="task-details">
+                  <div class="execution-list">
+                  <div class="execution-list-head">
+                    <strong>{{ isDocumentProject ? '执行子项看板' : 'Loop 执行子项' }}</strong>
+                    <small>每个{{ pointLabel }}单独交给{{ isDocumentProject ? '文档协作智能体' : '忍者神龟开发组' }}，通过 Codex 执行、反馈、验证并进入下一轮</small>
+                  </div>
                   <div v-if="task.development_points.length === 0" class="muted">暂无可执行子项</div>
                   <div v-for="point in task.development_points" :key="point.id" class="execution-row">
                     <div class="execution-main">
@@ -321,13 +345,14 @@
                     </button>
                   </div>
                 </div>
+                </div>
               </div>
             </div>
           </el-card>
         </template>
-      </el-col>
+      </main>
 
-      <el-col :span="6">
+      <aside class="right-rail-column">
         <aside v-if="selectedProject" class="right-rail">
           <el-card class="panel manager-panel" shadow="hover">
             <template #header>
@@ -448,8 +473,8 @@
             </el-collapse>
           </el-card>
         </aside>
-      </el-col>
-    </el-row>
+      </aside>
+    </div>
   </div>
 </template>
 
@@ -457,11 +482,13 @@
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { ArrowDown, ArrowUp, Delete } from '@element-plus/icons-vue'
 import {
   createProjectAgentAction,
   getProjectChatContext,
   getProjectConversation,
   getProjects,
+  deleteProjectTask,
   sendProjectChat,
   type DevelopmentPoint,
   type Project,
@@ -538,6 +565,8 @@ const taskCodexInstructions = reactive<Record<string, string>>({})
 const creatingTaskIds = ref(new Set<string>())
 const creatingPointIds = ref(new Set<string>())
 const creatingLoopIds = ref(new Set<string>())
+const collapsedTaskIds = ref(new Set<string>())
+const deletingTaskIds = ref(new Set<string>())
 const autoDispatchingProject = ref(false)
 let codexRefreshTimer: number | undefined
 
@@ -666,6 +695,67 @@ function latestCodexFeedback(pointId: string) {
 
 function isExecutablePoint(point: DevelopmentPoint) {
   return !['done', 'completed', 'succeeded', 'cancelled'].includes(String(point.status || '').toLowerCase())
+}
+
+function isTaskCollapsed(taskId: string) {
+  return collapsedTaskIds.value.has(taskId)
+}
+
+function toggleTaskCollapsed(taskId: string) {
+  const next = new Set(collapsedTaskIds.value)
+  if (next.has(taskId)) {
+    next.delete(taskId)
+  } else {
+    next.add(taskId)
+  }
+  collapsedTaskIds.value = next
+}
+
+function collapseAllProjectTasks(project?: Project) {
+  const next = new Set(collapsedTaskIds.value)
+  for (const task of project?.tasks || []) {
+    next.add(task.id)
+  }
+  collapsedTaskIds.value = next
+}
+
+async function confirmDeleteTask(task: ProjectTask) {
+  const project = selectedProject.value
+  if (!project) return
+  try {
+    await ElMessageBox.confirm(
+      `确认删除任务“${task.title}”？该操作会移除任务及其执行子项。`,
+      '删除任务',
+      {
+        type: 'warning',
+        confirmButtonText: '删除',
+        cancelButtonText: '取消',
+        confirmButtonClass: 'el-button--danger'
+      }
+    )
+  } catch {
+    return
+  }
+
+  const next = new Set(deletingTaskIds.value)
+  next.add(task.id)
+  deletingTaskIds.value = next
+  try {
+    await deleteProjectTask(project.id, task.id)
+    delete taskCodexAgents[task.id]
+    delete taskCodexInstructions[task.id]
+    const collapsed = new Set(collapsedTaskIds.value)
+    collapsed.delete(task.id)
+    collapsedTaskIds.value = collapsed
+    ElMessage.success('任务已删除')
+    await Promise.all([loadProjects(), loadCodexJobs(), loadCodexLoops()])
+  } catch {
+    ElMessage.error('任务删除失败')
+  } finally {
+    const done = new Set(deletingTaskIds.value)
+    done.delete(task.id)
+    deletingTaskIds.value = done
+  }
 }
 
 function hasActiveJob(pointId: string) {
@@ -1108,6 +1198,7 @@ async function loadProjects() {
     const data = await getProjects({ project_type: workspaceProjectType.value })
     projects.value = data.projects
     applyRouteSelection()
+    collapseAllProjectTasks(selectedProject.value)
     for (const project of projects.value) {
       for (const task of project.tasks) {
         if (!taskCodexAgents[task.id]) {
@@ -1213,7 +1304,10 @@ watch(workspaceProjectType, () => {
   loadProjects()
 })
 watch(() => selectedProject.value?.id, projectId => {
-  if (projectId) loadProjectSidecar(projectId)
+  if (projectId) {
+    collapseAllProjectTasks(selectedProject.value)
+    loadProjectSidecar(projectId)
+  }
 }, { immediate: true })
 
 onMounted(loadProjects)
@@ -1228,9 +1322,22 @@ onUnmounted(stopCodexLoopPolling)
   min-height: 100%;
 }
 
+.development-shell {
+  display: grid;
+  grid-template-columns: clamp(220px, 18vw, 290px) minmax(620px, 1fr) clamp(230px, 19vw, 300px);
+  gap: 12px;
+  align-items: start;
+}
+
+.project-list-column,
+.project-main-column,
+.right-rail-column {
+  min-width: 0;
+}
+
 .panel {
   border-radius: 8px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .panel-header {
@@ -1551,8 +1658,27 @@ onUnmounted(stopCodexLoopPolling)
 .task-main {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
   gap: 12px;
   margin-bottom: 10px;
+}
+
+.task-summary-button {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.task-summary-button:focus-visible {
+  outline: 2px solid var(--view-color-primary);
+  outline-offset: 3px;
+  border-radius: 6px;
 }
 
 .task-title {
@@ -1567,12 +1693,18 @@ onUnmounted(stopCodexLoopPolling)
   gap: 10px;
   color: var(--text-secondary);
   font-weight: 700;
+  flex: 0 0 auto;
+}
+
+.task-details {
+  display: grid;
+  gap: 14px;
+  margin-top: 14px;
 }
 
 .execution-list {
   display: grid;
   gap: 10px;
-  margin-top: 14px;
 }
 
 .execution-list-head {
@@ -1594,7 +1726,7 @@ onUnmounted(stopCodexLoopPolling)
 
 .execution-row {
   display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(180px, 0.85fr) auto;
+  grid-template-columns: minmax(220px, 1.35fr) minmax(180px, 0.75fr) auto;
   gap: 12px;
   align-items: center;
   min-height: 58px;
@@ -1780,5 +1912,50 @@ onUnmounted(stopCodexLoopPolling)
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 12px;
   line-height: 1.6;
+}
+
+@media (max-width: 1320px) {
+  .development-shell {
+    grid-template-columns: clamp(210px, 22vw, 250px) minmax(0, 1fr);
+  }
+
+  .right-rail-column {
+    grid-column: 1 / -1;
+  }
+
+  .right-rail {
+    position: static;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .execution-row {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .execution-actions {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 1080px) {
+  .development-shell {
+    grid-template-columns: 260px minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 760px) {
+  .development-shell,
+  .right-rail {
+    grid-template-columns: 1fr;
+  }
+
+  .project-list-panel,
+  .right-rail {
+    position: static;
+  }
 }
 </style>

@@ -116,11 +116,14 @@
       <div class="section-head">
         <div>
           <h2>AIS 舰艇坐标与航迹</h2>
-          <p>当前为示例数据结构，已支持舰艇点、航迹线、状态、航速航向和时间点切换</p>
+          <p>已接入后端 AIS 数据库，支持舰艇点、航迹线、状态、航速航向和时间点切换</p>
         </div>
-        <div class="time-control">
-          <span>{{ selectedTrackTime }}</span>
-          <el-slider v-model="trackTimeIndex" :min="0" :max="maxTrackIndex" :show-tooltip="false" size="small" />
+        <div class="ais-actions">
+          <el-button size="small" type="primary" plain @click="aisImportOpen = true">导入 AIS</el-button>
+          <div class="time-control">
+            <span>{{ selectedTrackTime }}</span>
+            <el-slider v-model="trackTimeIndex" :min="0" :max="maxTrackIndex" :show-tooltip="false" size="small" />
+          </div>
         </div>
       </div>
       <div class="vessel-grid">
@@ -147,7 +150,87 @@
           </div>
         </article>
       </div>
+      <div class="source-panel">
+        <div class="source-head">
+          <div>
+            <h3>AIS 数据源</h3>
+            <span>{{ aisSources.length }} 个外部源，手动同步后进入同一套去重入库流程</span>
+          </div>
+          <el-button size="small" plain @click="openSourceDialog()">添加源</el-button>
+        </div>
+        <div v-if="aisSources.length" class="source-grid">
+          <article v-for="source in aisSources" :key="source.id" class="source-card">
+            <div>
+              <strong>{{ source.name }}</strong>
+              <span>{{ source.format.toUpperCase() }} · {{ source.url }}</span>
+            </div>
+            <div class="source-state">
+              <el-tag size="small" :type="source.last_status === 'error' ? 'danger' : source.last_status === 'ok' ? 'success' : 'info'" effect="plain">
+                {{ source.last_status || 'idle' }}
+              </el-tag>
+              <span>{{ source.last_message || '尚未同步' }}</span>
+            </div>
+            <div class="source-actions">
+              <el-button size="small" text @click="syncSource(source)">同步</el-button>
+              <el-button size="small" text @click="openSourceDialog(source)">编辑</el-button>
+              <el-button size="small" text type="danger" @click="removeSource(source)">删除源</el-button>
+            </div>
+          </article>
+        </div>
+        <el-empty v-else description="暂无 AIS 外部数据源" :image-size="72" />
+      </div>
     </section>
+
+    <el-dialog v-model="aisImportOpen" title="AIS 数据导入" width="720px">
+      <div class="import-form">
+        <div class="import-row">
+          <el-select v-model="aisImportFormat" size="small">
+            <el-option label="CSV" value="csv" />
+            <el-option label="JSON" value="json" />
+          </el-select>
+          <el-input v-model="aisImportSource" size="small" placeholder="数据源标识" />
+        </div>
+        <el-input
+          v-model="aisImportContent"
+          type="textarea"
+          :rows="12"
+          placeholder="CSV: mmsi,timestamp,lat,lng,speed,course,name,vessel_type,area,status"
+        />
+        <div v-if="aisImportResult" class="import-result">
+          <span>写入 {{ aisImportResult.inserted }} 条</span>
+          <span>跳过 {{ aisImportResult.skipped }} 条</span>
+          <span v-if="aisImportResult.rows !== undefined">读取 {{ aisImportResult.rows }} 行</span>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="aisImportOpen = false">取消</el-button>
+        <el-button type="primary" :loading="aisImporting" @click="submitAisImport">导入</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="sourceDialogOpen" title="AIS 外部数据源" width="720px">
+      <div class="source-form">
+        <el-input v-model="sourceForm.name" placeholder="数据源名称" />
+        <el-input v-model="sourceForm.url" placeholder="HTTP CSV/JSON URL" />
+        <div class="source-form-row">
+          <el-select v-model="sourceForm.format">
+            <el-option label="CSV" value="csv" />
+            <el-option label="JSON" value="json" />
+          </el-select>
+          <el-input-number v-model="sourceForm.poll_interval_seconds" :min="60" :step="300" controls-position="right" />
+        </div>
+        <el-input
+          v-model="sourceHeadersText"
+          type="textarea"
+          :rows="5"
+          placeholder='请求头 JSON，例如 {"Authorization":"Bearer token"}'
+        />
+      </div>
+      <template #footer>
+        <el-button @click="sourceDialogOpen = false">取消</el-button>
+        <el-button type="primary" :loading="sourceSaving" @click="saveSource">保存</el-button>
+      </template>
+    </el-dialog>
 
     <section class="section-panel">
       <div class="section-head">
@@ -252,11 +335,27 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
-import { getLocationNews, getNews, getNewsLocations, type NewsItem, type NewsLocation } from '@/api/openclaw'
+import {
+  deleteAisSource,
+  getAisVessels,
+  getAisSources,
+  getLocationNews,
+  getNews,
+  getNewsLocations,
+  importAisPayload,
+  saveAisSource,
+  syncAisSource,
+  type AisImportResult,
+  type AisSource,
+  type AisTrackPoint as ApiAisTrackPoint,
+  type AisVessel as ApiAisVessel,
+  type NewsItem,
+  type NewsLocation
+} from '@/api/openclaw'
 
 type DomainStatus = 'active' | 'planning' | 'paused'
 type SpatialType = 'domain' | 'news' | 'vessel'
-type VesselStatus = 'underway' | 'loitering' | 'silent'
+type VesselStatus = 'underway' | 'loitering' | 'silent' | 'unknown'
 
 interface IntelligenceDomain {
   id: string
@@ -287,6 +386,7 @@ interface SpatialItem {
 }
 
 interface AisTrackPoint {
+  timestamp?: string
   time: string
   lat: number
   lng: number
@@ -321,8 +421,25 @@ const newsLocations = ref<Record<string, NewsLocation>>({})
 const showAisLayer = ref(true)
 const showTrackLayer = ref(true)
 const showNewsLayer = ref(true)
-const trackTimeIndex = ref(3)
+const trackTimeIndex = ref(0)
 const activeVesselId = ref('ddg-172')
+const aisImportOpen = ref(false)
+const aisImporting = ref(false)
+const aisImportFormat = ref<'csv' | 'json'>('csv')
+const aisImportSource = ref('manual-import')
+const aisImportContent = ref('')
+const aisImportResult = ref<AisImportResult | null>(null)
+const aisSources = ref<AisSource[]>([])
+const sourceDialogOpen = ref(false)
+const sourceSaving = ref(false)
+const sourceHeadersText = ref('{}')
+const sourceForm = ref<Partial<AisSource>>({
+  name: '',
+  url: '',
+  format: 'csv',
+  poll_interval_seconds: 3600,
+  enabled: true
+})
 
 let scene: any
 let camera: any
@@ -410,50 +527,7 @@ const pipeline = [
   { index: '04', name: '历史分析', description: '按时间线、实体、地点和项目关系做检索、回溯与趋势判断。' }
 ]
 
-const aisVessels = ref<AisVessel[]>([
-  {
-    id: 'ddg-172',
-    name: '示例驱逐舰 DDG-172',
-    mmsi: '412001172',
-    type: '水面舰艇',
-    area: '台湾以东海域',
-    status: 'underway',
-    track: [
-      { time: '00:00', lat: 23.9, lng: 121.2, speed: 14.2, course: 42 },
-      { time: '02:00', lat: 24.2, lng: 121.8, speed: 15.1, course: 48 },
-      { time: '04:00', lat: 24.55, lng: 122.25, speed: 14.8, course: 53 },
-      { time: '06:00', lat: 24.9, lng: 122.74, speed: 16.0, course: 58 }
-    ]
-  },
-  {
-    id: 'ffg-529',
-    name: '示例护卫舰 FFG-529',
-    mmsi: '412001529',
-    type: '护卫舰',
-    area: '巴士海峡',
-    status: 'loitering',
-    track: [
-      { time: '00:00', lat: 20.8, lng: 119.3, speed: 9.4, course: 95 },
-      { time: '02:00', lat: 20.75, lng: 120.0, speed: 8.9, course: 100 },
-      { time: '04:00', lat: 20.7, lng: 120.62, speed: 7.8, course: 94 },
-      { time: '06:00', lat: 20.82, lng: 121.18, speed: 8.1, course: 76 }
-    ]
-  },
-  {
-    id: 'aux-886',
-    name: '示例补给舰 AUX-886',
-    mmsi: '412001886',
-    type: '辅助舰',
-    area: '南海北部',
-    status: 'silent',
-    track: [
-      { time: '00:00', lat: 18.4, lng: 113.5, speed: 11.2, course: 22 },
-      { time: '02:00', lat: 18.75, lng: 113.72, speed: 10.8, course: 28 },
-      { time: '04:00', lat: 19.05, lng: 113.95, speed: 0, course: 0 },
-      { time: '06:00', lat: 19.05, lng: 113.95, speed: 0, course: 0 }
-    ]
-  }
-])
+const aisVessels = ref<AisVessel[]>([])
 
 const filteredDomains = computed(() => {
   const key = keyword.value.trim().toLowerCase()
@@ -505,9 +579,10 @@ const spatialItems = computed<SpatialItem[]>(() => {
       }
     })
   const vesselItems = showAisLayer.value
-    ? aisVessels.value.map(vessel => {
+    ? aisVessels.value.flatMap<SpatialItem>(vessel => {
       const point = currentVesselPoint(vessel) || vessel.track[vessel.track.length - 1]
-      return {
+      if (!point) return []
+      return [{
         key: `vessel:${vessel.id}`,
         type: 'vessel' as const,
         id: vessel.id,
@@ -516,7 +591,7 @@ const spatialItems = computed<SpatialItem[]>(() => {
         lng: point.lng,
         locationLabel: `${vessel.area} · ${point.speed} kn / ${point.course}°`,
         countLabel: `${vessel.track.length} 点`
-      }
+      }]
     })
     : []
   return [...domainItems, ...vesselItems, ...newsItems]
@@ -526,7 +601,10 @@ const activeDomains = computed(() => domains.value.filter(domain => domain.statu
 const maxTrackIndex = computed(() => Math.max(0, Math.max(...aisVessels.value.map(vessel => vessel.track.length - 1))))
 const selectedTrackTime = computed(() => aisVessels.value[0]?.track[Math.min(trackTimeIndex.value, maxTrackIndex.value)]?.time || '--:--')
 const trackPointCount = computed(() => aisVessels.value.reduce((sum, vessel) => sum + vessel.track.length, 0))
-const activeVessel = computed(() => aisVessels.value.find(vessel => vessel.id === activeVesselId.value))
+const activeVessel = computed(() => {
+  if (!activeSpatialKey.value.startsWith('vessel:')) return undefined
+  return aisVessels.value.find(vessel => vessel.id === activeVesselId.value)
+})
 const relatedNews = computed(() => {
   const active = activeSpatialKey.value
   const key = active.replace(/^news:/, '').replace(/^domain:/, '')
@@ -578,7 +656,8 @@ function vesselStatusLabel(status: VesselStatus) {
   const labels: Record<VesselStatus, string> = {
     underway: '航行中',
     loitering: '盘旋/巡弋',
-    silent: '静默/停留'
+    silent: '静默/停留',
+    unknown: '未知状态'
   }
   return labels[status]
 }
@@ -590,6 +669,7 @@ function vesselStatusType(status: VesselStatus) {
 }
 
 function currentVesselPoint(vessel: AisVessel) {
+  if (!vessel.track.length) return undefined
   const index = Math.min(trackTimeIndex.value, vessel.track.length - 1)
   return vessel.track[index]
 }
@@ -609,6 +689,151 @@ function locationName(locationKey?: string) {
 function formatDate(value?: string) {
   if (!value) return '未知时间'
   return value.replace('T', ' ').slice(0, 16)
+}
+
+function normalizeVesselStatus(status?: string): VesselStatus {
+  if (status === 'underway' || status === 'loitering' || status === 'silent') return status
+  return 'unknown'
+}
+
+function formatTrackTime(point: ApiAisTrackPoint) {
+  const value = point.timestamp || point.time || ''
+  if (!value) return '--:--'
+  const match = value.match(/T(\d{2}:\d{2})/)
+  return match ? match[1] : value.slice(0, 5)
+}
+
+function normalizeAisVessel(vessel: ApiAisVessel): AisVessel {
+  const track = (vessel.track || []).map(point => ({
+    timestamp: point.timestamp,
+    time: formatTrackTime(point),
+    lat: Number(point.lat),
+    lng: Number(point.lng),
+    speed: Number(point.speed || 0),
+    course: Number(point.course || 0)
+  }))
+  if (!track.length && vessel.latest) {
+    track.push({
+      timestamp: vessel.latest.timestamp,
+      time: formatTrackTime(vessel.latest),
+      lat: Number(vessel.latest.lat),
+      lng: Number(vessel.latest.lng),
+      speed: Number(vessel.latest.speed || 0),
+      course: Number(vessel.latest.course || 0)
+    })
+  }
+  return {
+    id: vessel.id,
+    name: vessel.name,
+    mmsi: vessel.mmsi,
+    type: vessel.type || '未知类型',
+    area: vessel.area || '未知海域',
+    status: normalizeVesselStatus(vessel.status),
+    track
+  }
+}
+
+async function loadAisVessels() {
+  try {
+    const data = await getAisVessels(true, 200)
+    aisVessels.value = (data.vessels || []).map(normalizeAisVessel).filter(vessel => vessel.track.length)
+    const maxIndex = maxTrackIndex.value
+    trackTimeIndex.value = maxIndex
+    if (!aisVessels.value.some(vessel => vessel.id === activeVesselId.value) && aisVessels.value[0]) {
+      activeVesselId.value = aisVessels.value[0].id
+    }
+  } catch (error) {
+    console.error(error)
+    ElMessage.warning('AIS 情报数据加载失败')
+  }
+}
+
+async function submitAisImport() {
+  const content = aisImportContent.value.trim()
+  if (!content) {
+    ElMessage.warning('请粘贴 AIS 数据')
+    return
+  }
+  aisImporting.value = true
+  try {
+    const result = await importAisPayload(content, aisImportFormat.value, aisImportSource.value || 'manual-import')
+    aisImportResult.value = result
+    await loadAisVessels()
+    renderMarkers()
+    ElMessage.success(`AIS 导入完成：写入 ${result.inserted} 条，跳过 ${result.skipped} 条`)
+  } catch (error) {
+    console.error(error)
+  } finally {
+    aisImporting.value = false
+  }
+}
+
+async function loadAisSources() {
+  try {
+    const data = await getAisSources()
+    aisSources.value = data.sources || []
+  } catch (error) {
+    console.error(error)
+  }
+}
+
+function openSourceDialog(source?: AisSource) {
+  sourceForm.value = source
+    ? { ...source }
+    : {
+      name: '',
+      url: '',
+      format: 'csv',
+      poll_interval_seconds: 3600,
+      enabled: true
+    }
+  sourceHeadersText.value = JSON.stringify(source?.headers || {}, null, 2)
+  sourceDialogOpen.value = true
+}
+
+async function saveSource() {
+  if (!sourceForm.value.name || !sourceForm.value.url) {
+    ElMessage.warning('请填写数据源名称和 URL')
+    return
+  }
+  sourceSaving.value = true
+  try {
+    const headers = sourceHeadersText.value.trim() ? JSON.parse(sourceHeadersText.value) : {}
+    await saveAisSource({
+      ...sourceForm.value,
+      headers
+    })
+    await loadAisSources()
+    sourceDialogOpen.value = false
+    ElMessage.success('AIS 数据源已保存')
+  } catch (error) {
+    console.error(error)
+    if (error instanceof SyntaxError) ElMessage.error('请求头 JSON 格式错误')
+  } finally {
+    sourceSaving.value = false
+  }
+}
+
+async function syncSource(source: AisSource) {
+  try {
+    const result = await syncAisSource(source.id)
+    await Promise.all([loadAisSources(), loadAisVessels()])
+    renderMarkers()
+    ElMessage.success(`同步完成：写入 ${result.inserted} 条，跳过 ${result.skipped} 条`)
+  } catch (error) {
+    console.error(error)
+    await loadAisSources()
+  }
+}
+
+async function removeSource(source: AisSource) {
+  try {
+    await deleteAisSource(source.id)
+    await loadAisSources()
+    ElMessage.success('AIS 数据源已删除')
+  } catch (error) {
+    console.error(error)
+  }
 }
 
 async function loadSpatialNews() {
@@ -861,7 +1086,7 @@ function rotateGlobeTo(lat: number, lng: number) {
 }
 
 onMounted(async () => {
-  await loadSpatialNews()
+  await Promise.all([loadSpatialNews(), loadAisVessels(), loadAisSources()])
   await initGlobe()
 })
 
@@ -1189,6 +1414,14 @@ onUnmounted(() => {
   font-size: 15px;
 }
 
+.ais-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .time-control {
   display: grid;
   grid-template-columns: 54px minmax(160px, 240px);
@@ -1196,6 +1429,105 @@ onUnmounted(() => {
   gap: 10px;
   color: var(--text-secondary);
   font-size: 12px;
+}
+
+.import-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.import-row {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 10px;
+}
+
+.import-result {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  padding: 10px;
+  color: var(--text-secondary);
+  background: var(--card-bg-soft);
+  border: 1px solid var(--line-color);
+  border-radius: 7px;
+  font-size: 12px;
+}
+
+.source-panel {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line-color);
+}
+
+.source-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.source-head h3 {
+  margin: 0 0 5px;
+  font-size: 15px;
+}
+
+.source-head span,
+.source-card span,
+.source-state span {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.source-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 10px;
+}
+
+.source-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: var(--card-bg-soft);
+  border: 1px solid var(--line-color);
+  border-radius: 8px;
+}
+
+.source-card strong,
+.source-card span {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.source-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.source-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.source-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.source-form-row {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: 10px;
 }
 
 .title-wrap {
@@ -1354,6 +1686,26 @@ onUnmounted(() => {
   .time-control {
     width: 100%;
     grid-template-columns: 48px minmax(0, 1fr);
+  }
+
+  .ais-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .import-row {
+    grid-template-columns: 1fr;
+  }
+
+  .source-head,
+  .source-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .source-grid,
+  .source-form-row {
+    grid-template-columns: 1fr;
   }
 }
 </style>

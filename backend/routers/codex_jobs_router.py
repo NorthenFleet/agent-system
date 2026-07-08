@@ -4,7 +4,14 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
-from codex_job_service import CODEX_BIN, codex_job_service
+from codex_job_service import (
+    CODEX_BIN,
+    CODEX_REMOTE_HOST,
+    CODEX_REMOTE_REPO,
+    CODEX_REMOTE_USER,
+    CODEX_RUNNER_MODE,
+    codex_job_service,
+)
 
 router = APIRouter(prefix="/api/v2/codex", tags=["codex-jobs"])
 
@@ -29,10 +36,15 @@ class CodexLoopCreate(BaseModel):
 
 @router.get("/status")
 def codex_status():
+    runner_mode = "ssh" if CODEX_RUNNER_MODE in {"ssh", "remote"} else "local"
     return {
         "codex_bin": CODEX_BIN,
-        "available": os.path.isfile(CODEX_BIN),
+        "available": os.path.isfile(CODEX_BIN) if runner_mode == "local" else bool(CODEX_REMOTE_HOST),
         "runner": "codex exec",
+        "runner_mode": runner_mode,
+        "remote_host": CODEX_REMOTE_HOST or None,
+        "remote_user": CODEX_REMOTE_USER or None,
+        "remote_repo": CODEX_REMOTE_REPO or None,
         "sandbox": "workspace-write",
         "approval": "never",
     }

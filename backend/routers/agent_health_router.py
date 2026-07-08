@@ -69,3 +69,36 @@ def get_agent_health_trend(
         "data_points": trend,
         "count": len(trend),
     }
+
+
+@router.get("/health/summary")
+def get_agent_health_summary(
+    current_user: dict = Depends(get_current_user),
+    service: HealthService = Depends(get_health_service),
+):
+    """获取团队健康概览（平均/最佳/最差/分布）。"""
+    summary = service.get_summary()
+    return summary
+
+
+@router.get("/health/ranking")
+def get_agent_health_ranking(
+    current_user: dict = Depends(get_current_user),
+    service: HealthService = Depends(get_health_service),
+):
+    """获取 Agent 健康度排名。"""
+    ranking = service.get_ranking()
+    return {"ranking": ranking, "count": len(ranking)}
+
+
+@router.get("/{agent_id}/health/breakdown")
+def get_agent_health_breakdown(
+    agent_id: str,
+    current_user: dict = Depends(get_current_user),
+    service: HealthService = Depends(get_health_service),
+):
+    """获取 Agent 健康度 5 维详细分解。"""
+    breakdown = service.get_health_breakdown(agent_id)
+    if not breakdown:
+        raise HTTPException(404, f"Agent {agent_id} 不存在")
+    return breakdown

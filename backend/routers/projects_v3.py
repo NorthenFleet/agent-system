@@ -1095,6 +1095,41 @@ def create_project_task(project_id: str, req: TaskCreate):
     return task
 
 
+@router.delete("/projects/{project_id}/tasks/{task_id}")
+def delete_project_task(project_id: str, task_id: str):
+    deleted = project_manager.delete_task(project_id, task_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    try:
+        from database import get_session
+        from services.task_service import TaskService
+
+        db = get_session()
+        try:
+            TaskService(db).delete_task_by_task_id(f"v3-{project_id}-{task_id}")
+        finally:
+            db.close()
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).warning("V3 project task delete sync failed: %s", exc)
+
+    try:
+        queue = _load_dispatch_queue()
+        before = len(queue.get("tasks", []))
+        queue["tasks"] = [
+            row for row in queue.get("tasks", [])
+            if not (row.get("project_id") == project_id and row.get("task_id") == task_id)
+        ]
+        if len(queue["tasks"]) != before:
+            _save_dispatch_queue(queue)
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).warning("V3 project task queue cleanup failed: %s", exc)
+
+    return {"project_id": project_id, "task_id": task_id, "deleted": True}
+
+
 @router.put("/tasks/{task_id}")
 def update_task(task_id: str, req: TaskUpdate):
     task = project_manager.update_task(task_id, _model_dict(req, exclude_unset=True))

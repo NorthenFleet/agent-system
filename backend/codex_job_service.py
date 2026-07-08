@@ -3,6 +3,7 @@
 
 import json
 import os
+import shlex
 import signal
 import subprocess
 import threading
@@ -20,6 +21,14 @@ CODEX_PATH = os.getenv(
     "CODEX_PATH",
     "/opt/homebrew/bin:/opt/homebrew/Cellar/node/25.6.1_1/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
 )
+CODEX_RUNNER_MODE = os.getenv("CODEX_RUNNER_MODE", "local").strip().lower()
+CODEX_REMOTE_HOST = os.getenv("CODEX_REMOTE_HOST", "").strip()
+CODEX_REMOTE_USER = os.getenv("CODEX_REMOTE_USER", "").strip()
+CODEX_REMOTE_PORT = os.getenv("CODEX_REMOTE_PORT", "").strip()
+CODEX_REMOTE_REPO = os.getenv("CODEX_REMOTE_REPO", "").strip()
+CODEX_REMOTE_CODEX_BIN = os.getenv("CODEX_REMOTE_CODEX_BIN", "/opt/homebrew/bin/codex").strip()
+CODEX_REMOTE_PATH = os.getenv("CODEX_REMOTE_PATH", CODEX_PATH).strip()
+CODEX_REMOTE_SSH_KEY = os.getenv("CODEX_REMOTE_SSH_KEY", "").strip()
 
 
 DEVELOPMENT_AGENTS = {
@@ -128,19 +137,7 @@ class CodexJobService:
         final_file = os.path.join(DATA_DIR, f"{job_id}.final.md")
         log_file = os.path.join(DATA_DIR, f"{job_id}.log")
         prompt = self._build_prompt(agent_id, role, instruction, task_id)
-        command = [
-            CODEX_BIN,
-            "--ask-for-approval",
-            "never",
-            "exec",
-            "--cd",
-            repo_path,
-            "--sandbox",
-            "workspace-write",
-            "--output-last-message",
-            final_file,
-            prompt,
-        ]
+        command, stdin_prompt, runner_mode = self._build_job_command(job_id, repo_path, final_file, prompt)
         job = {
             "id": job_id,
             "agent_id": agent_id,
@@ -150,6 +147,8 @@ class CodexJobService:
             "repo": repo_path,
             "status": "queued",
             "command": command,
+            "stdin_prompt": stdin_prompt,
+            "runner_mode": runner_mode,
             "created_at": now,
             "updated_at": now,
             "started_at": None,
@@ -259,7 +258,7 @@ class CodexJobService:
         job = self._find_job(job_id)
         if not job:
             return
-        if not os.path.isfile(CODEX_BIN):
+        if self._runner_mode() == "local" and not os.path.isfile(CODEX_BIN):
             job.update({
                 "status": "failed",
                 "error": f"Codex CLI 不存在：{CODEX_BIN}",
@@ -281,9 +280,13 @@ class CodexJobService:
         self._append_log(job_id, f"[codex-runner] start {job_id}\n[codex-runner] repo={job['repo']}\n")
 
         try:
+            process_cwd = job["repo"]
+            if job.get("runner_mode") == "ssh":
+                process_cwd = DEFAULT_REPO if os.path.isdir(DEFAULT_REPO) else os.path.dirname(__file__)
             proc = subprocess.Popen(
                 job["command"],
-                cwd=job["repo"],
+                cwd=process_cwd,
+                stdin=subprocess.PIPE if job.get("stdin_prompt") else None,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
@@ -293,6 +296,9 @@ class CodexJobService:
             )
             self._processes[job_id] = proc
             assert proc.stdout is not None
+            if job.get("stdin_prompt") and proc.stdin:
+                proc.stdin.write(str(job["stdin_prompt"]))
+                proc.stdin.close()
             for line in proc.stdout:
                 self._append_log(job_id, line)
             exit_code = proc.wait()
@@ -302,7 +308,7 @@ class CodexJobService:
                 job["status"] = "succeeded" if exit_code == 0 else "failed"
                 job["finished_at"] = self._now()
                 job["updated_at"] = job["finished_at"]
-                job["summary"] = self._read_final(job.get("final_file"))
+                job["summary"] = self._read_final(job.get("final_file")) or self._read_remote_final_from_log(job_id)
                 if exit_code != 0 and not job["error"]:
                     job["error"] = f"Codex CLI exited with {exit_code}"
                 self._replace_job(job)
@@ -335,6 +341,60 @@ class CodexJobService:
             "用户任务：",
             instruction.strip(),
         ])
+
+    def _runner_mode(self) -> str:
+        return "ssh" if CODEX_RUNNER_MODE in {"ssh", "remote"} else "local"
+
+    def _remote_target(self) -> str:
+        if not CODEX_REMOTE_HOST:
+            raise ValueError("CODEX_REMOTE_HOST is required when CODEX_RUNNER_MODE=ssh")
+        return f"{CODEX_REMOTE_USER}@{CODEX_REMOTE_HOST}" if CODEX_REMOTE_USER else CODEX_REMOTE_HOST
+
+    def _build_job_command(self, job_id: str, repo_path: str, final_file: str, prompt: str) -> tuple[List[str], Optional[str], str]:
+        if self._runner_mode() != "ssh":
+            return [
+                CODEX_BIN,
+                "--ask-for-approval",
+                "never",
+                "exec",
+                "--cd",
+                repo_path,
+                "--sandbox",
+                "workspace-write",
+                "--output-last-message",
+                final_file,
+                prompt,
+            ], None, "local"
+
+        remote_repo = os.path.abspath(os.path.expanduser(CODEX_REMOTE_REPO or repo_path))
+        remote_final = f"/tmp/openclaw-codex/{job_id}.final.md"
+        ssh_command = ["ssh", "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=accept-new"]
+        if CODEX_REMOTE_PORT:
+            ssh_command.extend(["-p", CODEX_REMOTE_PORT])
+        if CODEX_REMOTE_SSH_KEY:
+            ssh_command.extend(["-i", os.path.expanduser(CODEX_REMOTE_SSH_KEY)])
+
+        script = "\n".join([
+            "set +e",
+            "mkdir -p /tmp/openclaw-codex",
+            f"cd {shlex.quote(remote_repo)}",
+            f"export PATH={shlex.quote(CODEX_REMOTE_PATH)}",
+            (
+                f"{shlex.quote(CODEX_REMOTE_CODEX_BIN)} --ask-for-approval never exec "
+                f"--cd {shlex.quote(remote_repo)} --sandbox workspace-write "
+                f"--output-last-message {shlex.quote(remote_final)}"
+            ),
+            "rc=$?",
+            f"printf '\\n[openclaw-remote-final] {shlex.quote(remote_final)}\\n'",
+            f"if [ -f {shlex.quote(remote_final)} ]; then",
+            "  printf '\\n__OPENCLAW_FINAL_BEGIN__\\n'",
+            f"  cat {shlex.quote(remote_final)}",
+            "  printf '\\n__OPENCLAW_FINAL_END__\\n'",
+            "fi",
+            "exit $rc",
+        ])
+        ssh_command.extend([self._remote_target(), "bash", "-lc", shlex.quote(script)])
+        return ssh_command, prompt, "ssh"
 
     def _build_loop_stage_instruction(self, loop: Dict[str, Any], round_index: int, stage: str, feedback: str) -> str:
         stage_name = {
@@ -453,7 +513,7 @@ class CodexJobService:
         self._replace_loop(loop)
 
     def _public_job(self, job: Dict[str, Any]) -> Dict[str, Any]:
-        data = {key: value for key, value in job.items() if key not in {"command"}}
+        data = {key: value for key, value in job.items() if key not in {"command", "stdin_prompt"}}
         data["running"] = job.get("id") in self._processes
         return data
 
@@ -573,6 +633,14 @@ class CodexJobService:
             return ""
         with open(path, "r", encoding="utf-8", errors="replace") as f:
             return f.read()[:12000]
+
+    def _read_remote_final_from_log(self, job_id: str) -> str:
+        text = "".join(self._read_log(job_id))
+        start = text.rfind("__OPENCLAW_FINAL_BEGIN__")
+        end = text.rfind("__OPENCLAW_FINAL_END__")
+        if start == -1 or end == -1 or end <= start:
+            return ""
+        return text[start + len("__OPENCLAW_FINAL_BEGIN__"):end].strip()[:12000]
 
     def _now(self) -> str:
         return datetime.now(timezone.utc).isoformat()
