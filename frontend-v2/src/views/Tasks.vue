@@ -62,6 +62,7 @@
       style="width: 100%"
       @row-click="handleRowClick"
       highlight-current-row
+      class="desktop-table"
     >
       <el-table-column prop="task_id" label="ID" width="110" />
       <el-table-column prop="title" label="任务标题" min-width="220" show-overflow-tooltip />
@@ -113,6 +114,37 @@
       </el-table-column>
     </el-table>
 
+    <!-- 移动端卡片视图（≤768px 显示） -->
+    <div class="mobile-cards" v-if="tasksStore.tasks.length">
+      <SwipeTaskCard
+        v-for="task in tasksStore.tasks"
+        :key="task.task_id"
+        @edit="openEdit(task)"
+        @done="handleComplete(task.task_id)"
+        @delete="handleDelete(task.task_id)"
+      >
+        <div class="mobile-task-card" @click="handleRowClick(task)">
+          <div class="card-header">
+            <span class="task-id">{{ task.task_id }}</span>
+            <el-tag :type="getStatusType(task.status)" size="small">
+              {{ getStatusLabel(task.status) }}
+            </el-tag>
+            <el-tag :type="getPriorityType(task.priority)" size="small">
+              {{ getPriorityLabel(task.priority) }}
+            </el-tag>
+          </div>
+          <div class="card-title">{{ task.title }}</div>
+          <div class="card-meta">
+            <span class="meta-item">👤 {{ task.assignee || '未分配' }}</span>
+            <span class="meta-item">📂 {{ getSourceLabel(task.source) }}</span>
+          </div>
+          <div class="card-progress">
+            <el-progress :percentage="task.progress" :stroke-width="6" />
+          </div>
+        </div>
+      </SwipeTaskCard>
+    </div>
+
     <el-empty v-if="!tasksStore.tasks.length && !tasksStore.loading" description="暂无任务数据（API 待对接）" />
 
     <div class="pagination-wrapper">
@@ -145,6 +177,7 @@ import { Plus } from '@element-plus/icons-vue'
 import { useTasksStore, type Task } from '@/stores/tasks'
 import TaskDialog from '@/components/TaskDialog.vue'
 import TaskDetail from '@/components/TaskDetail.vue'
+import SwipeTaskCard from '@/components/SwipeTaskCard.vue'
 
 const tasksStore = useTasksStore()
 const showDialog = ref(false)
@@ -179,6 +212,14 @@ function handleRowClick(row: Task) {
 
 async function handleDelete(taskId: string) {
   await tasksStore.deleteTaskAction(taskId)
+}
+
+async function handleComplete(taskId: string) {
+  try {
+    await tasksStore.updateTaskAction(taskId, { status: 'done' })
+  } catch {
+    // 静默处理
+  }
 }
 
 function getStatusType(status: string): '' | 'success' | 'warning' | 'info' | 'danger' {
@@ -263,5 +304,103 @@ function getSourceLabel(source: string): string {
   display: flex;
   justify-content: flex-end;
   padding-top: 12px;
+}
+
+/* ─── 移动端任务卡片 ──────────────────────────────────────────── */
+.mobile-task-card {
+  padding: 12px;
+}
+
+.mobile-task-card .card-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.mobile-task-card .task-id {
+  font-size: 11px;
+  color: #909399;
+  font-family: monospace;
+}
+
+.mobile-task-card .card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1d2b3a;
+  margin-bottom: 8px;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.mobile-task-card .card-meta {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.mobile-task-card .meta-item {
+  font-size: 12px;
+  color: #606266;
+}
+
+.mobile-task-card .card-progress {
+  margin-top: 8px;
+}
+
+.mobile-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ─── 响应式：≤768px 隐藏表格，显示卡片 ─────────────────────── */
+@media (max-width: 768px) {
+  .desktop-table {
+    display: none;
+  }
+
+  .tasks-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .tasks-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .tasks-actions .el-input {
+    width: 100% !important;
+    margin-right: 0 !important;
+  }
+
+  .tasks-actions .el-select {
+    width: 100% !important;
+    margin-right: 0 !important;
+  }
+
+  .tasks-actions .el-button {
+    width: 100%;
+  }
+
+  .pagination-wrapper {
+    justify-content: center;
+    overflow-x: auto;
+  }
+}
+
+/* ─── 响应式：≤480px 进一步优化 ─────────────────────────────── */
+@media (max-width: 480px) {
+  .mobile-task-card .card-title {
+    font-size: 13px;
+  }
+
+  .mobile-task-card .card-header {
+    flex-wrap: wrap;
+  }
 }
 </style>

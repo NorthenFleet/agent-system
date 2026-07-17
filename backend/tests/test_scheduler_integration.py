@@ -191,8 +191,10 @@ class TestOpenClawTaskExecutor:
         assert "模拟执行" in result.output
 
     @pytest.mark.asyncio
-    async def test_execute_shell(self, executor):
+    async def test_execute_shell(self, executor, monkeypatch):
         """测试 shell 命令"""
+        monkeypatch.setattr("services.openclaw_task_executor.ALLOW_SCHEDULED_SHELL", True)
+        monkeypatch.setattr("services.openclaw_task_executor.SCHEDULED_SHELL_ALLOWLIST", {"echo"})
         result = await executor.execute(
             command="shell",
             command_args={"command": "echo hello_world"},
@@ -202,11 +204,13 @@ class TestOpenClawTaskExecutor:
         assert "hello_world" in result.output
 
     @pytest.mark.asyncio
-    async def test_execute_shell_failure(self, executor):
+    async def test_execute_shell_failure(self, executor, monkeypatch):
         """测试 shell 命令失败"""
+        monkeypatch.setattr("services.openclaw_task_executor.ALLOW_SCHEDULED_SHELL", True)
+        monkeypatch.setattr("services.openclaw_task_executor.SCHEDULED_SHELL_ALLOWLIST", {"false"})
         result = await executor.execute(
             command="shell",
-            command_args={"command": "exit 1"},
+            command_args={"command": "false"},
             timeout_seconds=10,
         )
         assert not result.success
@@ -403,28 +407,36 @@ class TestSchedulerEngineIntegration:
         """测试任务执行日志被正确写入"""
         service = SchedulerService()
 
+        # 备份任务和日志
+        orig_tasks = _load_json_override(SCHEDULED_TASKS_FILE, {"tasks": []})
         # 备份日志
         orig_logs = _load_json_override(EXECUTION_LOGS_FILE, {"logs": []})
 
         try:
+            _save_json_with_lock_override(SCHEDULED_TASKS_FILE, {
+                "managed_by": "test",
+                "last_updated": datetime.now().astimezone().isoformat(),
+                "tasks": [SAMPLE_ACTIVE_TASK],
+            })
             _save_json_with_lock_override(EXECUTION_LOGS_FILE, {"logs": []})
 
             # 模拟执行记录
             log_dict = service.record_execution(
-                task_id="TASK-006",  # 现有任务，command="echo test"
+                task_id="TEST-001",
                 trigger_type=TriggerType.manual,
             )
 
-            assert log_dict["task_id"] == "TASK-006"
+            assert log_dict["task_id"] == "TEST-001"
             assert log_dict["status"] in ("success", "failed")
             assert log_dict["duration_ms"] >= 0
 
             # 验证日志文件中有记录
             logs_data = _load_json_override(EXECUTION_LOGS_FILE, {"logs": []})
-            task_logs = [l for l in logs_data.get("logs", []) if l["task_id"] == "TASK-006"]
+            task_logs = [l for l in logs_data.get("logs", []) if l["task_id"] == "TEST-001"]
             assert len(task_logs) >= 1
 
         finally:
+            _save_json_with_lock_override(SCHEDULED_TASKS_FILE, orig_tasks)
             _save_json_with_lock_override(EXECUTION_LOGS_FILE, orig_logs)
 
     def test_scheduler_status_endpoint(self):

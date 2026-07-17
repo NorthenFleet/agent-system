@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 import os
 from sqlalchemy.orm import Session
 
-from models.v2_models import get_session
+from database import get_db
 from services.user_service import UserService
 from services.auth_service import (
     verify_password, hash_password, create_access_token, create_refresh_token,
@@ -24,7 +24,7 @@ from services.module_permission_service import get_user_module_keys, modules_for
 router = APIRouter(prefix="/api/v2/auth", tags=["v2-auth"])
 
 
-def get_user_service(db: Session = Depends(get_session)) -> UserService:
+def get_user_service(db: Session = Depends(get_db)) -> UserService:
     return UserService(db)
 
 

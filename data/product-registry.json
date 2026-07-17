@@ -1,0 +1,159 @@
+{
+  "schema": "openclaw.product-registry",
+  "version": 1,
+  "updated_at": "2026-07-13T16:47:57.343074+00:00",
+  "products": [
+    {
+      "id": "openclaw-3021",
+      "name": "OpenClaw 智能体系统",
+      "kind": "platform",
+      "category": "经营与协作中枢",
+      "description": "统一项目、智能体、知识、财务和专业产品运行关系。",
+      "version": "v3",
+      "status": "active",
+      "owner": "optimus",
+      "deployment": {
+        "device": "Mac mini",
+        "host": "192.168.31.41",
+        "port": 3021,
+        "public_url": "http://192.168.31.41:3021",
+        "mode": "standalone"
+      },
+      "capabilities": [
+        "项目中枢",
+        "智能体组织",
+        "知识管理",
+        "财务管理",
+        "产品编排"
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "ai-planning-5130",
+      "name": "无人集群任务规划系统",
+      "kind": "service",
+      "category": "任务规划",
+      "description": "管理想定、任务链、计划生成、监督评估和重新规划。",
+      "version": "v1",
+      "status": "active",
+      "owner": "optimus",
+      "deployment": {
+        "device": "Mac Pro",
+        "host": "192.168.31.144",
+        "port": 5130,
+        "public_url": "http://192.168.31.144:5130",
+        "mode": "standalone"
+      },
+      "capabilities": [
+        "想定加载",
+        "计划生成",
+        "任务链",
+        "闭环监督",
+        "重规划"
+      ],
+      "dependencies": [
+        {
+          "product_id": "one-sim",
+          "type": "runtime",
+          "description": "使用one-sim态势会话推进仿真"
+        }
+      ]
+    },
+    {
+      "id": "one-sim",
+      "name": "one-sim 无人集群仿真系统",
+      "kind": "simulation",
+      "category": "仿真执行",
+      "description": "提供权威世界状态、实体运动、观测、命令执行和实验数据。",
+      "version": "v1",
+      "status": "active",
+      "owner": "optimus",
+      "deployment": {
+        "device": "Mac Pro",
+        "host": "192.168.31.144",
+        "port": 5130,
+        "public_url": "http://192.168.31.144:5130",
+        "mode": "embedded-planning-situation"
+      },
+      "capabilities": [
+        "态势状态",
+        "仿真推进",
+        "观测契约",
+        "指令执行",
+        "训练数据"
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "manual-wargame",
+      "name": "手工纸质兵棋",
+      "kind": "offering",
+      "category": "兵棋产品",
+      "description": "面向规则验证、教学推演和快速原型的实体产品。",
+      "version": "prototype",
+      "status": "developing",
+      "owner": "待分配",
+      "deployment": {
+        "mode": "physical"
+      },
+      "capabilities": [
+        "规则验证",
+        "教学推演",
+        "快速原型"
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "digital-wargame",
+      "name": "电子化兵棋",
+      "kind": "offering",
+      "category": "兵棋产品",
+      "description": "规则引擎自动化、界面交互和多人协同产品。",
+      "version": "prototype",
+      "status": "developing",
+      "owner": "待分配",
+      "deployment": {
+        "mode": "planned"
+      },
+      "capabilities": [
+        "自动裁决",
+        "交互推演",
+        "多人协同"
+      ],
+      "dependencies": [
+        {
+          "product_id": "one-sim",
+          "type": "engine"
+        }
+      ]
+    },
+    {
+      "id": "intelligent-wargame",
+      "name": "智能兵棋",
+      "kind": "offering",
+      "category": "兵棋产品",
+      "description": "智能体参与推演、AI辅助决策和强化学习训练产品。",
+      "version": "planned",
+      "status": "planning",
+      "owner": "待分配",
+      "deployment": {
+        "mode": "planned"
+      },
+      "capabilities": [
+        "智能对抗",
+        "决策辅助",
+        "强化学习"
+      ],
+      "dependencies": [
+        {
+          "product_id": "ai-planning-5130",
+          "type": "planning"
+        },
+        {
+          "product_id": "one-sim",
+          "type": "simulation"
+        }
+      ]
+    }
+  ]
+}

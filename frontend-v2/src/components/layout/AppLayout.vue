@@ -31,9 +31,6 @@ const routeThemes: Record<string, { name: string; rgb: string }> = {
   '/agent-chat': { name: 'agent-chat', rgb: '88, 166, 255' },
   '/knowledge': { name: 'knowledge', rgb: '88, 166, 255' },
   '/tools': { name: 'tools', rgb: '88, 166, 255' },
-  '/skills': { name: 'tools', rgb: '88, 166, 255' },
-  '/scheduled': { name: 'tools', rgb: '88, 166, 255' },
-  '/devices': { name: 'monitoring', rgb: '88, 166, 255' },
   '/community': { name: 'community', rgb: '88, 166, 255' },
   '/intelligence': { name: 'intelligence', rgb: '88, 166, 255' },
   '/news-center': { name: 'news', rgb: '88, 166, 255' },
@@ -82,5 +79,24 @@ const themeStyle = computed(() => ({ '--view-rgb': activeTheme.value.rgb }))
   flex: 1;
   overflow-y: auto;
   padding: 20px;
+}
+
+@media (max-width: 640px) {
+  .app-layout {
+    display: block;
+  }
+
+  :deep(.sidebar) {
+    display: none;
+  }
+
+  .main-content {
+    width: 100vw;
+    height: 100vh;
+  }
+
+  .page-content {
+    padding: 10px;
+  }
 }
 </style>

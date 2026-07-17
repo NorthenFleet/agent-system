@@ -111,6 +111,13 @@ def task_complete_webhook(
         },
     )
 
+    # 触发自动化规则引擎 — task_completed
+    try:
+        from services.automation_engine import on_task_completed
+        on_task_completed(task)
+    except Exception:
+        pass  # 规则引擎异常不影响主流程
+
     return {
         "task_id": task_id,
         "agent_id": agent_id,

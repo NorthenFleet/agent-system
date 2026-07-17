@@ -17,36 +17,28 @@
       </el-input>
     </section>
 
+    <nav class="topic-tabs" aria-label="情报专题视图">
+      <el-tabs v-model="activeTopicTab">
+        <el-tab-pane label="情报态势" name="overview" />
+        <el-tab-pane label="2026 美加墨世界杯" name="world-cup-2026" />
+      </el-tabs>
+    </nav>
+
+    <WorldCup2026Topic v-if="activeTopicTab === 'world-cup-2026'" />
+
+    <template v-else>
     <section class="space-grid">
-      <article class="globe-panel">
-        <div class="globe-head">
-          <div>
-            <h2>空间态势地球</h2>
-            <p>橙色为长期情报专题，蓝色为新闻热点，绿色为 AIS 舰艇坐标，青色为航迹</p>
-          </div>
-          <div class="globe-tools">
-            <el-switch v-model="showAisLayer" size="small" active-text="舰艇" />
-            <el-switch v-model="showTrackLayer" size="small" active-text="航迹" />
-            <el-switch v-model="showNewsLayer" size="small" active-text="新闻" />
-            <el-tag :type="threeReady ? 'success' : 'warning'" effect="plain">
-              {{ threeReady ? '地球已加载' : globeStatus }}
-            </el-tag>
-          </div>
-        </div>
-        <div ref="globeContainer" class="globe-canvas">
-          <div v-if="!threeReady" class="globe-fallback">
-            <span>🌐</span>
-            <p>{{ globeStatus }}</p>
-          </div>
-        </div>
-        <div class="space-legend">
-          <span><i class="dot dot-domain"></i>长期情报</span>
-          <span><i class="dot dot-news"></i>新闻资讯</span>
-          <span><i class="dot dot-vessel"></i>AIS 舰艇</span>
-          <span><i class="line-sample"></i>航迹</span>
-          <span><i class="dot dot-active"></i>当前聚焦</span>
-        </div>
-      </article>
+      <IntelligenceGlobe
+        ref="globeRef"
+        v-model:show-vessels="showAisLayer"
+        v-model:show-tracks="showTrackLayer"
+        v-model:show-news="showNewsLayer"
+        v-model:show-events="showEventLayer"
+        :items="spatialItems"
+        :tracks="globeTracks"
+        :active-key="activeSpatialKey"
+        @select="focusSpatialItem"
+      />
 
       <aside class="linked-panel">
         <div class="section-head compact">
@@ -103,14 +95,148 @@
       <article class="metric-card">
         <span>空间点位</span>
         <strong>{{ spatialItems.length }}</strong>
-        <small>专题点位与新闻热点合并显示</small>
+        <small>专题、事件、舰艇与新闻统一显示</small>
       </article>
       <article class="metric-card">
         <span>联动新闻</span>
         <strong>{{ relatedNews.length }}</strong>
         <small>来自新闻资讯模块的位置数据</small>
       </article>
+      <article class="metric-card alert-metric">
+        <span>未处置预警</span>
+        <strong>{{ openAlertCount }}</strong>
+        <small>{{ filteredEvents.length }} 条空间情报事件</small>
+      </article>
     </section>
+
+    <section class="section-panel event-panel">
+      <div class="section-head">
+        <div>
+          <h2>空间情报事件</h2>
+          <p>把专题、AIS 航迹和人工判断沉淀为可定位、可分级、可处置的事件时间线</p>
+        </div>
+        <div class="event-actions">
+          <el-select v-model="eventSeverityFilter" size="small" aria-label="事件级别筛选">
+            <el-option label="全部级别" value="" />
+            <el-option label="紧急" value="critical" />
+            <el-option label="高" value="high" />
+            <el-option label="中" value="medium" />
+            <el-option label="低" value="low" />
+            <el-option label="信息" value="info" />
+          </el-select>
+          <el-select v-model="eventStatusFilter" size="small" aria-label="事件状态筛选">
+            <el-option label="全部状态" value="" />
+            <el-option label="待处置" value="open" />
+            <el-option label="监视中" value="monitoring" />
+            <el-option label="已解决" value="resolved" />
+          </el-select>
+          <el-button size="small" type="primary" @click="openEventDialog()">
+            <el-icon><Plus /></el-icon>
+            新增事件
+          </el-button>
+        </div>
+      </div>
+      <div v-if="filteredEvents.length" class="event-timeline">
+        <article
+          v-for="event in filteredEvents"
+          :key="event.id"
+          class="event-card"
+          :class="[`severity-${event.severity}`, { active: activeSpatialKey === `event:${event.id}` }]"
+          @click="focusEvent(event)"
+        >
+          <div class="event-marker"></div>
+          <div class="event-body">
+            <div class="event-title-line">
+              <div>
+                <el-tag size="small" :type="eventSeverityType(event.severity)" effect="plain">
+                  {{ eventSeverityLabel(event.severity) }}
+                </el-tag>
+                <span>{{ formatDate(event.occurredAt) }}</span>
+              </div>
+              <div class="event-card-actions">
+                <el-tag size="small" :type="eventStatusType(event.status)" effect="plain">
+                  {{ eventStatusLabel(event.status) }}
+                </el-tag>
+                <el-tooltip content="编辑事件">
+                  <el-button circle size="small" aria-label="编辑事件" @click.stop="openEventDialog(event)">
+                    <el-icon><Edit /></el-icon>
+                  </el-button>
+                </el-tooltip>
+              </div>
+            </div>
+            <h3>{{ event.title }}</h3>
+            <p>{{ event.summary || '暂无事件摘要' }}</p>
+            <div class="event-meta">
+              <span>{{ event.locationName }}</span>
+              <span v-if="event.topicName">专题：{{ event.topicName }}</span>
+              <span v-if="event.vesselName">目标：{{ event.vesselName }}</span>
+              <span>置信度 {{ Math.round(event.confidence * 100) }}%</span>
+              <span v-if="event.assigneeAgentId">处置：{{ event.assigneeAgentId }}</span>
+            </div>
+            <div class="event-footer">
+              <span>来源：{{ event.source }}</span>
+              <el-button
+                v-if="event.status !== 'resolved'"
+                size="small"
+                text
+                type="success"
+                @click.stop="resolveEvent(event)"
+              >标记已解决</el-button>
+            </div>
+          </div>
+        </article>
+      </div>
+      <el-empty v-else description="当前筛选条件下没有情报事件" :image-size="80" />
+    </section>
+
+    <el-dialog v-model="eventDialogOpen" :title="eventForm.id ? '编辑情报事件' : '新增情报事件'" width="760px">
+      <div class="event-form">
+        <el-input v-model="eventForm.title" placeholder="事件标题" />
+        <el-input v-model="eventForm.summary" type="textarea" :rows="3" placeholder="事件摘要与判断依据" />
+        <div class="event-form-row three">
+          <el-select v-model="eventForm.severity" placeholder="严重级别">
+            <el-option label="紧急" value="critical" />
+            <el-option label="高" value="high" />
+            <el-option label="中" value="medium" />
+            <el-option label="低" value="low" />
+            <el-option label="信息" value="info" />
+          </el-select>
+          <el-select v-model="eventForm.status" placeholder="处置状态">
+            <el-option label="待处置" value="open" />
+            <el-option label="监视中" value="monitoring" />
+            <el-option label="已解决" value="resolved" />
+          </el-select>
+          <el-input v-model="eventForm.category" placeholder="事件类型" />
+        </div>
+        <div class="event-form-row">
+          <el-select v-model="eventForm.topicId" clearable placeholder="关联专题">
+            <el-option v-for="topic in domains" :key="topic.id" :label="topic.name" :value="topic.id" />
+          </el-select>
+          <el-select v-model="eventForm.vesselId" clearable placeholder="关联 AIS 舰艇">
+            <el-option v-for="vessel in aisVessels" :key="vessel.id" :label="vessel.name" :value="vessel.id" />
+          </el-select>
+        </div>
+        <div class="event-form-row location">
+          <el-input v-model="eventForm.locationName" placeholder="位置名称" />
+          <el-input v-model.number="eventForm.lat" type="number" :min="-90" :max="90" step="0.0001" placeholder="纬度" />
+          <el-input v-model.number="eventForm.lng" type="number" :min="-180" :max="180" step="0.0001" placeholder="经度" />
+        </div>
+        <div class="event-form-row">
+          <el-input v-model="eventForm.occurredAt" type="datetime-local" placeholder="发生时间" />
+          <el-input v-model="eventForm.source" placeholder="来源" />
+        </div>
+        <div class="event-form-row">
+          <el-input v-model.number="eventForm.confidence" type="number" :min="0" :max="1" step="0.05" placeholder="置信度 0-1" />
+          <el-input v-model="eventForm.assigneeAgentId" placeholder="处置智能体 ID" />
+        </div>
+        <el-input v-model="eventForm.evidenceUrl" placeholder="证据链接（可选）" />
+      </div>
+      <template #footer>
+        <el-button v-if="eventForm.id" type="danger" plain @click="removeEvent">删除事件</el-button>
+        <el-button @click="eventDialogOpen = false">取消</el-button>
+        <el-button type="primary" :loading="eventSaving" @click="submitEvent">保存</el-button>
+      </template>
+    </el-dialog>
 
     <section class="section-panel">
       <div class="section-head">
@@ -238,7 +364,13 @@
           <h2>专题情报库</h2>
           <p>每个专题都有独立的数据源、采集节奏、历史数据、空间范围和分析目标</p>
         </div>
-        <el-tag effect="plain">{{ filteredDomains.length }} 个专题</el-tag>
+        <div class="domain-actions">
+          <el-tag effect="plain">{{ filteredDomains.length }} 个专题</el-tag>
+          <el-button size="small" type="primary" @click="openTopicDialog()">
+            <el-icon><Plus /></el-icon>
+            新增专题
+          </el-button>
+        </div>
       </div>
 
       <div class="domain-grid">
@@ -257,9 +389,16 @@
                 <p>{{ domain.description }}</p>
               </div>
             </div>
-            <el-tag :type="statusType(domain.status)" size="small" effect="plain">
-              {{ statusLabel(domain.status) }}
-            </el-tag>
+            <div class="card-status-actions">
+              <el-tag :type="statusType(domain.status)" size="small" effect="plain">
+                {{ statusLabel(domain.status) }}
+              </el-tag>
+              <el-tooltip content="编辑专题">
+                <el-button circle size="small" aria-label="编辑专题" @click.stop="openTopicDialog(domain)">
+                  <el-icon><Edit /></el-icon>
+                </el-button>
+              </el-tooltip>
+            </div>
           </div>
 
           <div class="domain-meta">
@@ -284,6 +423,39 @@
         </article>
       </div>
     </section>
+
+    <el-dialog v-model="topicDialogOpen" :title="topicForm.id ? '编辑情报专题' : '新增情报专题'" width="720px">
+      <div class="topic-form">
+        <div class="topic-form-title">
+          <el-input v-model="topicForm.icon" maxlength="4" placeholder="图标" />
+          <el-input v-model="topicForm.name" placeholder="专题名称" />
+          <el-select v-model="topicForm.status" placeholder="状态">
+            <el-option label="采集中" value="active" />
+            <el-option label="规划中" value="planning" />
+            <el-option label="暂停" value="paused" />
+          </el-select>
+        </div>
+        <el-input v-model="topicForm.description" type="textarea" :rows="2" placeholder="专题说明" />
+        <div class="topic-form-location">
+          <el-input v-model="topicForm.locationName" placeholder="位置名称，例如 上海 / 项目中心" />
+          <el-input v-model.number="topicForm.lat" type="number" :min="-90" :max="90" step="0.0001" placeholder="纬度" />
+          <el-input v-model.number="topicForm.lng" type="number" :min="-180" :max="180" step="0.0001" placeholder="经度" />
+        </div>
+        <div class="topic-form-records">
+          <el-input v-model="topicForm.records" placeholder="记录量显示，例如 12,480" />
+          <el-input v-model.number="topicForm.recordValue" type="number" :min="0" step="1" placeholder="记录数值" />
+          <el-input v-model="topicForm.updatedAt" placeholder="更新频率，例如 每日同步" />
+        </div>
+        <el-input v-model="topicSourcesText" placeholder="数据来源，使用逗号分隔" />
+        <el-input v-model="topicRelatedLocationsText" placeholder="关联新闻位置键，使用逗号分隔" />
+        <el-input v-model="topicForm.goal" type="textarea" :rows="3" placeholder="分析目标" />
+      </div>
+      <template #footer>
+        <el-button v-if="topicForm.id" type="danger" plain @click="removeTopic">删除专题</el-button>
+        <el-button @click="topicDialogOpen = false">取消</el-button>
+        <el-button type="primary" :loading="topicSaving" @click="submitTopic">保存</el-button>
+      </template>
+    </el-dialog>
 
     <section class="section-panel">
       <div class="section-head">
@@ -328,62 +500,53 @@
         </article>
       </div>
     </section>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
-import { ElMessage } from 'element-plus'
-import { Search } from '@element-plus/icons-vue'
+import { computed, onMounted, ref } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Edit, Plus, Search } from '@element-plus/icons-vue'
+import IntelligenceGlobe from '@/components/intelligence/IntelligenceGlobe.vue'
+import WorldCup2026Topic from '@/components/intelligence/WorldCup2026Topic.vue'
+import type { GlobeSpatialItem, GlobeSpatialType, GlobeTrack } from '@/globe/types'
 import {
   deleteAisSource,
+  deleteIntelligenceEvent,
+  deleteIntelligenceTopic,
   getAisVessels,
   getAisSources,
   getLocationNews,
+  getIntelligenceTopics,
+  getIntelligenceEvents,
   getNews,
   getNewsLocations,
   importAisPayload,
   saveAisSource,
+  saveIntelligenceTopic,
+  saveIntelligenceEvent,
   syncAisSource,
+  updateIntelligenceEventStatus,
   type AisImportResult,
   type AisSource,
   type AisTrackPoint as ApiAisTrackPoint,
   type AisVessel as ApiAisVessel,
+  type IntelligenceTopic,
+  type IntelligenceEvent,
   type NewsItem,
   type NewsLocation
 } from '@/api/openclaw'
 
 type DomainStatus = 'active' | 'planning' | 'paused'
-type SpatialType = 'domain' | 'news' | 'vessel'
+type SpatialType = GlobeSpatialType
 type VesselStatus = 'underway' | 'loitering' | 'silent' | 'unknown'
 
-interface IntelligenceDomain {
-  id: string
-  name: string
-  icon: string
-  description: string
-  status: DomainStatus
-  sources: string[]
-  records: string
-  recordValue: number
-  updatedAt: string
-  goal: string
-  lat: number
-  lng: number
-  locationName: string
-  relatedLocations: string[]
-}
+type IntelligenceDomain = IntelligenceTopic
 
-interface SpatialItem {
-  key: string
-  type: SpatialType
-  id: string
-  name: string
-  lat: number
-  lng: number
-  locationLabel: string
-  countLabel: string
-}
+const activeTopicTab = ref('overview')
+
+type SpatialItem = GlobeSpatialItem
 
 interface AisTrackPoint {
   timestamp?: string
@@ -404,16 +567,8 @@ interface AisVessel {
   track: AisTrackPoint[]
 }
 
-declare global {
-  interface Window {
-    THREE?: any
-  }
-}
-
 const keyword = ref('')
-const globeContainer = ref<HTMLElement | null>(null)
-const threeReady = ref(false)
-const globeStatus = ref('正在加载地球')
+const globeRef = ref<InstanceType<typeof IntelligenceGlobe> | null>(null)
 const activeSpatialKey = ref('domain:task-planning')
 const activeDomainId = ref('task-planning')
 const news = ref<NewsItem[]>([])
@@ -421,6 +576,7 @@ const newsLocations = ref<Record<string, NewsLocation>>({})
 const showAisLayer = ref(true)
 const showTrackLayer = ref(true)
 const showNewsLayer = ref(true)
+const showEventLayer = ref(true)
 const trackTimeIndex = ref(0)
 const activeVesselId = ref('ddg-172')
 const aisImportOpen = ref(false)
@@ -440,85 +596,19 @@ const sourceForm = ref<Partial<AisSource>>({
   poll_interval_seconds: 3600,
   enabled: true
 })
+const topicDialogOpen = ref(false)
+const topicSaving = ref(false)
+const topicSourcesText = ref('')
+const topicRelatedLocationsText = ref('')
+const topicForm = ref<Partial<IntelligenceDomain>>({})
+const intelligenceEvents = ref<IntelligenceEvent[]>([])
+const eventSeverityFilter = ref('')
+const eventStatusFilter = ref('')
+const eventDialogOpen = ref(false)
+const eventSaving = ref(false)
+const eventForm = ref<Partial<IntelligenceEvent>>({})
 
-let scene: any
-let camera: any
-let renderer: any
-let earth: any
-let animationId = 0
-let isDragging = false
-let previousMouse = { x: 0, y: 0 }
-let markerObjects: any[] = []
-let trackObjects: any[] = []
-let raycaster: any
-let mouse: any
-
-const domains = ref<IntelligenceDomain[]>([
-  {
-    id: 'task-planning',
-    name: '任务规划项目情报',
-    icon: '📋',
-    description: '长期记录任务规划、拆解、执行反馈和复盘结果',
-    status: 'active',
-    sources: ['项目管理', '任务列表', '智能体反馈', '复盘记录'],
-    records: '12,480',
-    recordValue: 12480,
-    updatedAt: '持续更新',
-    lat: 31.2304,
-    lng: 121.4737,
-    locationName: '上海 / 项目中心',
-    relatedLocations: ['shanghai', 'beijing'],
-    goal: '形成可追溯的项目规划知识库，支持项目经理复用历史任务拆解、风险识别和执行模式。'
-  },
-  {
-    id: 'naval-ais',
-    name: '海上军舰 AIS 情报',
-    icon: '🌊',
-    description: '围绕特定海域和目标舰船积累 AIS 轨迹与活动历史',
-    status: 'planning',
-    sources: ['AIS 数据', '海域网格', '舰船档案', '轨迹时间线'],
-    records: '待接入',
-    recordValue: 0,
-    updatedAt: '规划中',
-    lat: 23.5,
-    lng: 121.0,
-    locationName: '西太平洋 / 近海航道',
-    relatedLocations: ['tokyo', 'shenzhen', 'singapore'],
-    goal: '长期沉淀舰船位置、航速、航向、靠泊和异常轨迹，形成历史活动画像。'
-  },
-  {
-    id: 'knowledge-assets',
-    name: '知识资产情报',
-    icon: '🗂️',
-    description: '沉淀资料、文档、知识节点与业务主题之间的关系',
-    status: 'active',
-    sources: ['知识库', '文档撰写', '项目资料', '会议摘要'],
-    records: '3,260',
-    recordValue: 3260,
-    updatedAt: '每日同步',
-    lat: 39.9042,
-    lng: 116.4074,
-    locationName: '北京 / 知识节点',
-    relatedLocations: ['beijing'],
-    goal: '构建跨项目、跨智能体可复用的背景材料和证据链，减少重复调研。'
-  },
-  {
-    id: 'external-watch',
-    name: '外部环境专题',
-    icon: '🛰️',
-    description: '对指定行业、区域或组织进行长期跟踪，而不是一次性新闻浏览',
-    status: 'paused',
-    sources: ['RSS', '公开网页', '人工标注', '趋势摘要'],
-    records: '860',
-    recordValue: 860,
-    updatedAt: '暂停采集',
-    lat: 37.7749,
-    lng: -122.4194,
-    locationName: '旧金山 / 外部技术源',
-    relatedLocations: ['sanfrancisco', 'newyork', 'london'],
-    goal: '把每日碎片信息转化为长期趋势、实体画像和专题判断。'
-  }
-])
+const domains = ref<IntelligenceDomain[]>([])
 
 const pipeline = [
   { index: '01', name: '定义专题', description: '明确领域、目标对象、空间范围、采集边界、时间尺度和分析用途。' },
@@ -541,6 +631,28 @@ const filteredDomains = computed(() => {
     ...domain.sources
   ].some(value => value.toLowerCase().includes(key)))
 })
+
+const filteredEvents = computed(() => {
+  const key = keyword.value.trim().toLowerCase()
+  return intelligenceEvents.value.filter(event => {
+    if (eventSeverityFilter.value && event.severity !== eventSeverityFilter.value) return false
+    if (eventStatusFilter.value && event.status !== eventStatusFilter.value) return false
+    if (!key) return true
+    return [
+      event.title,
+      event.summary,
+      event.locationName,
+      event.source,
+      event.topicName || '',
+      event.vesselName || '',
+      event.assigneeAgentId || ''
+    ].some(value => value.toLowerCase().includes(key))
+  })
+})
+
+const openAlertCount = computed(() => intelligenceEvents.value.filter(event =>
+  event.status !== 'resolved' && ['high', 'critical'].includes(event.severity)
+).length)
 
 const spatialItems = computed<SpatialItem[]>(() => {
   const domainItems = filteredDomains.value.map(domain => ({
@@ -594,8 +706,28 @@ const spatialItems = computed<SpatialItem[]>(() => {
       }]
     })
     : []
-  return [...domainItems, ...vesselItems, ...newsItems]
+  const eventItems = showEventLayer.value
+    ? filteredEvents.value.map(event => ({
+      key: `event:${event.id}`,
+      type: 'event' as const,
+      id: event.id,
+      name: event.title,
+      lat: event.lat,
+      lng: event.lng,
+      locationLabel: `${event.locationName} · ${eventSeverityLabel(event.severity)}`,
+      countLabel: eventStatusLabel(event.status)
+    }))
+    : []
+  return [...domainItems, ...eventItems, ...vesselItems, ...newsItems]
 })
+
+const globeTracks = computed<GlobeTrack[]>(() => aisVessels.value.map(vessel => ({
+  id: vessel.id,
+  active: vessel.id === activeVesselId.value,
+  points: vessel.track
+    .slice(0, Math.min(trackTimeIndex.value + 1, vessel.track.length))
+    .map(point => ({ lat: point.lat, lng: point.lng, timestamp: point.timestamp }))
+})))
 
 const activeDomains = computed(() => domains.value.filter(domain => domain.status === 'active').length)
 const maxTrackIndex = computed(() => Math.max(0, Math.max(...aisVessels.value.map(vessel => vessel.track.length - 1))))
@@ -613,6 +745,13 @@ const relatedNews = computed(() => {
   }
   if (active.startsWith('vessel:')) {
     return news.value.filter(item => ['tokyo', 'shenzhen', 'singapore'].includes(item.location || '')).slice(0, 12)
+  }
+  if (active.startsWith('event:')) {
+    const event = intelligenceEvents.value.find(item => item.id === active.slice(6))
+    if (!event) return news.value.slice(0, 8)
+    const topic = domains.value.find(item => item.id === event.topicId)
+    if (topic) return news.value.filter(item => topic.relatedLocations.includes(item.location || '')).slice(0, 12)
+    return news.value.slice(0, 8)
   }
   const domain = domains.value.find(item => item.id === key)
   if (!domain) return news.value.slice(0, 8)
@@ -642,14 +781,47 @@ function statusType(status: DomainStatus) {
 
 function spatialTypeLabel(type: SpatialType) {
   if (type === 'domain') return '长期情报'
+  if (type === 'event') return '情报事件'
   if (type === 'vessel') return 'AIS 舰艇'
   return '新闻热点'
 }
 
 function spatialTypeTag(type: SpatialType) {
   if (type === 'domain') return 'warning'
+  if (type === 'event') return 'danger'
   if (type === 'vessel') return 'success'
   return 'primary'
+}
+
+function eventSeverityLabel(severity: IntelligenceEvent['severity']) {
+  return {
+    info: '信息',
+    low: '低',
+    medium: '中',
+    high: '高',
+    critical: '紧急'
+  }[severity]
+}
+
+function eventSeverityType(severity: IntelligenceEvent['severity']) {
+  if (severity === 'critical' || severity === 'high') return 'danger'
+  if (severity === 'medium') return 'warning'
+  if (severity === 'low') return 'success'
+  return 'info'
+}
+
+function eventStatusLabel(status: IntelligenceEvent['status']) {
+  return {
+    open: '待处置',
+    monitoring: '监视中',
+    resolved: '已解决'
+  }[status]
+}
+
+function eventStatusType(status: IntelligenceEvent['status']) {
+  if (status === 'open') return 'danger'
+  if (status === 'monitoring') return 'warning'
+  return 'success'
 }
 
 function vesselStatusLabel(status: VesselStatus) {
@@ -759,7 +931,6 @@ async function submitAisImport() {
     const result = await importAisPayload(content, aisImportFormat.value, aisImportSource.value || 'manual-import')
     aisImportResult.value = result
     await loadAisVessels()
-    renderMarkers()
     ElMessage.success(`AIS 导入完成：写入 ${result.inserted} 条，跳过 ${result.skipped} 条`)
   } catch (error) {
     console.error(error)
@@ -818,7 +989,6 @@ async function syncSource(source: AisSource) {
   try {
     const result = await syncAisSource(source.id)
     await Promise.all([loadAisSources(), loadAisVessels()])
-    renderMarkers()
     ElMessage.success(`同步完成：写入 ${result.inserted} 条，跳过 ${result.skipped} 条`)
   } catch (error) {
     console.error(error)
@@ -851,181 +1021,167 @@ async function loadSpatialNews() {
   }
 }
 
-function loadThree() {
-  if (window.THREE) return Promise.resolve(window.THREE)
-  return new Promise<any>((resolve, reject) => {
-    const existing = document.querySelector<HTMLScriptElement>('script[data-openclaw-three]')
-    if (existing) {
-      existing.addEventListener('load', () => resolve(window.THREE))
-      existing.addEventListener('error', reject)
-      return
-    }
-    const script = document.createElement('script')
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'
-    script.async = true
-    script.dataset.openclawThree = 'true'
-    script.onload = () => resolve(window.THREE)
-    script.onerror = reject
-    document.head.appendChild(script)
-  })
-}
-
-async function initGlobe() {
-  await nextTick()
-  if (!globeContainer.value) return
+async function loadTopics() {
   try {
-    const THREE = await loadThree()
-    if (!globeContainer.value || !THREE) throw new Error('THREE unavailable')
-    threeReady.value = true
-    globeStatus.value = '地球已加载'
-
-    scene = new THREE.Scene()
-    camera = new THREE.PerspectiveCamera(45, globeContainer.value.clientWidth / globeContainer.value.clientHeight, 0.1, 1000)
-    camera.position.z = 3
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
-    renderer.setPixelRatio(window.devicePixelRatio)
-    renderer.setSize(globeContainer.value.clientWidth, globeContainer.value.clientHeight)
-    globeContainer.value.appendChild(renderer.domElement)
-
-    const geometry = new THREE.SphereGeometry(1, 64, 64)
-    const textureLoader = new THREE.TextureLoader()
-    const material = new THREE.MeshPhongMaterial({
-      map: textureLoader.load('https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg'),
-      bumpMap: textureLoader.load('https://threejs.org/examples/textures/planets/earth_normal_2048.jpg'),
-      bumpScale: 0.04,
-      specularMap: textureLoader.load('https://threejs.org/examples/textures/planets/earth_specular_2048.jpg'),
-      specular: new THREE.Color(0x222222),
-      shininess: 5
-    })
-    earth = new THREE.Mesh(geometry, material)
-    scene.add(earth)
-
-    scene.add(new THREE.AmbientLight(0x586069, 1.15))
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.1)
-    directionalLight.position.set(2, 1, 3).normalize()
-    scene.add(directionalLight)
-
-    raycaster = new THREE.Raycaster()
-    mouse = new THREE.Vector2()
-    bindGlobeEvents()
-    renderMarkers()
-    animateGlobe()
+    const data = await getIntelligenceTopics()
+    domains.value = data.topics || []
+    if (!domains.value.some(topic => `domain:${topic.id}` === activeSpatialKey.value) && domains.value[0]) {
+      activeDomainId.value = domains.value[0].id
+      activeSpatialKey.value = `domain:${domains.value[0].id}`
+    }
   } catch (error) {
     console.error(error)
-    threeReady.value = false
-    globeStatus.value = '地球组件加载失败，显示空间点位列表'
+    ElMessage.warning('专题情报加载失败')
   }
 }
 
-function bindGlobeEvents() {
-  if (!renderer || !globeContainer.value) return
-  const canvas = renderer.domElement
-  canvas.addEventListener('mousedown', (event: MouseEvent) => {
-    isDragging = true
-    previousMouse = { x: event.clientX, y: event.clientY }
-  })
-  canvas.addEventListener('mousemove', (event: MouseEvent) => {
-    if (!isDragging || !earth) return
-    const deltaX = event.clientX - previousMouse.x
-    const deltaY = event.clientY - previousMouse.y
-    earth.rotation.y += deltaX * 0.005
-    earth.rotation.x += deltaY * 0.005
-    previousMouse = { x: event.clientX, y: event.clientY }
-  })
-  canvas.addEventListener('mouseup', handleGlobeClick)
-  canvas.addEventListener('mouseleave', () => { isDragging = false })
-  window.addEventListener('resize', resizeGlobe)
-}
-
-function animateGlobe() {
-  if (!renderer || !scene || !camera) return
-  animationId = requestAnimationFrame(animateGlobe)
-  if (!isDragging && earth) earth.rotation.y += 0.0005
-  renderer.render(scene, camera)
-}
-
-function resizeGlobe() {
-  if (!globeContainer.value || !renderer || !camera) return
-  camera.aspect = globeContainer.value.clientWidth / globeContainer.value.clientHeight
-  camera.updateProjectionMatrix()
-  renderer.setSize(globeContainer.value.clientWidth, globeContainer.value.clientHeight)
-}
-
-function latLngToVector3(lat: number, lng: number, radius = 1.035) {
-  const THREE = window.THREE
-  const phi = (90 - lat) * (Math.PI / 180)
-  const theta = (lng + 180) * (Math.PI / 180)
-  return new THREE.Vector3(
-    -radius * Math.sin(phi) * Math.cos(theta),
-    radius * Math.cos(phi),
-    radius * Math.sin(phi) * Math.sin(theta)
-  )
-}
-
-function renderMarkers() {
-  if (!earth || !window.THREE) return
-  markerObjects.forEach(marker => earth.remove(marker))
-  markerObjects = []
-  trackObjects.forEach(track => earth.remove(track))
-  trackObjects = []
-  if (showTrackLayer.value) {
-    aisVessels.value.forEach(vessel => addTrackLine(vessel))
+async function loadEvents() {
+  try {
+    const data = await getIntelligenceEvents({ limit: 200 })
+    intelligenceEvents.value = data.events || []
+  } catch (error) {
+    console.error(error)
+    ElMessage.warning('空间情报事件加载失败')
   }
-  spatialItems.value.forEach(item => addMarker(item))
 }
 
-function addMarker(item: SpatialItem) {
-  const THREE = window.THREE
-  const active = item.key === activeSpatialKey.value
-  const color = active ? 0xf78166 : item.type === 'domain' ? 0xffb020 : item.type === 'vessel' ? 0x39d98a : 0x58a6ff
-  const radius = item.type === 'vessel' ? 1.08 : active ? 1.07 : 1.035
-  const position = latLngToVector3(item.lat, item.lng, radius)
-  const geometry = new THREE.SphereGeometry(item.type === 'vessel' ? 0.04 : active ? 0.045 : 0.032, 16, 16)
-  const material = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: active ? 1 : 0.85 })
-  const marker = new THREE.Mesh(geometry, material)
-  marker.position.copy(position)
-  marker.userData = { spatialKey: item.key }
-  earth.add(marker)
-  markerObjects.push(marker)
-
-  const ringGeometry = new THREE.RingGeometry(active ? 0.055 : 0.04, active ? 0.075 : 0.058, 32)
-  const ringMaterial = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: active ? 0.65 : 0.34, side: THREE.DoubleSide })
-  const ring = new THREE.Mesh(ringGeometry, ringMaterial)
-  ring.position.copy(position)
-  ring.lookAt(new THREE.Vector3(0, 0, 0))
-  ring.userData = { spatialKey: item.key }
-  earth.add(ring)
-  markerObjects.push(ring)
+function localDateTimeValue(value = new Date()) {
+  const offset = value.getTimezoneOffset() * 60_000
+  return new Date(value.getTime() - offset).toISOString().slice(0, 16)
 }
 
-function addTrackLine(vessel: AisVessel) {
-  if (!window.THREE || !earth || vessel.track.length < 2) return
-  const THREE = window.THREE
-  const active = vessel.id === activeVesselId.value
-  const color = active ? 0x7ce7ff : 0x2bbbd8
-  const points = vessel.track
-    .slice(0, Math.min(trackTimeIndex.value + 1, vessel.track.length))
-    .map(point => latLngToVector3(point.lat, point.lng, active ? 1.065 : 1.052))
-  if (points.length < 2) return
-  const geometry = new THREE.BufferGeometry().setFromPoints(points)
-  const material = new THREE.LineBasicMaterial({ color, transparent: true, opacity: active ? 0.95 : 0.58 })
-  const line = new THREE.Line(geometry, material)
-  earth.add(line)
-  trackObjects.push(line)
+function openEventDialog(event?: IntelligenceEvent) {
+  const active = spatialItems.value.find(item => item.key === activeSpatialKey.value)
+  eventForm.value = event
+    ? { ...event, occurredAt: event.occurredAt.slice(0, 16) }
+    : {
+      title: '',
+      summary: '',
+      category: 'observation',
+      severity: 'medium',
+      status: 'open',
+      source: '人工研判',
+      occurredAt: localDateTimeValue(),
+      lat: active?.lat ?? 0,
+      lng: active?.lng ?? 0,
+      locationName: active?.locationLabel || '',
+      confidence: 0.5,
+      topicId: active?.type === 'domain' ? active.id : undefined,
+      vesselId: active?.type === 'vessel' ? active.id : undefined,
+      assigneeAgentId: 'perceptor'
+    }
+  eventDialogOpen.value = true
 }
 
-function handleGlobeClick(event: MouseEvent) {
-  isDragging = false
-  if (!renderer || !raycaster || !mouse || !camera || !globeContainer.value) return
-  const rect = renderer.domElement.getBoundingClientRect()
-  mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1
-  mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1
-  raycaster.setFromCamera(mouse, camera)
-  const hits = raycaster.intersectObjects(markerObjects)
-  const hit = hits.find((item: any) => item.object?.userData?.spatialKey)
-  if (hit?.object?.userData?.spatialKey) {
-    const item = spatialItems.value.find(row => row.key === hit.object.userData.spatialKey)
-    if (item) focusSpatialItem(item)
+async function submitEvent() {
+  if (!eventForm.value.title?.trim() || !eventForm.value.locationName?.trim()) {
+    ElMessage.warning('请填写事件标题和位置名称')
+    return
+  }
+  eventSaving.value = true
+  try {
+    const result = await saveIntelligenceEvent(eventForm.value)
+    await loadEvents()
+    eventDialogOpen.value = false
+    focusEvent(result.event)
+    ElMessage.success('情报事件已保存并更新到地球')
+  } catch (error) {
+    console.error(error)
+  } finally {
+    eventSaving.value = false
+  }
+}
+
+async function resolveEvent(event: IntelligenceEvent) {
+  try {
+    await updateIntelligenceEventStatus(event.id, 'resolved')
+    await loadEvents()
+    ElMessage.success('事件已标记为解决')
+  } catch (error) {
+    console.error(error)
+  }
+}
+
+async function removeEvent() {
+  if (!eventForm.value.id) return
+  try {
+    await ElMessageBox.confirm('删除后事件及其地球点位将同时移除。', '删除情报事件', {
+      type: 'warning',
+      confirmButtonText: '删除',
+      cancelButtonText: '取消'
+    })
+    await deleteIntelligenceEvent(eventForm.value.id)
+    eventDialogOpen.value = false
+    await loadEvents()
+    ElMessage.success('情报事件已删除')
+  } catch (error) {
+    if (error !== 'cancel' && error !== 'close') console.error(error)
+  }
+}
+
+function splitTopicValues(value: string) {
+  return value.split(/[,，\n]/).map(item => item.trim()).filter(Boolean)
+}
+
+function openTopicDialog(topic?: IntelligenceDomain) {
+  topicForm.value = topic
+    ? { ...topic }
+    : {
+      name: '',
+      icon: '📍',
+      description: '',
+      status: 'planning',
+      records: '0',
+      recordValue: 0,
+      updatedAt: '尚未更新',
+      goal: '',
+      lat: 0,
+      lng: 0,
+      locationName: ''
+    }
+  topicSourcesText.value = topic?.sources.join('，') || ''
+  topicRelatedLocationsText.value = topic?.relatedLocations.join('，') || ''
+  topicDialogOpen.value = true
+}
+
+async function submitTopic() {
+  if (!topicForm.value.name?.trim() || !topicForm.value.locationName?.trim()) {
+    ElMessage.warning('请填写专题名称和位置名称')
+    return
+  }
+  topicSaving.value = true
+  try {
+    const result = await saveIntelligenceTopic({
+      ...topicForm.value,
+      sources: splitTopicValues(topicSourcesText.value),
+      relatedLocations: splitTopicValues(topicRelatedLocationsText.value)
+    })
+    await loadTopics()
+    topicDialogOpen.value = false
+    focusDomain(result.topic)
+    ElMessage.success('情报专题已保存并更新到地球')
+  } catch (error) {
+    console.error(error)
+  } finally {
+    topicSaving.value = false
+  }
+}
+
+async function removeTopic() {
+  const topicId = topicForm.value.id
+  if (!topicId) return
+  try {
+    await ElMessageBox.confirm('删除后该专题点位将从地球和专题库中移除。', '删除情报专题', {
+      type: 'warning',
+      confirmButtonText: '删除',
+      cancelButtonText: '取消'
+    })
+    await deleteIntelligenceTopic(topicId)
+    topicDialogOpen.value = false
+    await loadTopics()
+    ElMessage.success('情报专题已删除')
+  } catch (error) {
+    if (error !== 'cancel' && error !== 'close') console.error(error)
   }
 }
 
@@ -1033,8 +1189,7 @@ function focusSpatialItem(item: SpatialItem) {
   activeSpatialKey.value = item.key
   activeDomainId.value = item.type === 'domain' ? item.id : ''
   activeVesselId.value = item.type === 'vessel' ? item.id : activeVesselId.value
-  rotateGlobeTo(item.lat, item.lng)
-  renderMarkers()
+  globeRef.value?.focus(item)
 }
 
 function focusDomain(domain: IntelligenceDomain) {
@@ -1079,25 +1234,21 @@ function focusVessel(vessel: AisVessel) {
   })
 }
 
-function rotateGlobeTo(lat: number, lng: number) {
-  if (!earth) return
-  earth.rotation.y = -lng * (Math.PI / 180) - Math.PI / 2
-  earth.rotation.x = (90 - lat) * (Math.PI / 180) * 0.28
+function focusEvent(event: IntelligenceEvent) {
+  focusSpatialItem({
+    key: `event:${event.id}`,
+    type: 'event',
+    id: event.id,
+    name: event.title,
+    lat: event.lat,
+    lng: event.lng,
+    locationLabel: `${event.locationName} · ${eventSeverityLabel(event.severity)}`,
+    countLabel: eventStatusLabel(event.status)
+  })
 }
 
 onMounted(async () => {
-  await Promise.all([loadSpatialNews(), loadAisVessels(), loadAisSources()])
-  await initGlobe()
-})
-
-watch(spatialItems, () => renderMarkers())
-watch([trackTimeIndex, showAisLayer, showTrackLayer, showNewsLayer], () => renderMarkers())
-
-onUnmounted(() => {
-  if (animationId) cancelAnimationFrame(animationId)
-  window.removeEventListener('resize', resizeGlobe)
-  if (renderer?.domElement?.parentNode) renderer.domElement.parentNode.removeChild(renderer.domElement)
-  renderer?.dispose?.()
+  await Promise.all([loadTopics(), loadEvents(), loadSpatialNews(), loadAisVessels(), loadAisSources()])
 })
 </script>
 
@@ -1115,10 +1266,10 @@ onUnmounted(() => {
 .domain-card,
 .vessel-card,
 .pipeline-card,
-.globe-panel,
 .linked-panel,
 .linked-card,
-.news-card {
+.news-card,
+.event-card {
   background: var(--card-bg);
   border: 1px solid var(--line-color);
   border-radius: 8px;
@@ -1133,7 +1284,6 @@ onUnmounted(() => {
 }
 
 .page-head h1,
-.globe-head h2,
 .section-head h2,
 .domain-card h3,
 .pipeline-card h3,
@@ -1147,7 +1297,6 @@ onUnmounted(() => {
 }
 
 .page-head p,
-.globe-head p,
 .section-head p,
 .title-wrap p,
 .analysis-block p,
@@ -1162,7 +1311,6 @@ onUnmounted(() => {
 }
 
 .page-head p,
-.globe-head p,
 .section-head p {
   margin: 6px 0 0;
   font-size: 13px;
@@ -1172,19 +1320,32 @@ onUnmounted(() => {
   width: 320px;
 }
 
+.topic-tabs {
+  padding: 0 16px;
+  background: var(--card-bg);
+  border: 1px solid var(--line-color);
+  border-radius: 8px;
+}
+
+.topic-tabs :deep(.el-tabs__header) {
+  margin: 0;
+}
+
+.topic-tabs :deep(.el-tabs__content) {
+  display: none;
+}
+
 .space-grid {
   display: grid;
   grid-template-columns: minmax(420px, 1.5fr) minmax(280px, 0.8fr);
   gap: 12px;
 }
 
-.globe-panel,
 .linked-panel,
 .section-panel {
   padding: 16px;
 }
 
-.globe-head,
 .section-head,
 .card-top,
 .news-line,
@@ -1194,100 +1355,24 @@ onUnmounted(() => {
   gap: 12px;
 }
 
-.globe-head,
 .section-head {
   align-items: flex-start;
   margin-bottom: 14px;
 }
 
-.globe-tools {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 8px 12px;
-  min-width: 260px;
-}
-
-.globe-head h2,
 .section-head h2 {
   font-size: 16px;
 }
 
-.section-head.compact {
-  margin-bottom: 10px;
-}
-
-.globe-canvas {
-  position: relative;
-  height: 420px;
-  overflow: hidden;
-  background: radial-gradient(circle at center, #162032 0%, #080b11 68%);
-  border: 1px solid rgba(255, 255, 255, 0.055);
-  border-radius: 8px;
-}
-
-.globe-canvas :deep(canvas) {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.globe-fallback {
-  position: absolute;
-  inset: 0;
+.domain-actions,
+.card-status-actions {
   display: flex;
   align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  color: var(--text-secondary);
+  gap: 8px;
 }
 
-.globe-fallback span {
-  font-size: 58px;
-}
-
-.space-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
-  margin-top: 10px;
-  color: var(--text-secondary);
-  font-size: 12px;
-}
-
-.dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  margin-right: 6px;
-  border-radius: 50%;
-}
-
-.dot-domain {
-  background: #ffb020;
-}
-
-.dot-news {
-  background: #58a6ff;
-}
-
-.dot-vessel {
-  background: #39d98a;
-}
-
-.dot-active {
-  background: #f78166;
-}
-
-.line-sample {
-  display: inline-block;
-  width: 18px;
-  height: 2px;
-  margin: 0 6px 3px 0;
-  background: #7ce7ff;
-  box-shadow: 0 0 8px rgba(124, 231, 255, 0.55);
-  vertical-align: middle;
+.section-head.compact {
+  margin-bottom: 10px;
 }
 
 .linked-list {
@@ -1364,7 +1449,7 @@ onUnmounted(() => {
 .metric-grid,
 .pipeline-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
 }
 
@@ -1383,6 +1468,147 @@ onUnmounted(() => {
 .metric-card strong {
   font-size: 24px;
   line-height: 1.1;
+}
+
+.alert-metric strong {
+  color: #f85149;
+}
+
+.event-actions,
+.event-card-actions,
+.event-title-line,
+.event-footer,
+.event-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.event-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.event-actions :deep(.el-select) {
+  width: 124px;
+}
+
+.event-timeline {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-left: 20px;
+}
+
+.event-timeline::before {
+  position: absolute;
+  top: 9px;
+  bottom: 9px;
+  left: 6px;
+  width: 1px;
+  background: var(--line-color);
+  content: '';
+}
+
+.event-card {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  padding: 13px 14px;
+  background: var(--card-bg-soft);
+  cursor: pointer;
+}
+
+.event-card.active {
+  border-color: var(--view-color-strong-border);
+  background: var(--view-color-panel);
+}
+
+.event-marker {
+  position: absolute;
+  top: 20px;
+  left: -19px;
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--card-bg);
+  border-radius: 50%;
+  background: #8b949e;
+}
+
+.severity-critical .event-marker,
+.severity-high .event-marker { background: #f85149; }
+.severity-medium .event-marker { background: #d29922; }
+.severity-low .event-marker { background: #3fb950; }
+
+.event-body {
+  min-width: 0;
+  width: 100%;
+}
+
+.event-title-line,
+.event-footer {
+  justify-content: space-between;
+}
+
+.event-title-line > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.event-title-line span,
+.event-meta,
+.event-footer {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.event-card h3 {
+  margin: 9px 0 0;
+  font-size: 15px;
+  letter-spacing: 0;
+}
+
+.event-card p {
+  margin: 6px 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.event-meta {
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.event-meta span:not(:last-child)::after {
+  margin-left: 8px;
+  color: var(--line-color);
+  content: '·';
+}
+
+.event-footer {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line-color);
+}
+
+.event-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.event-form-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.event-form-row.three,
+.event-form-row.location {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .domain-grid,
@@ -1530,6 +1756,30 @@ onUnmounted(() => {
   gap: 10px;
 }
 
+.topic-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.topic-form-title {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) 140px;
+  gap: 10px;
+}
+
+.topic-form-location {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 160px 160px;
+  gap: 10px;
+}
+
+.topic-form-records {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 160px minmax(0, 1fr);
+  gap: 10px;
+}
+
 .title-wrap {
   display: flex;
   align-items: flex-start;
@@ -1649,15 +1899,6 @@ onUnmounted(() => {
     grid-template-columns: 1fr;
   }
 
-  .globe-head {
-    flex-direction: column;
-  }
-
-  .globe-tools {
-    justify-content: flex-start;
-    min-width: 0;
-  }
-
   .linked-list {
     max-height: 260px;
   }
@@ -1704,8 +1945,19 @@ onUnmounted(() => {
   }
 
   .source-grid,
-  .source-form-row {
+  .source-form-row,
+  .topic-form-title,
+  .topic-form-location,
+  .topic-form-records,
+  .event-form-row,
+  .event-form-row.three,
+  .event-form-row.location {
     grid-template-columns: 1fr;
+  }
+
+  .event-actions {
+    width: 100%;
+    justify-content: flex-start;
   }
 }
 </style>

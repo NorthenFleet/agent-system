@@ -1,5 +1,7 @@
 """Knowledge system stack API: local Obsidian index + LightRAG + KAG."""
 
+from typing import Optional
+
 from pydantic import BaseModel
 from fastapi import APIRouter, Query
 
@@ -41,7 +43,7 @@ def query_knowledge_stack(payload: KnowledgeStackQuery):
 def get_knowledge_stack_graph(
     source: str = Query("local"),
     limit_edges: int = Query(260, ge=1, le=2000),
-    type: str | None = Query(None),
+    type: Optional[str] = Query(None),
 ):
     return knowledge_stack_manager.graph(source=source, limit_edges=limit_edges, node_type=type)
 

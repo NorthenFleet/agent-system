@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from models.v2_models import get_session
+from database import get_db
 from routers.auth_router import get_current_user, require_role
 from services.user_service import UserService
 from services.module_permission_service import (
@@ -34,7 +34,7 @@ def _load_user(db: Session, user_id: int):
 @router.get("/")
 def get_modules(
     _admin: dict = Depends(require_role("admin")),
-    db: Session = Depends(get_session),
+    db: Session = Depends(get_db),
 ):
     ensure_default_modules(db)
     modules = [module.to_dict() for module in list_modules(db)]
@@ -44,7 +44,7 @@ def get_modules(
 @router.get("/me")
 def get_my_modules(
     current: dict = Depends(get_current_user),
-    db: Session = Depends(get_session),
+    db: Session = Depends(get_db),
 ):
     user = _load_user(db, int(current["sub"]))
     modules = modules_for_user(db, user)
@@ -60,7 +60,7 @@ def get_my_modules(
 def get_user_modules(
     user_id: int,
     _admin: dict = Depends(require_role("admin")),
-    db: Session = Depends(get_session),
+    db: Session = Depends(get_db),
 ):
     user = _load_user(db, user_id)
     modules = modules_for_user(db, user)
@@ -76,7 +76,7 @@ def update_user_modules(
     user_id: int,
     req: UserModuleUpdateRequest,
     admin: dict = Depends(require_role("admin")),
-    db: Session = Depends(get_session),
+    db: Session = Depends(get_db),
 ):
     user = _load_user(db, user_id)
     keys = replace_user_modules(db, user, req.module_keys, granted_by=int(admin["sub"]))

@@ -13,7 +13,7 @@ from fastapi import APIRouter, HTTPException, Depends, Query
 from typing import Optional
 from sqlalchemy.orm import Session
 
-from models.v2_models import get_session
+from database import get_db
 from services.health_service import HealthService
 from routers.auth_router import get_current_user
 
@@ -27,7 +27,7 @@ router = APIRouter(
 )
 
 
-def get_health_service(db: Session = Depends(get_session)) -> HealthService:
+def get_health_service(db: Session = Depends(get_db)) -> HealthService:
     return HealthService(db)
 
 

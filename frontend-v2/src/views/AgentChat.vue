@@ -643,7 +643,16 @@ function formatTime(value: string) {
 async function scrollToBottom() {
   await nextTick()
   if (messagesEl.value) {
-    messagesEl.value.scrollTop = messagesEl.value.scrollHeight
+    // 优化: 使用 scrollIntoView 替代直接读写 scrollTop
+    // 之前: read scrollHeight → write scrollTop = Layout Thrashing
+    // 现在: scrollIntoView 由浏览器优化，避免强制 reflow
+    const container = messagesEl.value
+    const lastMsg = container.lastElementChild
+    if (lastMsg) {
+      lastMsg.scrollIntoView({ behavior: 'smooth', block: 'end' })
+    } else {
+      container.scrollTop = container.scrollHeight
+    }
   }
 }
 </script>

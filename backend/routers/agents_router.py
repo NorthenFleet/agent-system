@@ -3,6 +3,7 @@ V2 Agent 实时监控 API 路由 (Service 层重构版)
 
 所有端点通过 Service 调用，路由层仅负责请求解析和响应构造。
 API 路径和请求/响应格式保持不变（前端兼容）。
+集成 Redis 缓存（Sprint 5 P4）。
 
 POST /api/v2/agents/{id}/heartbeat   — Agent 心跳上报
 POST /api/v2/agents/{id}/dispatch    — Agent 任务派发（需 Admin）
@@ -18,9 +19,10 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone, timedelta
 from sqlalchemy.orm import Session
 
-from models.v2_models import get_session
+from database import get_db
 from services.agent_service import AgentService
 from services.task_service import TaskService
+from services.cache_service import cache_service
 from routers.auth_router import get_current_user, require_role
 from websocket_manager import manager as ws_manager
 
@@ -42,11 +44,11 @@ class HeartbeatRequest(BaseModel):
     metadata: Optional[Dict[str, Any]] = None
 
 
-def get_agent_service(db: Session = Depends(get_session)) -> AgentService:
+def get_agent_service(db: Session = Depends(get_db)) -> AgentService:
     return AgentService(db)
 
 
-def get_task_service(db: Session = Depends(get_session)) -> TaskService:
+def get_task_service(db: Session = Depends(get_db)) -> TaskService:
     return TaskService(db)
 
 
@@ -83,6 +85,9 @@ async def submit_heartbeat(
         "timestamp": datetime.now(timezone.utc).isoformat(),
     })
 
+    # 心跳更新后失效 agent 缓存
+    cache_service.invalidate_pattern("v2:agents:*")
+
     return {
         "success": True,
         "message": f"Agent {agent_id} 心跳已记录",
@@ -96,6 +101,11 @@ def get_live_agents(
     _user: dict = Depends(get_current_user),
     svc: AgentService = Depends(get_agent_service),
 ):
+    cache_key = "v2:agents:live"
+    cached = cache_service.get(cache_key)
+    if cached is not None:
+        return cached
+
     recent_hbs = svc.get_recent_heartbeats(minutes=HEARTBEAT_OFFLINE // 60 + 10)
 
     latest_map: Dict[str, Any] = {}
@@ -131,7 +141,9 @@ def get_live_agents(
             "metadata": hb.get("metadata") or {},
         })
 
-    return {"agents": agents, "total": len(agents)}
+    result = {"agents": agents, "total": len(agents)}
+    cache_service.set(cache_key, result, ttl=30)
+    return result
 
 
 @router.get("/{agent_id}/history")

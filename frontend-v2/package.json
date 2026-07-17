@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc -b && vite build",
+    "build": "npm run verify:entry && vue-tsc -b && vite build",
     "preview": "vite preview",
+    "verify:entry": "node scripts/verify-entry.mjs",
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage"
@@ -17,12 +18,14 @@
     "element-plus": "^2.14.2",
     "markdown-it": "^14.3.0",
     "pinia": "^3.0.4",
+    "three": "^0.183.2",
     "vue": "^3.5.38",
     "vue-echarts": "^8.0.1",
     "vue-router": "^4.6.4"
   },
   "devDependencies": {
     "@types/node": "^24.13.2",
+    "@types/three": "^0.183.1",
     "@vitejs/plugin-vue": "^6.0.7",
     "@vitest/coverage-v8": "^4.1.9",
     "@vue/test-utils": "^2.4.11",

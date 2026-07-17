@@ -8,11 +8,11 @@
 """
 
 import os
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-DEFAULT_SQLITE_PATH = os.path.join(os.path.dirname(__file__), "data", "task_plan_v1.db")
+DEFAULT_SQLITE_PATH = os.path.join(os.path.dirname(__file__), "data", "dashboard_v2.db")
 
 # 从环境变量读取数据库连接配置；未配置时使用本地 SQLite，保证看板自包含可运行。
 DATABASE_URL = os.getenv(
@@ -47,6 +47,54 @@ Base = declarative_base()
 _initialized = False
 
 
+def ensure_v2_schema_compatibility():
+    """Keep the existing SQLite store compatible with the current v2 ORM models."""
+    if not DATABASE_URL.startswith("sqlite"):
+        return
+
+    inspector = inspect(engine)
+    if "agents" not in inspector.get_table_names():
+        return
+
+    columns = {column["name"] for column in inspector.get_columns("agents")}
+    statements = []
+    if "agent_id" not in columns:
+        statements.append("ALTER TABLE agents ADD COLUMN agent_id VARCHAR(64)")
+    if "capabilities" not in columns:
+        statements.append("ALTER TABLE agents ADD COLUMN capabilities JSON DEFAULT '[]'")
+    if "model_name" not in columns:
+        statements.append("ALTER TABLE agents ADD COLUMN model_name VARCHAR(128)")
+    if "current_task" not in columns:
+        statements.append("ALTER TABLE agents ADD COLUMN current_task VARCHAR(500)")
+    if "avatar_url" not in columns:
+        statements.append("ALTER TABLE agents ADD COLUMN avatar_url VARCHAR(500)")
+    if "last_heartbeat" not in columns:
+        statements.append("ALTER TABLE agents ADD COLUMN last_heartbeat DATETIME")
+    if "last_heartbeat_at" not in columns:
+        statements.append("ALTER TABLE agents ADD COLUMN last_heartbeat_at DATETIME")
+
+    with engine.begin() as conn:
+        for statement in statements:
+            conn.execute(text(statement))
+        refreshed_columns = columns | {
+            statement.split(" ADD COLUMN ", 1)[1].split(" ", 1)[0]
+            for statement in statements
+            if " ADD COLUMN " in statement
+        }
+        if "agent_id" in refreshed_columns:
+            conn.execute(text("UPDATE agents SET agent_id = name WHERE agent_id IS NULL OR agent_id = ''"))
+        if "last_heartbeat_at" in columns and "last_heartbeat" not in columns:
+            conn.execute(text(
+                "UPDATE agents SET last_heartbeat = last_heartbeat_at "
+                "WHERE last_heartbeat IS NULL AND last_heartbeat_at IS NOT NULL"
+            ))
+        if "last_heartbeat" in columns and "last_heartbeat_at" not in columns:
+            conn.execute(text(
+                "UPDATE agents SET last_heartbeat_at = last_heartbeat "
+                "WHERE last_heartbeat_at IS NULL AND last_heartbeat IS NOT NULL"
+            ))
+
+
 def ensure_db_initialized():
     global _initialized
     if _initialized:
@@ -54,6 +102,7 @@ def ensure_db_initialized():
     from models.task_plan import Base as TaskPlanBase
 
     TaskPlanBase.metadata.create_all(bind=engine)
+    ensure_v2_schema_compatibility()
     _initialized = True
 
 
@@ -84,6 +133,7 @@ def init_db():
     
     # 创建所有表
     TaskPlanBase.metadata.create_all(bind=engine)
+    ensure_v2_schema_compatibility()
     print("数据库表已创建")
 
 

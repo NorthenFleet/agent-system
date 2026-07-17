@@ -15,6 +15,7 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 from path_config import data_path
+from services.project_composition import normalize_project_composition
 from unified_data_manager import unified_data_manager
 
 PROJECTS_FILE = data_path("projects-v3.json")
@@ -75,8 +76,17 @@ class ProjectManager:
     def _lock_path(self) -> str:
         return self.file_path + ".lock"
 
+    def _uses_unified_store(self) -> bool:
+        return os.path.abspath(self.file_path) == os.path.abspath(PROJECTS_FILE)
+
     def _load_unlocked(self) -> dict:
-        data = unified_data_manager.load_projects_document()
+        if self._uses_unified_store():
+            data = unified_data_manager.load_projects_document()
+        elif os.path.exists(self.file_path):
+            with open(self.file_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        else:
+            data = self._default_data()
         data.setdefault("version", 1)
         data.setdefault("last_updated", _now_iso())
         data.setdefault("projects", [])
@@ -85,7 +95,12 @@ class ProjectManager:
 
     def _save_unlocked(self, data: dict) -> None:
         data["last_updated"] = _now_iso()
-        unified_data_manager.save_projects_document(data)
+        if self._uses_unified_store():
+            unified_data_manager.save_projects_document(data)
+        else:
+            os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
+            with open(self.file_path, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
 
     def _with_data(self, mutator):
         os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
@@ -119,6 +134,7 @@ class ProjectManager:
         project_type = _normalize_project_type(project.get("project_type") or project.get("type") or _as_dict(project.get("context")).get("project_type"))
         project["project_type"] = project_type
         project["type"] = project_type
+        normalize_project_composition(project)
         project["document_spec"] = self._normalize_document_spec(project.get("document_spec"), project.get("id", ""), project.get("created_at") or _now_iso())
         if project.get("id"):
             project["design_doc"] = self._normalize_design_doc(
@@ -246,6 +262,8 @@ class ProjectManager:
                 "progress": float(payload.get("progress", 0) or 0),
                 "current_phase": payload.get("current_phase", "planning"),
                 "context": context,
+                "enabled_modules": _as_list(payload.get("enabled_modules")),
+                "product_bindings": _as_list(payload.get("product_bindings")),
                 "design_doc": self._normalize_design_doc(payload.get("design_doc"), project_id, now),
                 "document_spec": self._normalize_document_spec(payload.get("document_spec"), project_id, now),
                 "tasks": [],
@@ -271,7 +289,11 @@ class ProjectManager:
         return bool(self._with_data(mutate))
 
     def update_project(self, project_id: str, payload: dict) -> Optional[dict]:
-        allowed = {"name", "description", "status", "priority", "owner_agent", "current_phase", "context", "progress", "project_type", "type", "document_spec"}
+        allowed = {
+            "name", "description", "status", "priority", "owner_agent", "current_phase",
+            "context", "progress", "project_type", "type", "document_spec",
+            "enabled_modules", "product_bindings",
+        }
 
         def mutate(data):
             project = self._find_project_unlocked(data, project_id)
@@ -292,6 +314,19 @@ class ProjectManager:
             return project
 
         return self._with_data(mutate)
+
+    def migrate_composition_model(self) -> int:
+        """Persist idempotent module and product-binding migration for existing projects."""
+        def mutate(data):
+            changed = 0
+            for project in data.get("projects", []):
+                if normalize_project_composition(project):
+                    changed += 1
+            if changed:
+                data["version"] = max(int(data.get("version") or 1), 3)
+            return changed
+
+        return int(self._with_data(mutate))
 
 
     def get_design_doc(self, project_id: str) -> Optional[dict]:
@@ -1084,6 +1119,9 @@ class ProjectManager:
                 "summary": item.get("summary", ""),
                 "main_content": item.get("main_content") or item.get("content_brief", ""),
                 "key_points": _as_list(item.get("key_points")),
+                "outline_items": _as_list(item.get("outline_items")),
+                "subsections": _as_list(item.get("subsections")),
+                "required_assets": _as_list(item.get("required_assets")),
                 "images": _as_list(item.get("images")),
                 "status": item.get("status", "planning"),
                 "assigned_agent": item.get("assigned_agent", ""),
@@ -1107,10 +1145,17 @@ class ProjectManager:
             "document_type": payload.get("document_type", "报告"),
             "writing_goal": payload.get("writing_goal", ""),
             "target_audience": payload.get("target_audience", ""),
+            "edition": payload.get("edition", ""),
+            "expected_chapters": int(payload.get("expected_chapters") or 0),
             "outline": _as_list(payload.get("outline")),
             "chapters": chapters,
+            "target_structure": _as_dict(payload.get("target_structure")),
             "assets": assets,
             "references": _as_list(payload.get("references") or payload.get("reference_plan")),
+            "source_word": _as_dict(payload.get("source_word")),
+            "working_markdown": _as_dict(payload.get("working_markdown")),
+            "section_links": _as_list(payload.get("section_links")),
+            "sync_status": _as_dict(payload.get("sync_status")),
             "output_format": payload.get("output_format", "Markdown / Word / PDF"),
             "created_at": payload.get("created_at") or now,
             "updated_at": payload.get("updated_at") or now,

@@ -15,7 +15,8 @@ from sqlalchemy import func as sql_func
 from datetime import datetime, timezone, timedelta
 from typing import Optional, Dict, Any, List
 
-from models.v2_models import AgentHeartbeat, Agent, Task, AgentDispatch, get_session
+from database import get_db
+from models.v2_models import AgentHeartbeat, Agent, Task, AgentDispatch
 from routers.auth_router import get_current_user
 
 router = APIRouter(prefix="/api/v2/monitoring", tags=["v2-monitoring"])
@@ -51,7 +52,7 @@ def _get_service(db: Session) -> Session:
 def get_monitoring_agents(
     status_filter: Optional[str] = Query(None, description="状态筛选: online|timeout|offline|busy"),
     _user: dict = Depends(get_current_user),
-    db: Session = Depends(get_session),
+    db: Session = Depends(get_db),
 ):
     """
     基于 agent_heartbeats 表聚合，返回所有 Agent 最新心跳状态。
@@ -172,7 +173,7 @@ def get_monitoring_agents(
 @router.get("/stats")
 def get_monitoring_stats(
     _user: dict = Depends(get_current_user),
-    db: Session = Depends(get_session),
+    db: Session = Depends(get_db),
 ):
     """
     聚合任务统计、Agent 活跃度、系统健康指标。
@@ -266,10 +267,14 @@ def get_monitoring_stats(
         avg_cpu = round(sum(cpus) / len(cpus), 1) if cpus else None
         avg_memory = round(sum(mems) / len(mems), 1) if mems else None
 
-    # Agent 负载分布: 当前有 current_task 的 Agent 数量
+    # Agent 负载分布: 当前有 current_task 的近期心跳数量
     busy_agents = (
-        db.query(sql_func.count(Agent.id))
-        .filter(Agent.current_task != None, Agent.current_task != "")
+        db.query(sql_func.count(sql_func.distinct(AgentHeartbeat.agent_id)))
+        .filter(
+            AgentHeartbeat.current_task != None,
+            AgentHeartbeat.current_task != "",
+            AgentHeartbeat.heartbeat_at >= window_5m,
+        )
         .scalar() or 0
     )
 

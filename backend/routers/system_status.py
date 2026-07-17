@@ -9,9 +9,9 @@ import shutil
 
 from data_manager import data_manager
 from device_manager import device_manager
-from routers.system import START_TIME
 
 router = APIRouter(prefix="/api/system", tags=["system"])
+START_TIME = time.time()
 
 
 class NodeStatus(BaseModel):

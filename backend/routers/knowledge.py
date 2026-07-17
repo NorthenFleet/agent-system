@@ -1,4 +1,7 @@
 """Knowledge graph API backed by the Obsidian graph index."""
+from __future__ import annotations
+
+from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query
 
@@ -16,7 +19,7 @@ def get_knowledge_stats():
 @router.get("/graph")
 def get_knowledge_graph(
     limit_edges: int = Query(500, ge=1, le=5000),
-    node_type: str | None = None,
+    node_type: Optional[str] = None,
     mode: str = Query("concept_backbone", description="Graph mode: concept_backbone or full"),
 ):
     return knowledge_manager.graph(limit_edges=limit_edges, node_type=node_type, mode=mode)
@@ -24,8 +27,8 @@ def get_knowledge_graph(
 
 @router.get("/nodes")
 def list_knowledge_nodes(
-    type: str | None = Query(None, description="Filter by knowledge node type"),
-    q: str | None = Query(None, description="Substring search"),
+    type: Optional[str] = Query(None, description="Filter by knowledge node type"),
+    q: Optional[str] = Query(None, description="Substring search"),
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
 ):
@@ -49,7 +52,7 @@ def get_knowledge_tree(
 def search_knowledge(
     q: str = Query(..., min_length=1),
     limit: int = Query(20, ge=1, le=100),
-    type: str | None = Query(None, description="Filter by knowledge node type"),
+    type: Optional[str] = Query(None, description="Filter by knowledge node type"),
 ):
     return knowledge_manager.search(q=q, limit=limit, node_type=type)
 

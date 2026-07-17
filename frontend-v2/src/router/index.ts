@@ -36,8 +36,8 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'writing',
         name: 'Writing',
-        component: () => import('@/views/Projects.vue'),
-        meta: { workspaceMode: 'writing', module: 'writing' }
+        component: () => import('@/views/WritingWorkspace.vue'),
+        meta: { module: 'writing' }
       },
       {
         path: 'data-admin',
@@ -143,6 +143,12 @@ const routes: RouteRecordRaw[] = [
         name: 'Monitoring',
         component: () => import('@/views/Monitoring.vue'),
         meta: { module: 'monitoring' }
+      },
+      {
+        path: 'analytics',
+        name: 'Analytics',
+        component: () => import('@/views/Analytics.vue'),
+        meta: { module: 'analytics' }
       },
       {
         path: 'user-admin',

@@ -12,7 +12,6 @@ from services.task_service import TaskService
 from services.user_service import UserService
 from services.agent_service import AgentService
 from services.device_service import DeviceService
-from services.product_service import ProductService
 from services.sprint_service import SprintService
 from services.alert_service import AlertService
 from services.activity_service import ActivityService
@@ -24,7 +23,6 @@ __all__ = [
     "UserService",
     "AgentService",
     "DeviceService",
-    "ProductService",
     "SprintService",
     "AlertService",
     "ActivityService",

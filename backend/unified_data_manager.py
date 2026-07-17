@@ -53,7 +53,7 @@ DEFAULT_FRONTEND_PAGES = [
         "title": "仪表盘",
         "nav_label": "仪表盘",
         "view_key": "dashboard",
-        "source_file": "frontend/index-old.html",
+        "source_file": "frontend-v2/src/views/Dashboard.vue",
         "api_dependencies": ["/api/v3/agents/dashboard", "/api/devices", "/api/tasks", "/api/email/stats"],
         "status": "active",
         "sort_order": 10,
@@ -64,7 +64,7 @@ DEFAULT_FRONTEND_PAGES = [
         "title": "项目管理",
         "nav_label": "项目管理",
         "view_key": "tasks",
-        "source_file": "frontend/index-old.html",
+        "source_file": "frontend-v2/src/views/ProjectHub.vue",
         "api_dependencies": ["/api/v3/projects", "/api/v3/projects/{project_id}/iteration-context", "/api/v3/agents/status"],
         "status": "active",
         "sort_order": 20,
@@ -75,7 +75,7 @@ DEFAULT_FRONTEND_PAGES = [
         "title": "数据管理",
         "nav_label": "数据管理",
         "view_key": "dataAdmin",
-        "source_file": "frontend/index-old.html",
+        "source_file": "frontend-v2/src/views/DataAdmin.vue",
         "api_dependencies": ["/api/admin/data/overview", "/api/admin/data/sources", "/api/admin/data/pages"],
         "status": "active",
         "sort_order": 25,
@@ -86,7 +86,7 @@ DEFAULT_FRONTEND_PAGES = [
         "title": "知识库",
         "nav_label": "知识库",
         "view_key": "knowledge",
-        "source_file": "frontend/index-old.html",
+        "source_file": "frontend-v2/src/views/Knowledge.vue",
         "api_dependencies": ["/api/knowledge/stats", "/api/knowledge/nodes"],
         "status": "active",
         "sort_order": 30,
@@ -97,7 +97,7 @@ DEFAULT_FRONTEND_PAGES = [
         "title": "智能体团队",
         "nav_label": "智能体团队",
         "view_key": "agents",
-        "source_file": "frontend/index-old.html",
+        "source_file": "frontend-v2/src/views/Agents.vue",
         "api_dependencies": ["/api/v3/agents/dashboard", "/api/v3/agents/status", "/api/agents/{agent_id}/memory"],
         "status": "active",
         "sort_order": 40,
@@ -108,40 +108,40 @@ DEFAULT_FRONTEND_PAGES = [
         "title": "技能管理",
         "nav_label": "技能管理",
         "view_key": "skills",
-        "source_file": "frontend/index-old.html",
+        "source_file": "frontend-v2/src/views/Tools.vue",
         "api_dependencies": ["/api/v3/skills", "/api/v3/agents/{agent_id}/skills"],
-        "status": "active",
+        "status": "merged",
         "sort_order": 50,
-        "metadata": {"category": "agents"},
+        "metadata": {"category": "agents", "merged_into": "tools"},
     },
     {
         "id": "scheduled",
         "title": "定时任务",
         "nav_label": "定时任务",
         "view_key": "scheduled",
-        "source_file": "frontend/index-old.html",
+        "source_file": "frontend-v2/src/views/Tools.vue",
         "api_dependencies": ["/api/scheduled-tasks"],
-        "status": "active",
+        "status": "merged",
         "sort_order": 60,
-        "metadata": {"category": "operations"},
+        "metadata": {"category": "operations", "merged_into": "tools"},
     },
     {
         "id": "devices",
         "title": "设备清单",
         "nav_label": "设备清单",
         "view_key": "devices",
-        "source_file": "frontend/index-old.html",
+        "source_file": "frontend-v2/src/views/Monitoring.vue",
         "api_dependencies": ["/api/devices"],
-        "status": "active",
+        "status": "merged",
         "sort_order": 70,
-        "metadata": {"category": "operations"},
+        "metadata": {"category": "operations", "merged_into": "monitoring"},
     },
     {
         "id": "community",
         "title": "活动社区",
         "nav_label": "活动社区",
         "view_key": "bar",
-        "source_file": "frontend/index-old.html",
+        "source_file": "frontend-v2/src/views/Community.vue",
         "api_dependencies": ["/api/bar/messages", "/api/forum/threads"],
         "status": "active",
         "sort_order": 80,
@@ -152,7 +152,7 @@ DEFAULT_FRONTEND_PAGES = [
         "title": "新闻资讯",
         "nav_label": "新闻资讯",
         "view_key": "news",
-        "source_file": "frontend/index-old.html",
+        "source_file": "frontend-v2/src/views/News.vue",
         "api_dependencies": ["/api/news"],
         "status": "active",
         "sort_order": 90,
@@ -163,7 +163,7 @@ DEFAULT_FRONTEND_PAGES = [
         "title": "产品矩阵",
         "nav_label": "产品矩阵",
         "view_key": "products",
-        "source_file": "frontend/index-old.html",
+        "source_file": "frontend-v2/src/views/Products.vue",
         "api_dependencies": ["/api/v2/products"],
         "status": "active",
         "sort_order": 95,
@@ -180,11 +180,16 @@ class UnifiedDataManager:
     @contextmanager
     def connect(self):
         os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
-        conn = sqlite3.connect(self.db_path)
+        conn = sqlite3.connect(self.db_path, timeout=5)
         conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA foreign_keys=ON")
+        conn.execute("PRAGMA busy_timeout=5000")
         try:
             yield conn
             conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
         finally:
             conn.close()
 
@@ -264,6 +269,10 @@ class UnifiedDataManager:
                     chapter_plan TEXT NOT NULL DEFAULT '[]',
                     image_plan TEXT NOT NULL DEFAULT '[]',
                     reference_plan TEXT NOT NULL DEFAULT '[]',
+                    source_word TEXT NOT NULL DEFAULT '{}',
+                    working_markdown TEXT NOT NULL DEFAULT '{}',
+                    section_links TEXT NOT NULL DEFAULT '[]',
+                    sync_status TEXT NOT NULL DEFAULT '{}',
                     output_format TEXT,
                     updated_at TEXT,
                     FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE
@@ -501,10 +510,17 @@ class UnifiedDataManager:
             self._ensure_column(conn, "projects", "project_type", "TEXT NOT NULL DEFAULT 'software'")
             self._ensure_column(conn, "projects", "project_manager_agent", "TEXT")
             self._ensure_column(conn, "projects", "document_spec", "TEXT NOT NULL DEFAULT '{}'")
+            self._ensure_column(conn, "document_project_specs", "source_word", "TEXT NOT NULL DEFAULT '{}'")
+            self._ensure_column(conn, "document_project_specs", "working_markdown", "TEXT NOT NULL DEFAULT '{}'")
+            self._ensure_column(conn, "document_project_specs", "section_links", "TEXT NOT NULL DEFAULT '[]'")
+            self._ensure_column(conn, "document_project_specs", "sync_status", "TEXT NOT NULL DEFAULT '{}'")
             self._ensure_column(conn, "project_tasks", "type", "TEXT NOT NULL DEFAULT 'development'")
             self._ensure_column(conn, "project_tasks", "assignee_agent_id", "TEXT")
             self._ensure_column(conn, "project_tasks", "dependencies", "TEXT NOT NULL DEFAULT '[]'")
             self._ensure_column(conn, "project_tasks", "acceptance_criteria", "TEXT NOT NULL DEFAULT '[]'")
+            # Historical JSON imports used an empty string for an unbound asset.
+            # With foreign keys enabled the canonical representation must be NULL.
+            conn.execute("UPDATE document_assets SET section_id=NULL WHERE section_id='' ")
             self._ensure_agent_columns(conn)
             self._record_migration(conn, "001_unified_project_management", "Create unified project management tables")
             self._record_migration(conn, "002_storage_governance", "Create storage backups and data asset governance tables")
@@ -1679,15 +1695,23 @@ class UnifiedDataManager:
         projects = data.get("projects", [])
         logs = data.get("logs", [])
         with self.connect() as conn:
-            conn.execute("DELETE FROM project_logs")
-            conn.execute("DELETE FROM development_points")
-            conn.execute("DELETE FROM project_tasks")
-            conn.execute("DELETE FROM document_assets")
-            conn.execute("DELETE FROM document_sections")
-            conn.execute("DELETE FROM document_project_specs")
-            conn.execute("DELETE FROM software_project_specs")
-            conn.execute("DELETE FROM projects")
+            # Keep stable rows while the document-shaped compatibility API is in
+            # use. This prevents unrelated runs and audit records from observing
+            # an empty project store during each update.
+            conn.execute("BEGIN IMMEDIATE")
             task_count, point_count = self._insert_project_document(conn, projects, logs)
+            self._delete_missing_ids(
+                conn,
+                "projects",
+                "id",
+                [project.get("id") for project in projects if project.get("id")],
+            )
+            self._delete_missing_ids(
+                conn,
+                "project_logs",
+                "id",
+                [log.get("id") for log in logs if log.get("id")],
+            )
             self._refresh_sources(conn, {
                 "projects": len(projects),
                 "tasks": task_count,
@@ -1697,6 +1721,29 @@ class UnifiedDataManager:
                 "source_of_truth": "unified-sqlite",
             })
         return {"projects": len(projects), "tasks": task_count, "development_points": point_count, "logs": len(logs)}
+
+    def _delete_missing_ids(
+        self,
+        conn: sqlite3.Connection,
+        table_name: str,
+        id_column: str,
+        incoming_ids: list[str],
+        *,
+        scope_column: str = "",
+        scope_value: str = "",
+    ) -> None:
+        """Delete rows omitted from a complete document, optionally in one project."""
+        scope_sql = f" WHERE {scope_column}=?" if scope_column else ""
+        scope_params: list[Any] = [scope_value] if scope_column else []
+        if not incoming_ids:
+            conn.execute(f"DELETE FROM {table_name}{scope_sql}", scope_params)
+            return
+        placeholders = ",".join("?" for _ in incoming_ids)
+        connector = " AND " if scope_column else " WHERE "
+        conn.execute(
+            f"DELETE FROM {table_name}{scope_sql}{connector}{id_column} NOT IN ({placeholders})",
+            [*scope_params, *incoming_ids],
+        )
 
     def _insert_project_document(self, conn: sqlite3.Connection, projects: list[dict], logs: list[dict]) -> tuple[int, int]:
         task_count = 0
@@ -1714,6 +1761,21 @@ class UnifiedDataManager:
                 INSERT INTO projects
                 (id, name, description, project_type, status, priority, owner_agent, project_manager_agent, progress, current_phase, context, design_doc, document_spec, created_at, updated_at, source_id)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                    name=excluded.name,
+                    description=excluded.description,
+                    project_type=excluded.project_type,
+                    status=excluded.status,
+                    priority=excluded.priority,
+                    owner_agent=excluded.owner_agent,
+                    project_manager_agent=excluded.project_manager_agent,
+                    progress=excluded.progress,
+                    current_phase=excluded.current_phase,
+                    context=excluded.context,
+                    design_doc=excluded.design_doc,
+                    document_spec=excluded.document_spec,
+                    updated_at=excluded.updated_at,
+                    source_id=excluded.source_id
                 """,
                 (
                     project_id,
@@ -1734,11 +1796,20 @@ class UnifiedDataManager:
                     project.get("source_id") or "unified-sqlite",
                 ),
             )
+            # Typed project documents are scoped to one project, so replacing
+            # their derived rows does not disturb other projects or work runs.
+            conn.execute("DELETE FROM document_assets WHERE project_id=?", (project_id,))
+            conn.execute("DELETE FROM document_sections WHERE project_id=?", (project_id,))
+            conn.execute("DELETE FROM document_project_specs WHERE project_id=?", (project_id,))
+            conn.execute("DELETE FROM software_project_specs WHERE project_id=?", (project_id,))
             self._insert_typed_project_specs(conn, project_id, project_type, design_doc, document_spec, project.get("updated_at"))
+            incoming_task_ids: list[str] = []
+            incoming_point_ids: list[str] = []
             for task in project.get("tasks", []):
                 task_id = task.get("id")
                 if not task_id:
                     continue
+                incoming_task_ids.append(task_id)
                 task_count += 1
                 task_context = task.get("context") if isinstance(task.get("context"), dict) else {}
                 conn.execute(
@@ -1746,6 +1817,21 @@ class UnifiedDataManager:
                     INSERT INTO project_tasks
                     (id, project_id, type, title, description, assignee_agent, assignee_agent_id, status, priority, progress, dependencies, acceptance_criteria, context, result_summary, created_at, updated_at)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(id) DO UPDATE SET
+                        project_id=excluded.project_id,
+                        type=excluded.type,
+                        title=excluded.title,
+                        description=excluded.description,
+                        assignee_agent=excluded.assignee_agent,
+                        assignee_agent_id=excluded.assignee_agent_id,
+                        status=excluded.status,
+                        priority=excluded.priority,
+                        progress=excluded.progress,
+                        dependencies=excluded.dependencies,
+                        acceptance_criteria=excluded.acceptance_criteria,
+                        context=excluded.context,
+                        result_summary=excluded.result_summary,
+                        updated_at=excluded.updated_at
                     """,
                     (
                         task_id,
@@ -1770,12 +1856,26 @@ class UnifiedDataManager:
                     point_id = point.get("id")
                     if not point_id:
                         continue
+                    incoming_point_ids.append(point_id)
                     point_count += 1
                     conn.execute(
                         """
                         INSERT INTO development_points
                         (id, task_id, project_id, title, description, status, weight, assigned_agent, completion_evidence, checklist, context, completed_at, created_at, updated_at)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        ON CONFLICT(id) DO UPDATE SET
+                            task_id=excluded.task_id,
+                            project_id=excluded.project_id,
+                            title=excluded.title,
+                            description=excluded.description,
+                            status=excluded.status,
+                            weight=excluded.weight,
+                            assigned_agent=excluded.assigned_agent,
+                            completion_evidence=excluded.completion_evidence,
+                            checklist=excluded.checklist,
+                            context=excluded.context,
+                            completed_at=excluded.completed_at,
+                            updated_at=excluded.updated_at
                         """,
                         (
                             point_id,
@@ -1794,6 +1894,22 @@ class UnifiedDataManager:
                             point.get("updated_at"),
                         ),
                     )
+            self._delete_missing_ids(
+                conn,
+                "development_points",
+                "id",
+                incoming_point_ids,
+                scope_column="project_id",
+                scope_value=project_id,
+            )
+            self._delete_missing_ids(
+                conn,
+                "project_tasks",
+                "id",
+                incoming_task_ids,
+                scope_column="project_id",
+                scope_value=project_id,
+            )
         for log in logs:
             log_id = log.get("id")
             if not log_id:
@@ -1831,8 +1947,8 @@ class UnifiedDataManager:
             conn.execute(
                 """
                 INSERT OR REPLACE INTO document_project_specs
-                (project_id, document_type, writing_goal, target_audience, outline, chapter_plan, image_plan, reference_plan, output_format, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (project_id, document_type, writing_goal, target_audience, outline, chapter_plan, image_plan, reference_plan, source_word, working_markdown, section_links, sync_status, output_format, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     project_id,
@@ -1843,6 +1959,10 @@ class UnifiedDataManager:
                     _json(chapters),
                     _json(assets),
                     _json(document_spec.get("references", [])),
+                    _json(document_spec.get("source_word", {})),
+                    _json(document_spec.get("working_markdown", {})),
+                    _json(document_spec.get("section_links", [])),
+                    _json(document_spec.get("sync_status", {})),
                     document_spec.get("output_format", ""),
                     updated_at,
                 ),
@@ -1873,6 +1993,9 @@ class UnifiedDataManager:
                         chapter.get("assigned_agent") or chapter.get("assigned_agent_id", ""),
                         _json({
                             "key_points": chapter.get("key_points", []),
+                            "outline_items": chapter.get("outline_items", []),
+                            "subsections": chapter.get("subsections", []),
+                            "required_assets": chapter.get("required_assets", []),
                             "images": chapter.get("images", []),
                         }),
                     ),
@@ -1890,7 +2013,7 @@ class UnifiedDataManager:
                     (
                         asset.get("id") or f"{project_id}-asset-{index + 1}",
                         project_id,
-                        section_id,
+                        section_id or None,
                         asset.get("type", "image"),
                         asset.get("title", ""),
                         asset.get("description", ""),
@@ -2084,6 +2207,9 @@ class UnifiedDataManager:
                     "assigned_agent": row["assigned_agent_id"] or "",
                     "assigned_agent_id": row["assigned_agent_id"] or "",
                     "key_points": metadata.get("key_points", []),
+                    "outline_items": metadata.get("outline_items", []),
+                    "subsections": metadata.get("subsections", []),
+                    "required_assets": metadata.get("required_assets", []),
                     "images": metadata.get("images", []),
                 })
             assets = []
@@ -2103,7 +2229,7 @@ class UnifiedDataManager:
                     "order_index": metadata.get("order_index", 0),
                 })
             if spec_row:
-                project["document_spec"] = {
+                typed_spec = {
                     "document_type": spec_row["document_type"] or "",
                     "writing_goal": spec_row["writing_goal"] or "",
                     "target_audience": spec_row["target_audience"] or "",
@@ -2111,7 +2237,15 @@ class UnifiedDataManager:
                     "chapters": sections or _loads(spec_row["chapter_plan"], []),
                     "assets": assets or _loads(spec_row["image_plan"], []),
                     "references": _loads(spec_row["reference_plan"], []),
+                    "source_word": _loads(spec_row["source_word"], {}),
+                    "working_markdown": _loads(spec_row["working_markdown"], {}),
+                    "section_links": _loads(spec_row["section_links"], []),
+                    "sync_status": _loads(spec_row["sync_status"], {}),
                     "output_format": spec_row["output_format"] or "",
+                }
+                project["document_spec"] = {
+                    **(project.get("document_spec") if isinstance(project.get("document_spec"), dict) else {}),
+                    **typed_spec,
                 }
             return
 

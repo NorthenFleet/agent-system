@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from typing import Optional
 from sqlalchemy.orm import Session
 
-from models.v2_models import get_session
+from database import get_db
 from services.user_service import UserService
 from services.auth_service import hash_password, verify_password
 from routers.auth_router import get_current_user, require_role
@@ -19,7 +19,7 @@ from routers.auth_router import get_current_user, require_role
 router = APIRouter(prefix="/api/v2/users", tags=["v2-users"])
 
 
-def get_user_service(db: Session = Depends(get_session)) -> UserService:
+def get_user_service(db: Session = Depends(get_db)) -> UserService:
     return UserService(db)
 
 

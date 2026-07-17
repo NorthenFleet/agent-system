@@ -1,16 +1,20 @@
 """
 pytest 共享 fixture — 为所有后端集成测试提供共享的测试数据库和客户端。
 """
+import os
+import tempfile
 import pytest
 import httpx
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 
-from models.v2_models import Base, get_session
+from models.v2_models import Base
 from main import app
 
+# Test database must be set before any database import
+os.environ["DATABASE_URL"] = f"sqlite:///{tempfile.mktemp(suffix='_test.db')}"
 
-TEST_DATABASE_URL = "sqlite:///./test.db"
+TEST_DATABASE_URL = os.environ["DATABASE_URL"]
 
 
 @pytest.fixture(scope="session")
@@ -37,13 +41,14 @@ def db_session(test_session_factory):
 
 @pytest.fixture
 def test_client(db_session):
-    def override_get_session():
+    from database import get_db
+    def override_get_db():
         try:
             yield db_session
         finally:
             pass
 
-    app.dependency_overrides[get_session] = override_get_session
+    app.dependency_overrides[get_db] = override_get_db
     from fastapi.testclient import TestClient
     client = TestClient(app)
     yield client

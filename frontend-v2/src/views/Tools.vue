@@ -30,6 +30,11 @@
         <small>{{ enabledSkillCount }} 个已启用</small>
       </article>
       <article class="metric-card">
+        <span class="metric-label">网络采集</span>
+        <strong>{{ crawlerStatus?.ready ? '就绪' : '未连接' }}</strong>
+        <small>{{ crawlerStatus?.provider || 'Crawl4AI' }}</small>
+      </article>
+      <article class="metric-card">
         <span class="metric-label">定时任务</span>
         <strong>{{ tasks.length }}</strong>
         <small>{{ activeTaskCount }} 个运行中</small>
@@ -39,6 +44,59 @@
         <strong>{{ managerText }}</strong>
         <small>{{ managerRoleText }}</small>
       </article>
+    </section>
+
+    <section class="tool-section crawler-section">
+      <div class="section-head">
+        <div>
+          <h3>网络采集工具</h3>
+          <p>按需求抓取公开网页，输出适合智能体分析的 Markdown、链接与媒体信息</p>
+        </div>
+        <el-tag :type="crawlerStatus?.ready ? 'success' : 'danger'" effect="plain">
+          {{ crawlerStatus?.ready ? '服务就绪' : '服务未就绪' }}
+        </el-tag>
+      </div>
+
+      <div class="crawler-layout">
+        <div class="crawler-overview">
+          <div class="card-title">
+            <span class="icon-tile"><el-icon><Connection /></el-icon></span>
+            <div>
+              <h4>{{ crawlerStatus?.provider || 'Crawl4AI' }}</h4>
+              <span>GitHub 开源 · Apache-2.0 · 本机部署</span>
+            </div>
+          </div>
+          <p class="card-desc">{{ crawlerStatus?.message || '正在检查网络采集服务' }}</p>
+          <div class="meta-list">
+            <span>使用范围</span>
+            <strong>全部模块 · 全部智能体</strong>
+            <span>服务地址</span>
+            <strong>{{ crawlerStatus?.base_url || 'http://127.0.0.1:11235' }}</strong>
+            <span>项目仓库</span>
+            <a :href="crawlerStatus?.repository" target="_blank" rel="noreferrer">unclecode/crawl4ai</a>
+          </div>
+        </div>
+
+        <div class="crawler-console">
+          <el-input v-model="crawlerUrl" placeholder="输入要抓取的公开网页 URL" clearable />
+          <el-input v-model="crawlerQuery" placeholder="关注的问题（可选，用于提取相关内容）" clearable />
+          <div class="crawler-actions">
+            <span>试运行会直接调用本机 Crawl4AI，不生成兜底内容</span>
+            <el-button type="primary" :loading="crawlLoading" :disabled="!crawlerStatus?.ready" @click="runCrawler">
+              <el-icon><Promotion /></el-icon>
+              开始抓取
+            </el-button>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="crawlerResult" class="crawler-result">
+        <div class="result-head">
+          <strong>{{ crawlerResult.title || crawlerResult.url }}</strong>
+          <span>{{ crawlerResult.content_length.toLocaleString() }} 字符 · HTTP {{ crawlerResult.status_code || '-' }}</span>
+        </div>
+        <pre>{{ crawlerResult.content }}</pre>
+      </div>
     </section>
 
     <section class="tool-section">
@@ -139,8 +197,17 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Calendar, Refresh, Search, Tools } from '@element-plus/icons-vue'
-import { getScheduledTasks, getSkills, type ScheduledTask, type SkillItem } from '@/api/openclaw'
+import { Calendar, Connection, Promotion, Refresh, Search, Tools } from '@element-plus/icons-vue'
+import {
+  crawlWebPage,
+  getScheduledTasks,
+  getSkills,
+  getWebCrawlerStatus,
+  type ScheduledTask,
+  type SkillItem,
+  type WebCrawlerResult,
+  type WebCrawlerStatus
+} from '@/api/openclaw'
 
 const loading = ref(false)
 const keyword = ref('')
@@ -148,6 +215,11 @@ const skills = ref<SkillItem[]>([])
 const tasks = ref<ScheduledTask[]>([])
 const managedBy = ref('')
 const managerRole = ref('')
+const crawlerStatus = ref<WebCrawlerStatus | null>(null)
+const crawlerUrl = ref('')
+const crawlerQuery = ref('')
+const crawlLoading = ref(false)
+const crawlerResult = ref<WebCrawlerResult | null>(null)
 
 const normalizedKeyword = computed(() => keyword.value.trim().toLowerCase())
 
@@ -187,19 +259,40 @@ const managerRoleText = computed(() => managerRole.value || '暂无角色说明'
 async function loadAll() {
   loading.value = true
   try {
-    const [skillsData, scheduledData] = await Promise.all([
+    const [skillsData, scheduledData, crawlerData] = await Promise.all([
       getSkills(),
-      getScheduledTasks()
+      getScheduledTasks(),
+      getWebCrawlerStatus()
     ])
     skills.value = skillsData.skills || []
     tasks.value = scheduledData.tasks || []
     managedBy.value = scheduledData.managed_by || ''
     managerRole.value = scheduledData.manager_role || ''
+    crawlerStatus.value = crawlerData
   } catch (error) {
     console.error(error)
     ElMessage.error('工具管理数据加载失败')
   } finally {
     loading.value = false
+  }
+}
+
+async function runCrawler() {
+  const url = crawlerUrl.value.trim()
+  if (!url) {
+    ElMessage.warning('请输入要抓取的网页 URL')
+    return
+  }
+  crawlLoading.value = true
+  crawlerResult.value = null
+  try {
+    crawlerResult.value = await crawlWebPage(url, crawlerQuery.value.trim())
+    ElMessage.success('网页抓取完成')
+  } catch (error: any) {
+    console.error(error)
+    ElMessage.error(error?.response?.data?.detail || '网页抓取失败')
+  } finally {
+    crawlLoading.value = false
   }
 }
 
@@ -305,8 +398,64 @@ onMounted(loadAll)
 
 .metric-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
+}
+
+.crawler-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.8fr) minmax(360px, 1.2fr);
+  gap: 24px;
+}
+
+.crawler-overview,
+.crawler-console {
+  min-width: 0;
+}
+
+.crawler-console {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.crawler-actions,
+.result-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.crawler-actions span,
+.result-head span {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.meta-list a {
+  color: rgb(var(--view-rgb));
+  text-decoration: none;
+}
+
+.crawler-result {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line-color);
+}
+
+.crawler-result pre {
+  max-height: 360px;
+  margin: 12px 0 0;
+  padding: 12px;
+  overflow: auto;
+  color: var(--text-primary);
+  background: var(--page-bg);
+  border: 1px solid var(--line-color);
+  border-radius: 6px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font: 12px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 .metric-card,
@@ -479,6 +628,16 @@ onMounted(loadAll)
 
   .metric-grid {
     grid-template-columns: 1fr;
+  }
+
+  .crawler-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .crawler-actions,
+  .result-head {
+    align-items: stretch;
+    flex-direction: column;
   }
 }
 </style>

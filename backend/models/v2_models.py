@@ -1,22 +1,38 @@
+from __future__ import annotations
 """
-V2 数据库模型 — SQLite (替代 PostgreSQL)
-所有表结构与 Dev Spec 一致，仅替换方言
+V3 数据库模型 — SQLAlchemy ORM
+
+与 database.py 共享 Base 和 engine。
+模型定义：tasks, task_history, task_comments, users, task_templates,
+agent_heartbeats, agent_status_history, agent_sessions,
+devices, device_health_history,
+products, product_dependencies,
+alert_rules, alert_events,
+sprints, activity_logs.
+
+@author: 拉斐尔 (🐢 后端开发)
+@updated: 2026-07-03
 """
 from datetime import datetime, timezone
-from typing import Optional, List, Any, Dict
+from typing import Optional, List, Dict
 from sqlalchemy import (
     Column, Integer, String, Text, Float, Boolean, DateTime, ForeignKey,
-    CheckConstraint, Index, JSON, UniqueConstraint, create_engine
+    CheckConstraint, Index, JSON, UniqueConstraint
 )
-from sqlalchemy.orm import relationship, declarative_base, sessionmaker
-from sqlalchemy.sql import func
-import json
-import os
+from sqlalchemy.orm import relationship
 
-Base = declarative_base()
+from database import Base, SessionLocal, engine, get_db
 
-DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "dashboard_v2.db")
 
+def get_engine():
+    return engine
+
+
+def get_session():
+    return SessionLocal()
+
+
+# ==================== 用户与认证 ====================
 
 class User(Base):
     __tablename__ = 'users'
@@ -34,12 +50,6 @@ class User(Base):
     last_login_at = Column(DateTime, nullable=True)
 
     comments = relationship('TaskComment', back_populates='user')
-    module_grants = relationship(
-        'UserFeatureModule',
-        back_populates='user',
-        cascade='all, delete-orphan',
-        foreign_keys='UserFeatureModule.user_id',
-    )
 
     def to_dict(self):
         return {
@@ -54,72 +64,7 @@ class User(Base):
         }
 
 
-class FeatureModule(Base):
-    """前端功能模块/标签页主数据"""
-    __tablename__ = 'feature_modules'
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    module_key = Column(String(64), unique=True, nullable=False, index=True)
-    name = Column(String(128), nullable=False)
-    route_path = Column(String(128), nullable=False)
-    icon = Column(String(64), nullable=True)
-    description = Column(Text, default='')
-    sort_order = Column(Integer, nullable=False, default=100)
-    is_enabled = Column(Boolean, nullable=False, default=True)
-    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc),
-                        onupdate=lambda: datetime.now(timezone.utc))
-
-    user_grants = relationship('UserFeatureModule', back_populates='module', cascade='all, delete-orphan')
-
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'module_key': self.module_key,
-            'name': self.name,
-            'route_path': self.route_path,
-            'icon': self.icon,
-            'description': self.description,
-            'sort_order': self.sort_order,
-            'is_enabled': self.is_enabled,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
-        }
-
-
-class UserFeatureModule(Base):
-    """用户可访问功能模块授权"""
-    __tablename__ = 'user_feature_modules'
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
-    module_key = Column(String(64), ForeignKey('feature_modules.module_key', ondelete='CASCADE'), nullable=False, index=True)
-    can_view = Column(Boolean, nullable=False, default=True)
-    can_manage = Column(Boolean, nullable=False, default=False)
-    granted_by = Column(Integer, ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
-    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc),
-                        onupdate=lambda: datetime.now(timezone.utc))
-
-    user = relationship('User', foreign_keys=[user_id], back_populates='module_grants')
-    module = relationship('FeatureModule', back_populates='user_grants')
-
-    __table_args__ = (
-        UniqueConstraint('user_id', 'module_key', name='uq_user_feature_module'),
-    )
-
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'user_id': self.user_id,
-            'module_key': self.module_key,
-            'can_view': self.can_view,
-            'can_manage': self.can_manage,
-            'granted_by': self.granted_by,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
-        }
-
+# ==================== 任务管理 ====================
 
 class Task(Base):
     __tablename__ = 'tasks'
@@ -157,26 +102,18 @@ class Task(Base):
 
     def to_dict(self, include_comments=False, include_history=False):
         data = {
-            'id': self.id,
-            'task_id': self.task_id,
-            'title': self.title,
-            'description': self.description,
-            'type': self.type,
-            'status': self.status,
-            'priority': self.priority,
-            'assignee': self.assignee,
-            'progress': self.progress,
-            'source': self.source,
-            'sprint': self.sprint,
-            'dev_spec': self.dev_spec,
-            'created_by': self.created_by,
+            'id': self.id, 'task_id': self.task_id, 'title': self.title,
+            'description': self.description, 'type': self.type,
+            'status': self.status, 'priority': self.priority,
+            'assignee': self.assignee, 'progress': self.progress,
+            'source': self.source, 'sprint': self.sprint,
+            'dev_spec': self.dev_spec, 'created_by': self.created_by,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
             'completed_at': self.completed_at.isoformat() if self.completed_at else None,
             'due_date': self.due_date.isoformat() if self.due_date else None,
             'start_date': self.start_date.isoformat() if self.start_date else None,
-            'tags': self.tags or [],
-            'parent_task_id': self.parent_task_id,
+            'tags': self.tags or [], 'parent_task_id': self.parent_task_id,
             'comment_count': len(self.comments) if self.comments else 0,
         }
         if include_comments:
@@ -201,11 +138,8 @@ class TaskHistory(Base):
 
     def to_dict(self):
         return {
-            'id': self.id,
-            'task_id': self.task_id,
-            'field': self.field,
-            'old_value': self.old_value,
-            'new_value': self.new_value,
+            'id': self.id, 'task_id': self.task_id, 'field': self.field,
+            'old_value': self.old_value, 'new_value': self.new_value,
             'changed_by': self.changed_by,
             'changed_at': self.changed_at.isoformat() if self.changed_at else None,
         }
@@ -228,15 +162,80 @@ class TaskComment(Base):
 
     def to_dict(self):
         return {
-            'id': self.id,
-            'task_id': self.task_id,
+            'id': self.id, 'task_id': self.task_id,
             'user': {
                 'id': self.user.id if self.user else None,
                 'username': self.user.username if self.user else None,
                 'display_name': self.user.display_name if self.user else None,
             } if self.user else None,
-            'agent_id': self.agent_id,
-            'content': self.content,
+            'agent_id': self.agent_id, 'content': self.content,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class TaskTemplate(Base):
+    __tablename__ = 'task_templates'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(200), nullable=False)
+    description = Column(Text, default='')
+    template_data = Column(JSON, nullable=False)
+    category = Column(String(64), nullable=True, index=True)
+    is_system = Column(Boolean, nullable=False, default=False)
+    usage_count = Column(Integer, nullable=False, default=0)
+    created_by = Column(Integer, ForeignKey('users.id'), nullable=True)
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc),
+                        onupdate=lambda: datetime.now(timezone.utc))
+
+    def to_dict(self):
+        return {
+            'id': self.id, 'name': self.name, 'description': self.description,
+            'template_data': self.template_data or {},
+            'category': self.category,
+            'is_system': self.is_system,
+            'usage_count': self.usage_count,
+            'created_by': self.created_by,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+# ==================== Agent 监控 ====================
+
+class Agent(Base):
+    __tablename__ = 'agents'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    agent_id = Column(String(64), unique=True, nullable=True, index=True)
+    name = Column(String(128), nullable=False, unique=True, index=True)
+    role = Column(String(32), nullable=False)
+    team = Column(String(64), nullable=True, index=True)
+    status = Column(String(32), nullable=False, index=True)
+    current_task = Column(String(500), nullable=True)
+    avatar_url = Column(String(500), nullable=True)
+    capabilities = Column(JSON, default=list)
+    model_name = Column(String(128), nullable=True)
+    last_heartbeat = Column(DateTime, nullable=True)
+    last_heartbeat_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc),
+                        onupdate=lambda: datetime.now(timezone.utc))
+
+    heartbeats = None  # agent_id 类型不匹配 (agents.id=Integer, heartbeats.agent_id=VARCHAR)
+    # 心跳通过 agent_name 关联，在 Service 层查询
+
+    def to_dict(self):
+        return {
+            'id': self.id, 'agent_id': self.agent_id or self.name,
+            'name': self.name, 'role': self.role,
+            'team': self.team, 'status': self.status,
+            'current_task': self.current_task,
+            'avatar_url': self.avatar_url,
+            'capabilities': self.capabilities or [],
+            'model_name': self.model_name,
+            'last_heartbeat': self.last_heartbeat.isoformat() if self.last_heartbeat else None,
+            'last_heartbeat_at': self.last_heartbeat_at.isoformat() if self.last_heartbeat_at else None,
             'created_at': self.created_at.isoformat() if self.created_at else None,
         }
 
@@ -257,13 +256,9 @@ class AgentHeartbeat(Base):
 
     def to_dict(self):
         return {
-            'id': self.id,
-            'agent_id': self.agent_id,
-            'agent_name': self.agent_name,
-            'status': self.status,
-            'current_task': self.current_task,
-            'cpu_usage': self.cpu_usage,
-            'memory_usage': self.memory_usage,
+            'id': self.id, 'agent_id': self.agent_id, 'agent_name': self.agent_name,
+            'status': self.status, 'current_task': self.current_task,
+            'cpu_usage': self.cpu_usage, 'memory_usage': self.memory_usage,
             'task_queue_len': self.task_queue_len,
             'metadata': self.extra_data or {},
             'heartbeat_at': self.heartbeat_at.isoformat() if self.heartbeat_at else None,
@@ -283,178 +278,202 @@ class AgentStatusHistory(Base):
 
     def to_dict(self):
         return {
-            'id': self.id,
-            'agent_id': self.agent_id,
-            'from_status': self.from_status,
-            'to_status': self.to_status,
-            'current_task': self.current_task,
-            'triggered_by': self.triggered_by,
+            'id': self.id, 'agent_id': self.agent_id,
+            'from_status': self.from_status, 'to_status': self.to_status,
+            'current_task': self.current_task, 'triggered_by': self.triggered_by,
             'changed_at': self.changed_at.isoformat() if self.changed_at else None,
         }
 
 
-class TaskTemplate(Base):
-    __tablename__ = 'task_templates'
+class AgentSession(Base):
+    __tablename__ = 'agent_sessions'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(200), nullable=False)
-    description = Column(Text, default='')
-    template_data = Column(JSON, nullable=False)
-    created_by = Column(Integer, ForeignKey('users.id'), nullable=True)
-    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    agent_id = Column(String(64), nullable=False, index=True)
+    session_key = Column(String(128), nullable=False)
+    status = Column(String(32), default='active')
+    started_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    ended_at = Column(DateTime, nullable=True)
+    model = Column(String(128), nullable=True)
 
     def to_dict(self):
         return {
-            'id': self.id,
-            'name': self.name,
-            'description': self.description,
-            'template_data': self.template_data or {},
-            'created_by': self.created_by,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'id': self.id, 'agent_id': self.agent_id,
+            'session_key': self.session_key, 'status': self.status,
+            'started_at': self.started_at.isoformat() if self.started_at else None,
+            'ended_at': self.ended_at.isoformat() if self.ended_at else None,
+            'model': self.model,
         }
 
 
-class Agent(Base):
-    """智能体模型"""
-    __tablename__ = 'agents'
+# ==================== 设备管理 ====================
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    agent_id = Column(String(64), unique=True, nullable=False, index=True)
+class Device(Base):
+    __tablename__ = 'devices'
+
+    id = Column(String(64), primary_key=True)
     name = Column(String(128), nullable=False)
-    team = Column(String(64), nullable=True, index=True)
-    status = Column(String(32), nullable=False, default='offline', index=True)
-    role = Column(String(64), nullable=True)
+    ip = Column(String(64), nullable=False)
+    os = Column(String(64), default='Unknown')
+    role = Column(String(64), default='Unknown')
+    ports = Column(JSON, default=list)
+    specs = Column(JSON, default=dict)
+    assigned_agents = Column(JSON, default=list)
+    location = Column(String(255), nullable=True)
     description = Column(Text, default='')
-    avatar_url = Column(String(500), nullable=True)
-    current_task = Column(String(500), nullable=True)
-    last_heartbeat_at = Column(DateTime, nullable=True)
+    status = Column(String(32), default='unknown', index=True)
     created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc),
                         onupdate=lambda: datetime.now(timezone.utc))
 
+    health_history = relationship('DeviceHealthHistory', back_populates='device', cascade='all, delete-orphan')
+
     def to_dict(self):
         return {
-            'id': self.id,
-            'agent_id': self.agent_id,
-            'name': self.name,
-            'team': self.team,
+            'id': self.id, 'name': self.name, 'ip': self.ip,
+            'os': self.os, 'role': self.role,
+            'ports': self.ports or [], 'specs': self.specs or {},
+            'assigned_agents': self.assigned_agents or [],
+            'location': self.location, 'description': self.description,
             'status': self.status,
-            'role': self.role,
-            'description': self.description,
-            'avatar_url': self.avatar_url,
-            'current_task': self.current_task,
-            'last_heartbeat_at': self.last_heartbeat_at.isoformat() if self.last_heartbeat_at else None,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
         }
 
 
-class Device(Base):
-    """设备模型"""
-    __tablename__ = 'devices'
+class DeviceHealthHistory(Base):
+    __tablename__ = 'device_health_history'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(128), nullable=False, index=True)
-    device_type = Column(String(64), nullable=False, default='server')
-    hostname = Column(String(255), nullable=True)
-    ip_address = Column(String(45), nullable=True)
-    status = Column(String(32), nullable=False, default='offline', index=True)
-    os_info = Column(String(255), nullable=True)
-    cpu_cores = Column(Integer, nullable=True)
-    memory_gb = Column(Float, nullable=True)
-    disk_gb = Column(Float, nullable=True)
-    tags = Column(JSON, default=list)
-    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc),
-                        onupdate=lambda: datetime.now(timezone.utc))
-    last_seen_at = Column(DateTime, nullable=True)
+    device_id = Column(String(64), ForeignKey('devices.id', ondelete='CASCADE'), nullable=False, index=True)
+    cpu_usage = Column(Float, nullable=True)
+    memory_usage = Column(Float, nullable=True)
+    disk_usage = Column(Float, nullable=True)
+    status = Column(String(32), nullable=False)
+    checked_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), index=True)
+
+    device = relationship('Device', back_populates='health_history')
 
     def to_dict(self):
         return {
-            'id': self.id,
-            'name': self.name,
-            'device_type': self.device_type,
-            'hostname': self.hostname,
-            'ip_address': self.ip_address,
-            'status': self.status,
-            'os_info': self.os_info,
-            'cpu_cores': self.cpu_cores,
-            'memory_gb': self.memory_gb,
-            'disk_gb': self.disk_gb,
-            'tags': self.tags or [],
-            'last_seen_at': self.last_seen_at.isoformat() if self.last_seen_at else None,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'id': self.id, 'device_id': self.device_id,
+            'cpu_usage': self.cpu_usage, 'memory_usage': self.memory_usage,
+            'disk_usage': self.disk_usage, 'status': self.status,
+            'checked_at': self.checked_at.isoformat() if self.checked_at else None,
         }
 
 
+# ==================== 产品管理 ====================
+
 class Product(Base):
-    """产品/服务模型"""
     __tablename__ = 'products'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+    product_id = Column(String(64), unique=True, nullable=False, index=True)
     name = Column(String(200), nullable=False)
     description = Column(Text, default='')
-    status = Column(String(32), nullable=False, default='planning', index=True)
+    category = Column(String(64), nullable=True)
+    status = Column(String(32), default='active')
     owner = Column(String(64), nullable=True)
-    start_date = Column(DateTime, nullable=True)
-    target_date = Column(DateTime, nullable=True)
-    progress = Column(Integer, nullable=False, default=0)
-    tags = Column(JSON, default=list)
     created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc),
                         onupdate=lambda: datetime.now(timezone.utc))
 
-    __table_args__ = (
-        CheckConstraint('progress >= 0 AND progress <= 100', name='chk_product_progress'),
-    )
+    dependencies = relationship('ProductDependency', back_populates='product', cascade='all, delete-orphan')
 
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'name': self.name,
-            'description': self.description,
-            'status': self.status,
+    def to_dict(self, include_deps=False):
+        data = {
+            'id': self.id, 'product_id': self.product_id,
+            'name': self.name, 'description': self.description,
+            'category': self.category, 'status': self.status,
             'owner': self.owner,
-            'start_date': self.start_date.isoformat() if self.start_date else None,
-            'target_date': self.target_date.isoformat() if self.target_date else None,
-            'progress': self.progress,
-            'tags': self.tags or [],
             'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
         }
+        if include_deps:
+            data['dependencies'] = [d.to_dict() for d in self.dependencies]
+        return data
 
 
 class ProductDependency(Base):
-    """产品依赖关系"""
     __tablename__ = 'product_dependencies'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    from_product_id = Column(Integer, ForeignKey('products.id', ondelete='CASCADE'), nullable=False, index=True)
-    to_product_id = Column(Integer, ForeignKey('products.id', ondelete='CASCADE'), nullable=False, index=True)
-    dependency_type = Column(String(32), nullable=False, default='blocks')
-    description = Column(Text, default='')
+    product_id = Column(Integer, ForeignKey('products.id', ondelete='CASCADE'), nullable=False, index=True)
+    dependency_name = Column(String(200), nullable=False)
+    dependency_type = Column(String(32), nullable=False)
+    version = Column(String(64), nullable=True)
+    notes = Column(Text, default='')
+
+    product = relationship('Product', back_populates='dependencies')
+
+    def to_dict(self):
+        return {
+            'id': self.id, 'product_id': self.product_id,
+            'dependency_name': self.dependency_name,
+            'dependency_type': self.dependency_type,
+            'version': self.version, 'notes': self.notes,
+        }
+
+
+# ==================== 告警管理 ====================
+
+class AlertRule(Base):
+    __tablename__ = 'alert_rules'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(200), nullable=False)
+    target_type = Column(String(32), nullable=False)  # agent | device | task
+    target_id = Column(String(64), nullable=False)
+    condition = Column(JSON, nullable=False)
+    threshold = Column(Float, nullable=True)
+    enabled = Column(Boolean, nullable=False, default=True)
     created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
 
     def to_dict(self):
         return {
-            'id': self.id,
-            'from_product_id': self.from_product_id,
-            'to_product_id': self.to_product_id,
-            'dependency_type': self.dependency_type,
-            'description': self.description,
+            'id': self.id, 'name': self.name,
+            'target_type': self.target_type, 'target_id': self.target_id,
+            'condition': self.condition, 'threshold': self.threshold,
+            'enabled': self.enabled,
             'created_at': self.created_at.isoformat() if self.created_at else None,
         }
 
 
+class AlertEvent(Base):
+    __tablename__ = 'alert_events'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    rule_id = Column(Integer, ForeignKey('alert_rules.id', ondelete='SET NULL'), nullable=True)
+    target_type = Column(String(32), nullable=False)
+    target_id = Column(String(64), nullable=False)
+    severity = Column(String(20), default='warning')
+    message = Column(Text, nullable=False)
+    acknowledged = Column(Boolean, nullable=False, default=False)
+    triggered_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), index=True)
+    acknowledged_at = Column(DateTime, nullable=True)
+
+    def to_dict(self):
+        return {
+            'id': self.id, 'rule_id': self.rule_id,
+            'target_type': self.target_type, 'target_id': self.target_id,
+            'severity': self.severity, 'message': self.message,
+            'acknowledged': self.acknowledged,
+            'triggered_at': self.triggered_at.isoformat() if self.triggered_at else None,
+            'acknowledged_at': self.acknowledged_at.isoformat() if self.acknowledged_at else None,
+        }
+
+
+# ==================== Sprint 管理 ====================
+
 class Sprint(Base):
-    """Sprint 模型"""
     __tablename__ = 'sprints'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(200), nullable=False, unique=True, index=True)
-    description = Column(Text, default='')
-    start_date = Column(DateTime, nullable=False)
-    end_date = Column(DateTime, nullable=False)
-    status = Column(String(32), nullable=False, default='planning', index=True)
+    name = Column(String(200), nullable=False)
+    status = Column(String(32), nullable=False, default='planning', index=True)  # planning | running | completed | archived
+    start_date = Column(DateTime, nullable=True)
+    end_date = Column(DateTime, nullable=True)
     goal = Column(Text, default='')
     created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
 
@@ -462,162 +481,181 @@ class Sprint(Base):
         return {
             'id': self.id,
             'name': self.name,
-            'description': self.description,
+            'status': self.status,
             'start_date': self.start_date.isoformat() if self.start_date else None,
             'end_date': self.end_date.isoformat() if self.end_date else None,
-            'status': self.status,
             'goal': self.goal,
             'created_at': self.created_at.isoformat() if self.created_at else None,
         }
 
 
 class ActivityLog(Base):
-    """活动日志"""
     __tablename__ = 'activity_logs'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     agent_id = Column(String(64), nullable=False, index=True)
-    action = Column(String(128), nullable=False)
-    resource_type = Column(String(64), nullable=True)
-    resource_id = Column(String(64), nullable=True)
-    detail = Column(JSON, default=dict)
+    action = Column(String(64), nullable=False)
+    target_type = Column(String(32), nullable=True)
+    target_id = Column(String(64), nullable=True)
+    details = Column(JSON, default=dict)
     created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), index=True)
 
     def to_dict(self):
         return {
-            'id': self.id,
-            'agent_id': self.agent_id,
-            'action': self.action,
-            'resource_type': self.resource_type,
-            'resource_id': self.resource_id,
-            'detail': self.detail or {},
+            'id': self.id, 'agent_id': self.agent_id,
+            'action': self.action, 'target_type': self.target_type,
+            'target_id': self.target_id, 'details': self.details or {},
             'created_at': self.created_at.isoformat() if self.created_at else None,
         }
 
 
-class AgentSession(Base):
-    """Agent 会话记录"""
-    __tablename__ = 'agent_sessions'
+# ==================== 情报资讯 ====================
+
+class IntelligenceCategory(Base):
+    __tablename__ = 'intelligence_categories'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    agent_id = Column(String(64), nullable=False, index=True)
-    session_id = Column(String(128), unique=True, nullable=False)
-    started_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
-    ended_at = Column(DateTime, nullable=True)
-    task_id = Column(String(64), nullable=True)
-    status = Column(String(32), nullable=False, default='active')
-    summary = Column(Text, default='')
+    name = Column(String(64), nullable=False, unique=True, index=True)
+    description = Column(String(255), nullable=True)
+    sort_order = Column(Integer, default=0)
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+
+    articles = relationship('IntelligenceArticle', back_populates='category_rel', cascade='all, delete-orphan')
 
     def to_dict(self):
         return {
-            'id': self.id,
-            'agent_id': self.agent_id,
-            'session_id': self.session_id,
-            'started_at': self.started_at.isoformat() if self.started_at else None,
-            'ended_at': self.ended_at.isoformat() if self.ended_at else None,
-            'task_id': self.task_id,
-            'status': self.status,
-            'summary': self.summary,
+            'id': self.id, 'name': self.name,
+            'description': self.description,
+            'sort_order': self.sort_order,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
         }
 
 
-class AlertRule(Base):
-    """告警规则"""
-    __tablename__ = 'alert_rules'
+class IntelligenceArticle(Base):
+    __tablename__ = 'intelligence_articles'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(200), nullable=False)
+    title = Column(String(500), nullable=False)
+    url = Column(String(512), nullable=False, unique=True, index=True)
+    summary = Column(Text, nullable=True)
+    content = Column(Text, nullable=True)
+    source = Column(String(128), nullable=True)
+    category = Column(String(64), nullable=True, index=True)
+    category_id = Column(Integer, ForeignKey('intelligence_categories.id', ondelete='SET NULL'), nullable=True, index=True)
+    author = Column(String(64), nullable=True)
+    published_at = Column(DateTime, nullable=True)
+    fetched_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), index=True)
+    is_duplicate = Column(Integer, default=0)
+    image_url = Column(String(512), nullable=True)
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc),
+                        onupdate=lambda: datetime.now(timezone.utc))
+
+    category_rel = relationship('IntelligenceCategory', back_populates='articles')
+
+    def to_dict(self, include_content=False):
+        d = {
+            'id': self.id, 'title': self.title,
+            'url': self.url, 'summary': self.summary,
+            'source': self.source, 'category': self.category,
+            'author': self.author,
+            'published_at': self.published_at.isoformat() if self.published_at else None,
+            'fetched_at': self.fetched_at.isoformat() if self.fetched_at else None,
+            'image_url': self.image_url,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+        }
+        if include_content:
+            d['content'] = self.content
+        return d
+
+
+# ==================== 模块权限 ====================
+
+
+class FeatureModule(Base):
+    __tablename__ = 'feature_modules'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    module_key = Column(String(64), unique=True, nullable=False, index=True)
+    name = Column(String(128), nullable=False)
+    route_path = Column(String(128), nullable=False)
     description = Column(Text, default='')
-    agent_id = Column(String(64), nullable=True, index=True)
-    condition = Column(Text, nullable=False)
-    severity = Column(String(20), nullable=False, default='warning')
-    enabled = Column(Boolean, nullable=False, default=True)
-    notification_channels = Column(JSON, default=list)
+    icon = Column(String(64), nullable=True)
+    sort_order = Column(Integer, default=0)
+    is_enabled = Column(Boolean, nullable=False, default=True)
     created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc),
                         onupdate=lambda: datetime.now(timezone.utc))
 
     def to_dict(self):
         return {
-            'id': self.id,
-            'name': self.name,
+            'id': self.id, 'module_key': self.module_key,
+            'name': self.name, 'route_path': self.route_path,
             'description': self.description,
-            'agent_id': self.agent_id,
-            'condition': self.condition,
-            'severity': self.severity,
-            'enabled': self.enabled,
-            'notification_channels': self.notification_channels or [],
+            'icon': self.icon, 'sort_order': self.sort_order,
+            'is_enabled': self.is_enabled,
             'created_at': self.created_at.isoformat() if self.created_at else None,
-        }
-
-
-class AlertEvent(Base):
-    """告警事件"""
-    __tablename__ = 'alert_events'
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    rule_id = Column(Integer, ForeignKey('alert_rules.id', ondelete='SET NULL'), nullable=True, index=True)
-    agent_id = Column(String(64), nullable=False, index=True)
-    severity = Column(String(20), nullable=False)
-    message = Column(Text, nullable=False)
-    acknowledged = Column(Boolean, nullable=False, default=False)
-    acknowledged_by = Column(String(64), nullable=True)
-    acknowledged_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), index=True)
-
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'rule_id': self.rule_id,
-            'agent_id': self.agent_id,
-            'severity': self.severity,
-            'message': self.message,
-            'acknowledged': self.acknowledged,
-            'acknowledged_by': self.acknowledged_by,
-            'acknowledged_at': self.acknowledged_at.isoformat() if self.acknowledged_at else None,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-        }
-
-
-class AgentHealthScore(Base):
-    """Agent 健康度评分记录"""
-    __tablename__ = 'agent_health_scores'
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    agent_id = Column(String(64), nullable=False, index=True)
-    score = Column(Float, nullable=False, default=0.0)  # 0-100
-    online_status = Column(String(32), nullable=True)   # online|timeout|offline
-    success_rate = Column(Float, nullable=True, default=0.0)  # 0-100
-    response_latency = Column(Float, nullable=True, default=0.0)  # score 0-100
-    backlog_score = Column(Float, nullable=True, default=0.0)  # score 0-100
-    confidence_trend = Column(Float, nullable=True, default=0.0)  # score 0-100
-    calculated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), index=True)
-    updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc),
-                        onupdate=lambda: datetime.now(timezone.utc))
-
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'agent_id': self.agent_id,
-            'score': round(self.score, 2),
-            'online_status': self.online_status,
-            'success_rate': round(self.success_rate, 2) if self.success_rate else None,
-            'response_latency': round(self.response_latency, 2) if self.response_latency else None,
-            'backlog_score': round(self.backlog_score, 2) if self.backlog_score else None,
-            'confidence_trend': round(self.confidence_trend, 2) if self.confidence_trend else None,
-            'calculated_at': self.calculated_at.isoformat() if self.calculated_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
         }
 
 
-# ---------- Database helpers ----------
+class UserFeatureModule(Base):
+    __tablename__ = 'user_feature_modules'
 
-def get_engine():
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    return create_engine(f'sqlite:///{DB_PATH}', pool_pre_ping=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    module_key = Column(String(64), nullable=False, index=True)
+    can_view = Column(Boolean, nullable=False, default=True)
+    can_manage = Column(Boolean, nullable=False, default=False)
+    granted_by = Column(Integer, nullable=True)
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc),
+                        onupdate=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        UniqueConstraint('user_id', 'module_key', name='uq_user_module'),
+    )
+
+    def to_dict(self):
+        return {
+            'id': self.id, 'user_id': self.user_id,
+            'module_key': self.module_key,
+            'can_view': self.can_view, 'can_manage': self.can_manage,
+            'granted_by': self.granted_by,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
 
 
 # ==================== Agent 任务派发 ====================
+
+
+class Notification(Base):
+    __tablename__ = 'notifications'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False, index=True)
+    type = Column(String(32), nullable=False, index=True)  # system / task / alert / mention
+    title = Column(String(200), nullable=False)
+    content = Column(Text, default='')
+    is_read = Column(Boolean, nullable=False, default=False, index=True)
+    source_id = Column(String(128), nullable=True)  # 关联的任务ID/Agent ID等
+    link = Column(String(500), nullable=True)  # 跳转链接
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    read_at = Column(DateTime, nullable=True)
+    expires_at = Column(DateTime, nullable=True)
+
+    def to_dict(self):
+        return {
+            'id': self.id, 'user_id': self.user_id,
+            'type': self.type, 'title': self.title,
+            'content': self.content, 'is_read': self.is_read,
+            'source_id': self.source_id, 'link': self.link,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'read_at': self.read_at.isoformat() if self.read_at else None,
+            'expires_at': self.expires_at.isoformat() if self.expires_at else None,
+        }
+
 
 class AgentDispatch(Base):
     __tablename__ = 'agent_dispatches'
@@ -640,15 +678,3 @@ class AgentDispatch(Base):
             'status': self.status,
             'notes': self.notes,
         }
-
-
-def init_db():
-    engine = get_engine()
-    Base.metadata.create_all(engine)
-    return engine
-
-
-def get_session():
-    engine = get_engine()
-    Session = sessionmaker(bind=engine)
-    return Session()

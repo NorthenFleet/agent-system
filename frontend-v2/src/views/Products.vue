@@ -1,681 +1,633 @@
 <template>
-  <div class="products-page">
-    <!-- 页面标题 -->
-    <div class="page-header">
-      <h1>🎯 兵棋产品矩阵</h1>
-      <p class="page-desc">从手工推演到智能对抗 — 三步递进产品路线图</p>
-    </div>
-
-    <!-- Loading 状态 -->
-    <div v-if="loading" class="loading-wrapper">
-      <el-icon class="loading-spinner" :size="40"><Loading /></el-icon>
-      <p class="loading-text">加载产品数据中...</p>
-    </div>
-
-    <!-- 空状态 -->
-    <el-empty
-      v-else-if="products.length === 0"
-      description="暂无产品数据"
-      :image-size="120"
-    >
-      <el-button type="primary" @click="loadProducts">刷新</el-button>
-    </el-empty>
-
-    <template v-else>
-      <!-- 递进关系流程图 — 桌面横向/移动端纵向 -->
-      <div class="progression-section">
-        <div class="progression-flow">
-          <div
-            v-for="p in products"
-            :key="p.id"
-            class="flow-node"
-            :class="`status-${p.status}`"
-          >
-            <div class="flow-icon">{{ p.emoji }}</div>
-            <div class="flow-name">{{ p.name }}</div>
-            <div class="flow-badge">{{ p.statusLabel }}</div>
-          </div>
-          <!-- 连接箭头 -->
-          <template v-for="i in products.length - 1" :key="`arrow-${i}`">
-            <div class="flow-arrow">
-              <span class="arrow-text">{{ progressionLabels[i - 1] }}</span>
-              <span class="arrow-symbol">→</span>
-            </div>
-          </template>
-        </div>
-
-        <!-- 桌面端 el-steps 备用 -->
-        <el-steps class="progression-steps" :space="200" finish-status="wait" simple>
-          <el-step
-            v-for="p in products"
-            :key="`step-${p.id}`"
-            :icon="p.emoji"
-            :title="p.name"
-            :description="p.positioning.split(' + ')[0]"
-            :status="p.status === 'done' ? 'finish' : p.status === 'in-progress' ? 'process' : 'wait'"
-          />
-        </el-steps>
+  <div class="products-page" v-loading="loading">
+    <header class="page-head">
+      <div>
+        <h2>产品矩阵</h2>
+        <span>{{ registry?.updated_at ? `更新于 ${formatTime(registry.updated_at)}` : '产品注册表' }}</span>
       </div>
+      <el-tooltip content="刷新产品状态" placement="bottom">
+        <el-button :icon="Refresh" :loading="loading" aria-label="刷新产品状态" @click="loadProducts" />
+      </el-tooltip>
+    </header>
 
-      <!-- 产品卡片网格 -->
-      <div class="cards-grid">
-        <el-card
-          v-for="product in products"
-          :key="product.id"
-          class="product-card"
-          shadow="hover"
-          :class="{ 'is-active': activeProductId === product.id }"
+    <section class="registry-metrics" aria-label="产品注册统计">
+      <div><span>产品</span><strong>{{ registry?.summary.total || 0 }}</strong></div>
+      <div><span>在线系统</span><strong>{{ registry?.summary.online || 0 }}</strong></div>
+      <div><span>离线系统</span><strong>{{ registry?.summary.offline || 0 }}</strong></div>
+      <div><span>项目绑定</span><strong>{{ registry?.summary.project_bindings || 0 }}</strong></div>
+    </section>
+
+    <section v-if="projectContextId" class="project-binding-band">
+      <div>
+        <span>当前项目</span>
+        <strong>{{ currentProject?.name || projectContextId }}</strong>
+        <small v-if="selectedProduct">
+          {{ bindingForSelected ? `${roleLabel(bindingForSelected.role)} · 已绑定` : `尚未使用 ${selectedProduct.name}` }}
+        </small>
+      </div>
+      <div class="binding-actions">
+        <el-button text @click="openProject(projectContextId)">返回项目</el-button>
+        <el-button
+          v-if="selectedProduct?.id !== 'openclaw-3021'"
+          :type="bindingForSelected ? 'danger' : 'primary'"
+          :plain="Boolean(bindingForSelected)"
+          :loading="bindingProduct"
+          @click="toggleSelectedBinding"
         >
-          <!-- 卡片头部 -->
-          <div class="card-header" @click="toggleProduct(product.id)">
-            <div class="icon-placeholder">
-              <span class="product-emoji">{{ product.emoji }}</span>
-              <div class="icon-bg" :class="`bg-${product.status}`"></div>
-            </div>
-            <div class="card-title-area">
-              <h3 class="card-title">{{ product.name }}</h3>
-              <el-tag
-                :type="statusType(product.status)"
-                size="small"
-                effect="dark"
-                round
-              >
-                {{ product.statusLabel }}
-              </el-tag>
-            </div>
-          </div>
-
-          <!-- 卡片内容 -->
-          <div class="card-body">
-            <p class="product-positioning">{{ product.positioning }}</p>
-
-            <!-- 整体进度 -->
-            <div class="overall-progress">
-              <div class="progress-header">
-                <span class="progress-label">整体进度</span>
-                <span class="progress-value">{{ calcOverallProgress(product.modules) }}%</span>
-              </div>
-              <el-progress
-                :percentage="calcOverallProgress(product.modules)"
-                :stroke-width="10"
-                :color="progressColor(product.status)"
-                :show-text="false"
-              />
-            </div>
-
-            <!-- 模块列表 -->
-            <div class="modules-list">
-              <h4>📦 模块拆解</h4>
-              <div
-                v-for="mod in product.modules"
-                :key="mod.name"
-                class="module-item"
-              >
-                <span class="module-name">{{ mod.name }}</span>
-                <div class="module-progress-right">
-                  <span class="module-pct">{{ mod.progress }}%</span>
-                  <el-progress
-                    :percentage="mod.progress"
-                    :stroke-width="6"
-                    :status="mod.progress === 100 ? 'success' : undefined"
-                    :color="statusColor(mod.status)"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 展开详情按钮 -->
-          <div class="card-footer">
-            <el-button
-              type="primary"
-              text
-              @click="toggleProduct(product.id)"
-            >
-              {{ activeProductId === product.id ? '收起详情 ▲' : '展开详情 ▼' }}
-            </el-button>
-          </div>
-
-          <!-- 详情面板 — 展开/收起动画 -->
-          <el-collapse-transition>
-            <div v-show="activeProductId === product.id" class="detail-panel">
-              <el-divider content-position="left">📅 里程碑</el-divider>
-              <el-timeline>
-                <el-timeline-item
-                  v-for="(ms, idx) in product.milestones"
-                  :key="idx"
-                  :timestamp="ms.date"
-                  :type="milestoneType(ms.status)"
-                  :color="statusDotColor(ms.status)"
-                  :hollow="ms.status !== 'done'"
-                >
-                  {{ ms.name }}
-                  <el-tag size="small" :type="statusType(ms.status)" style="margin-left: 8px">
-                    {{ milestoneStatusLabel(ms.status) }}
-                  </el-tag>
-                </el-timeline-item>
-              </el-timeline>
-
-              <el-divider />
-
-              <div class="product-meta">
-                <el-descriptions :column="1" border size="small">
-                  <el-descriptions-item label="类型">{{ product.type }}</el-descriptions-item>
-                  <el-descriptions-item label="负责人">{{ product.owner }}</el-descriptions-item>
-                  <el-descriptions-item label="状态">
-                    <el-tag :type="statusType(product.status)" size="small" round>
-                      {{ product.statusLabel }}
-                    </el-tag>
-                  </el-descriptions-item>
-                </el-descriptions>
-              </div>
-            </div>
-          </el-collapse-transition>
-        </el-card>
+          {{ bindingForSelected ? '解除绑定' : '绑定到项目' }}
+        </el-button>
+        <el-tag v-else effect="plain">宿主平台</el-tag>
       </div>
-    </template>
+    </section>
+
+    <section v-if="coreProducts.length" class="dependency-band">
+      <div class="section-head">
+        <h3>核心运行链</h3>
+        <el-tag effect="plain">{{ registry?.dependencies.length || 0 }} 项依赖</el-tag>
+      </div>
+      <div class="core-chain">
+        <template v-for="(product, index) in coreProducts" :key="product.id">
+          <button type="button" class="chain-product" @click="selectProduct(product)">
+            <span>{{ kindLabel(product.kind) }}</span>
+            <strong>{{ product.name }}</strong>
+            <small>{{ product.runtime?.summary || statusLabel(product.status) }}</small>
+          </button>
+          <span v-if="index < coreProducts.length - 1" class="chain-arrow">→</span>
+        </template>
+      </div>
+    </section>
+
+    <main class="registry-layout">
+      <section class="product-list">
+        <div class="section-head">
+          <h3>产品目录</h3>
+          <el-segmented v-model="kindFilter" :options="kindOptions" size="small" />
+        </div>
+        <el-table
+          :data="filteredProducts"
+          row-key="id"
+          highlight-current-row
+          @row-click="selectProduct"
+        >
+          <el-table-column label="产品" min-width="220">
+            <template #default="{ row }">
+              <div class="product-cell">
+                <strong>{{ row.name }}</strong>
+                <small>{{ row.id }} · {{ row.version || '未标版本' }}</small>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column label="类型" width="118">
+            <template #default="{ row }">{{ kindLabel(row.kind) }}</template>
+          </el-table-column>
+          <el-table-column label="运行状态" min-width="150">
+            <template #default="{ row }">
+              <div class="runtime-cell">
+                <el-tag :type="runtimeTagType(row.runtime?.state)" effect="plain" size="small">
+                  {{ runtimeLabel(row.runtime?.state) }}
+                </el-tag>
+                <small>{{ row.runtime?.summary }}</small>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column label="部署" min-width="180">
+            <template #default="{ row }">
+              <div class="deployment-cell">
+                <span>{{ row.deployment?.device || deploymentModeLabel(row.deployment?.mode) }}</span>
+                <small v-if="row.deployment?.host">{{ row.deployment.host }}:{{ row.deployment.port }}</small>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column label="项目" width="78" align="center">
+            <template #default="{ row }">{{ row.usage_count || 0 }}</template>
+          </el-table-column>
+          <el-table-column label="" width="52" align="right">
+            <template #default="{ row }">
+              <el-tooltip v-if="row.deployment?.public_url" content="打开产品" placement="left">
+                <el-button
+                  :icon="Link"
+                  text
+                  aria-label="打开产品"
+                  @click.stop="openProduct(row)"
+                />
+              </el-tooltip>
+            </template>
+          </el-table-column>
+        </el-table>
+      </section>
+
+      <aside v-if="selectedProduct" class="product-detail">
+        <header>
+          <div>
+            <span>{{ selectedProduct.category }}</span>
+            <h3>{{ selectedProduct.name }}</h3>
+          </div>
+          <el-tag :type="runtimeTagType(selectedProduct.runtime?.state)" effect="plain">
+            {{ runtimeLabel(selectedProduct.runtime?.state) }}
+          </el-tag>
+        </header>
+        <p>{{ selectedProduct.description }}</p>
+
+        <dl class="product-facts">
+          <div><dt>产品标识</dt><dd>{{ selectedProduct.id }}</dd></div>
+          <div><dt>版本</dt><dd>{{ selectedProduct.version || '未标版本' }}</dd></div>
+          <div><dt>负责人</dt><dd>{{ selectedProduct.owner || '未分配' }}</dd></div>
+          <div><dt>运行模式</dt><dd>{{ deploymentModeLabel(selectedProduct.deployment?.mode) }}</dd></div>
+        </dl>
+
+        <section>
+          <h4>能力</h4>
+          <div class="tag-list">
+            <el-tag v-for="capability in selectedProduct.capabilities" :key="capability" effect="plain" size="small">
+              {{ capability }}
+            </el-tag>
+          </div>
+        </section>
+
+        <section>
+          <h4>依赖</h4>
+          <div v-if="selectedProduct.dependencies?.length" class="detail-list">
+            <div v-for="dependency in selectedProduct.dependencies" :key="dependency.product_id">
+              <strong>{{ productName(dependency.product_id) }}</strong>
+              <small>{{ dependencyTypeLabel(dependency.type) }}</small>
+            </div>
+          </div>
+          <span v-else class="empty-inline">无产品依赖</span>
+        </section>
+
+        <section>
+          <h4>项目引用</h4>
+          <div v-if="selectedProduct.project_references?.length" class="detail-list">
+            <button
+              v-for="reference in selectedProduct.project_references"
+              :key="reference.project_id"
+              type="button"
+              @click="openProject(reference.project_id)"
+            >
+              <strong>{{ reference.project_name }}</strong>
+              <small>{{ roleLabel(reference.role) }} · {{ reference.status }}</small>
+            </button>
+          </div>
+          <span v-else class="empty-inline">尚未绑定项目</span>
+        </section>
+      </aside>
+    </main>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { Loading } from '@element-plus/icons-vue'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Link, Refresh } from '@element-plus/icons-vue'
+import { getProjects, type Project } from '@/api/projects'
+import {
+  bindProductToProject,
+  getProductRegistry,
+  unbindProductFromProject,
+  type ProjectProductBinding,
+  type RegisteredProduct,
+  type ProductRegistryResponse
+} from '@/api/products'
 
-// 状态映射
-function statusType(status: string): '' | 'success' | 'warning' | 'info' {
-  const map: Record<string, '' | 'success' | 'warning' | 'info'> = {
-    'done': 'success',
-    'in-progress': 'warning',
-    'planning': 'info'
-  }
-  return map[status] || ''
-}
-
-function statusColor(status: string): string {
-  const map: Record<string, string> = {
-    'done': '#67C23A',
-    'in-progress': '#E6A23C',
-    'planning': '#409EFF'
-  }
-  return map[status] || '#409EFF'
-}
-
-function progressColor(status: string): string {
-  return statusColor(status)
-}
-
-function milestoneType(status: string): 'success' | 'primary' | 'info' {
-  const map: Record<string, 'success' | 'primary' | 'info'> = {
-    'done': 'success',
-    'in-progress': 'primary',
-    'planning': 'info'
-  }
-  return map[status] || 'info'
-}
-
-function statusDotColor(status: string): string {
-  return statusColor(status)
-}
-
-function milestoneStatusLabel(status: string): string {
-  const map: Record<string, string> = {
-    'done': '已完成',
-    'in-progress': '进行中',
-    'planning': '规划中'
-  }
-  return map[status] || status
-}
-
-function calcOverallProgress(modules: Array<{ progress: number }>): number {
-  if (!modules.length) return 0
-  return Math.round(modules.reduce((sum, m) => sum + m.progress, 0) / modules.length)
-}
-
-// 产品数据
-interface Module {
-  name: string
-  status: string
-  progress: number
-}
-
-interface Milestone {
-  name: string
-  date: string
-  status: string
-}
-
-interface Product {
-  id: string
-  name: string
-  emoji: string
-  type: string
-  positioning: string
-  status: string
-  statusLabel: string
-  owner: string
-  modules: Module[]
-  milestones: Milestone[]
-}
-
-const products = ref<Product[]>([])
-const activeProductId = ref<string | null>(null)
-const loading = ref(true)
-
-function toggleProduct(id: string) {
-  activeProductId.value = activeProductId.value === id ? null : id
-}
-
-// 递进关系标签（从 progression 读取，无则默认）
-const progressionLabels = ref<string[]>([])
-
-const localProducts: Product[] = [
-  {
-    id: 'manual-chess',
-    name: '手工纸质兵棋',
-    emoji: '📦',
-    type: '实体桌游',
-    positioning: '规则验证 + 教学推演 + 快速原型',
-    status: 'in-progress',
-    statusLabel: '原型设计中',
-    owner: '待分配',
-    modules: [
-      { name: '规则体系设计', status: 'in-progress', progress: 40 },
-      { name: '地图与棋子原型', status: 'in-progress', progress: 30 },
-      { name: '教学关卡设计', status: 'planning', progress: 10 }
-    ],
-    milestones: [
-      { name: '规则初稿完成', date: '2026-07-15', status: 'in-progress' },
-      { name: '首版原型可玩', date: '2026-08-01', status: 'planning' }
-    ]
-  },
-  {
-    id: 'digital-chess',
-    name: '电子化兵棋',
-    emoji: '💻',
-    type: '数字工具',
-    positioning: '规则引擎自动化 + 界面交互 + 多人在线',
-    status: 'in-progress',
-    statusLabel: '原型设计中',
-    owner: '待分配',
-    modules: [
-      { name: '规则引擎', status: 'planning', progress: 10 },
-      { name: '交互界面', status: 'planning', progress: 5 },
-      { name: '多人在线同步', status: 'planning', progress: 0 }
-    ],
-    milestones: [
-      { name: '规则引擎 MVP', date: '2026-09-01', status: 'planning' },
-      { name: 'Alpha 版内测', date: '2026-10-15', status: 'planning' }
-    ]
-  },
-  {
-    id: 'ai-chess',
-    name: '智能兵棋',
-    emoji: '🤖',
-    type: 'AI 对抗',
-    positioning: '智能体参与推演 + AI 辅助决策 + RL 训练',
-    status: 'planning',
-    statusLabel: '规划中',
-    owner: '待分配',
-    modules: [
-      { name: 'AI 决策框架', status: 'planning', progress: 0 },
-      { name: '智能体接入', status: 'planning', progress: 0 },
-      { name: 'RL 训练管线', status: 'planning', progress: 0 }
-    ],
-    milestones: [
-      { name: '技术方案评审', date: '2026-10-01', status: 'planning' },
-      { name: '首个 AI 对手上线', date: '2026-12-01', status: 'planning' }
-    ]
-  }
+const route = useRoute()
+const router = useRouter()
+const loading = ref(false)
+const bindingProduct = ref(false)
+const registry = ref<ProductRegistryResponse>()
+const selectedProduct = ref<RegisteredProduct>()
+const currentProject = ref<Project>()
+const kindFilter = ref('all')
+const kindOptions = [
+  { label: '全部', value: 'all' },
+  { label: '运行系统', value: 'runtime' },
+  { label: '业务产品', value: 'offering' }
 ]
+
+const filteredProducts = computed(() => {
+  const products = registry.value?.products || []
+  if (kindFilter.value === 'offering') return products.filter(row => row.kind === 'offering')
+  if (kindFilter.value === 'runtime') return products.filter(row => row.kind !== 'offering')
+  return products
+})
+const coreProducts = computed(() => {
+  const order = ['openclaw-3021', 'ai-planning-5130', 'one-sim']
+  return order.map(id => registry.value?.products.find(row => row.id === id)).filter(Boolean) as RegisteredProduct[]
+})
+const projectContextId = computed(() => String(route.query.project_id || ''))
+const bindingForSelected = computed<ProjectProductBinding | undefined>(() => {
+  if (!selectedProduct.value) return undefined
+  return currentProject.value?.product_bindings?.find(binding => binding.product_id === selectedProduct.value?.id)
+})
 
 async function loadProducts() {
   loading.value = true
   try {
-    const res = await fetch('/api/v2/products')
-    if (res.ok) {
-      const data = await res.json()
-      products.value = data.products || data
-      if (data.progression) {
-        progressionLabels.value = data.progression.map((p: any) => p.label || '')
-      }
-    } else {
-      products.value = localProducts
-      progressionLabels.value = ['自动裁决', '智能对抗']
-    }
+    const [nextRegistry, projectResult] = await Promise.all([
+      getProductRegistry(),
+      projectContextId.value ? getProjects() : Promise.resolve(undefined)
+    ])
+    registry.value = nextRegistry
+    currentProject.value = projectResult?.projects.find(project => project.id === projectContextId.value)
+    const currentId = selectedProduct.value?.id || String(route.query.product_id || '') || 'openclaw-3021'
+    selectedProduct.value = registry.value.products.find(row => row.id === currentId) || registry.value.products[0]
   } catch {
-    products.value = localProducts
-    progressionLabels.value = ['自动裁决', '智能对抗']
+    ElMessage.error('产品注册表加载失败')
   } finally {
     loading.value = false
   }
 }
 
-onMounted(() => {
-  loadProducts()
-})
+function selectProduct(product: RegisteredProduct) {
+  selectedProduct.value = product
+}
+
+function openProduct(product: RegisteredProduct) {
+  if (product.deployment?.public_url) window.open(product.deployment.public_url, '_blank', 'noopener,noreferrer')
+}
+
+function openProject(projectId: string) {
+  router.push({ path: '/projects', query: { project_id: projectId } })
+}
+
+function defaultBindingRole(productId: string) {
+  if (productId === 'ai-planning-5130') return 'planner'
+  if (productId === 'one-sim') return 'simulator'
+  return 'uses'
+}
+
+async function toggleSelectedBinding() {
+  if (!projectContextId.value || !selectedProduct.value || !currentProject.value) return
+  bindingProduct.value = true
+  try {
+    if (bindingForSelected.value) {
+      await ElMessageBox.confirm(
+        `解除“${currentProject.value.name}”与“${selectedProduct.value.name}”的绑定？已有产品数据不会被删除。`,
+        '解除产品绑定',
+        { type: 'warning', confirmButtonText: '解除绑定', cancelButtonText: '取消' }
+      )
+      const result = await unbindProductFromProject(projectContextId.value, selectedProduct.value.id)
+      currentProject.value = result.project
+      ElMessage.success('产品绑定已解除')
+    } else {
+      const result = await bindProductToProject(projectContextId.value, selectedProduct.value.id, {
+        role: defaultBindingRole(selectedProduct.value.id),
+        status: 'bound'
+      })
+      currentProject.value = result.project
+      ElMessage.success('产品已绑定到项目')
+    }
+    await loadProducts()
+  } catch (error) {
+    if (error !== 'cancel' && error !== 'close') ElMessage.error('产品绑定更新失败')
+  } finally {
+    bindingProduct.value = false
+  }
+}
+
+function productName(productId: string) {
+  return registry.value?.products.find(row => row.id === productId)?.name || productId
+}
+
+function kindLabel(kind?: string) {
+  return ({ platform: '平台', service: '规划服务', simulation: '仿真系统', offering: '业务产品' } as Record<string, string>)[kind || ''] || kind || '产品'
+}
+
+function statusLabel(status?: string) {
+  return ({ active: '运行中', developing: '开发中', planning: '规划中' } as Record<string, string>)[status || ''] || status || '未知'
+}
+
+function runtimeLabel(state?: string) {
+  return ({ online: '在线', offline: '离线', managed: '受管' } as Record<string, string>)[state || ''] || '未知'
+}
+
+function runtimeTagType(state?: string): 'success' | 'danger' | 'info' {
+  if (state === 'online') return 'success'
+  if (state === 'offline') return 'danger'
+  return 'info'
+}
+
+function deploymentModeLabel(mode?: string) {
+  return ({ standalone: '独立部署', 'embedded-planning-situation': '内嵌态势会话', physical: '实体产品', planned: '待部署' } as Record<string, string>)[mode || ''] || mode || '未登记'
+}
+
+function dependencyTypeLabel(type?: string) {
+  return ({ runtime: '运行时依赖', engine: '引擎依赖', planning: '规划能力', simulation: '仿真能力' } as Record<string, string>)[type || ''] || type || '依赖'
+}
+
+function roleLabel(role?: string) {
+  return ({ planner: '规划器', simulator: '仿真器', uses: '使用' } as Record<string, string>)[role || ''] || role || '使用'
+}
+
+function formatTime(value: string) {
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString('zh-CN', { hour12: false })
+}
+
+onMounted(loadProducts)
 </script>
 
 <style scoped>
 .products-page {
-  max-width: 1200px;
-  margin: 0 auto;
+  display: grid;
+  gap: 18px;
+  min-width: 0;
 }
 
-/* 页面标题 */
-.page-header {
-  margin-bottom: 24px;
+.page-head,
+.section-head,
+.product-detail > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.page-header h1 {
-  font-size: 24px;
-  font-weight: 600;
-  color: #1d1e2c;
-  margin: 0 0 8px;
-}
-
-.page-desc {
-  font-size: 14px;
-  color: #909399;
+.page-head h2,
+.page-head span,
+.section-head h3,
+.product-detail h3,
+.product-detail h4,
+.product-detail p {
   margin: 0;
 }
 
-/* Loading 状态 */
-.loading-wrapper {
+.page-head h2 {
+  color: var(--text-primary);
+  font-size: 18px;
+}
+
+.page-head span,
+.chain-product span,
+.chain-product small,
+.product-cell small,
+.runtime-cell small,
+.deployment-cell small,
+.product-detail header span,
+.detail-list small,
+.empty-inline {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.registry-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-top: 1px solid var(--line-color);
+  border-bottom: 1px solid var(--line-color);
+}
+
+.registry-metrics > div {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-right: 1px solid var(--line-color);
+}
+
+.registry-metrics > div:last-child {
+  border-right: 0;
+}
+
+.registry-metrics span {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.registry-metrics strong {
+  color: var(--text-primary);
+  font-size: 20px;
+}
+
+.dependency-band,
+.project-binding-band,
+.product-list,
+.product-detail {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--line-color);
+  border-radius: 6px;
+  background: var(--card-bg);
+}
+
+.project-binding-band {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 80px 20px;
+  justify-content: space-between;
+  gap: 16px;
 }
 
-.loading-spinner {
-  animation: spin 1s linear infinite;
-  color: #409eff;
+.project-binding-band > div:first-child {
+  display: grid;
+  gap: 3px;
 }
 
-.loading-text {
-  margin-top: 12px;
+.project-binding-band span,
+.project-binding-band small {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.project-binding-band strong {
+  color: var(--text-primary);
   font-size: 14px;
-  color: #909399;
 }
 
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+.binding-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
 }
 
-/* 递进关系流程图 */
-.progression-section {
-  margin-bottom: 32px;
-  padding: 24px;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+.section-head {
+  margin-bottom: 12px;
 }
 
-/* 自定义流程节点（桌面端默认隐藏，小屏显示） */
-.progression-flow {
-  display: none;
-}
-
-@media (max-width: 768px) {
-  .progression-steps {
-    display: none;
-  }
-  .progression-flow {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-  }
-  .flow-node {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 12px 16px;
-    border-radius: 8px;
-    background: #f5f7fa;
-    border: 1px solid #e4e7ed;
-    transition: background 0.2s;
-    min-width: 100px;
-  }
-  .flow-node.status-in-progress {
-    background: #fdf6ec;
-    border-color: #e6a23c55;
-  }
-  .flow-node.status-planning {
-    background: #ecf5ff;
-    border-color: #409eff55;
-  }
-  .flow-node.status-done {
-    background: #f0f9eb;
-    border-color: #67c23a55;
-  }
-  .flow-icon {
-    font-size: 28px;
-    margin-bottom: 4px;
-  }
-  .flow-name {
-    font-size: 13px;
-    font-weight: 500;
-    color: #303133;
-    text-align: center;
-  }
-  .flow-badge {
-    font-size: 11px;
-    color: #909399;
-    margin-top: 2px;
-  }
-  .flow-arrow {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    color: #c0c4cc;
-  }
-  .arrow-symbol {
-    font-size: 20px;
-    color: #409eff;
-  }
-  .arrow-text {
-    font-size: 10px;
-    color: #909399;
-    margin-bottom: 2px;
-  }
-}
-
-.progression-steps :deep(.el-step__title) {
+.section-head h3,
+.product-detail h3 {
+  color: var(--text-primary);
   font-size: 14px;
-  font-weight: 500;
 }
 
-.progression-steps :deep(.el-step__description) {
+.core-chain {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.chain-product {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 0;
+  border-left: 2px solid var(--view-color-border);
+  color: inherit;
+  text-align: left;
+  background: transparent;
+  cursor: pointer;
+}
+
+.chain-product:hover {
+  background: var(--view-color-faint);
+}
+
+.chain-product strong,
+.chain-product small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chain-product strong {
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.chain-arrow {
+  color: var(--text-secondary);
+}
+
+.registry-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(270px, 340px);
+  gap: 14px;
+  align-items: start;
+}
+
+.product-cell,
+.runtime-cell,
+.deployment-cell {
+  display: grid;
+  gap: 3px;
+}
+
+.product-cell strong,
+.product-detail h4,
+.detail-list strong {
+  color: var(--text-primary);
+}
+
+.runtime-cell {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+}
+
+.runtime-cell small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.product-detail {
+  display: grid;
+  gap: 16px;
+}
+
+.product-detail p {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.product-detail section {
+  display: grid;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line-color);
+}
+
+.product-detail h4 {
   font-size: 12px;
 }
 
-/* 卡片网格 — 响应式 */
-.cards-grid {
+.product-facts {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  margin: 0;
 }
 
-@media (max-width: 1024px) {
-  .cards-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+.product-facts > div {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line-color);
+  font-size: 11px;
 }
 
-@media (max-width: 640px) {
-  .cards-grid {
+.product-facts dt {
+  color: var(--text-secondary);
+}
+
+.product-facts dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--text-primary);
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.detail-list {
+  display: grid;
+}
+
+.detail-list > div,
+.detail-list > button {
+  display: grid;
+  gap: 3px;
+  padding: 7px 0;
+  border: 0;
+  border-bottom: 1px solid var(--line-color);
+  color: inherit;
+  text-align: left;
+  background: transparent;
+}
+
+.detail-list > button {
+  cursor: pointer;
+}
+
+.detail-list > button:hover {
+  background: var(--view-color-faint);
+}
+
+@media (max-width: 980px) {
+  .registry-layout {
     grid-template-columns: 1fr;
   }
 }
 
-/* 产品卡片 */
-.product-card {
-  border-radius: 12px;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
-  cursor: pointer;
-  overflow: hidden;
-}
+@media (max-width: 720px) {
+  .registry-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 
-.product-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-}
+  .registry-metrics > div:nth-child(2) {
+    border-right: 0;
+  }
 
-.product-card.is-active {
-  box-shadow: 0 4px 16px rgba(64, 158, 255, 0.25);
-  border-color: #409eff;
-}
+  .core-chain {
+    grid-template-columns: 1fr;
+  }
 
-/* 卡片头部 — 图标占位 */
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-}
+  .chain-arrow {
+    display: none;
+  }
 
-.icon-placeholder {
-  position: relative;
-  width: 52px;
-  height: 52px;
-  border-radius: 12px;
-  overflow: hidden;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+  .section-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 
-.icon-bg {
-  position: absolute;
-  inset: 0;
-  opacity: 0.12;
-  transition: opacity 0.2s;
-}
-
-.product-card:hover .icon-bg {
-  opacity: 0.18;
-}
-
-.bg-in-progress { background: linear-gradient(135deg, #e6a23c, #f5c178); }
-.bg-planning { background: linear-gradient(135deg, #409eff, #79bbff); }
-.bg-done { background: linear-gradient(135deg, #67c23a, #95d475); }
-
-.product-emoji {
-  font-size: 28px;
-  position: relative;
-  z-index: 1;
-}
-
-.card-title-area {
-  flex: 1;
-}
-
-.card-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #1d1e2c;
-  margin: 0 0 6px;
-}
-
-.card-body {
-  margin-top: 12px;
-}
-
-.product-positioning {
-  font-size: 13px;
-  color: #606266;
-  margin: 0 0 16px;
-  line-height: 1.5;
-}
-
-/* 整体进度 */
-.overall-progress {
-  margin-bottom: 16px;
-}
-
-.progress-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 4px;
-}
-
-.progress-label {
-  font-size: 12px;
-  color: #909399;
-}
-
-.progress-value {
-  font-size: 12px;
-  font-weight: 600;
-  color: #303133;
-}
-
-/* 模块列表 */
-.modules-list h4 {
-  font-size: 13px;
-  font-weight: 600;
-  color: #303133;
-  margin: 0 0 12px;
-}
-
-.module-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
-.module-name {
-  font-size: 12px;
-  color: #606266;
-  min-width: 90px;
-  flex-shrink: 0;
-}
-
-.module-progress-right {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.module-pct {
-  font-size: 11px;
-  color: #909399;
-  min-width: 32px;
-  text-align: right;
-}
-
-/* 卡片底部 */
-.card-footer {
-  margin-top: 16px;
-  text-align: center;
-}
-
-/* 详情面板 */
-.detail-panel {
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid #ebeef5;
-}
-
-.product-meta {
-  margin-top: 12px;
-}
-
-/* 详情面板动画 */
-.detail-panel {
-  animation: fadeIn 0.25s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-8px); }
-  to { opacity: 1; transform: translateY(0); }
+  .project-binding-band {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 </style>

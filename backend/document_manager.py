@@ -68,7 +68,7 @@ AGENT_DOC_MAP = {
     "donatello": {
         "name": "多纳泰罗",
         "paths": [
-            {"path": f"{TEAM_DASHBOARD}/frontend/", "type": "code", "name": "前端代码", "pattern": "*.html"},
+            {"path": f"{TEAM_DASHBOARD}/frontend-v2/src/", "type": "code", "name": "前端代码", "pattern": "*.vue"},
         ]
     },
     "michelangelo": {

@@ -29,6 +29,7 @@ DEFAULT_MODULES = [
     {"module_key": "news-center", "name": "新闻资讯", "route_path": "/news-center", "icon": "Document", "sort_order": 195, "description": "每日要闻、新闻资讯和 RSS"},
     {"module_key": "tasks", "name": "任务列表", "route_path": "/tasks", "icon": "List", "sort_order": 200, "description": "独立任务列表和详情"},
     {"module_key": "monitoring", "name": "系统监视", "route_path": "/monitoring", "icon": "Monitor", "sort_order": 170, "description": "系统监视、设备清单、健康检查和运行指标"},
+    {"module_key": "analytics", "name": "数据分析", "route_path": "/analytics", "icon": "TrendCharts", "sort_order": 175, "description": "团队效率、任务趋势、Sprint燃尽和Agent产出分析"},
     {"module_key": "user-admin", "name": "用户管理", "route_path": "/user-admin", "icon": "User", "sort_order": 900, "description": "用户、角色和模块授权"},
 ]
 

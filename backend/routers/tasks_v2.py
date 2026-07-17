@@ -2,15 +2,17 @@
 V2 任务管理 API 路由
 
 提供完整的任务管理功能，包括创建、查询、更新、删除、分配、评论等操作。
+集成 Redis 缓存（Sprint 5 P4）。
 """
 from fastapi import APIRouter, HTTPException, Depends, Query
 from pydantic import BaseModel, Field
 from typing import Optional, List
-from datetime import datetime, timezone
+from datetime import datetime
 from sqlalchemy.orm import Session
 
-from models.v2_models import get_session, Task
+from database import get_db
 from services.task_service import TaskService
+from services.cache_service import cache_service
 from routers.auth_router import get_current_user, require_role
 
 router = APIRouter(
@@ -33,7 +35,7 @@ def _parse_datetime(s: Optional[str]):
         return None
 
 
-def get_task_service(db: Session = Depends(get_session)) -> TaskService:
+def get_task_service(db: Session = Depends(get_db)) -> TaskService:
     return TaskService(db)
 
 
@@ -76,6 +78,11 @@ class CommentCreate(BaseModel):
     content: str = Field(..., min_length=1, max_length=5000, description="评论内容")
 
 
+def _tasks_cache_key(status, priority, assignee, sprint, source, search, page, page_size, sort_by, sort_order, **_):
+    """生成任务列表缓存键"""
+    return f"{status}:{priority}:{assignee}:{sprint}:{source}:{search}:{page}:{page_size}:{sort_by}:{sort_order}"
+
+
 @router.get("", summary="任务列表", description="获取任务列表，支持筛选、分页、排序")
 @router.get("/", summary="任务列表")
 def list_tasks(
@@ -92,7 +99,11 @@ def list_tasks(
     user: dict = Depends(get_current_user),
     service: TaskService = Depends(get_task_service),
 ):
-    return service.search_tasks(
+    cache_key = f"v2:tasks:list:{_tasks_cache_key(status, priority, assignee, sprint, source, search, page, page_size, sort_by, sort_order)}"
+    cached = cache_service.get(cache_key)
+    if cached is not None:
+        return cached
+    result = service.search_tasks(
         status=status,
         priority=priority,
         assignee=assignee,
@@ -104,6 +115,8 @@ def list_tasks(
         sort_by=sort_by,
         sort_order=sort_order,
     )
+    cache_service.set(cache_key, result, ttl=60)
+    return result
 
 
 @router.post("", status_code=201, summary="创建任务", description="创建新任务（需 admin 或 agent 角色）")
@@ -126,6 +139,7 @@ def create_task(
         "parent_task_id": data.parent_task_id,
     }
     task = service.create_task(task_data, created_by=user.get("username"))
+    cache_service.invalidate_pattern("v2:tasks:*")
     return task.to_dict()
 
 

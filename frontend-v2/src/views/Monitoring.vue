@@ -264,6 +264,58 @@ const cpuHistory = ref<{ time: string; name: string; value: number }[]>([])
 const memoryHistory = ref<{ time: string; name: string; value: number }[]>([])
 const agentCountHistory = ref<{ time: string; count: number }[]>([])
 
+const chartTheme = {
+  text: '#c9d1d9',
+  muted: '#8b949e',
+  line: '#30363d',
+  panel: '#161b22',
+  card: '#21262d',
+  primary: '#58a6ff',
+  success: '#3fb950',
+  warning: '#d29922',
+  danger: '#f85149'
+}
+
+function chartBase(): EChartsOption {
+  return {
+    backgroundColor: 'transparent',
+    color: [chartTheme.primary, chartTheme.success, chartTheme.warning, chartTheme.danger, chartTheme.muted],
+    textStyle: { color: chartTheme.text },
+    legend: { textStyle: { color: chartTheme.muted } }
+  }
+}
+
+function chartTooltip(trigger: 'axis' | 'item' = 'axis') {
+  return {
+    trigger,
+    backgroundColor: chartTheme.panel,
+    borderColor: chartTheme.line,
+    textStyle: { color: chartTheme.text }
+  }
+}
+
+function categoryAxis(data: string[], rotate = 0) {
+  return {
+    type: 'category' as const,
+    data,
+    axisLabel: { color: chartTheme.muted, rotate },
+    axisLine: { lineStyle: { color: chartTheme.line } },
+    axisTick: { lineStyle: { color: chartTheme.line } }
+  }
+}
+
+function valueAxis(name: string, extra: Record<string, unknown> = {}) {
+  return {
+    type: 'value' as const,
+    name,
+    nameTextStyle: { color: chartTheme.muted },
+    axisLabel: { color: chartTheme.muted },
+    axisLine: { lineStyle: { color: chartTheme.line } },
+    splitLine: { lineStyle: { color: chartTheme.line } },
+    ...extra
+  }
+}
+
 // ─── Computed ────────────────────────────────────────────────────────────────
 
 const summaryStats = computed(() => [
@@ -364,17 +416,17 @@ function memoryColor(v: number | null): string {
 }
 
 function cpuProgressColor(v: number | null): string {
-  if (v == null) return '#909399'
-  if (v > 90) return '#F56C6C'
-  if (v > 70) return '#E6A23C'
-  return '#67C23A'
+  if (v == null) return chartTheme.muted
+  if (v > 90) return chartTheme.danger
+  if (v > 70) return chartTheme.warning
+  return chartTheme.success
 }
 
 function memoryProgressColor(v: number | null): string {
-  if (v == null) return '#909399'
-  if (v > 90) return '#F56C6C'
-  if (v > 75) return '#E6A23C'
-  return '#409EFF'
+  if (v == null) return chartTheme.muted
+  if (v > 90) return chartTheme.danger
+  if (v > 75) return chartTheme.warning
+  return chartTheme.primary
 }
 
 function healthClass(score: number): string {
@@ -589,11 +641,12 @@ function updateCpuChart() {
   }))
 
   const option: EChartsOption = {
-    tooltip: { trigger: 'axis' },
+    ...chartBase(),
+    tooltip: chartTooltip('axis'),
     legend: { data: agentNames, bottom: 0 },
     grid: { top: 10, right: 20, bottom: 40, left: 50 },
-    xAxis: { type: 'category', data: times },
-    yAxis: { type: 'value', name: 'CPU %', max: 100, min: 0 },
+    xAxis: categoryAxis(times),
+    yAxis: valueAxis('CPU %', { max: 100, min: 0 }),
     series
   }
   cpuChart.setOption(option, true)
@@ -616,11 +669,12 @@ function updateMemoryChart() {
   }))
 
   const option: EChartsOption = {
-    tooltip: { trigger: 'axis' },
+    ...chartBase(),
+    tooltip: chartTooltip('axis'),
     legend: { data: agentNames, bottom: 0 },
     grid: { top: 10, right: 20, bottom: 40, left: 50 },
-    xAxis: { type: 'category', data: times },
-    yAxis: { type: 'value', name: '内存 %', max: 100, min: 0 },
+    xAxis: categoryAxis(times),
+    yAxis: valueAxis('内存 %', { max: 100, min: 0 }),
     series
   }
   memoryChart.setOption(option, true)
@@ -631,17 +685,18 @@ function updateAgentsChart() {
 
   const data = agentCountHistory.value
   const option: EChartsOption = {
-    tooltip: { trigger: 'axis' },
+    ...chartBase(),
+    tooltip: chartTooltip('axis'),
     grid: { top: 10, right: 20, bottom: 30, left: 50 },
-    xAxis: { type: 'category', data: data.map(d => d.time) },
-    yAxis: { type: 'value', name: 'Agent数', minInterval: 1 },
+    xAxis: categoryAxis(data.map(d => d.time)),
+    yAxis: valueAxis('Agent数', { minInterval: 1 }),
     series: [{
       name: '在线Agent',
       type: 'line' as const,
       smooth: true,
       areaStyle: { opacity: 0.3 },
       data: data.map(d => d.count),
-      itemStyle: { color: '#409EFF' }
+      itemStyle: { color: chartTheme.primary }
     }]
   }
   agentsChart.setOption(option, true)
@@ -658,20 +713,21 @@ function updateHealthPie() {
   }
 
   const option: EChartsOption = {
-    tooltip: { trigger: 'item' },
+    ...chartBase(),
+    tooltip: chartTooltip('item'),
     legend: { bottom: 0, data: ['健康', '警告', '严重', '离线'] },
     series: [{
       name: '健康度',
       type: 'pie' as const,
       radius: ['40%', '70%'],
       avoidLabelOverlap: true,
-      itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
-      label: { show: true, formatter: '{b}: {c}' },
+      itemStyle: { borderRadius: 6, borderColor: chartTheme.card, borderWidth: 2 },
+      label: { show: true, formatter: '{b}: {c}', color: chartTheme.text },
       data: [
-        { value: counts.healthy, name: '健康', itemStyle: { color: '#67C23A' } },
-        { value: counts.warning, name: '警告', itemStyle: { color: '#E6A23C' } },
-        { value: counts.critical, name: '严重', itemStyle: { color: '#F56C6C' } },
-        { value: counts.offline, name: '离线', itemStyle: { color: '#909399' } }
+        { value: counts.healthy, name: '健康', itemStyle: { color: chartTheme.success } },
+        { value: counts.warning, name: '警告', itemStyle: { color: chartTheme.warning } },
+        { value: counts.critical, name: '严重', itemStyle: { color: chartTheme.danger } },
+        { value: counts.offline, name: '离线', itemStyle: { color: chartTheme.muted } }
       ]
     }]
   }
@@ -702,9 +758,9 @@ onUnmounted(() => {
 
 <style scoped>
 .monitoring-page {
-  padding: 20px;
-  min-height: 100vh;
-  background: #f5f7fa;
+  min-height: 100%;
+  color: var(--text-primary);
+  background: transparent;
 }
 
 /* ─── Page Header ─────────────────────────────────────────────── */
@@ -721,13 +777,13 @@ onUnmounted(() => {
   margin: 0 0 4px;
   font-size: 24px;
   font-weight: 700;
-  color: #1d2b3a;
+  color: var(--text-primary);
 }
 
 .page-desc {
   margin: 0;
   font-size: 13px;
-  color: #909399;
+  color: var(--text-secondary);
 }
 
 .page-actions {
@@ -742,37 +798,40 @@ onUnmounted(() => {
   align-items: center;
   gap: 6px;
   font-size: 12px;
-  color: #909399;
+  color: var(--text-secondary);
   padding: 4px 10px;
   border-radius: 12px;
-  background: #f0f0f0;
+  border: 1px solid var(--line-color);
+  background: var(--panel-bg);
   transition: all 0.3s;
 }
 
 .ws-indicator.connected {
-  color: #67C23A;
-  background: #f0f9eb;
+  color: #3fb950;
+  border-color: rgba(63, 185, 80, 0.28);
+  background: rgba(63, 185, 80, 0.08);
 }
 
 .ws-indicator.connecting {
-  color: #E6A23C;
-  background: #fdf6ec;
+  color: #d29922;
+  border-color: rgba(210, 153, 34, 0.28);
+  background: rgba(210, 153, 34, 0.08);
 }
 
 .ws-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #909399;
+  background: var(--text-secondary);
 }
 
 .connected .ws-dot {
-  background: #67C23A;
+  background: #3fb950;
   animation: pulse-green 2s infinite;
 }
 
 .connecting .ws-dot {
-  background: #E6A23C;
+  background: #d29922;
   animation: pulse-yellow 1s infinite;
 }
 
@@ -796,14 +855,18 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
   padding: 16px 12px;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-  transition: transform 0.2s;
+  min-height: 92px;
+  color: var(--text-primary);
+  background: var(--card-bg);
+  border: 1px solid var(--line-color);
+  border-radius: 8px;
+  box-shadow: none;
+  transition: border-color 0.2s, transform 0.2s;
 }
 
 .stat-card:hover {
   transform: translateY(-2px);
+  border-color: var(--view-color-border);
 }
 
 .stat-icon {
@@ -813,7 +876,7 @@ onUnmounted(() => {
 
 .stat-label {
   font-size: 12px;
-  color: #909399;
+  color: var(--text-secondary);
 }
 
 .stat-value {
@@ -822,13 +885,13 @@ onUnmounted(() => {
   margin-top: 2px;
 }
 
-.stat-total .stat-value { color: #409EFF; }
-.stat-online .stat-value { color: #67C23A; }
-.stat-busy .stat-value { color: #409EFF; }
-.stat-idle .stat-value { color: #E6A23C; }
-.stat-offline .stat-value { color: #909399; }
-.stat-devices .stat-value { color: #409EFF; }
-.stat-avg-cpu .stat-value { color: #E6A23C; }
+.stat-total .stat-value,
+.stat-busy .stat-value,
+.stat-devices .stat-value { color: var(--view-color); }
+.stat-online .stat-value { color: #3fb950; }
+.stat-idle .stat-value,
+.stat-avg-cpu .stat-value { color: #d29922; }
+.stat-offline .stat-value { color: var(--text-secondary); }
 
 /* ─── Section Header ──────────────────────────────────────────── */
 .section-header {
@@ -842,7 +905,7 @@ onUnmounted(() => {
   margin: 0;
   font-size: 18px;
   font-weight: 600;
-  color: #1d2b3a;
+  color: var(--text-primary);
 }
 
 .refresh-hint {
@@ -850,7 +913,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  color: #909399;
+  color: var(--text-secondary);
 }
 
 /* ─── Agent Cards ─────────────────────────────────────────────── */
@@ -859,24 +922,26 @@ onUnmounted(() => {
 }
 
 .agent-card {
-  background: #fff;
-  border-radius: 12px;
+  color: var(--text-primary);
+  background: var(--card-bg);
+  border: 1px solid var(--line-color);
+  border-radius: 8px;
   padding: 16px;
   margin-bottom: 16px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-  border-left: 4px solid #909399;
-  transition: all 0.2s;
+  box-shadow: none;
+  border-left: 4px solid var(--text-secondary);
+  transition: border-color 0.2s, transform 0.2s;
 }
 
 .agent-card:hover {
-  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
   transform: translateY(-2px);
+  border-color: var(--view-color-border);
 }
 
-.agent-card.status-online { border-left-color: #67C23A; }
-.agent-card.status-busy { border-left-color: #409EFF; }
-.agent-card.status-idle { border-left-color: #E6A23C; }
-.agent-card.status-offline { border-left-color: #909399; }
+.agent-card.status-online { border-left-color: #3fb950; }
+.agent-card.status-busy { border-left-color: var(--view-color); }
+.agent-card.status-idle { border-left-color: #d29922; }
+.agent-card.status-offline { border-left-color: var(--text-secondary); }
 
 .card-header {
   display: flex;
@@ -889,8 +954,8 @@ onUnmounted(() => {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #409EFF, #67C23A);
-  color: #fff;
+  background: linear-gradient(135deg, var(--view-color), #3fb950);
+  color: #08111f;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -908,12 +973,12 @@ onUnmounted(() => {
   display: block;
   font-size: 14px;
   font-weight: 600;
-  color: #1d2b3a;
+  color: var(--text-primary);
 }
 
 .agent-id {
   font-size: 11px;
-  color: #909399;
+  color: var(--text-secondary);
   font-family: monospace;
 }
 
@@ -926,28 +991,28 @@ onUnmounted(() => {
 }
 
 .status-badge.online {
-  background: #f0f9eb;
-  color: #67C23A;
+  background: rgba(63, 185, 80, 0.1);
+  color: #3fb950;
 }
 
 .status-badge.busy {
-  background: #ecf5ff;
-  color: #409EFF;
+  background: rgba(var(--view-rgb), 0.1);
+  color: var(--view-color);
 }
 
 .status-badge.idle {
-  background: #fdf6ec;
-  color: #E6A23C;
+  background: rgba(210, 153, 34, 0.1);
+  color: #d29922;
 }
 
 .status-badge.offline {
-  background: #f4f4f5;
-  color: #909399;
+  background: rgba(139, 148, 158, 0.1);
+  color: var(--text-secondary);
 }
 
 .status-badge.unknown {
-  background: #f4f4f5;
-  color: #909399;
+  background: rgba(139, 148, 158, 0.1);
+  color: var(--text-secondary);
 }
 
 .card-section {
@@ -956,14 +1021,14 @@ onUnmounted(() => {
 
 .section-label {
   font-size: 11px;
-  color: #909399;
+  color: var(--text-secondary);
   margin-bottom: 2px;
 }
 
 .section-value {
   font-size: 13px;
   font-weight: 500;
-  color: #303133;
+  color: var(--text-primary);
 }
 
 .heartbeat-age {
@@ -972,10 +1037,10 @@ onUnmounted(() => {
   font-weight: 400;
 }
 
-.heartbeat-age.age-healthy { color: #67C23A; }
-.heartbeat-age.age-warning { color: #E6A23C; }
-.heartbeat-age.age-critical { color: #F56C6C; }
-.heartbeat-age.age-offline { color: #909399; }
+.heartbeat-age.age-healthy { color: #3fb950; }
+.heartbeat-age.age-warning { color: #d29922; }
+.heartbeat-age.age-critical { color: #f85149; }
+.heartbeat-age.age-offline { color: var(--text-secondary); }
 
 .card-metrics {
   display: flex;
@@ -993,7 +1058,7 @@ onUnmounted(() => {
 
 .metric-label {
   font-size: 12px;
-  color: #606266;
+  color: var(--text-secondary);
 }
 
 .metric-value {
@@ -1001,13 +1066,17 @@ onUnmounted(() => {
   font-weight: 600;
 }
 
-.metric-value.success { color: #67C23A; }
-.metric-value.warning { color: #E6A23C; }
-.metric-value.danger { color: #F56C6C; }
+.metric-value.success { color: #3fb950; }
+.metric-value.warning { color: #d29922; }
+.metric-value.danger { color: #f85149; }
+
+:deep(.el-progress-bar__outer) {
+  background-color: var(--panel-bg);
+}
 
 .task-text {
   font-size: 12px;
-  color: #409EFF;
+  color: var(--view-color);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1024,13 +1093,13 @@ onUnmounted(() => {
   font-weight: 700;
 }
 
-.score-value.score-healthy { color: #67C23A; }
-.score-value.score-warning { color: #E6A23C; }
-.score-value.score-critical { color: #F56C6C; }
+.score-value.score-healthy { color: #3fb950; }
+.score-value.score-warning { color: #d29922; }
+.score-value.score-critical { color: #f85149; }
 
 .score-max {
   font-size: 12px;
-  color: #909399;
+  color: var(--text-secondary);
 }
 
 /* ─── Device Cards ───────────────────────────────────────────── */
@@ -1039,25 +1108,27 @@ onUnmounted(() => {
 }
 
 .device-card {
-  background: #fff;
-  border-radius: 12px;
+  color: var(--text-primary);
+  background: var(--card-bg);
+  border: 1px solid var(--line-color);
+  border-radius: 8px;
   padding: 16px;
   margin-bottom: 16px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-  border-left: 4px solid #909399;
-  transition: all 0.2s;
+  box-shadow: none;
+  border-left: 4px solid var(--text-secondary);
+  transition: border-color 0.2s, transform 0.2s;
 }
 
 .device-card:hover {
-  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
   transform: translateY(-2px);
+  border-color: var(--view-color-border);
 }
 
-.device-card.status-online { border-left-color: #67C23A; }
-.device-card.status-busy { border-left-color: #409EFF; }
-.device-card.status-idle { border-left-color: #E6A23C; }
+.device-card.status-online { border-left-color: #3fb950; }
+.device-card.status-busy { border-left-color: var(--view-color); }
+.device-card.status-idle { border-left-color: #d29922; }
 .device-card.status-offline,
-.device-card.status-unknown { border-left-color: #909399; }
+.device-card.status-unknown { border-left-color: var(--text-secondary); }
 
 .device-header {
   display: flex;
@@ -1068,13 +1139,13 @@ onUnmounted(() => {
 }
 
 .device-name {
-  color: #1d2b3a;
+  color: var(--text-primary);
   font-size: 15px;
   font-weight: 700;
 }
 
 .device-address {
-  color: #909399;
+  color: var(--text-secondary);
   font-size: 12px;
   margin-top: 3px;
 }
@@ -1084,8 +1155,9 @@ onUnmounted(() => {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   padding: 12px;
-  border-radius: 10px;
-  background: #f7f9fc;
+  border: 1px solid var(--line-color);
+  border-radius: 8px;
+  background: var(--panel-bg);
 }
 
 .device-meta div {
@@ -1094,14 +1166,14 @@ onUnmounted(() => {
 
 .device-meta span {
   display: block;
-  color: #909399;
+  color: var(--text-secondary);
   font-size: 11px;
   margin-bottom: 4px;
 }
 
 .device-meta strong {
   display: block;
-  color: #303133;
+  color: var(--text-primary);
   font-size: 12px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1126,13 +1198,13 @@ onUnmounted(() => {
 }
 
 .agent-chip {
-  color: #1d5fa7;
-  background: #ecf5ff;
+  color: var(--view-color);
+  background: rgba(var(--view-rgb), 0.1);
 }
 
 .empty-chip {
-  color: #909399;
-  background: #f4f4f5;
+  color: var(--text-secondary);
+  background: rgba(139, 148, 158, 0.1);
 }
 
 /* ─── Charts ──────────────────────────────────────────────────── */
@@ -1141,17 +1213,19 @@ onUnmounted(() => {
 }
 
 .chart-card {
-  background: #fff;
-  border-radius: 12px;
+  color: var(--text-primary);
+  background: var(--card-bg);
+  border: 1px solid var(--line-color);
+  border-radius: 8px;
   padding: 16px;
   margin-bottom: 16px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  box-shadow: none;
 }
 
 .chart-title {
   font-size: 14px;
   font-weight: 600;
-  color: #1d2b3a;
+  color: var(--text-primary);
   margin-bottom: 12px;
 }
 

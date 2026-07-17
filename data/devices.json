@@ -14,7 +14,7 @@
       "gpu": "10 核 GPU",
       "storage": "256GB SSD"
     },
-    "ports": [3020, 18789, 8000],
+    "ports": [3021, 18789, 8000],
     "assigned_agents": [
       "optimus",
       "bumblebee",

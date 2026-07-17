@@ -5,6 +5,7 @@ V3 project/task/development-point API for agent-driven development iteration.
 import os
 import asyncio
 import json
+import re
 import shlex
 import shutil
 import subprocess
@@ -21,6 +22,12 @@ from knowledge_manager import knowledge_manager
 from openclaw_integration import openclaw_integration
 from unified_data_manager import unified_data_manager
 from services.project_task_sync import sync_v3_task_to_v2
+from services.work_run_service import (
+    InvalidWorkTransition,
+    WorkRunLeaseConflict,
+    WorkRunNotFound,
+    work_run_service,
+)
 import skill_manager
 
 
@@ -35,6 +42,7 @@ OPENCLAW_WORKSPACE = Path.home() / ".openclaw" / "workspace"
 OPENCLAW_AGENTS_DIR = OPENCLAW_WORKSPACE / "agents"
 NINJA_TURTLES_QUEUE_FILE = OPENCLAW_AGENTS_DIR / "ninja-turtles" / "dev-loop" / "queue.json"
 DEFAULT_CODEX_BIN = os.getenv("CODEX_BIN", "/opt/homebrew/bin/codex")
+DEFAULT_OPENCLAW_BIN = os.getenv("OPENCLAW_BIN", "/opt/homebrew/opt/node/bin/openclaw")
 DEFAULT_CODEX_PATH = os.getenv(
     "CODEX_PATH",
     "/opt/homebrew/bin:/opt/homebrew/opt/node/bin:/opt/homebrew/Cellar/node/25.6.1_1/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
@@ -114,6 +122,8 @@ class ProjectCreate(BaseModel):
     progress: float = 0
     current_phase: str = "planning"
     context: dict[str, Any] = Field(default_factory=dict)
+    enabled_modules: list[str] = Field(default_factory=list)
+    product_bindings: list[dict[str, Any]] = Field(default_factory=list)
     design_doc: Optional[DesignDocument] = None
     document_spec: dict[str, Any] = Field(default_factory=dict)
 
@@ -129,6 +139,8 @@ class ProjectUpdate(BaseModel):
     progress: Optional[float] = None
     current_phase: Optional[str] = None
     context: Optional[dict[str, Any]] = None
+    enabled_modules: Optional[list[str]] = None
+    product_bindings: Optional[list[dict[str, Any]]] = None
     document_spec: Optional[dict[str, Any]] = None
 
 
@@ -294,6 +306,12 @@ class DocumentAssetUpdate(BaseModel):
     agent_id: str = "project-manager"
 
 
+class DocumentWorkdraftSyncRequest(BaseModel):
+    source_word_path: str = ""
+    force: bool = False
+    agent_id: str = "project-manager"
+
+
 class DecomposeRequest(BaseModel):
     reasoning_summary: str = ""
     agent_id: str = "project-manager"
@@ -358,12 +376,277 @@ class AgentRunnerTickRequest(BaseModel):
     max_seconds: int = Field(default=600, ge=10, le=3600)
 
 
+class WorkRunTransitionRequest(BaseModel):
+    status: str
+    actor: str = "human-reviewer"
+    detail: str = ""
+    result_summary: Optional[str] = None
+
+
 def _model_dict(model: BaseModel, exclude_unset: bool = False) -> dict:
     return model.model_dump(exclude_unset=exclude_unset)
 
 
 def _safe_id(value: str) -> str:
     return "".join(ch if ch.isalnum() or ch in {"-", "_"} else "-" for ch in str(value).strip().lower()).strip("-")
+
+
+def _safe_filename(value: str) -> str:
+    cleaned = "".join(ch if ch.isalnum() or ch in {"-", "_", " ", "."} else "-" for ch in str(value).strip())
+    return cleaned.strip(" .-") or "document-project"
+
+
+def _knowledge_root() -> Path:
+    return knowledge_manager.vault_path.resolve()
+
+
+def _resolve_vault_file(raw_path: str) -> Path:
+    if not raw_path:
+        raise HTTPException(status_code=400, detail="source_word_path is required")
+    root = _knowledge_root()
+    path = Path(os.path.expanduser(raw_path))
+    if not path.is_absolute():
+        path = root / path
+    try:
+        resolved = path.resolve()
+    except OSError as exc:
+        raise HTTPException(status_code=400, detail=f"Invalid source_word_path: {raw_path}") from exc
+    if resolved != root and root not in resolved.parents:
+        raise HTTPException(status_code=400, detail="source_word_path must be inside the knowledge vault")
+    if not resolved.exists() or not resolved.is_file():
+        raise HTTPException(status_code=404, detail=f"Word source not found: {raw_path}")
+    if resolved.suffix.lower() != ".docx":
+        raise HTTPException(status_code=400, detail="当前自动同步仅支持 .docx，旧 .doc 请先另存为 .docx")
+    return resolved
+
+
+def _relative_to_vault(path: Path) -> str:
+    try:
+        return str(path.resolve().relative_to(_knowledge_root()))
+    except ValueError:
+        return str(path)
+
+
+def _score_word_candidate(path: Path, project: dict[str, Any]) -> int:
+    text = str(path).lower()
+    name = str(project.get("name") or "").lower()
+    score = 0
+    for token in [name, "博士", "论文", "论文章节", "毕业论文"]:
+        if token and token.lower() in text:
+            score += 20
+    if "10-成果库" in str(path):
+        score += 8
+    if "已排版" in text:
+        score += 8
+    if "初稿" in text:
+        score += 5
+    if "_pandoc_temp" in text or "/tmp/" in text:
+        score -= 12
+    if path.name.startswith("~$"):
+        score -= 100
+    try:
+        score += min(int(path.stat().st_mtime // 86400), 10_000)
+    except OSError:
+        pass
+    return score
+
+
+def _find_word_source(project: dict[str, Any], requested_path: str = "") -> Path:
+    if requested_path:
+        return _resolve_vault_file(requested_path)
+    spec = project.get("document_spec") if isinstance(project.get("document_spec"), dict) else {}
+    saved_path = (spec.get("source_word") or {}).get("path") if isinstance(spec.get("source_word"), dict) else ""
+    if saved_path:
+        try:
+            return _resolve_vault_file(saved_path)
+        except HTTPException:
+            pass
+
+    root = _knowledge_root()
+    if not root.exists():
+        raise HTTPException(status_code=404, detail="知识库目录不存在，无法查找 Word 原文")
+    candidates = [p for p in root.rglob("*.docx") if p.is_file() and not p.name.startswith("~$")]
+    candidates.sort(key=lambda p: _score_word_candidate(p, project), reverse=True)
+    best = candidates[0] if candidates else None
+    if not best or _score_word_candidate(best, project) < 20:
+        raise HTTPException(status_code=404, detail="未在知识库中找到匹配该文档项目的 .docx 原文，请传入 source_word_path")
+    return best
+
+
+def _heading_level(style_name: str) -> int:
+    style = (style_name or "").strip().lower()
+    match = re.search(r"(?:heading|标题)\s*([1-6])", style)
+    return int(match.group(1)) if match else 0
+
+
+def _table_to_markdown(table) -> str:
+    rows = []
+    for row in table.rows:
+        cells = [" ".join(cell.text.split()) for cell in row.cells]
+        rows.append(cells)
+    if not rows:
+        return ""
+    width = max(len(row) for row in rows)
+    rows = [row + [""] * (width - len(row)) for row in rows]
+    header = "| " + " | ".join(rows[0]) + " |"
+    divider = "| " + " | ".join(["---"] * width) + " |"
+    body = ["| " + " | ".join(row) + " |" for row in rows[1:]]
+    return "\n".join([header, divider, *body])
+
+
+def _docx_to_markdown(source_path: Path, project: dict[str, Any]) -> tuple[str, dict[str, Any]]:
+    try:
+        from docx import Document
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail="服务器缺少 python-docx，无法解析 Word 原文") from exc
+
+    try:
+        document = Document(str(source_path))
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Word 原文解析失败: {source_path.name}") from exc
+
+    generated_at = datetime.now(timezone.utc).isoformat()
+    lines = [
+        "---",
+        f"title: {project.get('name') or source_path.stem}",
+        f"source_word: {_relative_to_vault(source_path)}",
+        f"generated_at: {generated_at}",
+        "status: workdraft",
+        "---",
+        "",
+    ]
+    paragraph_count = 0
+    heading_count = 0
+    for para in document.paragraphs:
+        text = " ".join(para.text.split())
+        if not text:
+            continue
+        level = _heading_level(getattr(para.style, "name", ""))
+        if level:
+            lines.append(f"{'#' * level} {text}")
+            heading_count += 1
+        elif "list" in str(getattr(para.style, "name", "")).lower() or "列表" in str(getattr(para.style, "name", "")):
+            lines.append(f"- {text}")
+        else:
+            lines.append(text)
+        lines.append("")
+        paragraph_count += 1
+
+    table_count = 0
+    for table in document.tables:
+        md_table = _table_to_markdown(table)
+        if md_table:
+            lines.extend([md_table, ""])
+            table_count += 1
+
+    markdown = "\n".join(lines).strip() + "\n"
+    stats = {
+        "paragraph_count": paragraph_count,
+        "heading_count": heading_count,
+        "table_count": table_count,
+        "generated_at": generated_at,
+        "size_chars": len(markdown),
+    }
+    return markdown, stats
+
+
+def _slug(value: str) -> str:
+    value = re.sub(r"[^\w\u4e00-\u9fff]+", "-", value.strip().lower())
+    return value.strip("-") or "section"
+
+
+_CHINESE_NUMBERS = {"一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10}
+
+
+def _chapter_number(value: str) -> Optional[int]:
+    match = re.search(r"第\s*([0-9一二三四五六七八九十]+)\s*章", value or "")
+    if not match:
+        return None
+    raw = match.group(1)
+    if raw.isdigit():
+        return int(raw)
+    if raw == "十":
+        return 10
+    if raw.startswith("十"):
+        return 10 + _CHINESE_NUMBERS.get(raw[-1], 0)
+    if raw.endswith("十"):
+        return _CHINESE_NUMBERS.get(raw[0], 1) * 10
+    return _CHINESE_NUMBERS.get(raw)
+
+
+def _extract_markdown_headings(markdown: str, sections: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    project_sections_by_number = {_chapter_number(s.get("title", "")): s for s in sections if _chapter_number(s.get("title", ""))}
+    links = []
+    for line_number, line in enumerate(markdown.splitlines(), start=1):
+        match = re.match(r"^(#{1,6})\s+(.+?)\s*$", line)
+        if not match:
+            continue
+        level = len(match.group(1))
+        heading = match.group(2).strip()
+        chapter_no = _chapter_number(heading)
+        matched_section = project_sections_by_number.get(chapter_no) if chapter_no else None
+        if not matched_section:
+            normalized_heading = re.sub(r"\s+", "", heading)
+            for section in sections:
+                normalized_title = re.sub(r"\s+", "", section.get("title", ""))
+                if normalized_title and (normalized_title in normalized_heading or normalized_heading in normalized_title):
+                    matched_section = section
+                    break
+        links.append({
+            "id": f"md-heading-{line_number}",
+            "heading": heading,
+            "level": level,
+            "anchor": _slug(heading),
+            "line": line_number,
+            "section_id": matched_section.get("id", "") if matched_section else "",
+            "section_title": matched_section.get("title", "") if matched_section else "",
+            "source": "markdown_workdraft",
+        })
+    return links
+
+
+def _chapters_with_workdraft_outline(project: dict[str, Any], links: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    spec = project.get("document_spec") if isinstance(project.get("document_spec"), dict) else {}
+    chapters = [dict(item) for item in spec.get("chapters", []) if isinstance(item, dict)]
+    if not chapters or not links:
+        return chapters
+    top_links = [link for link in links if link.get("level") <= 2 and link.get("section_id")]
+    for chapter in chapters:
+        section_links = [link for link in top_links if link.get("section_id") == chapter.get("id")]
+        child_links = [link for link in links if link.get("level", 9) > 1 and link.get("section_id") == chapter.get("id")]
+        if child_links:
+            chapter["outline_items"] = [
+                {
+                    "id": f"{chapter.get('id', 'chapter')}-md-{index + 1}",
+                    "title": item["heading"],
+                    "summary": f"来自 Markdown 工作稿第 {item['line']} 行",
+                    "status": "synced",
+                }
+                for index, item in enumerate(child_links[:12])
+            ]
+        elif section_links:
+            chapter.setdefault("outline_items", [])
+    return chapters
+
+
+def _write_workdraft_markdown(project: dict[str, Any], source_path: Path, markdown: str, stats: dict[str, Any]) -> dict[str, Any]:
+    root = _knowledge_root()
+    project_dir = root / "06-项目库-Projects" / _safe_filename(project.get("name") or project.get("id") or "文档项目") / "_workdraft"
+    project_dir.mkdir(parents=True, exist_ok=True)
+    md_path = project_dir / "论文工作稿.md"
+    md_path.write_text(markdown, encoding="utf-8")
+    return {
+        "path": str(md_path),
+        "relative_path": _relative_to_vault(md_path),
+        "status": "synced",
+        "synced_at": stats["generated_at"],
+        "generated_from": str(source_path),
+        "generated_from_relative": _relative_to_vault(source_path),
+        "size_chars": stats["size_chars"],
+        "heading_count": stats["heading_count"],
+        "paragraph_count": stats["paragraph_count"],
+        "table_count": stats["table_count"],
+    }
 
 
 def _read_json_file(path: Path, default: Any) -> Any:
@@ -656,13 +939,40 @@ def _runner_executor_status() -> dict[str, Any]:
     first = shlex.split(configured)[0] if configured else ""
     codex_bin = os.getenv("ELASTIC_AGENT_CODEX_BIN", DEFAULT_CODEX_BIN).strip()
     codex_available = bool(codex_bin and (Path(codex_bin).is_file() or shutil.which(codex_bin)))
+    openclaw_bin = os.getenv("ELASTIC_AGENT_OPENCLAW_BIN", DEFAULT_OPENCLAW_BIN).strip()
+    openclaw_available = bool(openclaw_bin and (Path(openclaw_bin).is_file() or shutil.which(openclaw_bin)))
+    preference = os.getenv("ELASTIC_AGENT_EXECUTOR_PREFERENCE", "openclaw").strip().lower()
+    if configured:
+        mode = "external-command"
+        command = first
+        available = bool(first and (Path(first).is_file() or shutil.which(first)))
+    elif preference == "openclaw" and openclaw_available:
+        mode = "openclaw-agent"
+        command = openclaw_bin
+        available = True
+    elif codex_available:
+        mode = "codex-cli"
+        command = codex_bin
+        available = True
+    elif openclaw_available:
+        mode = "openclaw-agent"
+        command = openclaw_bin
+        available = True
+    else:
+        mode = "claim-only"
+        command = codex_bin or openclaw_bin
+        available = False
     return {
-        "configured": bool(configured or codex_available),
-        "command": configured.split()[0] if configured else codex_bin,
-        "available": bool((first and shutil.which(first)) or codex_available),
-        "mode": "external-command" if configured else ("codex-cli" if codex_available else "claim-only"),
+        "configured": bool(configured or codex_available or openclaw_available),
+        "command": command,
+        "available": available,
+        "mode": mode,
+        "preference": preference,
         "codex_bin": codex_bin,
         "codex_available": codex_available,
+        "codex_runtime_status": os.getenv("ELASTIC_AGENT_CODEX_STATUS", "unknown"),
+        "openclaw_bin": openclaw_bin,
+        "openclaw_available": openclaw_available,
     }
 
 
@@ -797,12 +1107,15 @@ def _render_runner_prompt(queue_task: dict[str, Any], context: dict[str, Any]) -
 - 释放策略：{queue_task.get('release_policy', 'task_completed')}
 
 ## 输出要求
-请在结果中包含：
-1. result_summary：完成了什么
-2. decisions：关键技术决策
-3. blockers：阻塞点
-4. next_actions：下一步建议
-5. memory_summary：需要回写到项目和基础智能体长期记忆的摘要
+最后一条回复必须只包含一个合法 JSON 对象，不要用 Markdown 代码块，也不要以“接下来将做”结束：
+{{
+  "result_summary": "完成了什么",
+  "decisions": ["关键技术决策"],
+  "blockers": ["阻塞点"],
+  "next_actions": ["下一步建议"],
+  "memory_summary": "需要回写到项目和基础智能体长期记忆的摘要",
+  "verification": ["实际运行的检查或测试及结果"]
+}}
 
 ## 执行约束
 - 请在上述代码仓库中完成最小必要修改。
@@ -810,6 +1123,32 @@ def _render_runner_prompt(queue_task: dict[str, Any], context: dict[str, Any]) -
 - 不要回退或覆盖与本任务无关的现有改动。
 - 尽量运行能证明修改正确的构建或测试，并在结果中写明。
 """
+
+
+def _parse_structured_runner_result(value: str) -> Optional[dict[str, Any]]:
+    text = str(value or "").strip()
+    if text.startswith("```"):
+        text = re.sub(r"^```(?:json)?\s*", "", text, flags=re.IGNORECASE)
+        text = re.sub(r"\s*```$", "", text)
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError:
+        start = text.find("{")
+        end = text.rfind("}")
+        if start < 0 or end <= start:
+            return None
+        try:
+            payload = json.loads(text[start:end + 1])
+        except json.JSONDecodeError:
+            return None
+    if not isinstance(payload, dict):
+        return None
+    required = {"result_summary", "decisions", "blockers", "next_actions", "memory_summary", "verification"}
+    if not required.issubset(payload) or not str(payload.get("result_summary") or "").strip():
+        return None
+    if not all(isinstance(payload.get(key), list) for key in ("decisions", "blockers", "next_actions", "verification")):
+        return None
+    return payload
 
 
 def _update_instance_runtime_status(instance_id: str, status: str, extra: Optional[dict[str, Any]] = None) -> None:
@@ -838,17 +1177,40 @@ def _claim_next_elastic_task(instance_id: Optional[str] = None) -> Optional[dict
     if not candidates:
         return None
     task = candidates[0]
+    executor = _runner_executor_status()
+    workspace = _workspace_for_queue_task(task)
+    canonical_run = work_run_service.claim(
+        dispatch_id=str(task.get("id") or ""),
+        project_id=str(task.get("project_id") or ""),
+        task_id=str(task.get("task_id") or ""),
+        development_point_id=str(task.get("development_point_id") or ""),
+        agent_id=str(task.get("assignee") or task.get("base_agent_id") or "elastic-runner"),
+        executor=str(executor.get("mode") or "claim-only"),
+        workspace=str(workspace),
+        input_context={
+            "queue_task_id": task.get("id"),
+            "project_name": task.get("project_name"),
+            "title": task.get("title"),
+            "reason": task.get("reason"),
+            "release_policy": task.get("release_policy"),
+        },
+        lease_seconds=int(os.getenv("ELASTIC_AGENT_RUNNER_MAX_SECONDS", "1200")) + 60,
+    )
     now = _now_utc()
     task["status"] = "in_progress"
     task["started_at"] = task.get("started_at") or now
     task["updated_at"] = now
     _save_dispatch_queue(queue)
     _update_instance_runtime_status(task.get("assignee", ""), "running", {"runner_status": "claimed"})
-    return task
+    claimed_task = dict(task)
+    claimed_task["_canonical_run"] = canonical_run
+    return claimed_task
 
 
 def _run_external_executor(queue_task: dict[str, Any], prompt_path: Path, max_seconds: int) -> dict[str, Any]:
     configured = os.getenv("ELASTIC_AGENT_EXECUTOR_CMD", "").strip()
+    executor_status = _runner_executor_status()
+    executor_mode = str(executor_status.get("mode") or "claim-only")
     instance_workspace = _workspace_for_queue_task(queue_task)
     context = _read_execution_context(queue_task)
     repo = _codex_repo_for_queue_task(queue_task, context)
@@ -857,7 +1219,39 @@ def _run_external_executor(queue_task: dict[str, Any], prompt_path: Path, max_se
     env = os.environ.copy()
     env["PATH"] = os.getenv("ELASTIC_AGENT_EXECUTOR_PATH", DEFAULT_CODEX_PATH)
 
-    if not configured:
+    if not configured and executor_mode == "openclaw-agent":
+        openclaw_bin = str(executor_status.get("openclaw_bin") or DEFAULT_OPENCLAW_BIN)
+        resolved_openclaw = openclaw_bin if Path(openclaw_bin).is_file() else (shutil.which(openclaw_bin, path=env["PATH"]) or "")
+        if not resolved_openclaw:
+            return {
+                "status": "blocked",
+                "failure_code": "openclaw_not_found",
+                "reason": "OpenClaw CLI not found; set ELASTIC_AGENT_OPENCLAW_BIN",
+                "command": openclaw_bin,
+            }
+        agent_id = _safe_id(str(queue_task.get("base_agent_id") or queue_task.get("assignee") or "raphael"))
+        if agent_id not in _template_by_id():
+            return {
+                "status": "blocked",
+                "failure_code": "invalid_openclaw_agent",
+                "reason": f"OpenClaw fallback requires a registered base agent, got {agent_id}",
+            }
+        session_suffix = _safe_id(str(queue_task.get("id") or "elastic-run"))[-80:]
+        prompt = prompt_path.read_text(encoding="utf-8")
+        args = [
+            resolved_openclaw,
+            "agent",
+            "--agent",
+            agent_id,
+            "--session-key",
+            f"agent:{agent_id}:elastic-{session_suffix}",
+            "--message",
+            prompt,
+            "--timeout",
+            str(max_seconds),
+            "--json",
+        ]
+    elif not configured:
         codex_bin = os.getenv("ELASTIC_AGENT_CODEX_BIN", DEFAULT_CODEX_BIN).strip()
         codex_path = Path(codex_bin)
         resolved_codex = codex_bin if codex_path.is_file() else (shutil.which(codex_bin, path=env["PATH"]) or "")
@@ -895,12 +1289,50 @@ def _run_external_executor(queue_task: dict[str, Any], prompt_path: Path, max_se
 
     if not args or not shutil.which(args[0], path=env["PATH"]):
         return {"status": "blocked", "reason": "executor command not found", "command": args[0] if args else ""}
-    result = subprocess.run(args, cwd=str(repo), text=True, capture_output=True, timeout=max_seconds, env=env)
+    try:
+        result = subprocess.run(args, cwd=str(repo), text=True, capture_output=True, timeout=max_seconds, env=env)
+    except subprocess.TimeoutExpired as exc:
+        timeout_stdout = exc.stdout.decode() if isinstance(exc.stdout, bytes) else (exc.stdout or "")
+        timeout_stderr = exc.stderr.decode() if isinstance(exc.stderr, bytes) else (exc.stderr or "")
+        output_path.write_text(
+            f"$ {' '.join(args)}\n\n[timeout]\n{max_seconds}s\n\n[stdout]\n{timeout_stdout}\n\n[stderr]\n{timeout_stderr}\n",
+            encoding="utf-8",
+        )
+        return {
+            "status": "failed",
+            "failure_code": "executor_timeout",
+            "reason": f"executor exceeded {max_seconds}s timeout",
+            "output": str(output_path),
+            "repo": str(repo),
+            "workspace": str(instance_workspace),
+        }
     output_path.write_text(
         f"$ {' '.join(args)}\n\n[stdout]\n{result.stdout}\n\n[stderr]\n{result.stderr}\n",
         encoding="utf-8",
     )
     final_message = result_path.read_text(encoding="utf-8") if result_path.exists() else ""
+    openclaw_status = ""
+    structured_result: Optional[dict[str, Any]] = None
+    if executor_mode == "openclaw-agent":
+        try:
+            payload = json.loads(result.stdout)
+            openclaw_status = str(payload.get("status") or "")
+            result_payload = payload.get("result") if isinstance(payload.get("result"), dict) else {}
+            payloads = result_payload.get("payloads") if isinstance(result_payload.get("payloads"), list) else []
+            messages = [str(item.get("text") or "") for item in payloads if isinstance(item, dict) and item.get("text")]
+            if not messages:
+                meta = result_payload.get("meta") if isinstance(result_payload.get("meta"), dict) else {}
+                visible = meta.get("finalAssistantVisibleText") or meta.get("finalAssistantRawText")
+                if visible:
+                    messages = [str(visible)]
+            final_message = "\n\n".join(messages).strip()
+        except (TypeError, json.JSONDecodeError):
+            final_message = result.stdout.strip()[-4000:]
+        structured_result = _parse_structured_runner_result(final_message)
+        if structured_result:
+            final_message = json.dumps(structured_result, ensure_ascii=False, indent=2)
+        if final_message:
+            result_path.write_text(final_message, encoding="utf-8")
     if not final_message.strip() and result.returncode != 0:
         stderr_tail = result.stderr.strip()[-2000:]
         stdout_tail = result.stdout.strip()[-1000:]
@@ -912,43 +1344,103 @@ def _run_external_executor(queue_task: dict[str, Any], prompt_path: Path, max_se
             ]
             if part
         )
+    completed = result.returncode == 0 and (
+        executor_mode != "openclaw-agent"
+        or (openclaw_status in {"", "ok"} and structured_result is not None)
+    )
+    failure_code = ""
+    failure_reason = ""
+    if result.returncode != 0:
+        failure_code = "executor_nonzero_exit"
+        failure_reason = f"executor exited with code {result.returncode}"
+    elif executor_mode == "openclaw-agent" and openclaw_status not in {"", "ok"}:
+        failure_code = "openclaw_run_failed"
+        failure_reason = f"OpenClaw returned status {openclaw_status}"
+    elif executor_mode == "openclaw-agent" and structured_result is None:
+        failure_code = "incomplete_executor_result"
+        failure_reason = "executor final response did not satisfy the structured completion contract"
     return {
-        "status": "completed" if result.returncode == 0 else "failed",
+        "status": "completed" if completed else "failed",
+        "executor": executor_mode,
+        "failure_code": failure_code or None,
+        "reason": failure_reason,
         "returncode": result.returncode,
         "output": str(output_path),
         "result": str(result_path) if result_path.exists() else "",
         "summary": final_message[:2000],
+        "structured_result": structured_result or {},
         "repo": str(repo),
         "workspace": str(instance_workspace),
     }
 
 
 def _runner_tick(req: AgentRunnerTickRequest) -> dict[str, Any]:
-    task = _claim_next_elastic_task(req.instance_id)
+    try:
+        task = _claim_next_elastic_task(req.instance_id)
+    except WorkRunLeaseConflict as exc:
+        return {
+            "claimed": False,
+            "reason": "lease_conflict",
+            "detail": str(exc),
+            "executor": _runner_executor_status(),
+        }
     if not task:
         return {"claimed": False, "reason": "no assigned elastic task", "executor": _runner_executor_status()}
+    canonical_run = task.pop("_canonical_run")
     context = _read_execution_context(task)
     workspace = _workspace_for_queue_task(task)
     workspace.mkdir(parents=True, exist_ok=True)
     prompt_path = workspace / "RUNNER_PROMPT.md"
     prompt_path.write_text(_render_runner_prompt(task, context), encoding="utf-8")
-    now = _now_utc()
+    canonical_run = work_run_service.transition(
+        canonical_run["id"],
+        "claimed",
+        actor=str(task.get("assignee") or "elastic-runner"),
+        detail="Runner prompt and workspace prepared",
+        prompt_path=str(prompt_path),
+        workspace=str(workspace),
+    )
     run = {
-        "id": f"run-{task.get('id')}-{now}",
-        "task_id": task.get("id"),
+        **canonical_run,
+        "task_id": canonical_run.get("task_id") or task.get("task_id"),
+        "dispatch_id": task.get("id"),
         "instance_id": task.get("assignee"),
-        "status": "claimed",
         "execute_requested": req.execute,
         "prompt": str(prompt_path),
         "execution_context": task.get("execution_context", ""),
-        "created_at": now,
-        "updated_at": now,
     }
     if req.execute:
+        canonical_run = work_run_service.transition(
+            canonical_run["id"],
+            "running",
+            actor=str(task.get("assignee") or "elastic-runner"),
+            detail="External executor started",
+            lease_seconds=req.max_seconds + 60,
+        )
         execution = _run_external_executor(task, prompt_path, req.max_seconds)
         run["execution"] = execution
         run["status"] = execution.get("status", "unknown")
         if execution.get("status") == "completed":
+            canonical_run = work_run_service.transition(
+                canonical_run["id"],
+                "review",
+                actor=str(task.get("assignee") or "elastic-runner"),
+                detail="Executor completed; awaiting independent verification",
+                result_summary=execution.get("summary", ""),
+                execution_result=execution,
+            )
+            for artifact_type, title, uri in (
+                ("runner-output", "Executor stdout and stderr", execution.get("output", "")),
+                ("runner-result", "Executor result summary", execution.get("result", "")),
+            ):
+                if uri:
+                    work_run_service.add_artifact(
+                        canonical_run["id"],
+                        artifact_type=artifact_type,
+                        title=title,
+                        uri=str(uri),
+                        metadata={"executor": _runner_executor_status().get("mode")},
+                    )
             task["status"] = "review"
             task["updated_at"] = _now_utc()
             task["result_summary"] = execution.get("summary", "")
@@ -962,10 +1454,30 @@ def _runner_tick(req: AgentRunnerTickRequest) -> dict[str, Any]:
             if existing:
                 existing.update(task)
                 _save_dispatch_queue(queue)
-        elif execution.get("status") in {"failed", "blocked"}:
+        elif execution.get("status") in {"failed", "blocked", "skipped"}:
+            canonical_status = "failed" if execution.get("status") == "failed" else "blocked"
+            failure_detail = execution.get("summary") or execution.get("reason", "")
+            canonical_run = work_run_service.transition(
+                canonical_run["id"],
+                canonical_status,
+                actor=str(task.get("assignee") or "elastic-runner"),
+                detail="External executor did not produce a reviewable result",
+                result_summary=failure_detail,
+                failure_code=execution.get("failure_code") or f"executor_{execution.get('status')}",
+                failure_detail=failure_detail,
+                execution_result=execution,
+            )
+            if execution.get("output"):
+                work_run_service.add_artifact(
+                    canonical_run["id"],
+                    artifact_type="runner-output",
+                    title="Failed executor output",
+                    uri=str(execution["output"]),
+                    metadata={"status": execution.get("status")},
+                )
             task["status"] = "blocked"
             task["updated_at"] = _now_utc()
-            task["result_summary"] = execution.get("summary") or execution.get("reason", "")
+            task["result_summary"] = failure_detail
             _update_instance_runtime_status(
                 task.get("assignee", ""),
                 "blocked",
@@ -976,6 +1488,15 @@ def _runner_tick(req: AgentRunnerTickRequest) -> dict[str, Any]:
             if existing:
                 existing.update(task)
                 _save_dispatch_queue(queue)
+        run = {
+            **work_run_service.get(canonical_run["id"]),
+            "dispatch_id": task.get("id"),
+            "instance_id": task.get("assignee"),
+            "execute_requested": req.execute,
+            "prompt": str(prompt_path),
+            "execution_context": task.get("execution_context", ""),
+            "execution": execution,
+        }
     runner_status_path = workspace / "RUNNER_STATUS.json"
     runner_status_path.write_text(json.dumps(run, ensure_ascii=False, indent=2), encoding="utf-8")
     state = _load_runner_state()
@@ -986,7 +1507,10 @@ def _runner_tick(req: AgentRunnerTickRequest) -> dict[str, Any]:
 
 
 @router.get("/projects")
-def list_projects(project_type: Optional[str] = Query(None, description="Filter projects by type: software or document")):
+def list_projects(
+    project_type: Optional[str] = Query(None, description="Legacy project template filter: software or document"),
+    enabled_module: Optional[str] = Query(None, description="Filter by composable module key"),
+):
     projects = project_manager.list_projects()
     if project_type:
         normalized_type = project_type.strip().lower()
@@ -995,6 +1519,14 @@ def list_projects(project_type: Optional[str] = Query(None, description="Filter 
         projects = [
             project for project in projects
             if str(project.get("project_type") or project.get("type") or "software").lower() == normalized_type
+        ]
+    if enabled_module:
+        from services.project_composition import PROJECT_MODULES
+        if enabled_module not in PROJECT_MODULES:
+            raise HTTPException(status_code=400, detail="enabled_module is invalid")
+        projects = [
+            project for project in projects
+            if enabled_module in (project.get("enabled_modules") or [])
         ]
     return {"projects": projects, "total": len(projects)}
 
@@ -1018,6 +1550,71 @@ def update_project(project_id: str, req: ProjectUpdate):
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     return project
+
+
+@router.get("/projects/{project_id}/document-workdraft")
+def get_project_document_workdraft(project_id: str):
+    project = project_manager.get_project(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    spec = project.get("document_spec") if isinstance(project.get("document_spec"), dict) else {}
+    return {
+        "project_id": project_id,
+        "source_word": spec.get("source_word", {}),
+        "working_markdown": spec.get("working_markdown", {}),
+        "section_links": spec.get("section_links", []),
+        "sync_status": spec.get("sync_status", {}),
+    }
+
+
+@router.post("/projects/{project_id}/document-workdraft/sync")
+def sync_project_document_workdraft(project_id: str, req: DocumentWorkdraftSyncRequest):
+    project = project_manager.get_project(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    if str(project.get("project_type") or project.get("type") or "").lower() != "document":
+        raise HTTPException(status_code=400, detail="Only document projects can create a workdraft")
+
+    source_path = _find_word_source(project, req.source_word_path)
+    markdown, stats = _docx_to_markdown(source_path, project)
+    working_markdown = _write_workdraft_markdown(project, source_path, markdown, stats)
+
+    spec = dict(project.get("document_spec") or {})
+    chapters = [dict(item) for item in spec.get("chapters", []) if isinstance(item, dict)]
+    section_links = _extract_markdown_headings(markdown, chapters)
+    spec.update({
+        "source_word": {
+            "path": str(source_path),
+            "relative_path": _relative_to_vault(source_path),
+            "title": source_path.stem,
+            "file_name": source_path.name,
+            "size_bytes": source_path.stat().st_size,
+            "mtime": datetime.fromtimestamp(source_path.stat().st_mtime, timezone.utc).isoformat(),
+            "knowledge_node_id": _relative_to_vault(source_path),
+        },
+        "working_markdown": working_markdown,
+        "section_links": section_links,
+        "sync_status": {
+            "status": "synced",
+            "message": "Word 原文已转换为 Markdown 工作稿，并生成章节绑定",
+            "agent_id": req.agent_id,
+            "synced_at": stats["generated_at"],
+            "heading_count": stats["heading_count"],
+            "section_link_count": len(section_links),
+        },
+    })
+    spec["chapters"] = _chapters_with_workdraft_outline(project, section_links)
+
+    updated = project_manager.update_project(project_id, {"document_spec": spec})
+    if not updated:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return {
+        "project": updated,
+        "source_word": spec["source_word"],
+        "working_markdown": working_markdown,
+        "section_links": section_links,
+        "markdown_preview": markdown[:2000],
+    }
 
 
 @router.delete("/projects/{project_id}")
@@ -1708,6 +2305,7 @@ def get_agent_dispatch_queue():
 @router.get("/agents/runner/status")
 def get_agent_runner_status():
     state = _load_runner_state()
+    canonical = work_run_service.summary(limit=200)
     queue = _load_dispatch_queue()
     assigned = [
         row for row in queue.get("tasks", [])
@@ -1721,6 +2319,7 @@ def get_agent_runner_status():
     ]
     return {
         "runner": state,
+        "canonical_runs": canonical,
         "executor": _runner_executor_status(),
         "background": _elastic_runner_status(),
         "queue": {
@@ -1729,8 +2328,56 @@ def get_agent_runner_status():
             "assigned_tasks": assigned,
             "in_progress_tasks": in_progress,
         },
-        "updated_at": state.get("updated_at") or _now_utc(),
+        "source_of_truth": canonical["source"],
+        "updated_at": canonical.get("updated_at") or state.get("updated_at") or _now_utc(),
     }
+
+
+@router.get("/work-runs")
+def list_work_runs(
+    project_id: str = "",
+    task_id: str = "",
+    status: str = "",
+    limit: int = Query(100, ge=1, le=500),
+):
+    try:
+        rows = work_run_service.list(
+            project_id=project_id,
+            task_id=task_id,
+            status=status,
+            limit=limit,
+        )
+    except InvalidWorkTransition as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {
+        "runs": rows,
+        "total": len(rows),
+        "source": "unified_dashboard.db:work_runs",
+    }
+
+
+@router.get("/work-runs/{run_id}")
+def get_work_run(run_id: str):
+    try:
+        return work_run_service.get(run_id)
+    except WorkRunNotFound as exc:
+        raise HTTPException(status_code=404, detail="Work run not found") from exc
+
+
+@router.post("/work-runs/{run_id}/transition")
+def transition_work_run(run_id: str, req: WorkRunTransitionRequest):
+    try:
+        return work_run_service.transition(
+            run_id,
+            req.status,
+            actor=req.actor,
+            detail=req.detail,
+            result_summary=req.result_summary,
+        )
+    except WorkRunNotFound as exc:
+        raise HTTPException(status_code=404, detail="Work run not found") from exc
+    except InvalidWorkTransition as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @router.post("/agents/runner/tick")
@@ -1808,8 +2455,19 @@ def release_agent_instance(instance_id: str, req: AgentReleaseRequest):
     row["released_at"] = _now_utc()
     row["updated_at"] = row["released_at"]
     queue_task = _mark_dispatch_instance(row, "released", req.reason)
+    canonical_run = work_run_service.latest_for_dispatch(_instance_dispatch_id(row))
+    if canonical_run and canonical_run.get("status") not in {"completed", "cancelled"}:
+        try:
+            canonical_run = work_run_service.transition(
+                canonical_run["id"],
+                "cancelled",
+                actor=req.released_by,
+                detail=req.reason,
+            )
+        except InvalidWorkTransition:
+            pass
     _save_agent_instance_store(store)
-    return {"instance": _enrich_agent_instance(row), "queue_task": queue_task}
+    return {"instance": _enrich_agent_instance(row), "queue_task": queue_task, "work_run": canonical_run}
 
 
 @router.post("/agents/instances/{instance_id}/complete")
@@ -1825,6 +2483,15 @@ def complete_agent_instance(instance_id: str, req: AgentCompleteRequest):
     row["updated_at"] = now
     row["result_summary"] = req.result_summary
     queue_task = _mark_dispatch_instance(row, "done", req.result_summary)
+    canonical_run = work_run_service.latest_for_dispatch(_instance_dispatch_id(row))
+    if canonical_run and canonical_run.get("status") in {"review", "verifying"}:
+        canonical_run = work_run_service.transition(
+            canonical_run["id"],
+            "completed",
+            actor=req.completed_by,
+            detail="Legacy agent completion accepted as review approval",
+            result_summary=req.result_summary,
+        )
     commit = {
         "id": f"mem-{instance_id}-{len(store.get('memory_commits', [])) + 1}",
         "instance_id": instance_id,
@@ -1842,7 +2509,12 @@ def complete_agent_instance(instance_id: str, req: AgentCompleteRequest):
     }
     store.setdefault("memory_commits", []).append(commit)
     _save_agent_instance_store(store)
-    return {"instance": _enrich_agent_instance(row), "memory_commit": commit, "queue_task": queue_task}
+    return {
+        "instance": _enrich_agent_instance(row),
+        "memory_commit": commit,
+        "queue_task": queue_task,
+        "work_run": canonical_run,
+    }
 
 
 @router.post("/agents/release")

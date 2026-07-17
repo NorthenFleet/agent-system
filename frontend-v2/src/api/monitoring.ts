@@ -5,11 +5,12 @@ import apiClient from './client'
 export interface MonitoringAgent {
   agent_id: string
   agent_name: string
-  status: 'online' | 'busy' | 'idle' | 'offline'
+  status: 'online' | 'busy' | 'idle' | 'timeout' | 'offline'
   cpu_usage: number | null
   memory_usage: number | null
   last_heartbeat: string | null
   heartbeat_age_seconds: number | null
+  seconds_ago?: number | null
   current_task: string | null
   health: 'healthy' | 'warning' | 'critical' | 'offline'
   health_score?: number
@@ -36,7 +37,15 @@ export interface MonitoringTrendPoint {
 // ─── API Functions ────────────────────────────────────────────────────────────
 
 export function getMonitoringLive() {
-  return apiClient.get<MonitoringAgent[]>('/api/v2/agents/live').then(r => r.data)
+  return apiClient
+    .get<MonitoringAgent[] | { agents: MonitoringAgent[] }>('/api/v2/agents/live')
+    .then(r => {
+      const agents = Array.isArray(r.data) ? r.data : r.data.agents || []
+      return agents.map(agent => ({
+        ...agent,
+        heartbeat_age_seconds: agent.heartbeat_age_seconds ?? agent.seconds_ago ?? null,
+      }))
+    })
 }
 
 export function getMonitoringSummary() {

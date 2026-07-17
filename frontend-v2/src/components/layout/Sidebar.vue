@@ -45,6 +45,7 @@ import {
   Promotion,
   Reading,
   Tools,
+  TrendCharts,
   User
 } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
@@ -56,16 +57,14 @@ const productModuleKeys = ['projects', 'development', 'writing', 'finance', 'pro
 const productionModuleKeys = [
   'data-admin',
   'agents',
-  'agent-dispatch',
   'knowledge',
   'tools',
-  'devices',
   'community',
   'intelligence',
   'news-center',
   'tasks'
 ]
-const systemModuleKeys = ['monitoring', 'user-admin']
+const systemModuleKeys = ['monitoring', 'analytics', 'user-admin']
 
 const iconMap: Record<string, Component> = {
   Calendar,
@@ -85,6 +84,7 @@ const iconMap: Record<string, Component> = {
   Promotion,
   Reading,
   Tools,
+  TrendCharts,
   User
 }
 

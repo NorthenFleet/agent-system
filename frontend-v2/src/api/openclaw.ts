@@ -231,6 +231,35 @@ export interface ScheduledTask {
   description?: string
 }
 
+export interface WebCrawlerStatus {
+  provider: string
+  repository: string
+  enabled: boolean
+  ready: boolean
+  base_url: string
+  scope: string
+  module_keys: string[]
+  agent_ids: string[]
+  checked_at: string
+  http_status?: number
+  message?: string
+}
+
+export interface WebCrawlerResult {
+  success: boolean
+  url: string
+  title?: string
+  content: string
+  content_length: number
+  truncated: boolean
+  links?: Record<string, unknown>
+  media?: Record<string, unknown>
+  status_code?: number
+  error_message?: string
+  provider: string
+  crawled_at: string
+}
+
 export interface DeviceItem {
   id: string
   name: string
@@ -292,6 +321,96 @@ export interface NewsLocation {
 
 export interface NewsLocationPoint extends NewsLocation {
   news?: NewsItem
+}
+
+export interface IntelligenceTopic {
+  id: string
+  name: string
+  icon: string
+  description: string
+  status: 'active' | 'planning' | 'paused'
+  sources: string[]
+  records: string
+  recordValue: number
+  updatedAt: string
+  goal: string
+  lat: number
+  lng: number
+  locationName: string
+  relatedLocations: string[]
+  createdAt?: string
+  databaseUpdatedAt?: string
+}
+
+export interface IntelligenceEvent {
+  id: string
+  topicId?: string | null
+  topicName?: string | null
+  vesselId?: string | null
+  vesselName?: string | null
+  title: string
+  summary: string
+  category: string
+  severity: 'info' | 'low' | 'medium' | 'high' | 'critical'
+  status: 'open' | 'monitoring' | 'resolved'
+  source: string
+  occurredAt: string
+  lat: number
+  lng: number
+  locationName: string
+  evidenceUrl?: string
+  confidence: number
+  assigneeAgentId?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface WorldCupGoal {
+  id: string
+  sequence: number
+  team_name: string
+  scorer_name: string
+  minute: number
+  stoppage_minute: number
+  minute_label: string
+  goal_type: string
+  penalty: boolean
+  own_goal: boolean
+}
+
+export interface WorldCupMatch {
+  id: string
+  kickoff_at: string
+  stage: string
+  stage_label: string
+  status: string
+  status_label: string
+  completed: boolean
+  home_team: string
+  home_code: string
+  home_logo: string
+  home_score: number
+  away_team: string
+  away_code: string
+  away_logo: string
+  away_score: number
+  venue: string
+  location: string
+  source: string
+  source_url: string
+  fetched_at: string
+  goals: WorldCupGoal[]
+}
+
+export interface WorldCupSummary {
+  matches: number
+  completed: number
+  scheduled: number
+  goals: number
+  average_goals: number
+  updated_at: string | null
+  top_scorers: Array<{ name: string; team: string; goals: number }>
+  goal_periods: Array<{ period: string; goals: number }>
 }
 
 export interface AisTrackPoint {
@@ -424,6 +543,14 @@ export function getSkills() {
   return apiClient.get<{ skills: SkillItem[] }>('/api/v3/skills').then(r => r.data)
 }
 
+export function getWebCrawlerStatus() {
+  return apiClient.get<WebCrawlerStatus>('/api/tools/web-crawler/status').then(r => r.data)
+}
+
+export function crawlWebPage(url: string, query = '') {
+  return apiClient.post<WebCrawlerResult>('/api/tools/web-crawler/crawl', { url, query }).then(r => r.data)
+}
+
 export function getScheduledTasks() {
   return apiClient.get<{ tasks: ScheduledTask[]; managed_by?: string; manager_role?: string; last_updated?: string }>('/api/scheduled-tasks').then(r => r.data)
 }
@@ -458,12 +585,68 @@ export function getLocationNews() {
 
 export function getIntelligenceSummary() {
   return apiClient.get<{
+    topics: number
     vessels: number
     points: number
     latest_timestamp?: string
     sources?: Array<{ source: string; count: number }>
     database?: string
   }>('/api/intelligence/summary').then(r => r.data)
+}
+
+export function getIntelligenceTopics() {
+  return apiClient.get<{ topics: IntelligenceTopic[] }>('/api/intelligence/topics').then(r => r.data)
+}
+
+export function saveIntelligenceTopic(topic: Partial<IntelligenceTopic>) {
+  return apiClient.post<{ topic: IntelligenceTopic }>('/api/intelligence/topics', topic).then(r => r.data)
+}
+
+export function deleteIntelligenceTopic(topicId: string) {
+  return apiClient.delete<{ status: string }>(`/api/intelligence/topics/${encodeURIComponent(topicId)}`).then(r => r.data)
+}
+
+export function getWorldCup2026Summary() {
+  return apiClient.get<WorldCupSummary>('/api/intelligence/world-cup-2026/summary').then(r => r.data)
+}
+
+export function getWorldCup2026Matches(params?: {
+  stage?: string
+  team?: string
+  completed?: boolean
+}) {
+  return apiClient.get<{ matches: WorldCupMatch[] }>('/api/intelligence/world-cup-2026/matches', { params }).then(r => r.data)
+}
+
+export function syncWorldCup2026() {
+  return apiClient.post<{ status: string; matches: number; completed: number; goals: number }>(
+    '/api/intelligence/world-cup-2026/sync'
+  ).then(r => r.data)
+}
+
+export function getIntelligenceEvents(params?: {
+  severity?: string
+  status?: string
+  topic_id?: string
+  vessel_id?: string
+  limit?: number
+}) {
+  return apiClient.get<{ events: IntelligenceEvent[] }>('/api/intelligence/events', { params }).then(r => r.data)
+}
+
+export function saveIntelligenceEvent(event: Partial<IntelligenceEvent>) {
+  return apiClient.post<{ event: IntelligenceEvent }>('/api/intelligence/events', event).then(r => r.data)
+}
+
+export function updateIntelligenceEventStatus(eventId: string, status: IntelligenceEvent['status']) {
+  return apiClient.patch<{ event: IntelligenceEvent }>(
+    `/api/intelligence/events/${encodeURIComponent(eventId)}/status`,
+    { status }
+  ).then(r => r.data)
+}
+
+export function deleteIntelligenceEvent(eventId: string) {
+  return apiClient.delete<{ status: string }>(`/api/intelligence/events/${encodeURIComponent(eventId)}`).then(r => r.data)
 }
 
 export function getAisVessels(includeTrack = true, limit = 200) {

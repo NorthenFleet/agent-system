@@ -49,7 +49,7 @@ import {
 } from 'element-plus'
 import 'element-plus/dist/index.css'
 import App from './App.vue'
-import router from './router'
+import router from './router/index.ts'
 import './styles/main.css'
 
 const app = createApp(App)
@@ -110,3 +110,12 @@ for (const component of elementComponents) {
 }
 
 app.mount('#app')
+
+// PWA: 注册 Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(err => {
+      console.log('[SW] Service Worker 注册失败:', err)
+    })
+  })
+}

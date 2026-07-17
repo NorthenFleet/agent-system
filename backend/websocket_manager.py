@@ -205,7 +205,7 @@ class ConnectionManager:
 
     async def push_status_update(self, agents: List[dict], tasks: List[dict]) -> int:
         """推送完整状态快照"""
-        return await self.broadcast({
+        return await self.send_to_all({
             "type": "status_update",
             "data": {
                 "agents": agents,

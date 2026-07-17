@@ -6,9 +6,11 @@ JWT 认证服务
 import os
 import secrets
 from datetime import datetime, timedelta, timezone
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Callable
 import bcrypt
 from jose import jwt, JWTError
+from functools import wraps
+from fastapi import HTTPException, Header, Depends
 
 # 从环境变量读取；缺失时使用进程级临时密钥，避免硬编码可预测签名密钥。
 SECRET_KEY = os.getenv("DASHBOARD_JWT_SECRET")
@@ -73,3 +75,24 @@ def generate_default_admin_password() -> str:
     if configured:
         return configured
     return secrets.token_urlsafe(18)
+
+
+def get_current_user(authorization: Optional[str] = Header(None)) -> dict:
+    """从 Authorization header 提取当前用户"""
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="未提供认证 token")
+    token = authorization.split(" ", 1)[1]
+    payload = decode_access_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="token 无效或已过期")
+    return payload
+
+
+def require_role(*roles: str) -> Callable:
+    """角色权限装饰器 — 检查当前用户是否具有指定角色之一"""
+    def _check_role(user: dict = Depends(get_current_user)) -> dict:
+        user_role = user.get("role", "")
+        if user_role not in roles:
+            raise HTTPException(status_code=403, detail="权限不足")
+        return user
+    return _check_role

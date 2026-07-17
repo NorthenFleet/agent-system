@@ -92,11 +92,51 @@
                 </div>
               </div>
 
+              <section class="document-section workdraft-section">
+                <div class="document-section-head">
+                  <div>
+                    <h3>原文与 Markdown 工作稿</h3>
+                    <p class="muted">把知识库中的 Word 原文转换为可编辑、可追踪、可绑定章节的 Markdown 中间稿。</p>
+                  </div>
+                  <div class="workdraft-actions">
+                    <el-tag :type="workingMarkdown?.status === 'synced' ? 'success' : 'warning'">
+                      {{ workingMarkdown?.status === 'synced' ? '已同步' : '待同步' }}
+                    </el-tag>
+                    <el-button
+                      size="small"
+                      type="primary"
+                      :loading="syncingWorkdraft"
+                      @click="syncWorkdraft"
+                    >
+                      同步 Word 到 MD
+                    </el-button>
+                  </div>
+                </div>
+
+                <div class="workdraft-grid">
+                  <div class="workdraft-card">
+                    <span>Word 原文</span>
+                    <strong>{{ sourceWord?.file_name || sourceWord?.title || '未绑定' }}</strong>
+                    <p class="muted">{{ sourceWord?.relative_path || '从知识库中自动查找匹配的 .docx 原文' }}</p>
+                  </div>
+                  <div class="workdraft-card">
+                    <span>Markdown 工作稿</span>
+                    <strong>{{ workingMarkdown?.relative_path ? '论文工作稿.md' : '未生成' }}</strong>
+                    <p class="muted">{{ workingMarkdown?.relative_path || '同步后会写入知识库项目目录，作为智能体写作工作层' }}</p>
+                  </div>
+                  <div class="workdraft-card">
+                    <span>章节绑定</span>
+                    <strong>{{ sectionLinks.length }} 个标题</strong>
+                    <p class="muted">{{ syncStatus?.message || '同步后会把 MD 标题绑定到项目章节与知识库节点' }}</p>
+                  </div>
+                </div>
+              </section>
+
               <section class="document-section">
                 <div class="document-section-head">
                   <div>
                     <h3>文档目录与章节计划</h3>
-                    <p class="muted">按章节组织写作目标、主要内容、关键论点和负责智能体。</p>
+                    <p class="muted">按章、节和必要图表组织论文结构，保证每章都能看到完整目录和支撑材料。</p>
                   </div>
                   <el-tag>{{ documentSections.length }} 章</el-tag>
                 </div>
@@ -104,17 +144,63 @@
                 <div v-else class="document-section-list">
                   <article v-for="section in documentSections" :key="section.id || section.title" class="document-section-card">
                     <div class="document-card-head">
-                      <strong>{{ section.title }}</strong>
+                      <div>
+                        <strong>{{ section.title }}</strong>
+                        <p class="muted">{{ section.summary || section.main_content || section.content_brief || '暂无章节说明' }}</p>
+                      </div>
                       <el-tag size="small" :type="statusType(section.status || 'planning')">
                         {{ statusLabel(section.status || 'planning') }}
                       </el-tag>
                     </div>
-                    <p class="muted">{{ section.summary || section.main_content || section.content_brief || '暂无章节说明' }}</p>
+
+                    <div class="chapter-detail-grid">
+                      <div class="chapter-outline-block">
+                        <div class="chapter-block-title">完整目录</div>
+                        <ol class="chapter-outline-list">
+                          <li
+                            v-for="(item, index) in chapterOutlineItems(section)"
+                            :key="item.id || `${section.title}-${index}`"
+                          >
+                            <span class="chapter-outline-index">{{ chapterOutlineNumber(section, index) }}</span>
+                            <div>
+                              <strong>{{ item.title }}</strong>
+                              <p v-if="item.summary || item.description" class="muted">
+                                {{ item.summary || item.description }}
+                              </p>
+                            </div>
+                          </li>
+                        </ol>
+                      </div>
+
+                      <div class="chapter-assets-block">
+                        <div class="chapter-block-title">必要图片/图表</div>
+                        <div class="chapter-asset-list">
+                          <div
+                            v-for="asset in chapterAssets(section)"
+                            :key="asset.id || asset.title"
+                            class="chapter-asset-item"
+                          >
+                            <div>
+                              <strong>{{ asset.title }}</strong>
+                              <p class="muted">{{ asset.description || '用于支撑本章论证和版面表达' }}</p>
+                            </div>
+                            <div class="chapter-asset-tags">
+                              <el-tag size="small" type="info">{{ assetTypeLabel(asset.type) }}</el-tag>
+                              <el-tag size="small" :type="asset.suggested ? 'warning' : statusType(asset.status || 'planning')">
+                                {{ asset.suggested ? '建议补充' : statusLabel(asset.status || 'planning') }}
+                              </el-tag>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
                     <div v-if="section.key_points?.length" class="doc-tags">
                       <el-tag v-for="point in section.key_points" :key="point" size="small" type="info">{{ point }}</el-tag>
                     </div>
                     <div class="document-card-foot">
-                      <span>负责智能体：{{ agentLabel(section.assigned_agent) }}</span>
+                      <span>负责智能体：{{ agentLabel(section.assigned_agent || section.assigned_agent_id) }}</span>
+                      <span>{{ chapterOutlineItems(section).length }} 个目录项 · {{ chapterAssets(section).length }} 个图表项</span>
                     </div>
                   </article>
                 </div>
@@ -140,7 +226,86 @@
                       <el-tag size="small" :type="statusType(asset.status || 'planning')">
                         {{ statusLabel(asset.status || 'planning') }}
                       </el-tag>
-                      <span>{{ asset.chapter_title || '未绑定章节' }}</span>
+                      <span>{{ assetChapterLabel(asset) }}</span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section class="document-section reference-section">
+                <div class="document-section-head">
+                  <div>
+                    <h3>参考文献</h3>
+                    <p class="muted">区分知识库资料和论文正式引用，形成“资料来源 → 章节使用 → 文末参考文献”的证据链。</p>
+                  </div>
+                  <div class="reference-summary-tags">
+                    <el-tag type="info">{{ knowledgeReferences.length }} 条资料库文献</el-tag>
+                    <el-tag type="success">{{ formalReferences.length }} 条论文引用</el-tag>
+                  </div>
+                </div>
+
+                <div class="reference-grid">
+                  <div class="reference-column">
+                    <div class="reference-column-head">
+                      <strong>资料库文献</strong>
+                      <small>来自知识库、概念库、资料笔记和图谱节点，作为章节写作候选材料。</small>
+                    </div>
+                    <el-empty v-if="knowledgeReferences.length === 0" description="暂无资料库文献" :image-size="56" />
+                    <div v-else class="reference-list">
+                      <article
+                        v-for="reference in knowledgeReferences"
+                        :key="referenceIdentity(reference)"
+                        class="reference-card"
+                      >
+                        <div class="reference-card-head">
+                          <strong :title="referenceTitle(reference)">{{ referenceTitle(reference) }}</strong>
+                          <el-tag size="small" type="info">{{ referenceStatusLabel(reference.status || 'candidate') }}</el-tag>
+                        </div>
+                        <p class="muted">{{ reference.note || referenceMeta(reference) || '可作为章节候选资料' }}</p>
+                        <div class="reference-card-foot">
+                          <span>{{ reference.chapter_title || '未绑定章节' }}</span>
+                          <div class="reference-actions">
+                            <el-tag v-if="reference.node_id" size="small">知识库节点</el-tag>
+                            <el-button
+                              size="small"
+                              type="primary"
+                              plain
+                              :loading="promotingReferenceIds.has(referenceIdentity(reference))"
+                              @click="promoteReferenceToCitation(reference)"
+                            >
+                              加入论文引用
+                            </el-button>
+                          </div>
+                        </div>
+                      </article>
+                    </div>
+                  </div>
+
+                  <div class="reference-column">
+                    <div class="reference-column-head">
+                      <strong>论文引用</strong>
+                      <small>进入正文引用和文末参考文献表，需要作者、年份、出处、DOI/URL 和引用键。</small>
+                    </div>
+                    <el-empty v-if="formalReferences.length === 0" description="暂无论文正式引用" :image-size="56" />
+                    <div v-else class="reference-list">
+                      <article
+                        v-for="reference in formalReferences"
+                        :key="referenceIdentity(reference)"
+                        class="reference-card formal"
+                      >
+                        <div class="reference-card-head">
+                          <strong :title="referenceTitle(reference)">{{ referenceTitle(reference) }}</strong>
+                          <el-tag size="small" type="success">{{ reference.citation_key || '正式引用' }}</el-tag>
+                        </div>
+                        <p class="muted">{{ referenceMeta(reference) || reference.note || '等待补全引用元数据' }}</p>
+                        <div class="reference-card-foot">
+                          <span>{{ reference.chapter_title || '未绑定章节' }}</span>
+                          <div class="reference-actions">
+                            <el-tag v-if="reference.doi" size="small" type="warning">DOI</el-tag>
+                            <el-tag v-if="reference.url" size="small" type="info">URL</el-tag>
+                          </div>
+                        </div>
+                      </article>
                     </div>
                   </div>
                 </div>
@@ -171,10 +336,10 @@
           <el-card class="panel tasks-panel" shadow="hover">
             <template #header>
               <div class="panel-header">
-                <span>{{ isDocumentProject ? '并行写作任务' : 'Loop 自主迭代开发' }}</span>
+                <span>{{ isDocumentProject ? '并行写作任务' : '软件研发作战台' }}</span>
                 <div class="panel-header-actions">
                   <el-tag>{{ selectedProject.tasks.length }} 个任务</el-tag>
-                  <el-tag type="success">{{ executablePointCount }} 个待执行子项</el-tag>
+                  <el-tag type="success">{{ executablePointCount }} 个待执行{{ pointLabel }}</el-tag>
                   <el-tag v-if="!isDocumentProject" type="warning">{{ loopActiveCount }} 个 Codex 执行中</el-tag>
                   <el-button
                     size="small"
@@ -182,9 +347,9 @@
                     :loading="autoDispatchingProject"
                     @click="autoDispatchProject"
                   >
-                    启动项目 Loop
+                    启动项目协同
                   </el-button>
-                  <el-button size="small" :loading="loadingCodexJobs" @click="loadCodexJobs">刷新反馈</el-button>
+                  <el-button size="small" :loading="loadingCodexJobs" @click="loadCodexJobs">刷新执行反馈</el-button>
                 </div>
               </div>
             </template>
@@ -228,10 +393,10 @@
                 <div v-show="!isTaskCollapsed(task.id)" class="task-details">
                   <div class="execution-list">
                   <div class="execution-list-head">
-                    <strong>{{ isDocumentProject ? '执行子项看板' : 'Loop 执行子项' }}</strong>
+                    <strong>{{ isDocumentProject ? '写作要点执行' : '开发要点执行' }}</strong>
                     <small>每个{{ pointLabel }}单独交给{{ isDocumentProject ? '文档协作智能体' : '忍者神龟开发组' }}，通过 Codex 执行、反馈、验证并进入下一轮</small>
                   </div>
-                  <div v-if="task.development_points.length === 0" class="muted">暂无可执行子项</div>
+                  <div v-if="task.development_points.length === 0" class="muted">暂无可执行{{ pointLabel }}</div>
                   <div v-for="point in task.development_points" :key="point.id" class="execution-row">
                     <div class="execution-main">
                       <el-tag :type="statusType(point.status)" size="small">{{ statusLabel(point.status) }}</el-tag>
@@ -256,7 +421,7 @@
                         :disabled="!isExecutablePoint(point) || hasActiveJob(point.id)"
                         @click="startPointCodexJob(task, point)"
                       >
-                        {{ isExecutablePoint(point) ? '执行子项' : '已完成' }}
+                        {{ isExecutablePoint(point) ? `执行${pointLabel}` : '已完成' }}
                       </el-button>
                       <el-button
                         size="small"
@@ -280,8 +445,8 @@
                 <div class="codex-task-panel">
                   <div class="codex-task-head">
                     <div>
-                      <strong>{{ isDocumentProject ? '任务派发控制' : 'Loop 迭代控制' }}</strong>
-                      <small>{{ isDocumentProject ? '项目经理可一键派发本任务全部未完成子项，也可保留整任务指令' : '按开发要点自动创建 Codex Job，多轮读代码、修改、验证、反馈' }}</small>
+                      <strong>{{ isDocumentProject ? '任务派发控制' : '任务执行控制' }}</strong>
+                      <small>{{ isDocumentProject ? `项目经理可一键派发本任务全部未完成${pointLabel}，也可保留整任务指令` : '按开发要点创建 Codex Job，完成读代码、修改、验证和反馈闭环' }}</small>
                     </div>
                     <el-select v-model="taskCodexAgents[task.id]" size="small" style="width: 138px">
                       <el-option label="擎天柱" value="optimus" />
@@ -317,16 +482,16 @@
                       :loading="creatingTaskIds.has(task.id)"
                       @click="autoDispatchTask(task)"
                     >
-                      启动任务 Loop
+                      派发全部要点
                     </el-button>
                     <el-button
                       size="small"
                       :loading="creatingTaskIds.has(task.id)"
                       @click="startProjectCodexJob(task)"
                     >
-                      整任务迭代
+                      整任务执行
                     </el-button>
-                    <el-button size="small" :loading="loadingCodexJobs" @click="loadCodexJobs">刷新反馈</el-button>
+                    <el-button size="small" :loading="loadingCodexJobs" @click="loadCodexJobs">刷新执行反馈</el-button>
                   </div>
                   <div v-if="jobsForTask(task.id).length" class="codex-job-list">
                     <button v-for="job in jobsForTask(task.id)" :key="job.id" class="codex-job" @click="selectCodexJob(job)">
@@ -357,7 +522,7 @@
           <el-card class="panel manager-panel" shadow="hover">
             <template #header>
               <div class="panel-header">
-                <span>项目经理面板</span>
+                <span>{{ isDocumentProject ? '项目经理面板' : '研发经理面板' }}</span>
                 <el-tag size="small" type="info">{{ managerAgent }}</el-tag>
               </div>
             </template>
@@ -447,7 +612,11 @@
               </el-collapse-item>
               <el-collapse-item title="知识上下文" name="knowledge">
                 <div class="compact-list">
-                  <div v-if="isDocumentProject">引用资料、章节材料、图片/图表计划将作为写作上下文。</div>
+                  <template v-if="isDocumentProject">
+                    <div>资料库文献：{{ knowledgeReferences.length }} 条</div>
+                    <div>论文引用：{{ formalReferences.length }} 条</div>
+                    <div>章节材料、图片/图表计划和引用链将作为写作上下文。</div>
+                  </template>
                   <div v-else>设计文档、任务、开发要点将作为开发上下文。</div>
                 </div>
               </el-collapse-item>
@@ -490,7 +659,13 @@ import {
   getProjects,
   deleteProjectTask,
   sendProjectChat,
+  syncProjectDocumentWorkdraft,
+  updateProject,
   type DevelopmentPoint,
+  type DocumentAsset,
+  type DocumentOutlineItem,
+  type DocumentReference,
+  type DocumentSection,
   type Project,
   type ProjectChatContext,
   type ProjectChatMessage,
@@ -507,6 +682,8 @@ import {
   type CodexLoop
 } from '@/api/codex'
 
+type DisplayDocumentAsset = DocumentAsset & { suggested?: boolean }
+
 const route = useRoute()
 const loading = ref(false)
 const loadingCodexJobs = ref(false)
@@ -521,6 +698,7 @@ const chatText = ref('')
 const chatAgent = ref('optimus')
 const workspaceProjectType = computed(() => route.meta.workspaceMode === 'writing' ? 'document' : 'software')
 const isWritingWorkspace = computed(() => workspaceProjectType.value === 'document')
+const workspaceModule = computed(() => isWritingWorkspace.value ? 'writing' : 'development')
 const projectListTitle = computed(() => isWritingWorkspace.value ? '文档项目' : '开发项目')
 const emptyProjectText = computed(() => isWritingWorkspace.value ? '暂无文档项目' : '暂无开发项目')
 
@@ -567,6 +745,8 @@ const creatingPointIds = ref(new Set<string>())
 const creatingLoopIds = ref(new Set<string>())
 const collapsedTaskIds = ref(new Set<string>())
 const deletingTaskIds = ref(new Set<string>())
+const promotingReferenceIds = ref(new Set<string>())
+const syncingWorkdraft = ref(false)
 const autoDispatchingProject = ref(false)
 let codexRefreshTimer: number | undefined
 
@@ -588,6 +768,15 @@ const usageRequirements = computed(() => {
 })
 const documentSections = computed(() => selectedProject.value?.document_spec?.chapters || [])
 const documentAssets = computed(() => selectedProject.value?.document_spec?.assets || [])
+const documentReferences = computed<DocumentReference[]>(() =>
+  (selectedProject.value?.document_spec?.references || []).map(normalizeDocumentReference)
+)
+const sourceWord = computed(() => selectedProject.value?.document_spec?.source_word || {})
+const workingMarkdown = computed(() => selectedProject.value?.document_spec?.working_markdown || {})
+const sectionLinks = computed(() => selectedProject.value?.document_spec?.section_links || [])
+const syncStatus = computed(() => selectedProject.value?.document_spec?.sync_status || {})
+const formalReferences = computed(() => documentReferences.value.filter(reference => isFormalReference(reference)))
+const knowledgeReferences = computed(() => documentReferences.value.filter(reference => !isFormalReference(reference)))
 const openPoints = computed(() => {
   const fromContext = projectContext.value?.open_points || []
   if (fromContext.length) return fromContext
@@ -1130,6 +1319,298 @@ function assetTypeLabel(type?: string) {
   return type ? (map[type] || type) : '资产'
 }
 
+function normalizeOutlineItem(item: string | DocumentOutlineItem, fallbackId: string): DocumentOutlineItem {
+  if (typeof item === 'string') {
+    return { id: fallbackId, title: item }
+  }
+  return {
+    ...item,
+    id: item.id || fallbackId,
+    title: item.title || '未命名小节'
+  }
+}
+
+function normalizeAsset(item: string | DocumentAsset, fallbackId: string): DisplayDocumentAsset {
+  if (typeof item === 'string') {
+    return { id: fallbackId, title: item, type: 'diagram', status: 'planning', suggested: true }
+  }
+  return {
+    ...item,
+    id: item.id || fallbackId,
+    title: item.title || '未命名图表'
+  }
+}
+
+function chapterNumber(section: DocumentSection) {
+  const index = documentSections.value.findIndex(item => (item.id || item.title) === (section.id || section.title))
+  return index >= 0 ? index + 1 : 1
+}
+
+function chapterOutlineNumber(section: DocumentSection, index: number) {
+  return `${chapterNumber(section)}.${index + 1}`
+}
+
+function chapterOutlineItems(section: DocumentSection): DocumentOutlineItem[] {
+  const explicitItems = section.outline_items || section.subsections || []
+  if (explicitItems.length) {
+    return explicitItems.map((item, index) => normalizeOutlineItem(item, `${section.id || section.title}-outline-${index}`))
+  }
+  const points = section.key_points || []
+  if (points.length) {
+    return points.map((point, index) => ({
+      id: `${section.id || section.title}-point-${index}`,
+      title: point,
+      summary: outlineSummaryForPoint(section.title, point)
+    }))
+  }
+  return [
+    {
+      id: `${section.id || section.title}-brief`,
+      title: section.summary || section.content_brief || '章节主体内容',
+      summary: section.content_brief || section.main_content || ''
+    }
+  ]
+}
+
+function outlineSummaryForPoint(chapterTitle: string, point: string) {
+  const text = point || chapterTitle
+  if (/研究背景/.test(text)) return '交代问题来源、现实需求和研究场景。'
+  if (/问题定义/.test(text)) return '明确研究对象、边界条件、核心问题和评价口径。'
+  if (/研究贡献|创新点/.test(text)) return '提炼理论贡献、方法贡献和工程贡献。'
+  if (/文献综述/.test(text)) return '按研究脉络梳理国内外工作和代表性方法。'
+  if (/理论基础/.test(text)) return '说明支撑论文方法的基础理论和关键概念。'
+  if (/方法对比/.test(text)) return '比较现有方法的适用条件、优势和不足。'
+  if (/系统模型/.test(text)) return '定义系统对象、变量、约束、状态和输入输出。'
+  if (/总体架构/.test(text)) return '展开模块组成、数据流、控制流和智能体协同关系。'
+  if (/指标体系/.test(text)) return '给出评价指标、约束指标和实验观测指标。'
+  if (/算法设计/.test(text)) return '描述核心算法思路、步骤、复杂度和适用场景。'
+  if (/模块流程/.test(text)) return '呈现模块调用关系、业务流程和异常分支。'
+  if (/工程实现/.test(text)) return '说明关键实现、接口、数据结构和工程约束。'
+  if (/实验设置/.test(text)) return '定义数据集、环境、参数、基线和实验步骤。'
+  if (/评价指标/.test(text)) return '说明指标含义、计算方式和判定标准。'
+  if (/结果分析/.test(text)) return '围绕实验结果进行对比、消融、误差和解释分析。'
+  if (/工作总结/.test(text)) return '总结研究工作、系统实现和实验结论。'
+  if (/未来工作/.test(text)) return '说明局限、不足和后续研究方向。'
+  return '展开该小节的论证内容、关键证据和章节衔接。'
+}
+
+function normalizeText(value?: string) {
+  return String(value || '').replace(/\s+/g, '').toLowerCase()
+}
+
+function sectionMatchesAsset(section: DocumentSection, asset: DocumentAsset) {
+  const sectionId = section.id || ''
+  if (asset.section_id && sectionId && asset.section_id === sectionId) return true
+  const chapterTitle = normalizeText(asset.chapter_title)
+  const sectionTitle = normalizeText(section.title)
+  if (chapterTitle && (sectionTitle.includes(chapterTitle) || chapterTitle.includes(sectionTitle))) return true
+
+  const assetText = normalizeText(`${asset.title} ${asset.description || ''}`)
+  if (/绪论|第一章/.test(section.title) && /论文|总体结构|研究路线/.test(assetText)) return true
+  if (/系统建模|总体方案|第三章/.test(section.title) && /系统|架构|数据流|协作/.test(assetText)) return true
+  if (/实验|第五章/.test(section.title) && /实验|评价|结果|流程/.test(assetText)) return true
+  if (/相关研究|第二章/.test(section.title) && /文献|相关研究|方法对比|理论基础|知识图谱|谱系/.test(assetText)) return true
+  if (/方法设计|关键技术|第四章/.test(section.title) && /算法|核心方法|方法流程|模块流程|工程实现|关键技术/.test(assetText)) return true
+  return false
+}
+
+function suggestedAssetsForSection(section: DocumentSection): DisplayDocumentAsset[] {
+  const title = section.title
+  const suggestions: DisplayDocumentAsset[] = []
+  if (/绪论|第一章/.test(title)) {
+    suggestions.push({
+      id: `${section.id || section.title}-suggest-research-route`,
+      title: '研究路线与论文结构图',
+      type: 'diagram',
+      status: 'planning',
+      description: '展示研究问题、章节关系和论文推进路线。',
+      suggested: true
+    })
+  }
+  if (/相关研究|第二章/.test(title)) {
+    suggestions.push({
+      id: `${section.id || section.title}-suggest-literature-map`,
+      title: '相关研究谱系图',
+      type: 'diagram',
+      status: 'planning',
+      description: '按方法流派、关键概念和研究差距组织文献脉络。',
+      suggested: true
+    })
+  }
+  if (/系统建模|总体方案|第三章/.test(title)) {
+    suggestions.push({
+      id: `${section.id || section.title}-suggest-architecture`,
+      title: '系统总体架构图',
+      type: 'diagram',
+      status: 'planning',
+      description: '展示对象模型、模块关系、数据流和智能体协同关系。',
+      suggested: true
+    })
+  }
+  if (/方法设计|关键技术|第四章/.test(title)) {
+    suggestions.push({
+      id: `${section.id || section.title}-suggest-method-flow`,
+      title: '核心方法流程图',
+      type: 'diagram',
+      status: 'planning',
+      description: '展示算法步骤、模块调用和工程实现路径。',
+      suggested: true
+    })
+  }
+  if (/实验|第五章/.test(title)) {
+    suggestions.push({
+      id: `${section.id || section.title}-suggest-experiment-flow`,
+      title: '实验流程与评价指标图',
+      type: 'diagram',
+      status: 'planning',
+      description: '展示数据来源、实验流程、基线方法和评价指标。',
+      suggested: true
+    })
+  }
+  if (/总结|展望|第六章/.test(title)) {
+    suggestions.push({
+      id: `${section.id || section.title}-suggest-contribution`,
+      title: '贡献总结与未来工作图',
+      type: 'diagram',
+      status: 'planning',
+      description: '归纳主要贡献、不足和后续研究方向。',
+      suggested: true
+    })
+  }
+  return suggestions
+}
+
+function chapterAssets(section: DocumentSection): DisplayDocumentAsset[] {
+  const inlineAssets = [...(section.required_assets || []), ...(section.images || [])]
+    .map((item, index) => normalizeAsset(item, `${section.id || section.title}-inline-asset-${index}`))
+  const linkedAssets = documentAssets.value
+    .filter(asset => sectionMatchesAsset(section, asset))
+    .map(asset => ({ ...asset, suggested: false }))
+  const byTitle = new Map<string, DisplayDocumentAsset>()
+  for (const asset of [...inlineAssets, ...linkedAssets, ...suggestedAssetsForSection(section)]) {
+    const key = normalizeText(asset.title)
+    if (!byTitle.has(key)) byTitle.set(key, asset)
+  }
+  return Array.from(byTitle.values()).slice(0, 4)
+}
+
+function assetChapterLabel(asset: DocumentAsset) {
+  const matched = documentSections.value.find(section => sectionMatchesAsset(section, asset))
+  return matched?.title || asset.chapter_title || '全篇'
+}
+
+function normalizeDocumentReference(reference: DocumentReference | string): DocumentReference {
+  if (typeof reference === 'string') {
+    return {
+      id: `legacy-${reference}`,
+      title: reference,
+      source_type: 'knowledge_base',
+      citation_type: 'candidate',
+      status: 'candidate'
+    }
+  }
+  return {
+    ...reference,
+    title: reference.title || reference.citation_key || reference.node_id || '未命名文献'
+  }
+}
+
+function isFormalReference(reference: DocumentReference) {
+  const value = String(reference.source_type || reference.citation_type || reference.status || '').toLowerCase()
+  return Boolean(reference.citation_key) || ['paper_citation', 'formal', 'bibliography', 'citation'].includes(value)
+}
+
+function referenceIdentity(reference: DocumentReference) {
+  return reference.id || reference.node_id || reference.citation_key || reference.title
+}
+
+function referenceTitle(reference: DocumentReference) {
+  return reference.title || reference.citation_key || reference.node_id || '未命名文献'
+}
+
+function referenceMeta(reference: DocumentReference) {
+  const authorYear = [reference.authors, reference.year].filter(Boolean).join(' · ')
+  const venue = reference.venue || reference.relation || ''
+  return [authorYear, venue].filter(Boolean).join(' · ')
+}
+
+function referenceStatusLabel(status?: string) {
+  const map: Record<string, string> = {
+    candidate: '候选资料',
+    formal: '正式引用',
+    used: '已使用',
+    draft: '待补全',
+    review: '待审校'
+  }
+  return status ? (map[status] || status) : '候选资料'
+}
+
+function makeCitationKey(reference: DocumentReference) {
+  const author = String(reference.authors || reference.title || 'ref').split(/[,，\s]/)[0] || 'ref'
+  const year = String(reference.year || new Date().getFullYear())
+  const titleToken = String(reference.title || 'source')
+    .replace(/[^\p{Letter}\p{Number}]+/gu, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 24)
+  return [author, year, titleToken].filter(Boolean).join('-').toLowerCase()
+}
+
+async function promoteReferenceToCitation(reference: DocumentReference) {
+  const project = selectedProject.value
+  if (!project) return
+  const id = referenceIdentity(reference)
+  const nextLoading = new Set(promotingReferenceIds.value)
+  nextLoading.add(id)
+  promotingReferenceIds.value = nextLoading
+  try {
+    const currentSpec = project.document_spec || {}
+    const references = (currentSpec.references || []).map(rawItem => {
+      const item = normalizeDocumentReference(rawItem)
+      if (referenceIdentity(item) !== id) return item
+      return {
+        ...item,
+        source_type: 'paper_citation',
+        citation_type: 'formal',
+        status: 'formal',
+        citation_key: item.citation_key || makeCitationKey(item)
+      }
+    })
+    await updateProject(project.id, {
+      document_spec: {
+        ...currentSpec,
+        references
+      }
+    })
+    ElMessage.success('已加入论文正式引用')
+    await loadProjects()
+  } catch {
+    ElMessage.error('加入论文引用失败')
+  } finally {
+    const done = new Set(promotingReferenceIds.value)
+    done.delete(id)
+    promotingReferenceIds.value = done
+  }
+}
+
+async function syncWorkdraft() {
+  const project = selectedProject.value
+  if (!project) return
+  syncingWorkdraft.value = true
+  try {
+    await syncProjectDocumentWorkdraft(project.id, {
+      agent_id: managerAgent.value,
+      source_word_path: sourceWord.value?.path || sourceWord.value?.relative_path || ''
+    })
+    ElMessage.success('已生成 Markdown 工作稿并更新章节绑定')
+    await loadProjects()
+  } catch (error: any) {
+    const message = error?.response?.data?.detail || '同步 Word 原文失败'
+    ElMessage.error(message)
+  } finally {
+    syncingWorkdraft.value = false
+  }
+}
+
 function codexStatusLabel(status: CodexJobStatus) {
   return {
     queued: '排队中',
@@ -1195,7 +1676,7 @@ function progressColor(percentage: number) {
 async function loadProjects() {
   loading.value = true
   try {
-    const data = await getProjects({ project_type: workspaceProjectType.value })
+    const data = await getProjects({ enabled_module: workspaceModule.value })
     projects.value = data.projects
     applyRouteSelection()
     collapseAllProjectTasks(selectedProject.value)
@@ -1461,6 +1942,51 @@ onUnmounted(stopCodexLoopPolling)
   word-break: break-word;
 }
 
+.workdraft-section {
+  padding: 12px;
+  border: 1px solid var(--view-color-border);
+  border-radius: 8px;
+  background: var(--view-color-faint);
+}
+
+.workdraft-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.workdraft-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.workdraft-card {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--view-color-border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.workdraft-card span {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.workdraft-card strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+  font-size: 14px;
+}
+
 .document-section {
   display: grid;
   gap: 12px;
@@ -1505,7 +2031,7 @@ onUnmounted(stopCodexLoopPolling)
 
 .document-section-card {
   display: grid;
-  gap: 8px;
+  gap: 12px;
 }
 
 .document-card-head strong,
@@ -1514,9 +2040,91 @@ onUnmounted(stopCodexLoopPolling)
   font-size: 14px;
 }
 
+.document-card-head > div:first-child {
+  min-width: 0;
+}
+
 .document-card-foot {
   color: var(--text-secondary);
   font-size: 12px;
+  flex-wrap: wrap;
+}
+
+.chapter-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(260px, 0.75fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.chapter-outline-block,
+.chapter-assets-block {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--view-color-border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.chapter-block-title {
+  margin-bottom: 8px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.chapter-outline-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chapter-outline-list li {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+}
+
+.chapter-outline-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 22px;
+  border: 1px solid var(--view-color-border);
+  border-radius: 6px;
+  background: var(--view-color-panel);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.chapter-outline-list strong,
+.chapter-asset-item strong {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.chapter-asset-list {
+  display: grid;
+  gap: 8px;
+}
+
+.chapter-asset-item {
+  display: grid;
+  gap: 8px;
+  padding: 9px;
+  border: 1px solid var(--view-color-border);
+  border-radius: 8px;
+  background: var(--view-color-faint);
+}
+
+.chapter-asset-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .document-asset-card > div:first-child {
@@ -1528,6 +2136,95 @@ onUnmounted(stopCodexLoopPolling)
   justify-content: flex-end;
   color: var(--text-secondary);
   font-size: 12px;
+}
+
+.reference-section {
+  padding-top: 2px;
+}
+
+.reference-summary-tags,
+.reference-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.reference-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.reference-column {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--view-color-border);
+  border-radius: 8px;
+  background: var(--view-color-faint);
+}
+
+.reference-column-head {
+  display: grid;
+  gap: 4px;
+}
+
+.reference-column-head strong {
+  color: var(--text);
+  font-size: 14px;
+}
+
+.reference-column-head small {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.reference-list {
+  display: grid;
+  gap: 10px;
+}
+
+.reference-card {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--view-color-border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.reference-card.formal {
+  border-color: rgba(103, 194, 58, 0.45);
+}
+
+.reference-card-head,
+.reference-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.reference-card-head strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.reference-card-foot {
+  color: var(--text-secondary);
+  font-size: 12px;
+  flex-wrap: wrap;
 }
 
 .doc-grid h3 {
@@ -1938,6 +2635,18 @@ onUnmounted(stopCodexLoopPolling)
   .execution-actions {
     justify-content: flex-end;
     flex-wrap: wrap;
+  }
+
+  .chapter-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .workdraft-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .reference-grid {
+    grid-template-columns: 1fr;
   }
 }
 
