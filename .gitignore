@@ -66,6 +66,8 @@ backend/request_logs.jsonl
 data/news_cache.json
 data/scheduled-tasks.json
 data/execution-logs.json
+data/product-registry.json
+data/product-registry.json.lock
 # Backups and local runtime artifacts
 *.backup*
 *.backup-*
