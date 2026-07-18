@@ -175,14 +175,15 @@
         </section>
 
         <section>
-          <div class="section-title"><h4>运行实例</h4><el-button text size="small" :icon="Monitor" @click="openRuntimeDialog()">登记实例</el-button></div>
+          <div class="section-title"><h4>运行实例</h4><div class="row-actions"><el-tooltip content="同步已配置健康地址的实例" placement="top"><el-button text size="small" :icon="Refresh" :loading="syncingHealth" aria-label="同步运行健康" @click="syncAllRuntimeHealth" /></el-tooltip><el-button text size="small" :icon="Monitor" @click="openRuntimeDialog()">登记实例</el-button></div></div>
           <div v-if="runtimeInstances.length" class="detail-list">
             <div v-for="runtime in runtimeInstances" :key="runtime.id" class="delivery-row">
               <div>
                 <strong>{{ runtime.name }}</strong>
-                <small>{{ runtime.environment }} · {{ runtimeLabel(runtime.state) }}{{ runtime.version ? ` · ${runtime.version}` : '' }}</small>
+                <small>{{ runtime.environment }} · {{ runtimeLabel(runtime.state) }}{{ runtime.version ? ` · ${runtime.version}` : '' }}{{ runtime.last_observed_at ? ` · ${formatTime(runtime.last_observed_at)}` : '' }}</small>
               </div>
               <div class="row-actions">
+                <el-tooltip :content="runtime.health_url ? '同步健康状态' : '请先配置健康检查地址'" placement="top"><el-button text size="small" :icon="Refresh" :disabled="!runtime.health_url" :loading="syncingRuntimeId === runtime.id" aria-label="同步实例健康" @click="syncRuntimeHealth(runtime)" /></el-tooltip>
                 <el-button text size="small" @click="openRuntimeDialog(runtime)">编辑</el-button>
                 <el-button text type="danger" size="small" @click="removeRuntime(runtime)">移除</el-button>
               </div>
@@ -300,6 +301,8 @@ import {
   getProductTimeline,
   reviewProductDeliverable,
   submitProductDeliverable,
+  syncProductRuntimeHealth,
+  syncProductRuntimeInstanceHealth,
   unbindProductFromProject,
   updateProduct,
   updateProductRuntimeInstance,
@@ -317,6 +320,8 @@ const router = useRouter()
 const loading = ref(false)
 const saving = ref(false)
 const bindingProduct = ref(false)
+const syncingHealth = ref(false)
+const syncingRuntimeId = ref('')
 const registry = ref<ProductRegistryResponse>()
 const selectedProduct = ref<RegisteredProduct>()
 const deliverables = ref<ProductDeliverable[]>([])
@@ -564,6 +569,30 @@ async function removeRuntime(runtime: ProductRuntimeInstance) {
     await deleteProductRuntimeInstance(selectedProduct.value.id, runtime.id); await loadProducts(); ElMessage.success('运行实例已移除')
   } catch (error) { if (error !== 'cancel' && error !== 'close') ElMessage.error('运行实例移除失败') }
 }
+async function syncRuntimeHealth(runtime: ProductRuntimeInstance) {
+  if (!selectedProduct.value || !runtime.health_url) return ElMessage.warning('请先配置健康检查地址')
+  syncingRuntimeId.value = runtime.id
+  try {
+    const result = await syncProductRuntimeInstanceHealth(selectedProduct.value.id, runtime.id)
+    await loadProducts()
+    ElMessage.success(`${runtime.name}：${runtimeLabel(result.runtime_instance.state)}`)
+  } catch (error: any) {
+    ElMessage.error(error?.response?.data?.detail || '运行健康同步失败')
+  } finally { syncingRuntimeId.value = '' }
+}
+async function syncAllRuntimeHealth() {
+  if (!selectedProduct.value) return
+  syncingHealth.value = true
+  try {
+    const result = await syncProductRuntimeHealth(selectedProduct.value.id)
+    const synced = result.results.filter(row => row.runtime_instance).length
+    const skipped = result.results.filter(row => row.skipped).length
+    await loadProducts()
+    ElMessage.success(synced ? `已同步 ${synced} 个运行实例${skipped ? `，${skipped} 个未配置检查地址` : ''}` : '没有可同步的运行实例')
+  } catch (error: any) {
+    ElMessage.error(error?.response?.data?.detail || '运行健康同步失败')
+  } finally { syncingHealth.value = false }
+}
 
 async function removeSelectedProduct() {
   if (!selectedProduct.value) return
@@ -582,7 +611,7 @@ function roleLabel(role?: string) { return ({ primary: '主产品', produces: '�
 function deliverableKindLabel(kind?: string) { return ({ source_code: '代码', service: '服务', document: '文档', model: '模型', dataset: '数据集', scenario: '想定', report: '报告' } as Record<string, string>)[kind || ''] || kind || '交付物' }
 function deliverableStatusLabel(status?: string) { return ({ draft: '待验收', accepted: '已验收', rejected: '已退回' } as Record<string, string>)[status || ''] || status || '未知' }
 function releaseStatusLabel(status?: string) { return ({ pending: '待发布', deploying: '部署中', active: '已生效', failed: '发布失败', rolled_back: '已回滚' } as Record<string, string>)[status || ''] || status || '未知' }
-function eventLabel(type?: string) { return ({ 'product.updated': '产品信息更新', 'deliverable.submitted': '登记交付物', 'deliverable.accepted': '交付物验收通过', 'deliverable.rejected': '交付物退回', 'release.created': '创建发布版本', 'runtime.registered': '登记运行实例', 'runtime.updated': '更新运行实例', 'runtime.removed': '移除运行实例' } as Record<string, string>)[type || ''] || type || '产品活动' }
+function eventLabel(type?: string) { return ({ 'product.updated': '产品信息更新', 'deliverable.submitted': '登记交付物', 'deliverable.accepted': '交付物验收通过', 'deliverable.rejected': '交付物退回', 'release.created': '创建发布版本', 'runtime.registered': '登记运行实例', 'runtime.updated': '更新运行实例', 'runtime.health_synced': '同步运行健康', 'runtime.removed': '移除运行实例' } as Record<string, string>)[type || ''] || type || '产品活动' }
 function formatTime(value: string) { const date = new Date(value); return Number.isNaN(date.getTime()) ? value : date.toLocaleString('zh-CN', { hour12: false }) }
 
 onMounted(loadProducts)

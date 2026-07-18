@@ -1,4 +1,5 @@
 from services.product_service import ProductRegistryService
+from services.product_runtime_health import ProductRuntimeHealthService, RuntimeHealthProbeError
 import json
 import sqlite3
 
@@ -91,6 +92,37 @@ def test_runtime_instances_are_tracked_and_validate_release_ownership(tmp_path):
     assert updated and updated["state"] == "degraded"
     assert service.delete_runtime_instance("openclaw-3021", runtime["id"])
     assert service.list_runtime_instances("openclaw-3021") == []
+
+
+def test_runtime_health_observation_is_persisted_and_evented(tmp_path):
+    service = ProductRegistryService(str(tmp_path / "product-registry.json"))
+    runtime = service.create_runtime_instance(
+        "openclaw-3021",
+        {"name": "Mini", "state": "pending", "health_url": "http://127.0.0.1:3021/health"},
+    )
+    updated = service.record_runtime_health(
+        "openclaw-3021",
+        runtime["id"],
+        {"state": "online", "summary": "健康检查 200 · 8ms", "details": {"http_status": 200}},
+    )
+    assert updated and updated["state"] == "online"
+    assert updated["last_observed_at"]
+    assert updated["metadata"]["last_health"]["http_status"] == 200
+    assert service.timeline("openclaw-3021")[0]["event_type"] == "runtime.health_synced"
+
+
+def test_health_probe_rejects_non_http_urls_and_interprets_http_results():
+    service = ProductRuntimeHealthService()
+    try:
+        service._validate_url("file:///tmp/health")
+    except RuntimeHealthProbeError:
+        pass
+    else:
+        raise AssertionError("non-http health endpoint must be rejected")
+    healthy = service._result_for_http_status("http://runtime/health", 200, 12, {"status": "ok"})
+    unhealthy = service._result_for_http_status("http://runtime/health", 503, 12, None)
+    assert healthy["state"] == "online"
+    assert unhealthy["state"] == "degraded"
 
 
 def test_registry_uses_sqlite_as_authoritative_store_when_configured(tmp_path):

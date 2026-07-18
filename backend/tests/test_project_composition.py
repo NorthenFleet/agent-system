@@ -1,7 +1,9 @@
 import json
 
+import project_manager as project_manager_module
 from project_manager import ProjectManager
 from services.project_composition import normalize_project_composition, upsert_product_binding
+from services.product_service import ProductRegistryService
 from unified_data_manager import UnifiedDataManager
 
 
@@ -76,3 +78,25 @@ def test_product_bindings_survive_unified_sqlite_roundtrip(tmp_path):
     assert restored["enabled_modules"] == project["enabled_modules"]
     assert restored["product_bindings"] == project["product_bindings"]
     assert restored["context"]["product_bindings"] == project["product_bindings"]
+
+
+def test_iteration_context_includes_bound_product_delivery_and_runtime_actions(tmp_path, monkeypatch):
+    registry = ProductRegistryService(str(tmp_path / "product-registry.json"))
+    monkeypatch.setattr(project_manager_module, "product_registry_service", registry)
+    manager = ProjectManager(str(tmp_path / "projects.json"))
+    project = manager.create_project({"name": "产品闭环项目", "project_type": "software"})
+    upsert_product_binding(project, "openclaw-3021", role="primary")
+    project = manager.update_project(project["id"], {"product_bindings": project["product_bindings"]})
+
+    draft = registry.submit_deliverable("openclaw-3021", {"project_id": project["id"], "title": "待验收成果"})
+    accepted = registry.submit_deliverable("openclaw-3021", {"project_id": project["id"], "title": "待发布成果"})
+    registry.review_deliverable("openclaw-3021", accepted["id"], accepted=True, reviewed_by_agent_id="bumblebee")
+    registry.create_runtime_instance("openclaw-3021", {"name": "Mini", "state": "offline"})
+
+    context = manager.get_iteration_context(project["id"])
+    assert context["product_context"]["summary"]["pending_deliverable_reviews"] == 1
+    assert context["product_context"]["summary"]["accepted_unreleased_deliverables"] == 1
+    assert context["product_context"]["summary"]["runtime_issues"] == 1
+    actions = {row["action"] for row in context["suggested_next_actions"]}
+    assert {"review_product_deliverables", "create_product_release", "investigate_product_runtime"}.issubset(actions)
+    assert draft["status"] == "draft"

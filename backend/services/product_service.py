@@ -707,6 +707,54 @@ class ProductRegistryService:
             finally:
                 fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
 
+    def record_runtime_health(
+        self,
+        product_id: str,
+        runtime_instance_id: str,
+        observation: dict[str, Any],
+    ) -> dict[str, Any] | None:
+        """Persist a health observation produced by the controlled runtime probe."""
+        state = str(observation.get("state") or "")
+        if state not in RUNTIME_INSTANCE_STATES:
+            raise ValueError(f"unsupported runtime state: {state}")
+        Path(self.file_path).parent.mkdir(parents=True, exist_ok=True)
+        with open(self._lock_path(), "w", encoding="utf-8") as lock:
+            fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+            try:
+                data = self._load_unlocked()
+                instance = next(
+                    (
+                        row for row in data["runtime_instances"]
+                        if row.get("id") == runtime_instance_id and row.get("product_id") == product_id
+                    ),
+                    None,
+                )
+                if not instance:
+                    return None
+                previous_state = str(instance.get("state") or "pending")
+                previous_summary = str(instance.get("summary") or "")
+                now = _now()
+                metadata = copy.deepcopy(instance.get("metadata") or {})
+                metadata["last_health"] = copy.deepcopy(observation.get("details") or {})
+                instance.update({
+                    "state": state,
+                    "summary": str(observation.get("summary") or ""),
+                    "metadata": metadata,
+                    "last_observed_at": now,
+                    "updated_at": now,
+                })
+                if previous_state != instance["state"] or previous_summary != instance["summary"]:
+                    self._append_event(data, product_id, "runtime.health_synced", {
+                        "runtime_instance_id": runtime_instance_id,
+                        "previous_state": previous_state,
+                        "state": instance["state"],
+                        "summary": instance["summary"],
+                    })
+                self._save_unlocked(data)
+                return copy.deepcopy(instance)
+            finally:
+                fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
+
     def delete_runtime_instance(self, product_id: str, runtime_instance_id: str) -> bool:
         Path(self.file_path).parent.mkdir(parents=True, exist_ok=True)
         with open(self._lock_path(), "w", encoding="utf-8") as lock:

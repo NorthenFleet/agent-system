@@ -17,6 +17,7 @@ from typing import Any, Optional
 from path_config import data_path
 from services.project_composition import normalize_project_composition
 from services.product_delivery_service import product_delivery_service
+from services.product_service import product_registry_service
 from unified_data_manager import unified_data_manager
 
 PROJECTS_FILE = data_path("projects-v3.json")
@@ -852,6 +853,7 @@ class ProjectManager:
             "blocked_items": len(blocked_items),
             "review_items": len(review_items),
         }
+        product_context = self._get_product_iteration_context(project)
         project_manager_output_contract = {
             "reasoning_summary": "short manager decision summary",
             "agent_id": "project-manager agent id",
@@ -866,6 +868,27 @@ class ProjectManager:
             suggestions.append({"action": "resolve_blockers", "reason": "blocked tasks or points exist", "count": len(blocked_items)})
         if review_items:
             suggestions.append({"action": "review_pending_work", "reason": "items are waiting for review", "count": len(review_items)})
+        if product_context["summary"]["pending_deliverable_reviews"]:
+            suggestions.append({
+                "action": "review_product_deliverables",
+                "reason": "product deliverables are waiting for acceptance",
+                "count": product_context["summary"]["pending_deliverable_reviews"],
+                "product_ids": product_context["summary"]["products_pending_review"],
+            })
+        if product_context["summary"]["accepted_unreleased_deliverables"]:
+            suggestions.append({
+                "action": "create_product_release",
+                "reason": "accepted product deliverables have not entered a release",
+                "count": product_context["summary"]["accepted_unreleased_deliverables"],
+                "product_ids": product_context["summary"]["products_pending_release"],
+            })
+        if product_context["summary"]["runtime_issues"]:
+            suggestions.append({
+                "action": "investigate_product_runtime",
+                "reason": "bound product runtime is degraded or offline",
+                "count": product_context["summary"]["runtime_issues"],
+                "product_ids": product_context["summary"]["products_with_runtime_issues"],
+            })
         if open_points:
             suggestions.append({"action": "assign_open_points", "reason": "open development points are available", "count": len(open_points)})
         if not tasks:
@@ -879,6 +902,7 @@ class ProjectManager:
             "open_points": open_points,
             "blocked_items": blocked_items,
             "review_items": review_items,
+            "product_context": product_context,
             "recent_logs": recent_logs,
             "available_agents": available_agents,
             "agent_workloads": list(agent_workloads.values()),
@@ -892,12 +916,64 @@ class ProjectManager:
                 "open_points": open_points,
                 "blocked_items": blocked_items,
                 "review_items": review_items,
+                "product_context": product_context,
                 "available_agents": available_agents,
                 "recent_logs": recent_logs,
             },
             "project_manager_output_contract": project_manager_output_contract,
             "suggested_next_actions": suggestions,
         }
+
+    @staticmethod
+    def _get_product_iteration_context(project: dict) -> dict:
+        """Project-manager read model over the product delivery ledger; never mutates it."""
+        rows = []
+        summary = {
+            "bound_products": 0,
+            "pending_deliverable_reviews": 0,
+            "accepted_unreleased_deliverables": 0,
+            "runtime_issues": 0,
+            "products_pending_review": [],
+            "products_pending_release": [],
+            "products_with_runtime_issues": [],
+        }
+        bindings = _as_list(project.get("product_bindings"))
+        for binding in bindings:
+            if not isinstance(binding, dict) or str(binding.get("status") or "bound") != "bound":
+                continue
+            product_id = str(binding.get("product_id") or "")
+            product = product_registry_service.get_product(product_id) if product_id else None
+            if not product:
+                continue
+            deliverables = product_registry_service.list_deliverables(product_id, project_id=str(project.get("id") or ""), limit=500)
+            accepted = [row for row in deliverables if row.get("status") == "accepted"]
+            pending_review = [row for row in deliverables if row.get("status") == "draft"]
+            releases = product_registry_service.list_releases(product_id, limit=500)
+            released_sources = {str(row.get("source_deliverable_id") or "") for row in releases}
+            accepted_unreleased = [row for row in accepted if str(row.get("id") or "") not in released_sources]
+            runtime_issues = [
+                row for row in product_registry_service.list_runtime_instances(product_id, limit=100)
+                if row.get("state") in {"degraded", "offline", "failed"}
+            ]
+            rows.append({
+                "product_id": product_id,
+                "product_name": product.get("name", product_id),
+                "binding_role": binding.get("role", "uses"),
+                "pending_deliverable_reviews": len(pending_review),
+                "accepted_unreleased_deliverables": len(accepted_unreleased),
+                "runtime_issues": [{"id": row.get("id"), "name": row.get("name"), "state": row.get("state"), "summary": row.get("summary", "")} for row in runtime_issues],
+            })
+            summary["bound_products"] += 1
+            summary["pending_deliverable_reviews"] += len(pending_review)
+            summary["accepted_unreleased_deliverables"] += len(accepted_unreleased)
+            summary["runtime_issues"] += len(runtime_issues)
+            if pending_review:
+                summary["products_pending_review"].append(product_id)
+            if accepted_unreleased:
+                summary["products_pending_release"].append(product_id)
+            if runtime_issues:
+                summary["products_with_runtime_issues"].append(product_id)
+        return {"products": rows, "summary": summary}
 
     def add_knowledge_link(self, target_type: str, target_id: str, payload: dict) -> Optional[dict]:
         def mutate(data):

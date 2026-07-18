@@ -224,6 +224,19 @@ export function deleteProductRuntimeInstance(productId: string, runtimeInstanceI
   ).then(response => response.data)
 }
 
+export function syncProductRuntimeInstanceHealth(productId: string, runtimeInstanceId: string) {
+  return apiClient.post<{ runtime_instance: ProductRuntimeInstance; observation: ProductRuntime }>(
+    `/api/v2/products/${encodeURIComponent(productId)}/runtimes/${encodeURIComponent(runtimeInstanceId)}/sync-health`
+  ).then(response => response.data)
+}
+
+export function syncProductRuntimeHealth(productId: string) {
+  return apiClient.post<{
+    product_id: string
+    results: Array<{ runtime_instance_id: string; runtime_instance?: ProductRuntimeInstance; observation?: ProductRuntime; skipped?: boolean; reason?: string }>
+  }>(`/api/v2/products/${encodeURIComponent(productId)}/runtimes/sync-health`).then(response => response.data)
+}
+
 export function bindProductToProject(
   projectId: string,
   productId: string,

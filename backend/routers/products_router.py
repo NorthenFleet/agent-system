@@ -12,6 +12,7 @@ from project_manager import project_manager
 from services.auth_service import get_current_user, require_role
 from services.mission_planning_adapter import MissionPlanningError, mission_planning_adapter
 from services.product_service import product_registry_service
+from services.product_runtime_health import RuntimeHealthProbeError, product_runtime_health_service
 from services.product_delivery_service import product_delivery_service, product_id_for_project
 from services.project_composition import remove_product_binding, upsert_product_binding
 
@@ -157,7 +158,13 @@ async def _runtime_health(product: dict[str, Any]) -> dict[str, Any]:
             "details": primary,
         }
     if product_id == "openclaw-3021":
-        return {"state": "online", "online": True, "summary": "3021统一服务运行中"}
+        deployment = product.get("deployment") if isinstance(product.get("deployment"), dict) else {}
+        configured_health_url = str(deployment.get("health_url") or "").strip()
+        health_url = configured_health_url or f"{str(deployment.get('public_url') or '').rstrip('/')}/health"
+        try:
+            return await product_runtime_health_service.probe_url(health_url)
+        except RuntimeHealthProbeError as exc:
+            return {"state": "offline", "online": False, "summary": str(exc), "error_code": "invalid_health_url"}
     if product_id == "ai-planning-5130":
         try:
             health = await mission_planning_adapter.health()
@@ -433,6 +440,51 @@ def update_runtime_instance(
     if not result:
         raise HTTPException(status_code=404, detail="Runtime instance not found")
     return result
+
+
+@router.post("/{product_id}/runtimes/{runtime_instance_id}/sync-health")
+async def sync_runtime_instance_health(
+    product_id: str,
+    runtime_instance_id: str,
+    _user: dict = Depends(require_role("admin")),
+):
+    instances = product_registry_service.list_runtime_instances(product_id, limit=500)
+    instance = next((row for row in instances if row.get("id") == runtime_instance_id), None)
+    if not instance:
+        raise HTTPException(status_code=404, detail="Runtime instance not found")
+    health_url = str(instance.get("health_url") or "").strip()
+    if not health_url:
+        raise HTTPException(status_code=409, detail="Runtime instance has no health_url configured")
+    try:
+        observation = await product_runtime_health_service.probe_url(health_url)
+    except RuntimeHealthProbeError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    runtime = product_registry_service.record_runtime_health(product_id, runtime_instance_id, observation)
+    if not runtime:
+        raise HTTPException(status_code=404, detail="Runtime instance not found")
+    return {"runtime_instance": runtime, "observation": observation}
+
+
+@router.post("/{product_id}/runtimes/sync-health")
+async def sync_product_runtime_health(
+    product_id: str,
+    _user: dict = Depends(require_role("admin")),
+):
+    if not product_registry_service.get_product(product_id):
+        raise HTTPException(status_code=404, detail="Product not found")
+    results = []
+    for instance in product_registry_service.list_runtime_instances(product_id, limit=100):
+        health_url = str(instance.get("health_url") or "").strip()
+        if not health_url:
+            results.append({"runtime_instance_id": instance.get("id"), "skipped": True, "reason": "health_url_not_configured"})
+            continue
+        try:
+            observation = await product_runtime_health_service.probe_url(health_url)
+            runtime = product_registry_service.record_runtime_health(product_id, str(instance.get("id")), observation)
+            results.append({"runtime_instance_id": instance.get("id"), "runtime_instance": runtime, "observation": observation})
+        except RuntimeHealthProbeError as exc:
+            results.append({"runtime_instance_id": instance.get("id"), "skipped": True, "reason": str(exc)})
+    return {"product_id": product_id, "results": results}
 
 
 @router.delete("/{product_id}/runtimes/{runtime_instance_id}")
