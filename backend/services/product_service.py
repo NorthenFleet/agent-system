@@ -8,6 +8,7 @@ import json
 import os
 import sqlite3
 import uuid
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -156,7 +157,8 @@ class ProductRegistryService:
     def _uses_database(self) -> bool:
         return bool(self.db_path)
 
-    def _connect_database(self) -> sqlite3.Connection:
+    @contextmanager
+    def _connect_database(self):
         if not self.db_path:
             raise RuntimeError("Product registry database is not configured")
         Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
@@ -164,7 +166,14 @@ class ProductRegistryService:
         connection.row_factory = sqlite3.Row
         connection.execute("PRAGMA foreign_keys=ON")
         connection.execute("PRAGMA busy_timeout=5000")
-        return connection
+        try:
+            yield connection
+            connection.commit()
+        except Exception:
+            connection.rollback()
+            raise
+        finally:
+            connection.close()
 
     def _init_database(self) -> None:
         with self._connect_database() as connection:

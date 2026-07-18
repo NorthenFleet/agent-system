@@ -1,345 +1,144 @@
 import apiClient from './client'
 
-export interface FinanceRecord {
-  id: string
-  invoice_id: string
-  project_name: string
-  project_code: string
-  date: string
-  month: string
-  amount: number
-  amount_label: string
-  category: string
-  handler: string
-  archived_at: string
-  source: string
-  path: string
-  data_quality?: string
-  quality_issues?: string
-  needs_review?: number
+export interface Envelope<T> { status: string; data: T; meta: Record<string, unknown> }
+export interface PageState { loading: boolean; error: string }
+
+export interface FinanceProject {
+  id: string; project_key: string; name: string; currency: string; status: string
+  owner_user_id?: number; version: number; created_at: string
 }
 
-export interface FinanceGroup {
-  name: string
-  count: number
-  amount: number
+export interface FundAllocation {
+  id: string; project_id: string; reference_no: string; amount: number; allocated_at: string; source: string; note: string
 }
 
-export interface FinanceSummary {
-  records: number
-  total_amount: number
-  obsidian_total_amount: number
-  projects: number
-  categories: number
-  latest_amount: number
-  data_quality?: {
-    complete: number
-    needs_review: number
-    missing_amount: number
-    missing_date: number
-  }
+export interface BudgetLine {
+  id: string; budget_version_id: string; category: string; amount: number
+  reserved_amount: number; spent_amount: number; lock_version: number; note?: string
 }
 
-export interface OpenClawFinanceProject {
-  name: string
-  amount: number
+export interface BudgetVersion {
+  id: string; project_id: string; version_no: number; name: string; status: string
+  approved_amount: number; lock_version: number; lines: BudgetLine[]
 }
 
-export interface OpenClawFinanceItem {
-  invoice: string
-  vendor: string
-  amount: number
-  note: string
+export interface ApprovalTask {
+  id: string; approval_instance_id: string; step_order: number; assignee_role?: string
+  assignee_user_id?: number; status: string; comment?: string; created_at: string
 }
 
-export interface OpenClawFinanceSummary {
-  agent: string
-  agent_label: string
-  source: string
-  total_amount: number
-  projects: OpenClawFinanceProject[]
-  items: OpenClawFinanceItem[]
-  updated_at: string
+export interface ReimbursementItem {
+  id: string; reimbursement_id: string; budget_line_id: string; description: string
+  vendor?: string; expense_date: string; amount: number; invoice_id?: string
 }
 
-export interface FinanceDashboard {
-  status: string
-  source: string
-  openclaw: OpenClawFinanceSummary | null
-  generated_at: string
-  summary: FinanceSummary
-  latest_reimbursements: FinanceRecord[]
-  projects: FinanceGroup[]
-  categories: FinanceGroup[]
-  monthly: FinanceGroup[]
-  records: FinanceRecord[]
-  budget?: FinanceBudget
-  reimbursements?: FinanceReimbursements
+export interface Reimbursement {
+  id: string; reimbursement_no: string; project_id: string; applicant_user_id: number
+  title: string; description?: string; total_amount: number; currency: string; status: string
+  lock_version: number; created_at: string; items: ReimbursementItem[]
+  approval?: { tasks: ApprovalTask[]; events: Record<string, unknown>[] }
 }
 
-export interface FinanceReimbursement {
-  id: number
-  reimbursement_key: string
-  batch_key: string
-  title: string
-  project_key: string
-  project_name?: string
-  source_agent: string
-  source_path: string
-  total_amount: number
-  item_count: number
-  status: string
-  submitted_at: string
-  confirmed_at: string
-  created_at: string
-  updated_at: string
+export interface InvoiceAttachment {
+  id: string; invoice_id: string; original_name: string; content_type: string; size_bytes: number; scan_status: string
 }
 
-export interface FinanceReimbursementItem {
-  id: number
-  reimbursement_key: string
-  item_key: string
-  project_key: string
-  budget_category: string
-  vendor: string
-  invoice_no: string
-  source_type: string
-  source_ref: string
-  expense_date: string
-  amount: number
-  note: string
-  status: string
+export interface Invoice {
+  id: string; project_id: string; invoice_code?: string; invoice_number?: string; invoice_date?: string
+  amount?: number; tax_amount?: number; seller_name?: string; buyer_name?: string
+  status: string; verification_status: string; attachments: InvoiceAttachment[]
 }
 
-export interface FinanceInvoiceSource {
-  id: number
-  source_key: string
-  reimbursement_key: string
-  item_key: string
-  source_type: string
-  source_ref: string
-  file_path: string
-  email_id: string
-  scan_path: string
-  status: string
+export interface Payment {
+  id: string; payment_no: string; reimbursement_id: string; amount: number; payee_name: string
+  payee_account_masked?: string; status: string; bank_reference?: string; paid_at?: string; lock_version: number
 }
 
-export interface FinanceApprovalEvent {
-  id: number
-  reimbursement_key: string
-  event_type: string
-  actor: string
-  from_status: string
-  to_status: string
-  comment: string
-  created_at: string
+export interface ReconciliationMatch {
+  id: string; bank_transaction_id: string; payment_id: string; matched_amount: number
+  confidence: number; status: string; created_at: string
 }
 
-export interface FinanceReimbursements {
+export interface Dashboard {
+  status: string; generated_at: string
   summary: {
-    reimbursements: number
-    items: number
-    total_amount: number
-    confirmed: number
+    projects: number; budget_amount: number; reserved_amount: number; spent_amount: number
+    available_amount: number; reimbursements: number; pending_approvals: number
+    invoices: number; pending_payments: number; unmatched_transactions: number
   }
-  records: FinanceReimbursement[]
-  items: FinanceReimbursementItem[]
-  sources: FinanceInvoiceSource[]
-  events: FinanceApprovalEvent[]
+  recent_reimbursements: Reimbursement[]
 }
 
-export interface FinanceBudgetProject {
-  id: number
-  project_key: string
-  name: string
-  budget_amount: number
-  allocated_amount: number
-  spent_amount: number
-  remaining_amount: number
-  status: string
-  source: string
-  created_at: string
-  updated_at: string
+const key = () => crypto.randomUUID()
+const unwrap = async <T>(promise: Promise<{ data: Envelope<T> }>): Promise<T> => (await promise).data.data
+const writeHeaders = () => ({ 'Idempotency-Key': key() })
+
+export const financeApi = {
+  dashboard: () => unwrap<Dashboard>(apiClient.get('/api/finance/dashboard')),
+  projects: () => unwrap<FinanceProject[]>(apiClient.get('/api/finance/projects')),
+  createProject: (payload: { project_key: string; name: string; owner_user_id?: number }) =>
+    unwrap<FinanceProject>(apiClient.post('/api/finance/projects', payload, { headers: writeHeaders() })),
+  updateProject: (id: string, payload: Record<string, unknown>) =>
+    unwrap<FinanceProject>(apiClient.patch(`/api/finance/projects/${id}`, payload)),
+  allocations: (projectId?: string) => unwrap<FundAllocation[]>(apiClient.get('/api/finance/fund-allocations', { params: { project_id: projectId } })),
+  createAllocation: (payload: Record<string, unknown>) =>
+    unwrap<FundAllocation>(apiClient.post('/api/finance/fund-allocations', payload, { headers: writeHeaders() })),
+  budgets: (projectId?: string) => unwrap<BudgetVersion[]>(apiClient.get('/api/finance/budgets', { params: { project_id: projectId } })),
+  createBudget: (payload: Record<string, unknown>) =>
+    unwrap<BudgetVersion>(apiClient.post('/api/finance/budgets', payload, { headers: writeHeaders() })),
+  replaceBudgetLines: (id: string, payload: Record<string, unknown>) =>
+    unwrap<BudgetVersion>(apiClient.put(`/api/finance/budgets/${id}/lines`, payload)),
+  approveBudget: (id: string, version: number) =>
+    unwrap<BudgetVersion>(apiClient.post(`/api/finance/budgets/${id}/approve`, { version }, { headers: writeHeaders() })),
+  reimbursements: (status?: string) => unwrap<Reimbursement[]>(apiClient.get('/api/finance/reimbursements', { params: { status } })),
+  createReimbursement: (payload: Record<string, unknown>) =>
+    unwrap<Reimbursement>(apiClient.post('/api/finance/reimbursements', payload, { headers: writeHeaders() })),
+  addReimbursementItem: (id: string, payload: Record<string, unknown>) =>
+    unwrap<Reimbursement>(apiClient.post(`/api/finance/reimbursements/${id}/items`, payload)),
+  submitReimbursement: (id: string, version: number) =>
+    unwrap<Reimbursement>(apiClient.post(`/api/finance/reimbursements/${id}/submit`, { version }, { headers: writeHeaders() })),
+  redraftReimbursement: (id: string, version: number) =>
+    unwrap<Reimbursement>(apiClient.post(`/api/finance/reimbursements/${id}/redraft`, { version })),
+  archiveReimbursement: (id: string, version: number) =>
+    unwrap<Reimbursement>(apiClient.post(`/api/finance/reimbursements/${id}/archive`, { version }, { headers: writeHeaders() })),
+  approvalTasks: () => unwrap<ApprovalTask[]>(apiClient.get('/api/finance/approval-tasks/me')),
+  actApproval: (id: string, action: 'approve' | 'return' | 'reject', comment: string) =>
+    unwrap<Reimbursement>(apiClient.post(`/api/finance/approval-tasks/${id}/${action}`, { comment }, { headers: writeHeaders() })),
+  invoices: () => unwrap<Invoice[]>(apiClient.get('/api/finance/invoices')),
+  createInvoice: (payload: Record<string, unknown>) =>
+    unwrap<Invoice>(apiClient.post('/api/finance/invoices', payload, { headers: writeHeaders() })),
+  uploadInvoice: (invoiceId: string, file: File) =>
+    unwrap<InvoiceAttachment>(apiClient.post(`/api/finance/invoices/${invoiceId}/attachments`, file, {
+      headers: { ...writeHeaders(), 'Content-Type': file.type || 'application/octet-stream', 'X-Filename': file.name },
+    })),
+  runOcr: (invoiceId: string) => unwrap<Invoice>(apiClient.post(`/api/finance/invoices/${invoiceId}/ocr`, null, { headers: writeHeaders() })),
+  verifyInvoice: (invoiceId: string) => unwrap<Invoice>(apiClient.post(`/api/finance/invoices/${invoiceId}/verify`, null, { headers: writeHeaders() })),
+  payments: () => unwrap<Payment[]>(apiClient.get('/api/finance/payments')),
+  createPayment: (payload: Record<string, unknown>) =>
+    unwrap<Payment>(apiClient.post('/api/finance/payments', payload, { headers: writeHeaders() })),
+  confirmPayment: (id: string, payload: Record<string, unknown>) =>
+    unwrap<Payment>(apiClient.post(`/api/finance/payments/${id}/confirm`, payload, { headers: writeHeaders() })),
+  importStatement: (file: File) => unwrap<Record<string, unknown>>(apiClient.post('/api/finance/bank-statements/import', file, {
+    headers: { ...writeHeaders(), 'Content-Type': file.type || 'text/csv', 'X-Filename': file.name },
+  })),
+  reconciliations: () => unwrap<ReconciliationMatch[]>(apiClient.get('/api/finance/reconciliations')),
+  confirmReconciliations: (matches: string[]) => unwrap<{ records: ReconciliationMatch[] }>(apiClient.post(
+    '/api/finance/reconciliations/confirm', { matches }, { headers: writeHeaders() },
+  )),
+  workflows: () => unwrap<Record<string, unknown>[]>(apiClient.get('/api/finance/approval-workflows')),
+  createWorkflow: (payload: Record<string, unknown>) => unwrap<Record<string, unknown>>(apiClient.post(
+    '/api/finance/approval-workflows', payload, { headers: writeHeaders() },
+  )),
+  grantRole: (payload: Record<string, unknown>) => unwrap<Record<string, unknown>>(apiClient.post(
+    '/api/finance/roles', payload, { headers: writeHeaders() },
+  )),
+  report: <T>(name: 'budget-execution' | 'expenses' | 'payments' | 'audit') =>
+    unwrap<T>(apiClient.get(`/api/finance/reports/${name}`)),
+  createImport: (payload: { source_type: string; dry_run: boolean }) => unwrap<Record<string, unknown>>(apiClient.post(
+    '/api/finance/imports', payload, { headers: writeHeaders() },
+  )),
 }
 
-export interface FinanceBudgetCategory {
-  id: number
-  project_key: string
-  category: string
-  budget_amount: number
-  spent_amount: number
-  remaining_amount: number
-  note: string
-  created_at: string
-  updated_at: string
-}
-
-export interface FinanceBudget {
-  summary: {
-    projects: number
-    budget_amount: number
-    spent_amount: number
-    remaining_amount: number
-    execution_percent: number
-  }
-  projects: FinanceBudgetProject[]
-  categories: FinanceBudgetCategory[]
-}
-
-export interface FinanceTableColumn {
-  name: string
-  type: string
-  required: boolean
-  primary_key: boolean
-}
-
-export interface FinanceTableSchema {
-  name: string
-  table: string
-  rows: number
-  columns: FinanceTableColumn[]
-}
-
-export interface FinanceSchema {
-  status: string
-  source: string
-  generated_at: string
-  tables: FinanceTableSchema[]
-}
-
-export interface FinanceTableData {
-  status: string
-  source: string
-  name: string
-  table: string
-  limit: number
-  offset: number
-  total: number
-  rows: Record<string, unknown>[]
-  generated_at: string
-}
-
-export interface FinanceQualityIssue {
-  issue: string
-  count: number
-}
-
-export interface FinanceQualityReport {
-  status: string
-  source: string
-  generated_at: string
-  summary: {
-    records: number
-    complete: number
-    needs_review: number
-    missing_amount: number
-    missing_date: number
-  }
-  issues: FinanceQualityIssue[]
-  records: Record<string, unknown>[]
-}
-
-export interface FinanceEnrichmentSuggestion {
-  id: number
-  expense_key: string
-  field_name: string
-  current_value: string
-  suggested_value: string
-  confidence: number
-  reason: string
-  source: string
-  status: string
-  project_name?: string
-  amount?: number
-  expense_date?: string
-  category?: string
-  source_path?: string
-}
-
-export interface FinanceEnrichmentReport {
-  status: string
-  source: string
-  generated_at: string
-  summary: {
-    suggestions: number
-    pending: number
-    applied: number
-    high_confidence: number
-  }
-  fields: Array<{
-    field: string
-    count: number
-    avg_confidence: number
-  }>
-  suggestions: FinanceEnrichmentSuggestion[]
-}
-
-export interface FinanceEnrichmentRunResult {
-  status: string
-  scanned: number
-  suggestions_upserted: number
-  generated_at: string
-}
-
-export interface FinanceBudgetUpdatePayload {
-  budget_amount: number
-  actor?: string
-  reason?: string
-}
-
-export interface FinanceReimbursementStatusPayload {
-  status: string
-  actor?: string
-  comment?: string
-}
-
-export async function getFinanceDashboard(limit = 120): Promise<FinanceDashboard> {
-  const response = await apiClient.get<FinanceDashboard>('/api/finance/summary', { params: { limit } })
-  return response.data
-}
-
-export async function getFinanceSchema(): Promise<FinanceSchema> {
-  const response = await apiClient.get<FinanceSchema>('/api/finance/schema')
-  return response.data
-}
-
-export async function updateFinanceBudgetCategory(
-  projectKey: string,
-  category: string,
-  payload: FinanceBudgetUpdatePayload,
-): Promise<{ budget: FinanceBudget }> {
-  const response = await apiClient.put(`/api/finance/budget/categories/${projectKey}/${encodeURIComponent(category)}`, payload)
-  return response.data
-}
-
-export async function transitionFinanceReimbursementStatus(
-  reimbursementKey: string,
-  payload: FinanceReimbursementStatusPayload,
-): Promise<{ reimbursements: FinanceReimbursements }> {
-  const response = await apiClient.post(`/api/finance/reimbursements/${reimbursementKey}/status`, payload)
-  return response.data
-}
-
-export async function getFinanceTable(tableName: string, limit = 50, offset = 0): Promise<FinanceTableData> {
-  const response = await apiClient.get<FinanceTableData>(`/api/finance/tables/${tableName}`, {
-    params: { limit, offset },
-  })
-  return response.data
-}
-
-export async function getFinanceQuality(limit = 100): Promise<FinanceQualityReport> {
-  const response = await apiClient.get<FinanceQualityReport>('/api/finance/quality', { params: { limit } })
-  return response.data
-}
-
-export async function getFinanceEnrichment(limit = 100): Promise<FinanceEnrichmentReport> {
-  const response = await apiClient.get<FinanceEnrichmentReport>('/api/finance/enrichment', { params: { limit } })
-  return response.data
-}
-
-export async function runFinanceEnrichment(limit = 100): Promise<FinanceEnrichmentRunResult> {
-  const response = await apiClient.post<FinanceEnrichmentRunResult>('/api/finance/enrichment/run', null, {
-    params: { limit },
-  })
-  return response.data
-}
+export const formatMoney = (value: number | string | undefined) => new Intl.NumberFormat(
+  'zh-CN', { style: 'currency', currency: 'CNY' },
+).format(Number(value || 0))

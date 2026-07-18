@@ -7,8 +7,11 @@
 @created 2026-04-16
 """
 
+import logging
 import os
-from sqlalchemy import create_engine, inspect, text
+import time
+from sqlalchemy import create_engine, event, inspect, text
+from sqlalchemy.engine import make_url
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
@@ -22,10 +25,12 @@ DATABASE_URL = os.getenv(
 
 # 创建数据库引擎
 if DATABASE_URL.startswith("sqlite"):
-    os.makedirs(os.path.dirname(DEFAULT_SQLITE_PATH), exist_ok=True)
+    configured_path = make_url(DATABASE_URL).database
+    if configured_path and configured_path != ":memory:":
+        os.makedirs(os.path.dirname(os.path.abspath(configured_path)), exist_ok=True)
     engine = create_engine(
         DATABASE_URL,
-        connect_args={"check_same_thread": False},
+        connect_args={"check_same_thread": False, "timeout": 30},
         pool_pre_ping=True,
         echo=False,
     )
@@ -35,8 +40,38 @@ else:
         pool_pre_ping=True,  # 连接前测试
         pool_size=10,  # 连接池大小
         max_overflow=20,  # 最大溢出连接数
+        pool_timeout=int(os.getenv("DATABASE_POOL_TIMEOUT", "30")),
+        pool_recycle=int(os.getenv("DATABASE_POOL_RECYCLE", "1800")),
         echo=False,  # 是否打印 SQL 日志
     )
+
+
+logger = logging.getLogger("database.performance")
+SLOW_QUERY_SECONDS = float(os.getenv("DATABASE_SLOW_QUERY_SECONDS", "0.5"))
+
+
+@event.listens_for(engine, "connect")
+def _configure_connection(dbapi_connection, _connection_record):
+    if DATABASE_URL.startswith("sqlite"):
+        cursor = dbapi_connection.cursor()
+        try:
+            cursor.execute("PRAGMA foreign_keys=ON")
+            cursor.execute("PRAGMA busy_timeout=30000")
+        finally:
+            cursor.close()
+
+
+@event.listens_for(engine, "before_cursor_execute")
+def _query_started(_conn, _cursor, _statement, _parameters, context, _executemany):
+    context._query_started_at = time.monotonic()
+
+
+@event.listens_for(engine, "after_cursor_execute")
+def _query_finished(_conn, _cursor, statement, _parameters, context, _executemany):
+    elapsed = time.monotonic() - getattr(context, "_query_started_at", time.monotonic())
+    if elapsed >= SLOW_QUERY_SECONDS:
+        # Never log parameters: finance queries may contain invoice or account data.
+        logger.warning("slow query duration=%.3fs operation=%s", elapsed, statement.lstrip().split(None, 1)[0][:16])
 
 # 创建会话工厂
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -99,10 +134,13 @@ def ensure_db_initialized():
     global _initialized
     if _initialized:
         return
-    from models.task_plan import Base as TaskPlanBase
+    if DATABASE_URL.startswith("sqlite"):
+        # SQLite remains a self-contained development/test option. Production
+        # PostgreSQL schemas are owned exclusively by Alembic.
+        from models.task_plan import Base as TaskPlanBase
 
-    TaskPlanBase.metadata.create_all(bind=engine)
-    ensure_v2_schema_compatibility()
+        TaskPlanBase.metadata.create_all(bind=engine)
+        ensure_v2_schema_compatibility()
     _initialized = True
 
 

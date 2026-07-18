@@ -23,26 +23,31 @@ def upgrade() -> None:
     conn = op.get_bind()
     dialect = conn.dialect.name
 
+    def create_index(name: str, table: str, columns: list[str]) -> None:
+        existing = {item["name"] for item in sa.inspect(conn).get_indexes(table)}
+        if name not in existing:
+            op.create_index(name, table, columns)
+
     # ─── tasks 表 ───
-    op.create_index('ix_tasks_assignee', 'tasks', ['assignee'])
-    op.create_index('ix_tasks_status', 'tasks', ['status'])
-    op.create_index('ix_tasks_sprint', 'tasks', ['sprint'])
-    op.create_index('ix_tasks_created_at', 'tasks', ['created_at'])
-    op.create_index('ix_tasks_sprint_status', 'tasks', ['sprint', 'status'])
+    create_index('ix_tasks_assignee', 'tasks', ['assignee'])
+    create_index('ix_tasks_status', 'tasks', ['status'])
+    create_index('ix_tasks_sprint', 'tasks', ['sprint'])
+    create_index('ix_tasks_created_at', 'tasks', ['created_at'])
+    create_index('ix_tasks_sprint_status', 'tasks', ['sprint', 'status'])
 
     # GIN index for full-text title search — PostgreSQL only
     if dialect == 'postgresql':
         op.execute(
-            sa.text("CREATE INDEX ix_tasks_title_gin ON tasks USING gin(to_tsvector('simple', title))")
+            sa.text("CREATE INDEX IF NOT EXISTS ix_tasks_title_gin ON tasks USING gin(to_tsvector('simple', title))")
         )
 
     # ─── agent_heartbeats 表 ───
-    op.create_index('ix_heartbeats_agent_id', 'agent_heartbeats', ['agent_id'])
-    op.create_index('ix_heartbeats_agent_created', 'agent_heartbeats', ['agent_id', 'heartbeat_at'])
+    create_index('ix_heartbeats_agent_id', 'agent_heartbeats', ['agent_id'])
+    create_index('ix_heartbeats_agent_created', 'agent_heartbeats', ['agent_id', 'heartbeat_at'])
 
     # ─── activity_logs 表 ───
-    op.create_index('ix_activity_logs_agent_id', 'activity_logs', ['agent_id'])
-    op.create_index('ix_activity_logs_agent_created', 'activity_logs', ['agent_id', 'created_at'])
+    create_index('ix_activity_logs_agent_id', 'activity_logs', ['agent_id'])
+    create_index('ix_activity_logs_agent_created', 'activity_logs', ['agent_id', 'created_at'])
 
 
 def downgrade() -> None:

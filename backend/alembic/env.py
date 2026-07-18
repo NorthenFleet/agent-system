@@ -22,6 +22,11 @@ if config.config_file_name is not None:
 # import all models for autogenerate support
 from models.v2_models import Base as V2Base
 from models.task_plan import Base as TPBase
+from models import finance_models  # noqa: F401 - register finance metadata
+
+database_url = os.getenv("DATABASE_URL")
+if database_url:
+    config.set_main_option("sqlalchemy.url", database_url.replace("%", "%%"))
 
 target_metadata = V2Base.metadata
 
@@ -44,6 +49,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        compare_type=True,
     )
 
     with context.begin_transaction():
@@ -65,7 +71,7 @@ def run_migrations_online() -> None:
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata
+            connection=connection, target_metadata=target_metadata, compare_type=True
         )
 
         with context.begin_transaction():

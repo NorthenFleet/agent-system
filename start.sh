@@ -20,7 +20,7 @@ FRONTEND_V2_DIR="$PROJECT_DIR/frontend-v2"
 CRAWLER_DIR="${CRAWLER_DIR:-$HOME/.openclaw/tools/crawl4ai-runtime}"
 CRAWLER_PORT="${CRAWLER_PORT:-11235}"
 JWT_SECRET_FILE="$BACKEND_DIR/data/.dashboard_jwt_secret"
-DEFAULT_DATABASE_URL="sqlite:///$BACKEND_DIR/data/dashboard_v2.db"
+DEFAULT_DATABASE_URL="postgresql+psycopg2:///team_dashboard"
 
 if [ -f "$PROJECT_DIR/.env" ]; then
     set -a
@@ -35,6 +35,7 @@ FRONTEND_ENTRY="${FRONTEND_ENTRY:-index.html}"
 USE_FRONTEND_V2="${USE_FRONTEND_V2:-true}"
 DISABLE_SCHEDULER="${DISABLE_SCHEDULER:-false}"
 DATABASE_URL="${DATABASE_URL:-$DEFAULT_DATABASE_URL}"
+FILE_DESCRIPTOR_LIMIT="${FILE_DESCRIPTOR_LIMIT:-4096}"
 AI_PLANNING_TUNNEL_ENABLED="${AI_PLANNING_TUNNEL_ENABLED:-true}"
 AI_PLANNING_TUNNEL_PORT="${AI_PLANNING_TUNNEL_PORT:-15130}"
 AI_PLANNING_REMOTE_HOST="${AI_PLANNING_REMOTE_HOST:-192.168.31.144}"
@@ -219,6 +220,9 @@ start_backend() {
     export DATABASE_URL="$DATABASE_URL"
     export AI_PLANNING_BASE_URL="$AI_PLANNING_BASE_URL"
     export AI_PLANNING_PUBLIC_URL="$AI_PLANNING_PUBLIC_URL"
+    if ! ulimit -n "$FILE_DESCRIPTOR_LIMIT"; then
+        print_warning "无法把文件描述符软限制调整为 $FILE_DESCRIPTOR_LIMIT"
+    fi
     if [ "$USE_FRONTEND_V2" = "true" ]; then
         print_info "前端入口: frontend-v2/dist/index.html"
     else

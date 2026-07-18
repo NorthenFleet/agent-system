@@ -1,0 +1,32 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: agent_finance
+      POSTGRES_USER: finance_app
+      POSTGRES_PASSWORD: ${FINANCE_POSTGRES_PASSWORD:-finance-dev-only}
+    ports:
+      - "5433:5432"
+    volumes:
+      - finance-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U finance_app -d agent_finance"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address :9001
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-finance-dev}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-finance-dev-secret}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - finance-minio:/data
+
+volumes:
+  finance-postgres:
+  finance-minio:

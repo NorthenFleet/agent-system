@@ -91,7 +91,7 @@ const routes: RouteRecordRaw[] = [
         meta: { module: 'knowledge' }
       },
       {
-        path: 'finance',
+        path: 'finance/:section?',
         name: 'Finance',
         component: () => import('@/views/Finance.vue'),
         meta: { module: 'finance' }

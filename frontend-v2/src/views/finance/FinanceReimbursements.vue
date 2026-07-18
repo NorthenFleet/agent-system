@@ -1,0 +1,38 @@
+<template>
+  <section v-loading="loading">
+    <div class="toolbar"><el-button type="primary" @click="openCreate">新建报销</el-button><el-select v-model="status" clearable placeholder="全部状态" @change="load"><el-option v-for="item in statuses" :key="item" :label="item" :value="item" /></el-select></div>
+    <div class="layout">
+      <el-card class="list" shadow="never">
+        <article v-for="item in records" :key="item.id" :class="{active:selected?.id===item.id}" @click="selected=item">
+          <div><b>{{ item.title }}</b><small>{{ item.reimbursement_no }}</small></div><div><strong>{{ formatMoney(item.total_amount) }}</strong><el-tag size="small">{{ item.status }}</el-tag></div>
+        </article><el-empty v-if="!records.length" description="暂无报销单" />
+      </el-card>
+      <el-card class="detail" shadow="never" v-if="selected">
+        <template #header><div class="header"><div><b>{{selected.title}}</b><small>{{selected.reimbursement_no}}</small></div><div><el-button v-if="['draft','returned'].includes(selected.status)" @click="itemDialog=true">新增明细</el-button><el-button v-if="selected.status==='draft'" type="primary" @click="submit">提交审批</el-button><el-button v-if="selected.status==='returned'" @click="redraft">转回草稿</el-button><el-button v-if="selected.status==='paid'" type="success" @click="archive">归档</el-button></div></div></template>
+        <el-descriptions :column="3" border><el-descriptions-item label="状态">{{selected.status}}</el-descriptions-item><el-descriptions-item label="金额">{{formatMoney(selected.total_amount)}}</el-descriptions-item><el-descriptions-item label="版本">{{selected.lock_version}}</el-descriptions-item></el-descriptions>
+        <el-table :data="selected.items" class="items"><el-table-column prop="description" label="说明" /><el-table-column prop="vendor" label="供应商" /><el-table-column prop="expense_date" label="日期" width="110" /><el-table-column label="金额" width="130"><template #default="{row}">{{formatMoney(row.amount)}}</template></el-table-column></el-table>
+        <el-timeline v-if="selected.approval?.events?.length" class="timeline"><el-timeline-item v-for="(event,index) in selected.approval.events" :key="index" :timestamp="String(event.created_at||'')">{{event.action}} · {{event.comment||''}}</el-timeline-item></el-timeline>
+      </el-card>
+    </div>
+    <el-dialog v-model="createDialog" title="新建报销单" width="520px"><el-form label-width="90px"><el-form-item label="项目"><el-select v-model="createForm.project_id"><el-option v-for="p in projects" :key="p.id" :label="p.name" :value="p.id" /></el-select></el-form-item><el-form-item label="标题"><el-input v-model="createForm.title" /></el-form-item><el-form-item label="说明"><el-input v-model="createForm.description" type="textarea" /></el-form-item></el-form><template #footer><el-button @click="createDialog=false">取消</el-button><el-button type="primary" @click="createRecord">保存</el-button></template></el-dialog>
+    <el-dialog v-model="itemDialog" title="新增报销明细" width="560px"><el-form label-width="90px"><el-form-item label="预算科目"><el-select v-model="itemForm.budget_line_id"><el-option v-for="line in availableLines" :key="line.id" :label="`${line.category} · 可用 ${formatMoney(Number(line.amount)-Number(line.reserved_amount)-Number(line.spent_amount))}`" :value="line.id" /></el-select></el-form-item><el-form-item label="支出说明"><el-input v-model="itemForm.description" /></el-form-item><el-form-item label="供应商"><el-input v-model="itemForm.vendor" /></el-form-item><el-form-item label="日期"><el-date-picker v-model="itemForm.expense_date" value-format="YYYY-MM-DD" /></el-form-item><el-form-item label="金额"><el-input-number v-model="itemForm.amount" :min="0.01" :precision="2" /></el-form-item><el-form-item label="发票"><el-select v-model="itemForm.invoice_id" clearable><el-option v-for="invoice in invoices" :key="invoice.id" :label="`${invoice.invoice_number||invoice.id} · ${formatMoney(invoice.amount)}`" :value="invoice.id" /></el-select></el-form-item></el-form><template #footer><el-button @click="itemDialog=false">取消</el-button><el-button type="primary" @click="addItem">保存</el-button></template></el-dialog>
+  </section>
+</template>
+<script setup lang="ts">
+import { computed, onMounted, reactive, ref } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { financeApi, formatMoney, type BudgetLine, type BudgetVersion, type FinanceProject, type Invoice, type Reimbursement } from '@/api/finance'
+const loading=ref(false),status=ref(''),records=ref<Reimbursement[]>([]),selected=ref<Reimbursement|null>(null),projects=ref<FinanceProject[]>([]),budgets=ref<BudgetVersion[]>([]),invoices=ref<Invoice[]>([]),createDialog=ref(false),itemDialog=ref(false)
+const statuses=['draft','submitted','in_review','returned','approved','payment_pending','paid','archived','rejected','cancelled']
+const createForm=reactive({project_id:'',title:'',description:''}),itemForm=reactive({budget_line_id:'',description:'',vendor:'',expense_date:'',amount:0,invoice_id:''})
+const availableLines=computed<BudgetLine[]>(()=>budgets.value.filter(b=>b.project_id===selected.value?.project_id&&b.status==='approved').flatMap(b=>b.lines))
+async function load(){loading.value=true;try{records.value=await financeApi.reimbursements(status.value||undefined);if(selected.value)selected.value=records.value.find(r=>r.id===selected.value?.id)||records.value[0]||null;else selected.value=records.value[0]||null}finally{loading.value=false}}
+async function openCreate(){[projects.value,budgets.value,invoices.value]=await Promise.all([financeApi.projects(),financeApi.budgets(),financeApi.invoices()]);createForm.project_id=projects.value[0]?.id||'';createDialog.value=true}
+async function createRecord(){const item=await financeApi.createReimbursement(createForm);createDialog.value=false;await load();selected.value=records.value.find(r=>r.id===item.id)||item;ElMessage.success('报销草稿已创建')}
+async function addItem(){if(!selected.value)return;selected.value=await financeApi.addReimbursementItem(selected.value.id,{...itemForm,invoice_id:itemForm.invoice_id||null});itemDialog.value=false;await load();ElMessage.success('报销明细已添加')}
+async function submit(){if(!selected.value)return;await ElMessageBox.confirm('提交后将占用项目预算并进入审批，确认继续？','提交审批',{type:'warning'});selected.value=await financeApi.submitReimbursement(selected.value.id,selected.value.lock_version);await load();ElMessage.success('已提交审批')}
+async function redraft(){if(!selected.value)return;selected.value=await financeApi.redraftReimbursement(selected.value.id,selected.value.lock_version);await load()}
+async function archive(){if(!selected.value)return;selected.value=await financeApi.archiveReimbursement(selected.value.id,selected.value.lock_version);await load();ElMessage.success('已归档')}
+onMounted(async()=>{[budgets.value,invoices.value]=await Promise.all([financeApi.budgets(),financeApi.invoices()]);await load()})
+</script>
+<style scoped>.toolbar{display:flex;gap:10px;margin-bottom:16px}.layout{display:grid;grid-template-columns:360px 1fr;gap:16px}.list article{display:flex;justify-content:space-between;padding:12px;border:1px solid var(--el-border-color);border-radius:8px;margin-bottom:8px;cursor:pointer}.list article.active{border-color:var(--el-color-primary);background:var(--el-color-primary-light-9)}.list article div{display:flex;flex-direction:column;gap:5px}.list small,.header small{display:block;color:var(--el-text-color-secondary);margin-top:4px}.header{display:flex;justify-content:space-between;align-items:center}.items{margin-top:16px}.timeline{margin-top:20px}@media(max-width:1100px){.layout{grid-template-columns:1fr}}</style>

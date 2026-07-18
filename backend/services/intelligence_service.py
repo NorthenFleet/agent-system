@@ -12,6 +12,7 @@ import csv
 import io
 import time
 import urllib.request
+from contextlib import contextmanager
 from urllib.error import URLError, HTTPError
 from uuid import uuid4
 from pathlib import Path
@@ -26,10 +27,18 @@ class IntelligenceService:
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self.init_db()
 
-    def connect(self) -> sqlite3.Connection:
+    @contextmanager
+    def connect(self):
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
-        return conn
+        try:
+            yield conn
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
 
     def init_db(self) -> None:
         with self.connect() as conn:

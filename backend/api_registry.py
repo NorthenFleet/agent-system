@@ -82,6 +82,7 @@ ACTIVE_ROUTERS = (
     products_router.router,
     agent_os.router,
     finance.router,
+    finance.health_router,
     intelligence.router,
     web_crawler.router,
     auth_router,
