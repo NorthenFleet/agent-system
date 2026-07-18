@@ -50,6 +50,9 @@ def normalize_enabled_modules(project: dict[str, Any]) -> list[str]:
 def normalize_product_bindings(project: dict[str, Any]) -> list[dict[str, Any]]:
     project_id = str(project.get("id") or "")
     source = project.get("product_bindings")
+    context = project.get("context") if isinstance(project.get("context"), dict) else {}
+    if not isinstance(source, list):
+        source = context.get("product_bindings")
     bindings: list[dict[str, Any]] = []
     if isinstance(source, list):
         for value in source:
@@ -63,7 +66,6 @@ def normalize_product_bindings(project: dict[str, Any]) -> list[dict[str, Any]]:
             row.setdefault("config", {})
             bindings.append(row)
 
-    context = project.get("context") if isinstance(project.get("context"), dict) else {}
     mission = context.get("mission_planning") if isinstance(context.get("mission_planning"), dict) else {}
     if mission.get("scenario_id"):
         for product_id, role in (("ai-planning-5130", "planner"), ("one-sim", "simulator")):
@@ -94,6 +96,9 @@ def normalize_project_composition(project: dict[str, Any]) -> bool:
     project["product_bindings"] = bindings
     context = project.get("context") if isinstance(project.get("context"), dict) else {}
     context["enabled_modules"] = modules
+    # The unified SQLite project table persists the context JSON. Keep the
+    # top-level compatibility fields and the persisted representation aligned.
+    context["product_bindings"] = bindings
     project["context"] = context
     return before_modules != modules or before_bindings != bindings
 

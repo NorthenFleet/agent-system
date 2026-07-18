@@ -51,6 +51,9 @@ export interface ProductRelease {
   status: string
   deployment_url?: string
   released_at?: string
+  source_deliverable_id?: string
+  release_note?: string
+  released_by_agent_id?: string
 }
 
 export interface ProductDeliverable {
@@ -67,6 +70,35 @@ export interface ProductDeliverable {
   produced_by_agent_id?: string
   created_at?: string
   reviewed_at?: string
+  review_note?: string
+}
+
+export interface ProductRuntimeInstance {
+  id: string
+  product_id: string
+  name: string
+  environment: string
+  state: string
+  release_id?: string
+  version?: string
+  device?: string
+  host?: string
+  port?: number | null
+  public_url?: string
+  health_url?: string
+  summary?: string
+  metadata?: Record<string, unknown>
+  created_at?: string
+  updated_at?: string
+  last_observed_at?: string
+}
+
+export interface ProductEvent {
+  id: string
+  product_id: string
+  event_type: string
+  payload?: Record<string, unknown>
+  created_at?: string
 }
 
 export interface RegisteredProduct {
@@ -81,12 +113,14 @@ export interface RegisteredProduct {
   repository?: string
   deployment?: ProductDeployment
   capabilities?: string[]
+  tags?: string[]
   dependencies?: ProductDependency[]
   runtime?: ProductRuntime
   project_references?: ProductProjectReference[]
   usage_count?: number
   delivery_summary?: ProductDeliverableSummary
   current_release?: ProductRelease | null
+  runtime_instances?: ProductRuntimeInstance[]
 }
 
 export interface ProductRegistryResponse {
@@ -121,6 +155,73 @@ export function getProductReleases(productId: string) {
   return apiClient.get<{ releases: ProductRelease[] }>(
     `/api/v2/products/${encodeURIComponent(productId)}/releases`
   ).then(response => response.data.releases)
+}
+
+export function getProductTimeline(productId: string) {
+  return apiClient.get<{ events: ProductEvent[] }>(
+    `/api/v2/products/${encodeURIComponent(productId)}/timeline`
+  ).then(response => response.data.events)
+}
+
+export function createProduct(payload: Omit<RegisteredProduct, 'runtime' | 'project_references' | 'usage_count' | 'delivery_summary' | 'current_release' | 'runtime_instances'>) {
+  return apiClient.post<RegisteredProduct>('/api/v2/products', payload).then(response => response.data)
+}
+
+export function updateProduct(productId: string, payload: Partial<RegisteredProduct>) {
+  return apiClient.put<RegisteredProduct>(`/api/v2/products/${encodeURIComponent(productId)}`, payload).then(response => response.data)
+}
+
+export function deleteProduct(productId: string) {
+  return apiClient.delete<{ deleted: boolean; product_id: string }>(
+    `/api/v2/products/${encodeURIComponent(productId)}`
+  ).then(response => response.data)
+}
+
+export function submitProductDeliverable(productId: string, payload: Omit<ProductDeliverable, 'id' | 'product_id' | 'status' | 'created_at' | 'reviewed_at'>) {
+  return apiClient.post<ProductDeliverable>(
+    `/api/v2/products/${encodeURIComponent(productId)}/deliverables`,
+    payload
+  ).then(response => response.data)
+}
+
+export function reviewProductDeliverable(productId: string, deliverableId: string, payload: { accepted: boolean; reviewed_by_agent_id: string; review_note?: string }) {
+  return apiClient.post<ProductDeliverable>(
+    `/api/v2/products/${encodeURIComponent(productId)}/deliverables/${encodeURIComponent(deliverableId)}/review`,
+    payload
+  ).then(response => response.data)
+}
+
+export function createProductRelease(productId: string, payload: Omit<ProductRelease, 'id' | 'product_id' | 'created_at' | 'released_at'>) {
+  return apiClient.post<ProductRelease>(
+    `/api/v2/products/${encodeURIComponent(productId)}/releases`,
+    payload
+  ).then(response => response.data)
+}
+
+export function getProductRuntimeInstances(productId: string) {
+  return apiClient.get<{ runtime_instances: ProductRuntimeInstance[] }>(
+    `/api/v2/products/${encodeURIComponent(productId)}/runtimes`
+  ).then(response => response.data.runtime_instances)
+}
+
+export function createProductRuntimeInstance(productId: string, payload: Omit<ProductRuntimeInstance, 'id' | 'product_id' | 'created_at' | 'updated_at'>) {
+  return apiClient.post<ProductRuntimeInstance>(
+    `/api/v2/products/${encodeURIComponent(productId)}/runtimes`,
+    payload
+  ).then(response => response.data)
+}
+
+export function updateProductRuntimeInstance(productId: string, runtimeInstanceId: string, payload: Partial<ProductRuntimeInstance>) {
+  return apiClient.patch<ProductRuntimeInstance>(
+    `/api/v2/products/${encodeURIComponent(productId)}/runtimes/${encodeURIComponent(runtimeInstanceId)}`,
+    payload
+  ).then(response => response.data)
+}
+
+export function deleteProductRuntimeInstance(productId: string, runtimeInstanceId: string) {
+  return apiClient.delete<{ deleted: boolean; runtime_instance_id: string }>(
+    `/api/v2/products/${encodeURIComponent(productId)}/runtimes/${encodeURIComponent(runtimeInstanceId)}`
+  ).then(response => response.data)
 }
 
 export function bindProductToProject(

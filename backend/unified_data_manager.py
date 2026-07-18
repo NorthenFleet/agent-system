@@ -2283,6 +2283,7 @@ class UnifiedDataManager:
         }
 
     def _project_document_row(self, row: sqlite3.Row) -> dict:
+        context = _loads(row["context"], {})
         return {
             "id": row["id"],
             "name": row["name"],
@@ -2295,7 +2296,9 @@ class UnifiedDataManager:
             "project_manager_agent": row["project_manager_agent"] if "project_manager_agent" in row.keys() else "",
             "progress": float(row["progress"] or 0),
             "current_phase": row["current_phase"] or "",
-            "context": _loads(row["context"], {}),
+            "context": context,
+            "enabled_modules": context.get("enabled_modules", []) if isinstance(context.get("enabled_modules"), list) else [],
+            "product_bindings": context.get("product_bindings", []) if isinstance(context.get("product_bindings"), list) else [],
             "design_doc": _loads(row["design_doc"], {}),
             "document_spec": _loads(row["document_spec"], {}) if "document_spec" in row.keys() else {},
             "tasks": [],

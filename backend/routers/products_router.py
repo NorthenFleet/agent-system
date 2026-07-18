@@ -79,6 +79,38 @@ class ReleaseCreate(BaseModel):
     release_note: str = ""
 
 
+class RuntimeInstanceCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=160)
+    environment: str = Field(default="internal", max_length=96)
+    state: str = Field(default="pending", pattern=r"^(pending|deploying|online|degraded|offline|failed|stopped)$")
+    release_id: str = ""
+    version: str = Field(default="", max_length=96)
+    device: str = Field(default="", max_length=160)
+    host: str = Field(default="", max_length=255)
+    port: int | None = Field(default=None, ge=1, le=65535)
+    public_url: str = ""
+    health_url: str = ""
+    summary: str = Field(default="", max_length=500)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    last_observed_at: str = ""
+
+
+class RuntimeInstanceUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=160)
+    environment: str | None = Field(default=None, max_length=96)
+    state: str | None = Field(default=None, pattern=r"^(pending|deploying|online|degraded|offline|failed|stopped)$")
+    release_id: str | None = None
+    version: str | None = Field(default=None, max_length=96)
+    device: str | None = Field(default=None, max_length=160)
+    host: str | None = Field(default=None, max_length=255)
+    port: int | None = Field(default=None, ge=1, le=65535)
+    public_url: str | None = None
+    health_url: str | None = None
+    summary: str | None = Field(default=None, max_length=500)
+    metadata: dict[str, Any] | None = None
+    last_observed_at: str | None = None
+
+
 class CompletedTaskBackfillRequest(BaseModel):
     dry_run: bool = True
 
@@ -111,6 +143,19 @@ def _project_references(product_id: str) -> list[dict[str, Any]]:
 
 async def _runtime_health(product: dict[str, Any]) -> dict[str, Any]:
     product_id = product.get("id")
+    persisted = product_registry_service.list_runtime_instances(str(product_id), limit=20)
+    if persisted:
+        primary = next(
+            (row for row in persisted if row.get("state") in {"online", "degraded", "deploying"}),
+            persisted[0],
+        )
+        state = str(primary.get("state") or "pending")
+        return {
+            "state": state,
+            "online": state == "online",
+            "summary": str(primary.get("summary") or f"{primary.get('environment') or 'internal'} · {state}"),
+            "details": primary,
+        }
     if product_id == "openclaw-3021":
         return {"state": "online", "online": True, "summary": "3021统一服务运行中"}
     if product_id == "ai-planning-5130":
@@ -145,7 +190,11 @@ async def _runtime_health(product: dict[str, Any]) -> dict[str, Any]:
 async def _enrich_product(product: dict[str, Any]) -> dict[str, Any]:
     references = _project_references(str(product.get("id") or ""))
     deliverables = product_registry_service.list_deliverables(str(product.get("id") or ""), limit=500)
-    releases = product_registry_service.list_releases(str(product.get("id") or ""), limit=1)
+    releases = product_registry_service.list_releases(str(product.get("id") or ""), limit=500)
+    current_release_id = str(product.get("current_release_id") or "")
+    current_release = next((row for row in releases if row.get("id") == current_release_id), None)
+    if not current_release:
+        current_release = next((row for row in releases if row.get("status") == "active"), None)
     return {
         **product,
         "runtime": await _runtime_health(product),
@@ -157,7 +206,8 @@ async def _enrich_product(product: dict[str, Any]) -> dict[str, Any]:
             "pending_review": sum(1 for row in deliverables if row.get("status") == "draft"),
             "latest": deliverables[0] if deliverables else None,
         },
-        "current_release": releases[0] if releases else None,
+        "current_release": current_release,
+        "runtime_instances": product_registry_service.list_runtime_instances(str(product.get("id") or ""), limit=100),
     }
 
 
@@ -344,6 +394,58 @@ def create_release(
         raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
+@router.get("/{product_id}/runtimes")
+def list_runtime_instances(product_id: str, limit: int = 100, _user: dict = Depends(get_current_user)):
+    if not product_registry_service.get_product(product_id):
+        raise HTTPException(status_code=404, detail="Product not found")
+    return {"runtime_instances": product_registry_service.list_runtime_instances(product_id, limit=limit)}
+
+
+@router.post("/{product_id}/runtimes", status_code=201)
+def create_runtime_instance(
+    product_id: str,
+    req: RuntimeInstanceCreate,
+    _user: dict = Depends(require_role("admin")),
+):
+    try:
+        return product_registry_service.create_runtime_instance(product_id, _model_dict(req))
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Product not found") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@router.patch("/{product_id}/runtimes/{runtime_instance_id}")
+def update_runtime_instance(
+    product_id: str,
+    runtime_instance_id: str,
+    req: RuntimeInstanceUpdate,
+    _user: dict = Depends(require_role("admin")),
+):
+    try:
+        result = product_registry_service.update_runtime_instance(
+            product_id,
+            runtime_instance_id,
+            _model_dict(req, exclude_unset=True),
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    if not result:
+        raise HTTPException(status_code=404, detail="Runtime instance not found")
+    return result
+
+
+@router.delete("/{product_id}/runtimes/{runtime_instance_id}")
+def delete_runtime_instance(
+    product_id: str,
+    runtime_instance_id: str,
+    _user: dict = Depends(require_role("admin")),
+):
+    if not product_registry_service.delete_runtime_instance(product_id, runtime_instance_id):
+        raise HTTPException(status_code=404, detail="Runtime instance not found")
+    return {"deleted": True, "runtime_instance_id": runtime_instance_id}
+
+
 @router.get("/{product_id}/timeline")
 def product_timeline(product_id: str, limit: int = 100, _user: dict = Depends(get_current_user)):
     if not product_registry_service.get_product(product_id):
@@ -374,7 +476,9 @@ def update_product(
     _user: dict = Depends(require_role("admin")),
 ):
     payload = _model_dict(req, exclude_unset=True)
-    if not payload and not product_registry_service.get_product(product_id):
+    if not product_registry_service.get_product(product_id):
+        raise HTTPException(status_code=404, detail="Product not found")
+    if not payload:
         raise HTTPException(status_code=400, detail="Product payload is required")
     return product_registry_service.upsert_product(product_id, payload)
 
@@ -383,6 +487,14 @@ def update_product(
 def delete_product(product_id: str, _user: dict = Depends(require_role("admin"))):
     if product_id in {"openclaw-3021", "ai-planning-5130", "one-sim"}:
         raise HTTPException(status_code=400, detail="Core product cannot be deleted")
+    registry = product_registry_service.get_registry()
+    has_ledger_history = any(
+        row.get("product_id") == product_id
+        for collection in ("deliverables", "releases", "runtime_instances")
+        for row in registry.get(collection, [])
+    )
+    if _project_references(product_id) or has_ledger_history:
+        raise HTTPException(status_code=409, detail="Product has project bindings or ledger history and cannot be deleted")
     if not product_registry_service.delete_product(product_id):
         raise HTTPException(status_code=404, detail="Product not found")
     return {"deleted": True, "product_id": product_id}

@@ -1,6 +1,8 @@
 import json
 
 from project_manager import ProjectManager
+from services.project_composition import normalize_project_composition, upsert_product_binding
+from unified_data_manager import UnifiedDataManager
 
 
 def test_project_supports_composable_modules(tmp_path):
@@ -53,3 +55,24 @@ def test_invalid_modules_are_removed(tmp_path):
     })
 
     assert project["enabled_modules"] == ["development", "finance"]
+
+
+def test_product_bindings_survive_unified_sqlite_roundtrip(tmp_path):
+    manager = UnifiedDataManager(str(tmp_path / "dashboard.db"))
+    project = {
+        "id": "proj-products",
+        "name": "产品持久化项目",
+        "project_type": "software",
+        "status": "in_progress",
+        "tasks": [],
+        "context": {},
+    }
+    upsert_product_binding(project, "openclaw-3021", role="primary")
+    normalize_project_composition(project)
+
+    manager.save_projects_document({"projects": [project], "logs": []})
+    restored = manager.load_projects_document()["projects"][0]
+
+    assert restored["enabled_modules"] == project["enabled_modules"]
+    assert restored["product_bindings"] == project["product_bindings"]
+    assert restored["context"]["product_bindings"] == project["product_bindings"]

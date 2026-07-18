@@ -16,6 +16,16 @@ from path_config import data_path
 
 PRODUCT_REGISTRY_FILE = data_path("product-registry.json")
 
+RUNTIME_INSTANCE_STATES = {
+    "pending",
+    "deploying",
+    "online",
+    "degraded",
+    "offline",
+    "failed",
+    "stopped",
+}
+
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -137,11 +147,12 @@ class ProductRegistryService:
     def _default(self) -> dict[str, Any]:
         return {
             "schema": "openclaw.product-registry",
-            "version": 2,
+            "version": 3,
             "updated_at": _now(),
             "products": _seed_products(),
             "deliverables": [],
             "releases": [],
+            "runtime_instances": [],
             "events": [],
             "idempotency": {},
         }
@@ -165,14 +176,15 @@ class ProductRegistryService:
             current_version = int(data.get("version") or 1)
         except (TypeError, ValueError):
             current_version = 1
-        if current_version < 2:
-            data["version"] = 2
+        if current_version < 3:
+            data["version"] = 3
             changed = True
         data.setdefault("schema", "openclaw.product-registry")
         for key, default in {
             "products": [],
             "deliverables": [],
             "releases": [],
+            "runtime_instances": [],
             "events": [],
             "idempotency": {},
         }.items():
@@ -425,13 +437,16 @@ class ProductRegistryService:
                     raise ValueError("source deliverable does not belong to product")
                 if source and source.get("status") != "accepted":
                     raise ValueError("source deliverable must be accepted before release")
+                status = str(payload.get("status") or "pending")
+                if status == "active" and not source:
+                    raise ValueError("active release requires an accepted source deliverable")
                 now = _now()
                 release = {
                     "id": f"rel-{uuid.uuid4().hex[:12]}",
                     "product_id": product_id,
                     "version": str(payload.get("version") or product.get("version") or "unversioned"),
                     "environment": str(payload.get("environment") or "internal"),
-                    "status": str(payload.get("status") or "pending"),
+                    "status": status,
                     "deployment_url": str(payload.get("deployment_url") or ""),
                     "source_deliverable_id": deliverable_id,
                     "released_by_agent_id": str(payload.get("released_by_agent_id") or ""),
@@ -458,6 +473,135 @@ class ProductRegistryService:
         rows = [row for row in self.get_registry()["events"] if row.get("product_id") == product_id]
         rows.sort(key=lambda row: str(row.get("created_at") or ""), reverse=True)
         return copy.deepcopy(rows[:max(1, min(limit, 500))])
+
+    def list_runtime_instances(self, product_id: str, *, limit: int = 100) -> list[dict[str, Any]]:
+        rows = [
+            row for row in self.get_registry()["runtime_instances"]
+            if row.get("product_id") == product_id
+        ]
+        rows.sort(
+            key=lambda row: str(row.get("last_observed_at") or row.get("updated_at") or row.get("created_at") or ""),
+            reverse=True,
+        )
+        return copy.deepcopy(rows[:max(1, min(limit, 500))])
+
+    def create_runtime_instance(self, product_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Register a deployable product instance without treating it as a health probe."""
+        Path(self.file_path).parent.mkdir(parents=True, exist_ok=True)
+        with open(self._lock_path(), "w", encoding="utf-8") as lock:
+            fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+            try:
+                data = self._load_unlocked()
+                if not any(row.get("id") == product_id for row in data["products"]):
+                    raise KeyError(product_id)
+                release_id = str(payload.get("release_id") or "")
+                if release_id:
+                    release = next(
+                        (row for row in data["releases"] if row.get("id") == release_id),
+                        None,
+                    )
+                    if not release or release.get("product_id") != product_id:
+                        raise ValueError("release does not belong to product")
+                state = str(payload.get("state") or "pending")
+                if state not in RUNTIME_INSTANCE_STATES:
+                    raise ValueError(f"unsupported runtime state: {state}")
+                now = _now()
+                instance = {
+                    "id": f"rtm-{uuid.uuid4().hex[:12]}",
+                    "product_id": product_id,
+                    "name": str(payload.get("name") or "未命名实例"),
+                    "environment": str(payload.get("environment") or "internal"),
+                    "state": state,
+                    "release_id": release_id,
+                    "version": str(payload.get("version") or ""),
+                    "device": str(payload.get("device") or ""),
+                    "host": str(payload.get("host") or ""),
+                    "port": int(payload["port"]) if payload.get("port") not in (None, "") else None,
+                    "public_url": str(payload.get("public_url") or ""),
+                    "health_url": str(payload.get("health_url") or ""),
+                    "summary": str(payload.get("summary") or ""),
+                    "metadata": copy.deepcopy(payload.get("metadata") or {}),
+                    "created_at": now,
+                    "updated_at": now,
+                    "last_observed_at": str(payload.get("last_observed_at") or now),
+                }
+                data["runtime_instances"].append(instance)
+                self._append_event(data, product_id, "runtime.registered", {
+                    "runtime_instance_id": instance["id"],
+                    "environment": instance["environment"],
+                    "state": instance["state"],
+                    "release_id": instance["release_id"],
+                })
+                self._save_unlocked(data)
+                return copy.deepcopy(instance)
+            finally:
+                fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
+
+    def update_runtime_instance(
+        self,
+        product_id: str,
+        runtime_instance_id: str,
+        payload: dict[str, Any],
+    ) -> dict[str, Any] | None:
+        Path(self.file_path).parent.mkdir(parents=True, exist_ok=True)
+        with open(self._lock_path(), "w", encoding="utf-8") as lock:
+            fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+            try:
+                data = self._load_unlocked()
+                instance = next(
+                    (
+                        row for row in data["runtime_instances"]
+                        if row.get("id") == runtime_instance_id and row.get("product_id") == product_id
+                    ),
+                    None,
+                )
+                if not instance:
+                    return None
+                if "release_id" in payload and payload["release_id"]:
+                    release = next(
+                        (row for row in data["releases"] if row.get("id") == payload["release_id"]),
+                        None,
+                    )
+                    if not release or release.get("product_id") != product_id:
+                        raise ValueError("release does not belong to product")
+                if "state" in payload and payload["state"] not in RUNTIME_INSTANCE_STATES:
+                    raise ValueError(f"unsupported runtime state: {payload['state']}")
+                allowed = {
+                    "name", "environment", "state", "release_id", "version", "device", "host", "port",
+                    "public_url", "health_url", "summary", "metadata", "last_observed_at",
+                }
+                instance.update({key: copy.deepcopy(value) for key, value in payload.items() if key in allowed})
+                instance["updated_at"] = _now()
+                self._append_event(data, product_id, "runtime.updated", {
+                    "runtime_instance_id": runtime_instance_id,
+                    "changed_fields": sorted(key for key in payload if key in allowed),
+                    "state": instance.get("state"),
+                })
+                self._save_unlocked(data)
+                return copy.deepcopy(instance)
+            finally:
+                fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
+
+    def delete_runtime_instance(self, product_id: str, runtime_instance_id: str) -> bool:
+        Path(self.file_path).parent.mkdir(parents=True, exist_ok=True)
+        with open(self._lock_path(), "w", encoding="utf-8") as lock:
+            fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+            try:
+                data = self._load_unlocked()
+                before = len(data["runtime_instances"])
+                data["runtime_instances"] = [
+                    row for row in data["runtime_instances"]
+                    if not (row.get("id") == runtime_instance_id and row.get("product_id") == product_id)
+                ]
+                if len(data["runtime_instances"]) == before:
+                    return False
+                self._append_event(data, product_id, "runtime.removed", {
+                    "runtime_instance_id": runtime_instance_id,
+                })
+                self._save_unlocked(data)
+                return True
+            finally:
+                fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
 
 
 product_registry_service = ProductRegistryService()
