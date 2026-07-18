@@ -189,7 +189,10 @@ class DevelopmentPlan(Base):
 
     # 基础信息
     id = Column(String(64), primary_key=True)
-    task_id = Column(String(64), ForeignKey('tasks.task_id', ondelete='CASCADE'), nullable=False)
+    # The task table is owned by the V2 model metadata; keep this reference
+    # application-enforced so PostgreSQL startup does not build an invalid
+    # cross-metadata foreign key against the integer legacy tasks.id column.
+    task_id = Column(String(64), nullable=False, index=True)
     title = Column(String(500), nullable=False)
     version = Column(Integer, nullable=False, default=1)
     type = Column(portable_enum(PlanTypeEnum), nullable=False, default=PlanTypeEnum.GENERAL)
@@ -334,7 +337,7 @@ class TaskPlanRelation(Base):
     __tablename__ = 'task_plans'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    task_id = Column(String(64), ForeignKey('tasks.task_id', ondelete='CASCADE'), nullable=False)
+    task_id = Column(String(64), nullable=False, index=True)
     plan_id = Column(String(64), ForeignKey('plans.id', ondelete='CASCADE'), nullable=False)
     relation_type = Column(String(32), nullable=False, default='owns')
     is_active = Column(Boolean, nullable=False, default=False)
