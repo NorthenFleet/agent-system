@@ -1542,7 +1542,7 @@ class FinanceServiceV2:
         migration_versions: list[str] = []
         if "alembic_version" in tables:
             migration_versions = list(db.execute(text("SELECT version_num FROM alembic_version")).scalars())
-        migration_ready = "20260718_finance_prod" in migration_versions
+        migration_ready = any(version.startswith("20260718_") for version in migration_versions)
         return {
             "status": "ready" if not missing and migration_ready and storage_status == "ready" else "not_ready",
             "database": {"dialect": dialect, "missing_tables": missing, "migration_versions": migration_versions},
