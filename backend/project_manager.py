@@ -16,6 +16,7 @@ from typing import Any, Optional
 
 from path_config import data_path
 from services.project_composition import normalize_project_composition
+from services.product_delivery_service import product_delivery_service
 from unified_data_manager import unified_data_manager
 
 PROJECTS_FILE = data_path("projects-v3.json")
@@ -464,7 +465,9 @@ class ProjectManager:
             self._append_log(data, project_id, task["id"], payload.get("assignee_agent") or "system", "task_created", f"任务创建：{task['title']}")
             return task
 
-        return self._with_data(mutate)
+        task = self._with_data(mutate)
+        self._record_task_completion(task)
+        return task
 
     def update_task(self, task_id: str, payload: dict) -> Optional[dict]:
         allowed = {
@@ -484,7 +487,9 @@ class ProjectManager:
                 self._append_log(data, project["id"], task_id, payload.get("assignee_agent") or "system", "task_updated", f"任务更新：{task['title']}")
             return task
 
-        return self._with_data(mutate)
+        task = self._with_data(mutate)
+        self._record_task_completion(task)
+        return task
 
     def delete_task(self, project_id: str, task_id: str) -> Optional[dict]:
         def mutate(data):
@@ -527,6 +532,28 @@ class ProjectManager:
 
         return self._with_data(mutate)
 
+    def _record_task_completion_by_id(self, task_id: str) -> None:
+        if not task_id:
+            return
+        data = self._read()
+        project, task = self._find_task_unlocked(data, task_id)
+        if project and task:
+            self._record_task_completion(task, project)
+
+    def _record_task_completion(self, task: Optional[dict], project: Optional[dict] = None) -> None:
+        """Record product output after persistence; ledger failure never blocks task state."""
+        if not task or not _is_done(str(task.get("status") or "")):
+            return
+        try:
+            if project is None:
+                project = self.get_project(str(task.get("project_id") or ""))
+            if project:
+                product_delivery_service.register_task_completion(project, task)
+        except Exception:
+            # The task manager is authoritative for work state. Product tracking
+            # is an integration projection and must remain retryable.
+            return
+
     def update_point(self, point_id: str, payload: dict) -> Optional[dict]:
         allowed = {"title", "description", "status", "weight", "completion_evidence", "checklist", "assigned_agent"}
 
@@ -545,7 +572,10 @@ class ProjectManager:
                 self._append_log(data, project["id"], task["id"], payload.get("assigned_agent") or "system", "point_updated", f"开发要点更新：{point['title']}")
             return point
 
-        return self._with_data(mutate)
+        point = self._with_data(mutate)
+        if point:
+            self._record_task_completion_by_id(str(point.get("task_id") or ""))
+        return point
 
     def list_points(self, task_id: str) -> Optional[list[dict]]:
         data = self._read()
@@ -663,7 +693,10 @@ class ProjectManager:
             )
             return {"project": project, "task": task, "point": point, "log": log}
 
-        return self._with_data(mutate)
+        result = self._with_data(mutate)
+        if result:
+            self._record_task_completion(result.get("task"), result.get("project"))
+        return result
 
     def add_log(self, project_id: str, task_id: Optional[str], agent_id: str, action: str, content: str) -> Optional[dict]:
         def mutate(data):

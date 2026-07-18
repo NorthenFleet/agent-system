@@ -12,6 +12,7 @@ from project_manager import project_manager
 from services.auth_service import get_current_user, require_role
 from services.mission_planning_adapter import MissionPlanningError, mission_planning_adapter
 from services.product_service import product_registry_service
+from services.product_delivery_service import product_delivery_service, product_id_for_project
 from services.project_composition import remove_product_binding, upsert_product_binding
 
 
@@ -76,6 +77,10 @@ class ReleaseCreate(BaseModel):
     source_deliverable_id: str = ""
     released_by_agent_id: str = ""
     release_note: str = ""
+
+
+class CompletedTaskBackfillRequest(BaseModel):
+    dry_run: bool = True
 
 
 def _model_dict(model: BaseModel, *, exclude_unset: bool = False) -> dict[str, Any]:
@@ -230,6 +235,41 @@ def unbind_product_from_project(
         raise HTTPException(status_code=404, detail="Product binding not found")
     updated = project_manager.update_project(project_id, {"product_bindings": project["product_bindings"]})
     return {"project": updated, "removed": product_id}
+
+
+@router.post("/projects/{project_id}/backfill-completed-tasks")
+def backfill_completed_tasks(
+    project_id: str,
+    req: CompletedTaskBackfillRequest,
+    _user: dict = Depends(require_role("admin")),
+):
+    """Migrate only completed tasks of an explicitly primary-bound project."""
+    project = project_manager.get_project(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    product_id = product_id_for_project(project)
+    if not product_id:
+        raise HTTPException(status_code=409, detail="Project has no primary product binding")
+    completed = [
+        task for task in project.get("tasks", [])
+        if isinstance(task, dict) and str(task.get("status") or "") in {"done", "completed"}
+    ]
+    if req.dry_run:
+        return {
+            "project_id": project_id,
+            "product_id": product_id,
+            "dry_run": True,
+            "completed_task_count": len(completed),
+            "tasks": [{"id": task.get("id"), "title": task.get("title")} for task in completed],
+        }
+    deliverables = product_delivery_service.backfill_completed_tasks(project)
+    return {
+        "project_id": project_id,
+        "product_id": product_id,
+        "dry_run": False,
+        "deliverables": deliverables,
+        "count": len(deliverables),
+    }
 
 
 def _ensure_project_reference(project_id: str) -> None:
