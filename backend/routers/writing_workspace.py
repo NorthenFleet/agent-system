@@ -16,6 +16,8 @@ from services.document_workspace_service import (
     DocumentWorkspaceError,
     document_workspace_service,
 )
+from services.product_delivery_service import register_document_export
+from services.product_service import product_registry_service
 
 
 router = APIRouter(prefix="/api/v3/writing", tags=["writing-workspace"])
@@ -41,6 +43,7 @@ class WritingProjectCreate(BaseModel):
     outline: list[str] = Field(default_factory=list)
     owner_agent: str = "ultra-magnus"
     priority: str = "medium"
+    product_id: str = ""
 
 
 def _project(project_id: str) -> dict[str, Any]:
@@ -66,6 +69,8 @@ def create_writing_project(req: WritingProjectCreate, _user: dict = Depends(requ
         for project in project_manager.list_projects()
     ):
         raise HTTPException(status_code=409, detail="已存在同名项目，请使用不同的文档名称")
+    if req.product_id and not product_registry_service.get_product(req.product_id):
+        raise HTTPException(status_code=400, detail="关联产品不存在")
     chapters = [
         {
             "title": title.strip(),
@@ -102,6 +107,12 @@ def create_writing_project(req: WritingProjectCreate, _user: dict = Depends(requ
         "current_phase": "outline",
         "enabled_modules": ["writing", "knowledge", "finance", "products"],
         "context": {"project_type": "document", "created_from": "writing-workspace"},
+        "product_bindings": ([{
+            "product_id": req.product_id,
+            "role": "primary",
+            "status": "bound",
+            "source": "writing-workspace-create",
+        }] if req.product_id else []),
         "document_spec": document_spec,
     })
     initialized = document_workspace_service.initialize_project(project, document_spec["outline"])
@@ -224,8 +235,13 @@ def export_document(
     _user: dict = Depends(require_role("admin")),
 ):
     try:
-        path = document_workspace_service.export(_project(project_id), req.format)
+        project = _project(project_id)
+        path = document_workspace_service.export(project, req.format)
+        deliverable = register_document_export(project, path, req.format)
         media_type = "application/pdf" if path.suffix.lower() == ".pdf" else "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        return FileResponse(path, filename=path.name, media_type=media_type)
+        response = FileResponse(path, filename=path.name, media_type=media_type)
+        if deliverable:
+            response.headers["X-Product-Deliverable-Id"] = str(deliverable["id"])
+        return response
     except DocumentWorkspaceError as exc:
         raise _handle(exc) from exc

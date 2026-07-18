@@ -6,6 +6,7 @@ import copy
 import fcntl
 import json
 import os
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -136,9 +137,13 @@ class ProductRegistryService:
     def _default(self) -> dict[str, Any]:
         return {
             "schema": "openclaw.product-registry",
-            "version": 1,
+            "version": 2,
             "updated_at": _now(),
             "products": _seed_products(),
+            "deliverables": [],
+            "releases": [],
+            "events": [],
+            "idempotency": {},
         }
 
     def _load_unlocked(self) -> dict[str, Any]:
@@ -146,10 +151,56 @@ class ProductRegistryService:
             return self._default()
         with open(self.file_path, "r", encoding="utf-8") as handle:
             data = json.load(handle)
-        data.setdefault("schema", "openclaw.product-registry")
-        data.setdefault("version", 1)
-        data.setdefault("products", [])
+        self._migrate_ledger_schema(data)
         return data
+
+    @staticmethod
+    def _migrate_ledger_schema(data: dict[str, Any]) -> bool:
+        """Upgrade the original registry in-place without changing product records."""
+        changed = False
+        if data.get("schema") != "openclaw.product-registry":
+            data["schema"] = "openclaw.product-registry"
+            changed = True
+        try:
+            current_version = int(data.get("version") or 1)
+        except (TypeError, ValueError):
+            current_version = 1
+        if current_version < 2:
+            data["version"] = 2
+            changed = True
+        data.setdefault("schema", "openclaw.product-registry")
+        for key, default in {
+            "products": [],
+            "deliverables": [],
+            "releases": [],
+            "events": [],
+            "idempotency": {},
+        }.items():
+            if key not in data:
+                data[key] = default
+                changed = True
+        return changed
+
+    def ensure_ledger_schema(self) -> dict[str, Any]:
+        """Persist the v2 ledger migration once, preserving all existing products."""
+        Path(self.file_path).parent.mkdir(parents=True, exist_ok=True)
+        with open(self._lock_path(), "w", encoding="utf-8") as lock:
+            fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+            try:
+                existed = os.path.exists(self.file_path)
+                data = self._load_unlocked()
+                # _load_unlocked has already normalized the schema. Compare the
+                # on-disk version when it existed so routine reads do not rewrite it.
+                needs_save = not existed
+                if existed:
+                    with open(self.file_path, "r", encoding="utf-8") as handle:
+                        raw = json.load(handle)
+                    needs_save = self._migrate_ledger_schema(raw)
+                if needs_save:
+                    self._save_unlocked(data)
+                return copy.deepcopy(data)
+            finally:
+                fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
 
     def _save_unlocked(self, data: dict[str, Any]) -> None:
         path = Path(self.file_path)
@@ -193,6 +244,10 @@ class ProductRegistryService:
                 }
                 product.update({key: value for key, value in payload.items() if key in allowed})
                 product["updated_at"] = _now()
+                self._append_event(data, product_id, "product.updated", {
+                    "product_id": product_id,
+                    "changed_fields": sorted(key for key in payload if key in allowed),
+                })
                 self._save_unlocked(data)
                 return copy.deepcopy(product)
             finally:
@@ -212,6 +267,197 @@ class ProductRegistryService:
                 return True
             finally:
                 fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
+
+    @staticmethod
+    def _append_event(
+        data: dict[str, Any],
+        product_id: str,
+        event_type: str,
+        payload: dict[str, Any],
+    ) -> dict[str, Any]:
+        event = {
+            "id": f"evt-{uuid.uuid4().hex[:12]}",
+            "product_id": product_id,
+            "event_type": event_type,
+            "payload": copy.deepcopy(payload),
+            "created_at": _now(),
+        }
+        data["events"].append(event)
+        # A product timeline is useful, but it should not grow without bound in the registry file.
+        if len(data["events"]) > 2_000:
+            data["events"] = data["events"][-2_000:]
+        return event
+
+    def list_deliverables(
+        self,
+        product_id: str,
+        *,
+        project_id: str | None = None,
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        rows = [
+            row for row in self.get_registry()["deliverables"]
+            if row.get("product_id") == product_id
+            and (not project_id or row.get("project_id") == project_id)
+        ]
+        rows.sort(key=lambda row: str(row.get("created_at") or ""), reverse=True)
+        return copy.deepcopy(rows[:max(1, min(limit, 500))])
+
+    def submit_deliverable(
+        self,
+        product_id: str,
+        payload: dict[str, Any],
+        *,
+        idempotency_key: str | None = None,
+    ) -> dict[str, Any]:
+        """Persist a candidate deliverable produced by a project task or agent."""
+        Path(self.file_path).parent.mkdir(parents=True, exist_ok=True)
+        with open(self._lock_path(), "w", encoding="utf-8") as lock:
+            fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+            try:
+                data = self._load_unlocked()
+                if not any(row.get("id") == product_id for row in data["products"]):
+                    raise KeyError(product_id)
+                if idempotency_key:
+                    existing_id = data["idempotency"].get(idempotency_key)
+                    if existing_id:
+                        existing = next(
+                            (row for row in data["deliverables"] if row.get("id") == existing_id),
+                            None,
+                        )
+                        if existing:
+                            return copy.deepcopy(existing)
+
+                now = _now()
+                deliverable = {
+                    "id": f"dlv-{uuid.uuid4().hex[:12]}",
+                    "product_id": product_id,
+                    "project_id": str(payload.get("project_id") or ""),
+                    "task_id": str(payload.get("task_id") or ""),
+                    "development_point_id": str(payload.get("development_point_id") or ""),
+                    "kind": str(payload.get("kind") or "document"),
+                    "title": str(payload.get("title") or "未命名交付物"),
+                    "uri": str(payload.get("uri") or ""),
+                    "content_hash": str(payload.get("content_hash") or ""),
+                    "version": str(payload.get("version") or ""),
+                    "status": "draft",
+                    "summary": str(payload.get("summary") or ""),
+                    "metadata": copy.deepcopy(payload.get("metadata") or {}),
+                    "produced_by_agent_id": str(payload.get("produced_by_agent_id") or ""),
+                    "created_at": now,
+                    "updated_at": now,
+                }
+                data["deliverables"].append(deliverable)
+                if idempotency_key:
+                    data["idempotency"][idempotency_key] = deliverable["id"]
+                self._append_event(data, product_id, "deliverable.submitted", {
+                    "deliverable_id": deliverable["id"],
+                    "project_id": deliverable["project_id"],
+                    "task_id": deliverable["task_id"],
+                    "kind": deliverable["kind"],
+                    "title": deliverable["title"],
+                })
+                self._save_unlocked(data)
+                return copy.deepcopy(deliverable)
+            finally:
+                fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
+
+    def review_deliverable(
+        self,
+        product_id: str,
+        deliverable_id: str,
+        *,
+        accepted: bool,
+        reviewed_by_agent_id: str,
+        review_note: str = "",
+    ) -> dict[str, Any] | None:
+        Path(self.file_path).parent.mkdir(parents=True, exist_ok=True)
+        with open(self._lock_path(), "w", encoding="utf-8") as lock:
+            fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+            try:
+                data = self._load_unlocked()
+                deliverable = next(
+                    (
+                        row for row in data["deliverables"]
+                        if row.get("id") == deliverable_id and row.get("product_id") == product_id
+                    ),
+                    None,
+                )
+                if not deliverable:
+                    return None
+                now = _now()
+                deliverable.update({
+                    "status": "accepted" if accepted else "rejected",
+                    "accepted_by_agent_id": reviewed_by_agent_id if accepted else "",
+                    "reviewed_by_agent_id": reviewed_by_agent_id,
+                    "review_note": review_note,
+                    "reviewed_at": now,
+                    "accepted_at": now if accepted else "",
+                    "updated_at": now,
+                })
+                self._append_event(data, product_id, "deliverable.accepted" if accepted else "deliverable.rejected", {
+                    "deliverable_id": deliverable_id,
+                    "reviewed_by_agent_id": reviewed_by_agent_id,
+                    "review_note": review_note,
+                })
+                self._save_unlocked(data)
+                return copy.deepcopy(deliverable)
+            finally:
+                fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
+
+    def list_releases(self, product_id: str, *, limit: int = 100) -> list[dict[str, Any]]:
+        rows = [row for row in self.get_registry()["releases"] if row.get("product_id") == product_id]
+        rows.sort(key=lambda row: str(row.get("created_at") or ""), reverse=True)
+        return copy.deepcopy(rows[:max(1, min(limit, 500))])
+
+    def create_release(self, product_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+        Path(self.file_path).parent.mkdir(parents=True, exist_ok=True)
+        with open(self._lock_path(), "w", encoding="utf-8") as lock:
+            fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+            try:
+                data = self._load_unlocked()
+                product = next((row for row in data["products"] if row.get("id") == product_id), None)
+                if not product:
+                    raise KeyError(product_id)
+                deliverable_id = str(payload.get("source_deliverable_id") or "")
+                source = next((row for row in data["deliverables"] if row.get("id") == deliverable_id), None)
+                if deliverable_id and (not source or source.get("product_id") != product_id):
+                    raise ValueError("source deliverable does not belong to product")
+                if source and source.get("status") != "accepted":
+                    raise ValueError("source deliverable must be accepted before release")
+                now = _now()
+                release = {
+                    "id": f"rel-{uuid.uuid4().hex[:12]}",
+                    "product_id": product_id,
+                    "version": str(payload.get("version") or product.get("version") or "unversioned"),
+                    "environment": str(payload.get("environment") or "internal"),
+                    "status": str(payload.get("status") or "pending"),
+                    "deployment_url": str(payload.get("deployment_url") or ""),
+                    "source_deliverable_id": deliverable_id,
+                    "released_by_agent_id": str(payload.get("released_by_agent_id") or ""),
+                    "release_note": str(payload.get("release_note") or ""),
+                    "created_at": now,
+                    "updated_at": now,
+                    "released_at": now if str(payload.get("status") or "") == "active" else "",
+                }
+                data["releases"].append(release)
+                if release["status"] == "active":
+                    product.update({"version": release["version"], "current_release_id": release["id"], "updated_at": now})
+                self._append_event(data, product_id, "release.created", {
+                    "release_id": release["id"],
+                    "version": release["version"],
+                    "environment": release["environment"],
+                    "status": release["status"],
+                })
+                self._save_unlocked(data)
+                return copy.deepcopy(release)
+            finally:
+                fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
+
+    def timeline(self, product_id: str, *, limit: int = 100) -> list[dict[str, Any]]:
+        rows = [row for row in self.get_registry()["events"] if row.get("product_id") == product_id]
+        rows.sort(key=lambda row: str(row.get("created_at") or ""), reverse=True)
+        return copy.deepcopy(rows[:max(1, min(limit, 500))])
 
 
 product_registry_service = ProductRegistryService()

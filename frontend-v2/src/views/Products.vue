@@ -63,57 +63,38 @@
           <h3>产品目录</h3>
           <el-segmented v-model="kindFilter" :options="kindOptions" size="small" />
         </div>
-        <el-table
-          :data="filteredProducts"
-          row-key="id"
-          highlight-current-row
-          @row-click="selectProduct"
-        >
-          <el-table-column label="产品" min-width="220">
-            <template #default="{ row }">
-              <div class="product-cell">
-                <strong>{{ row.name }}</strong>
-                <small>{{ row.id }} · {{ row.version || '未标版本' }}</small>
-              </div>
-            </template>
-          </el-table-column>
-          <el-table-column label="类型" width="118">
-            <template #default="{ row }">{{ kindLabel(row.kind) }}</template>
-          </el-table-column>
-          <el-table-column label="运行状态" min-width="150">
-            <template #default="{ row }">
-              <div class="runtime-cell">
-                <el-tag :type="runtimeTagType(row.runtime?.state)" effect="plain" size="small">
-                  {{ runtimeLabel(row.runtime?.state) }}
-                </el-tag>
-                <small>{{ row.runtime?.summary }}</small>
-              </div>
-            </template>
-          </el-table-column>
-          <el-table-column label="部署" min-width="180">
-            <template #default="{ row }">
-              <div class="deployment-cell">
-                <span>{{ row.deployment?.device || deploymentModeLabel(row.deployment?.mode) }}</span>
-                <small v-if="row.deployment?.host">{{ row.deployment.host }}:{{ row.deployment.port }}</small>
-              </div>
-            </template>
-          </el-table-column>
-          <el-table-column label="项目" width="78" align="center">
-            <template #default="{ row }">{{ row.usage_count || 0 }}</template>
-          </el-table-column>
-          <el-table-column label="" width="52" align="right">
-            <template #default="{ row }">
-              <el-tooltip v-if="row.deployment?.public_url" content="打开产品" placement="left">
-                <el-button
-                  :icon="Link"
-                  text
-                  aria-label="打开产品"
-                  @click.stop="openProduct(row)"
-                />
-              </el-tooltip>
-            </template>
-          </el-table-column>
-        </el-table>
+        <div class="product-grid" role="list" aria-label="产品卡片列表">
+          <button
+            v-for="product in filteredProducts"
+            :key="product.id"
+            type="button"
+            class="product-card"
+            :class="{ selected: selectedProduct?.id === product.id }"
+            role="listitem"
+            @click="selectProduct(product)"
+          >
+            <header>
+              <span class="product-kind">{{ kindLabel(product.kind) }}</span>
+              <el-tag :type="runtimeTagType(product.runtime?.state)" effect="plain" size="small">
+                {{ runtimeLabel(product.runtime?.state) }}
+              </el-tag>
+            </header>
+            <div class="product-card-title">
+              <strong>{{ product.name }}</strong>
+              <small>{{ product.version || '未标版本' }} · {{ product.owner || '未分配负责人' }}</small>
+            </div>
+            <p>{{ product.description || '尚未补充产品说明。' }}</p>
+            <dl class="product-card-stats">
+              <div><dt>关联项目</dt><dd>{{ product.usage_count || 0 }}</dd></div>
+              <div><dt>有效交付</dt><dd>{{ product.delivery_summary?.accepted || 0 }}</dd></div>
+              <div><dt>待验收</dt><dd>{{ product.delivery_summary?.pending_review || 0 }}</dd></div>
+            </dl>
+            <footer>
+              <span>{{ product.current_release ? `当前版本 ${product.current_release.version}` : '尚无发布版本' }}</span>
+              <span>{{ product.runtime?.summary || statusLabel(product.status) }}</span>
+            </footer>
+          </button>
+        </div>
       </section>
 
       <aside v-if="selectedProduct" class="product-detail">
@@ -170,6 +151,32 @@
           </div>
           <span v-else class="empty-inline">尚未绑定项目</span>
         </section>
+
+        <section>
+          <h4>交付物</h4>
+          <div v-if="deliverables.length" class="detail-list">
+            <div v-for="deliverable in deliverables" :key="deliverable.id">
+              <strong>{{ deliverable.title }}</strong>
+              <small>
+                {{ deliverableKindLabel(deliverable.kind) }} ·
+                {{ deliverableStatusLabel(deliverable.status) }} ·
+                {{ formatTime(deliverable.created_at || '') }}
+              </small>
+            </div>
+          </div>
+          <span v-else class="empty-inline">该产品尚未登记交付物</span>
+        </section>
+
+        <section>
+          <h4>发布记录</h4>
+          <div v-if="releases.length" class="detail-list">
+            <div v-for="release in releases" :key="release.id">
+              <strong>{{ release.version }}</strong>
+              <small>{{ release.environment }} · {{ release.status }}</small>
+            </div>
+          </div>
+          <span v-else class="empty-inline">尚未发布</span>
+        </section>
       </aside>
     </main>
   </div>
@@ -179,13 +186,17 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Link, Refresh } from '@element-plus/icons-vue'
+import { Refresh } from '@element-plus/icons-vue'
 import { getProjects, type Project } from '@/api/projects'
 import {
   bindProductToProject,
+  getProductDeliverables,
+  getProductReleases,
   getProductRegistry,
   unbindProductFromProject,
+  type ProductDeliverable,
   type ProjectProductBinding,
+  type ProductRelease,
   type RegisteredProduct,
   type ProductRegistryResponse
 } from '@/api/products'
@@ -196,6 +207,8 @@ const loading = ref(false)
 const bindingProduct = ref(false)
 const registry = ref<ProductRegistryResponse>()
 const selectedProduct = ref<RegisteredProduct>()
+const deliverables = ref<ProductDeliverable[]>([])
+const releases = ref<ProductRelease[]>([])
 const currentProject = ref<Project>()
 const kindFilter = ref('all')
 const kindOptions = [
@@ -231,6 +244,7 @@ async function loadProducts() {
     currentProject.value = projectResult?.projects.find(project => project.id === projectContextId.value)
     const currentId = selectedProduct.value?.id || String(route.query.product_id || '') || 'openclaw-3021'
     selectedProduct.value = registry.value.products.find(row => row.id === currentId) || registry.value.products[0]
+    if (selectedProduct.value) await loadProductEvidence(selectedProduct.value.id)
   } catch {
     ElMessage.error('产品注册表加载失败')
   } finally {
@@ -238,12 +252,23 @@ async function loadProducts() {
   }
 }
 
-function selectProduct(product: RegisteredProduct) {
+async function selectProduct(product: RegisteredProduct) {
   selectedProduct.value = product
+  await loadProductEvidence(product.id)
 }
 
-function openProduct(product: RegisteredProduct) {
-  if (product.deployment?.public_url) window.open(product.deployment.public_url, '_blank', 'noopener,noreferrer')
+async function loadProductEvidence(productId: string) {
+  try {
+    const [nextDeliverables, nextReleases] = await Promise.all([
+      getProductDeliverables(productId),
+      getProductReleases(productId)
+    ])
+    deliverables.value = nextDeliverables.slice(0, 6)
+    releases.value = nextReleases.slice(0, 4)
+  } catch {
+    deliverables.value = []
+    releases.value = []
+  }
 }
 
 function openProject(projectId: string) {
@@ -317,6 +342,14 @@ function dependencyTypeLabel(type?: string) {
 
 function roleLabel(role?: string) {
   return ({ planner: '规划器', simulator: '仿真器', uses: '使用' } as Record<string, string>)[role || ''] || role || '使用'
+}
+
+function deliverableKindLabel(kind?: string) {
+  return ({ source_code: '代码', service: '服务', document: '文档', model: '模型', dataset: '数据集', scenario: '想定', report: '报告' } as Record<string, string>)[kind || ''] || kind || '交付物'
+}
+
+function deliverableStatusLabel(status?: string) {
+  return ({ draft: '待验收', accepted: '已验收', rejected: '已退回' } as Record<string, string>)[status || ''] || status || '未知'
 }
 
 function formatTime(value: string) {
@@ -496,6 +529,109 @@ onMounted(loadProducts)
   align-items: start;
 }
 
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.product-card {
+  display: grid;
+  min-height: 224px;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--line-color);
+  border-radius: 6px;
+  color: inherit;
+  text-align: left;
+  background: color-mix(in srgb, var(--card-bg) 92%, var(--view-color-faint));
+  box-shadow: 0 7px 20px rgb(0 0 0 / 8%);
+  cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.product-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--view-color-border);
+  box-shadow: 0 12px 24px rgb(0 0 0 / 13%);
+}
+
+.product-card.selected {
+  border-color: var(--view-color-border);
+  box-shadow: inset 0 0 0 1px var(--view-color-border), 0 12px 24px rgb(0 0 0 / 13%);
+}
+
+.product-card > header,
+.product-card > footer,
+.product-card-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.product-kind,
+.product-card-title small,
+.product-card p,
+.product-card footer,
+.product-card-stats dt,
+.delivery-highlight small {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.product-kind {
+  padding-left: 8px;
+  border-left: 2px solid var(--view-color-border);
+}
+
+.product-card-title {
+  display: grid;
+  gap: 5px;
+}
+
+.product-card-title strong {
+  color: var(--text-primary);
+  font-size: 15px;
+}
+
+.product-card p {
+  min-height: 34px;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.product-card-stats {
+  margin: auto 0 0;
+  padding: 9px 0;
+  border-top: 1px solid var(--line-color);
+  border-bottom: 1px solid var(--line-color);
+}
+
+.product-card-stats > div {
+  display: grid;
+  gap: 4px;
+}
+
+.product-card-stats dd {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.product-card > footer {
+  align-items: flex-start;
+}
+
+.product-card > footer > span:last-child {
+  max-width: 55%;
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .product-cell,
 .runtime-cell,
 .deployment-cell {
@@ -523,6 +659,8 @@ onMounted(loadProducts)
 .product-detail {
   display: grid;
   gap: 16px;
+  position: sticky;
+  top: 14px;
 }
 
 .product-detail p {
@@ -597,9 +735,26 @@ onMounted(loadProducts)
   background: var(--view-color-faint);
 }
 
+.delivery-highlight {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border-left: 2px solid var(--view-color-border);
+  background: var(--view-color-faint);
+}
+
+.delivery-highlight strong {
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
 @media (max-width: 980px) {
   .registry-layout {
     grid-template-columns: 1fr;
+  }
+
+  .product-detail {
+    position: static;
   }
 }
 
@@ -628,6 +783,10 @@ onMounted(loadProducts)
   .project-binding-band {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .product-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

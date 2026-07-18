@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel, Field
 
 from project_manager import project_manager
@@ -16,6 +16,10 @@ from services.project_composition import remove_product_binding, upsert_product_
 
 
 router = APIRouter(prefix="/api/v2/products", tags=["products"])
+
+# Existing registries predate the delivery ledger. This is idempotent and only
+# persists a schema upgrade when an old registry is encountered.
+product_registry_service.ensure_ledger_schema()
 
 
 class ProductUpdate(BaseModel):
@@ -37,6 +41,41 @@ class ProductBindingUpdate(BaseModel):
     role: str = "uses"
     status: str = "bound"
     config: dict[str, Any] = Field(default_factory=dict)
+
+
+class ProductCreate(ProductUpdate):
+    id: str = Field(min_length=2, max_length=96, pattern=r"^[A-Za-z0-9][A-Za-z0-9_-]*$")
+    name: str = Field(min_length=1, max_length=160)
+
+
+class DeliverableCreate(BaseModel):
+    project_id: str = ""
+    task_id: str = ""
+    development_point_id: str = ""
+    kind: str = Field(default="document", pattern=r"^(source_code|service|document|model|dataset|scenario|report)$")
+    title: str = Field(min_length=1, max_length=240)
+    uri: str = ""
+    content_hash: str = ""
+    version: str = ""
+    summary: str = ""
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    produced_by_agent_id: str = ""
+
+
+class DeliverableReview(BaseModel):
+    accepted: bool
+    reviewed_by_agent_id: str = Field(min_length=1, max_length=96)
+    review_note: str = ""
+
+
+class ReleaseCreate(BaseModel):
+    version: str = Field(min_length=1, max_length=96)
+    environment: str = Field(default="internal", max_length=96)
+    status: str = Field(default="pending", pattern=r"^(pending|deploying|active|failed|rolled_back)$")
+    deployment_url: str = ""
+    source_deliverable_id: str = ""
+    released_by_agent_id: str = ""
+    release_note: str = ""
 
 
 def _model_dict(model: BaseModel, *, exclude_unset: bool = False) -> dict[str, Any]:
@@ -100,11 +139,20 @@ async def _runtime_health(product: dict[str, Any]) -> dict[str, Any]:
 
 async def _enrich_product(product: dict[str, Any]) -> dict[str, Any]:
     references = _project_references(str(product.get("id") or ""))
+    deliverables = product_registry_service.list_deliverables(str(product.get("id") or ""), limit=500)
+    releases = product_registry_service.list_releases(str(product.get("id") or ""), limit=1)
     return {
         **product,
         "runtime": await _runtime_health(product),
         "project_references": references,
         "usage_count": len(references),
+        "delivery_summary": {
+            "total": len(deliverables),
+            "accepted": sum(1 for row in deliverables if row.get("status") == "accepted"),
+            "pending_review": sum(1 for row in deliverables if row.get("status") == "draft"),
+            "latest": deliverables[0] if deliverables else None,
+        },
+        "current_release": releases[0] if releases else None,
     }
 
 
@@ -129,6 +177,18 @@ async def get_products(_user: dict = Depends(get_current_user)):
             "project_bindings": sum(int(row.get("usage_count") or 0) for row in products),
         },
     }
+
+
+@router.post("", status_code=201)
+def create_product(
+    req: ProductCreate,
+    _user: dict = Depends(require_role("admin")),
+):
+    if product_registry_service.get_product(req.id):
+        raise HTTPException(status_code=409, detail="Product already exists")
+    payload = _model_dict(req, exclude_unset=True)
+    product_id = payload.pop("id")
+    return product_registry_service.upsert_product(product_id, payload)
 
 
 @router.put("/projects/{project_id}/bindings/{product_id}")
@@ -170,6 +230,85 @@ def unbind_product_from_project(
         raise HTTPException(status_code=404, detail="Product binding not found")
     updated = project_manager.update_project(project_id, {"product_bindings": project["product_bindings"]})
     return {"project": updated, "removed": product_id}
+
+
+def _ensure_project_reference(project_id: str) -> None:
+    if project_id and not project_manager.get_project(project_id):
+        raise HTTPException(status_code=400, detail="Referenced project not found")
+
+
+@router.get("/{product_id}/deliverables")
+def list_deliverables(
+    product_id: str,
+    project_id: str | None = None,
+    limit: int = 100,
+    _user: dict = Depends(get_current_user),
+):
+    if not product_registry_service.get_product(product_id):
+        raise HTTPException(status_code=404, detail="Product not found")
+    return {"deliverables": product_registry_service.list_deliverables(product_id, project_id=project_id, limit=limit)}
+
+
+@router.post("/{product_id}/deliverables", status_code=201)
+def submit_deliverable(
+    product_id: str,
+    req: DeliverableCreate,
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+    _user: dict = Depends(require_role("admin")),
+):
+    if not product_registry_service.get_product(product_id):
+        raise HTTPException(status_code=404, detail="Product not found")
+    _ensure_project_reference(req.project_id)
+    return product_registry_service.submit_deliverable(
+        product_id, _model_dict(req), idempotency_key=idempotency_key
+    )
+
+
+@router.post("/{product_id}/deliverables/{deliverable_id}/review")
+def review_deliverable(
+    product_id: str,
+    deliverable_id: str,
+    req: DeliverableReview,
+    _user: dict = Depends(require_role("admin")),
+):
+    result = product_registry_service.review_deliverable(
+        product_id,
+        deliverable_id,
+        accepted=req.accepted,
+        reviewed_by_agent_id=req.reviewed_by_agent_id,
+        review_note=req.review_note,
+    )
+    if not result:
+        raise HTTPException(status_code=404, detail="Deliverable not found")
+    return result
+
+
+@router.get("/{product_id}/releases")
+def list_releases(product_id: str, limit: int = 100, _user: dict = Depends(get_current_user)):
+    if not product_registry_service.get_product(product_id):
+        raise HTTPException(status_code=404, detail="Product not found")
+    return {"releases": product_registry_service.list_releases(product_id, limit=limit)}
+
+
+@router.post("/{product_id}/releases", status_code=201)
+def create_release(
+    product_id: str,
+    req: ReleaseCreate,
+    _user: dict = Depends(require_role("admin")),
+):
+    try:
+        return product_registry_service.create_release(product_id, _model_dict(req))
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Product not found") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@router.get("/{product_id}/timeline")
+def product_timeline(product_id: str, limit: int = 100, _user: dict = Depends(get_current_user)):
+    if not product_registry_service.get_product(product_id):
+        raise HTTPException(status_code=404, detail="Product not found")
+    return {"events": product_registry_service.timeline(product_id, limit=limit)}
 
 
 @router.get("/{product_id}")

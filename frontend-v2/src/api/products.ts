@@ -30,6 +30,45 @@ export interface ProductProjectReference {
   status?: string
 }
 
+export interface ProductDeliverableSummary {
+  total: number
+  accepted: number
+  pending_review: number
+  latest?: {
+    id: string
+    title: string
+    kind: string
+    status: string
+    version?: string
+    created_at?: string
+  } | null
+}
+
+export interface ProductRelease {
+  id: string
+  version: string
+  environment: string
+  status: string
+  deployment_url?: string
+  released_at?: string
+}
+
+export interface ProductDeliverable {
+  id: string
+  product_id: string
+  project_id?: string
+  task_id?: string
+  kind: string
+  title: string
+  uri?: string
+  version?: string
+  status: string
+  summary?: string
+  produced_by_agent_id?: string
+  created_at?: string
+  reviewed_at?: string
+}
+
 export interface RegisteredProduct {
   id: string
   name: string
@@ -46,6 +85,8 @@ export interface RegisteredProduct {
   runtime?: ProductRuntime
   project_references?: ProductProjectReference[]
   usage_count?: number
+  delivery_summary?: ProductDeliverableSummary
+  current_release?: ProductRelease | null
 }
 
 export interface ProductRegistryResponse {
@@ -68,6 +109,18 @@ export function getProductRegistry() {
 
 export function getProduct(productId: string) {
   return apiClient.get<RegisteredProduct>(`/api/v2/products/${encodeURIComponent(productId)}`).then(response => response.data)
+}
+
+export function getProductDeliverables(productId: string) {
+  return apiClient.get<{ deliverables: ProductDeliverable[] }>(
+    `/api/v2/products/${encodeURIComponent(productId)}/deliverables`
+  ).then(response => response.data.deliverables)
+}
+
+export function getProductReleases(productId: string) {
+  return apiClient.get<{ releases: ProductRelease[] }>(
+    `/api/v2/products/${encodeURIComponent(productId)}/releases`
+  ).then(response => response.data.releases)
 }
 
 export function bindProductToProject(
