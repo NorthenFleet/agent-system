@@ -1,4 +1,6 @@
 from services.product_service import ProductRegistryService
+import json
+import sqlite3
 
 
 def test_deliverable_is_idempotent_and_can_be_accepted(tmp_path):
@@ -89,3 +91,42 @@ def test_runtime_instances_are_tracked_and_validate_release_ownership(tmp_path):
     assert updated and updated["state"] == "degraded"
     assert service.delete_runtime_instance("openclaw-3021", runtime["id"])
     assert service.list_runtime_instances("openclaw-3021") == []
+
+
+def test_registry_uses_sqlite_as_authoritative_store_when_configured(tmp_path):
+    legacy_path = tmp_path / "legacy-product-registry.json"
+    database_path = tmp_path / "unified-dashboard.db"
+    service = ProductRegistryService(str(legacy_path), db_path=str(database_path))
+
+    created = service.upsert_product("sqlite-product", {"name": "数据库产品", "kind": "offering"})
+    service.submit_deliverable("sqlite-product", {"title": "数据库交付物", "kind": "document"})
+
+    with sqlite3.connect(database_path) as connection:
+        assert connection.execute("SELECT COUNT(*) FROM product_registry_products").fetchone()[0] == 7
+        assert connection.execute("SELECT COUNT(*) FROM product_registry_deliverables").fetchone()[0] == 1
+
+    reloaded = ProductRegistryService(str(legacy_path), db_path=str(database_path))
+    assert reloaded.get_product(created["id"])["name"] == "数据库产品"
+    assert reloaded.list_deliverables("sqlite-product")[0]["title"] == "数据库交付物"
+
+
+def test_sqlite_imports_legacy_registry_only_for_first_database_initialization(tmp_path):
+    legacy_path = tmp_path / "legacy-product-registry.json"
+    legacy_path.write_text(json.dumps({
+        "schema": "openclaw.product-registry",
+        "version": 3,
+        "products": [{"id": "legacy-product", "name": "历史产品", "kind": "offering"}],
+        "deliverables": [{"id": "dlv-legacy", "product_id": "legacy-product", "title": "历史交付", "kind": "document", "status": "draft"}],
+        "releases": [],
+        "runtime_instances": [],
+        "events": [],
+        "idempotency": {},
+    }, ensure_ascii=False), encoding="utf-8")
+    database_path = tmp_path / "unified-dashboard.db"
+
+    service = ProductRegistryService(str(legacy_path), db_path=str(database_path))
+    assert service.get_product("legacy-product")["name"] == "历史产品"
+    legacy_path.write_text("{}", encoding="utf-8")
+
+    reloaded = ProductRegistryService(str(legacy_path), db_path=str(database_path))
+    assert reloaded.list_deliverables("legacy-product")[0]["id"] == "dlv-legacy"

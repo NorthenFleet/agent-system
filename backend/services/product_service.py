@@ -6,12 +6,14 @@ import copy
 import fcntl
 import json
 import os
+import sqlite3
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 from path_config import data_path
+from unified_data_manager import UNIFIED_DB_PATH
 
 
 PRODUCT_REGISTRY_FILE = data_path("product-registry.json")
@@ -138,11 +140,55 @@ def _seed_products() -> list[dict[str, Any]]:
 
 
 class ProductRegistryService:
-    def __init__(self, file_path: str = PRODUCT_REGISTRY_FILE):
+    def __init__(self, file_path: str = PRODUCT_REGISTRY_FILE, db_path: str | None = None):
         self.file_path = file_path
+        # The live registry is authoritative in the unified dashboard database.
+        # A custom registry file remains file-backed for focused tests/imports.
+        self.db_path = db_path or (
+            UNIFIED_DB_PATH if os.path.abspath(file_path) == os.path.abspath(PRODUCT_REGISTRY_FILE) else None
+        )
+        if self.db_path:
+            self._init_database()
 
     def _lock_path(self) -> str:
         return self.file_path + ".lock"
+
+    def _uses_database(self) -> bool:
+        return bool(self.db_path)
+
+    def _connect_database(self) -> sqlite3.Connection:
+        if not self.db_path:
+            raise RuntimeError("Product registry database is not configured")
+        Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
+        connection = sqlite3.connect(self.db_path, timeout=5)
+        connection.row_factory = sqlite3.Row
+        connection.execute("PRAGMA foreign_keys=ON")
+        connection.execute("PRAGMA busy_timeout=5000")
+        return connection
+
+    def _init_database(self) -> None:
+        with self._connect_database() as connection:
+            connection.executescript(
+                """
+                CREATE TABLE IF NOT EXISTS product_registry_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+                CREATE TABLE IF NOT EXISTS product_registry_products (id TEXT PRIMARY KEY, payload TEXT NOT NULL, created_at TEXT, updated_at TEXT);
+                CREATE TABLE IF NOT EXISTS product_registry_deliverables (id TEXT PRIMARY KEY, product_id TEXT NOT NULL, payload TEXT NOT NULL, created_at TEXT, updated_at TEXT);
+                CREATE TABLE IF NOT EXISTS product_registry_releases (id TEXT PRIMARY KEY, product_id TEXT NOT NULL, payload TEXT NOT NULL, created_at TEXT, updated_at TEXT);
+                CREATE TABLE IF NOT EXISTS product_registry_runtime_instances (id TEXT PRIMARY KEY, product_id TEXT NOT NULL, payload TEXT NOT NULL, created_at TEXT, updated_at TEXT);
+                CREATE TABLE IF NOT EXISTS product_registry_events (id TEXT PRIMARY KEY, product_id TEXT NOT NULL, payload TEXT NOT NULL, created_at TEXT NOT NULL);
+                CREATE TABLE IF NOT EXISTS product_registry_idempotency (key TEXT PRIMARY KEY, deliverable_id TEXT NOT NULL);
+                CREATE INDEX IF NOT EXISTS idx_product_deliverables_product ON product_registry_deliverables(product_id, created_at DESC);
+                CREATE INDEX IF NOT EXISTS idx_product_releases_product ON product_registry_releases(product_id, created_at DESC);
+                CREATE INDEX IF NOT EXISTS idx_product_runtimes_product ON product_registry_runtime_instances(product_id, updated_at DESC);
+                CREATE INDEX IF NOT EXISTS idx_product_events_product ON product_registry_events(product_id, created_at DESC);
+                """
+            )
+
+    def _database_has_registry(self) -> bool:
+        if not self._uses_database():
+            return False
+        with self._connect_database() as connection:
+            return connection.execute("SELECT 1 FROM product_registry_meta WHERE key='schema'").fetchone() is not None
 
     def _default(self) -> dict[str, Any]:
         return {
@@ -158,6 +204,33 @@ class ProductRegistryService:
         }
 
     def _load_unlocked(self) -> dict[str, Any]:
+        if self._uses_database():
+            with self._connect_database() as connection:
+                meta = {
+                    row["key"]: row["value"]
+                    for row in connection.execute("SELECT key, value FROM product_registry_meta")
+                }
+                if not meta.get("schema"):
+                    return self._load_legacy_unlocked()
+                data = {
+                    "schema": meta.get("schema", "openclaw.product-registry"),
+                    "version": int(meta.get("version", "3")),
+                    "updated_at": meta.get("updated_at", _now()),
+                    "products": [json.loads(row["payload"]) for row in connection.execute("SELECT payload FROM product_registry_products ORDER BY id")],
+                    "deliverables": [json.loads(row["payload"]) for row in connection.execute("SELECT payload FROM product_registry_deliverables ORDER BY created_at, id")],
+                    "releases": [json.loads(row["payload"]) for row in connection.execute("SELECT payload FROM product_registry_releases ORDER BY created_at, id")],
+                    "runtime_instances": [json.loads(row["payload"]) for row in connection.execute("SELECT payload FROM product_registry_runtime_instances ORDER BY updated_at, id")],
+                    "events": [json.loads(row["payload"]) for row in connection.execute("SELECT payload FROM product_registry_events ORDER BY created_at, id")],
+                    "idempotency": {
+                        row["key"]: row["deliverable_id"]
+                        for row in connection.execute("SELECT key, deliverable_id FROM product_registry_idempotency")
+                    },
+                }
+                self._migrate_ledger_schema(data)
+                return data
+        return self._load_legacy_unlocked()
+
+    def _load_legacy_unlocked(self) -> dict[str, Any]:
         if not os.path.exists(self.file_path):
             return self._default()
         with open(self.file_path, "r", encoding="utf-8") as handle:
@@ -194,17 +267,17 @@ class ProductRegistryService:
         return changed
 
     def ensure_ledger_schema(self) -> dict[str, Any]:
-        """Persist the v2 ledger migration once, preserving all existing products."""
+        """Persist the ledger migration once, importing legacy JSON only on first DB use."""
         Path(self.file_path).parent.mkdir(parents=True, exist_ok=True)
         with open(self._lock_path(), "w", encoding="utf-8") as lock:
             fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
             try:
-                existed = os.path.exists(self.file_path)
+                existed = self._database_has_registry() if self._uses_database() else os.path.exists(self.file_path)
                 data = self._load_unlocked()
                 # _load_unlocked has already normalized the schema. Compare the
                 # on-disk version when it existed so routine reads do not rewrite it.
                 needs_save = not existed
-                if existed:
+                if existed and not self._uses_database():
                     with open(self.file_path, "r", encoding="utf-8") as handle:
                         raw = json.load(handle)
                     needs_save = self._migrate_ledger_schema(raw)
@@ -215,6 +288,9 @@ class ProductRegistryService:
                 fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
 
     def _save_unlocked(self, data: dict[str, Any]) -> None:
+        if self._uses_database():
+            self._save_database_unlocked(data)
+            return
         path = Path(self.file_path)
         path.parent.mkdir(parents=True, exist_ok=True)
         data["updated_at"] = _now()
@@ -222,13 +298,62 @@ class ProductRegistryService:
         temporary.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
         os.replace(temporary, path)
 
+    def _save_database_unlocked(self, data: dict[str, Any]) -> None:
+        """Persist every ledger collection atomically in the unified SQLite database."""
+        data["updated_at"] = _now()
+        with self._connect_database() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            collections = {
+                "product_registry_products": data["products"],
+                "product_registry_deliverables": data["deliverables"],
+                "product_registry_releases": data["releases"],
+                "product_registry_runtime_instances": data["runtime_instances"],
+                "product_registry_events": data["events"],
+            }
+            for table_name in collections:
+                connection.execute(f"DELETE FROM {table_name}")
+            for row in collections["product_registry_products"]:
+                connection.execute(
+                    "INSERT INTO product_registry_products(id, payload, created_at, updated_at) VALUES (?, ?, ?, ?)",
+                    (row["id"], json.dumps(row, ensure_ascii=False), row.get("created_at"), row.get("updated_at")),
+                )
+            for table_name in (
+                "product_registry_deliverables",
+                "product_registry_releases",
+                "product_registry_runtime_instances",
+            ):
+                for row in collections[table_name]:
+                    connection.execute(
+                        f"INSERT INTO {table_name}(id, product_id, payload, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+                        (row["id"], row["product_id"], json.dumps(row, ensure_ascii=False), row.get("created_at"), row.get("updated_at")),
+                    )
+            for row in collections["product_registry_events"]:
+                connection.execute(
+                    "INSERT INTO product_registry_events(id, product_id, payload, created_at) VALUES (?, ?, ?, ?)",
+                    (row["id"], row["product_id"], json.dumps(row, ensure_ascii=False), row.get("created_at")),
+                )
+            connection.execute("DELETE FROM product_registry_idempotency")
+            connection.executemany(
+                "INSERT INTO product_registry_idempotency(key, deliverable_id) VALUES (?, ?)",
+                list(data["idempotency"].items()),
+            )
+            for key, value in {
+                "schema": str(data["schema"]),
+                "version": str(data["version"]),
+                "updated_at": str(data["updated_at"]),
+            }.items():
+                connection.execute(
+                    "INSERT INTO product_registry_meta(key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                    (key, value),
+                )
+
     def get_registry(self) -> dict[str, Any]:
         Path(self.file_path).parent.mkdir(parents=True, exist_ok=True)
         with open(self._lock_path(), "w", encoding="utf-8") as lock:
             fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
             try:
                 data = self._load_unlocked()
-                if not os.path.exists(self.file_path):
+                if (self._uses_database() and not self._database_has_registry()) or (not self._uses_database() and not os.path.exists(self.file_path)):
                     self._save_unlocked(data)
                 return copy.deepcopy(data)
             finally:
