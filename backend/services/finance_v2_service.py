@@ -408,8 +408,12 @@ class FinanceServiceV2:
             raise FinanceNotFound("预算不存在")
         if budget.lock_version != version:
             raise FinanceConflict("预算版本冲突", code="version_conflict", details={"version": budget.lock_version})
+        # Compatibility endpoint: personal mode creates effective budgets
+        # immediately, so approving an already-effective budget is idempotent.
+        if budget.status == "approved":
+            return self.get_budget(budget.id)
         if budget.status != "draft":
-            raise FinanceConflict("预算已经审批或失效")
+            raise FinanceConflict("预算已经生效或失效")
         line_total = money(self.db.query(func.coalesce(func.sum(BudgetLine.amount), 0)).filter_by(budget_version_id=budget.id).scalar())
         if line_total != money(budget.approved_amount):
             raise FinanceConflict("预算科目合计必须等于批复金额", details={"line_total": float(line_total)})
