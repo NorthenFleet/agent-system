@@ -3,7 +3,7 @@
     <header class="finance-head">
       <div>
         <h2>财务中心</h2>
-        <p>项目经费、预算、报销、票据、审批、付款与对账的统一工作台。</p>
+        <p>项目经费、预算、报销、票据、付款与对账的统一工作台。</p>
       </div>
       <el-tag type="success" effect="dark">生产财务域</el-tag>
     </header>
@@ -21,7 +21,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import FinanceApprovals from './finance/FinanceApprovals.vue'
 import FinanceBudget from './finance/FinanceBudget.vue'
 import FinanceInvoices from './finance/FinanceInvoices.vue'
 import FinanceOverview from './finance/FinanceOverview.vue'
@@ -37,7 +36,6 @@ const sections = [
   { key: 'overview', label: '财务总览', component: FinanceOverview },
   { key: 'budget', label: '经费与预算', component: FinanceBudget },
   { key: 'reimbursements', label: '报销申请', component: FinanceReimbursements },
-  { key: 'approvals', label: '我的审批', component: FinanceApprovals },
   { key: 'invoices', label: '发票中心', component: FinanceInvoices },
   { key: 'payments', label: '付款管理', component: FinancePayments },
   { key: 'reconciliation', label: '银行对账', component: FinanceReconciliation },

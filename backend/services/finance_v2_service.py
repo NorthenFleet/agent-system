@@ -349,6 +349,9 @@ class FinanceServiceV2:
             name=request.name,
             approved_amount=request.approved_amount,
             effective_from=request.effective_from,
+            status="approved",
+            approved_by=self.user_id,
+            approved_at=now(),
             created_by=self.user_id,
         )
         self.db.add(budget)
@@ -363,8 +366,8 @@ class FinanceServiceV2:
         if not budget or budget.deleted_at:
             raise FinanceNotFound("预算不存在")
         self.require_project(budget.project_id, write=True)
-        if budget.status != "draft":
-            raise FinanceConflict("只有草稿预算可以编辑")
+        if budget.status not in {"draft", "approved"}:
+            raise FinanceConflict("当前预算状态不允许编辑")
         if budget.lock_version != request.version:
             raise FinanceConflict("预算已被其他用户修改", code="version_conflict", details={"version": budget.lock_version})
         total = sum((money(item.amount) for item in request.lines), Decimal("0"))
@@ -531,8 +534,8 @@ class FinanceServiceV2:
         if not line:
             raise FinanceNotFound("预算科目不存在")
         budget = self.db.get(BudgetVersion, line.budget_version_id)
-        if budget.project_id != record.project_id or budget.status != "approved":
-            raise FinanceConflict("报销明细必须使用本项目已审批预算")
+        if budget.project_id != record.project_id or budget.status not in {"draft", "approved"}:
+            raise FinanceConflict("报销明细必须使用本项目生效预算")
         if request.invoice_id:
             invoice = self.db.get(Invoice, request.invoice_id)
             if not invoice or invoice.deleted_at:
@@ -632,15 +635,6 @@ class FinanceServiceV2:
         items = self.db.query(ReimbursementItem).filter_by(reimbursement_id=record.id).all()
         if not items or money(record.total_amount) <= 0:
             raise FinanceConflict("报销单至少需要一条有效明细")
-        workflow = self._match_workflow(record)
-        if not workflow:
-            raise FinanceConflict("没有匹配的审批工作流", code="approval_workflow_missing")
-        steps = self.db.query(ApprovalWorkflowStep).filter_by(workflow_definition_id=workflow.id).order_by(ApprovalWorkflowStep.step_order).all()
-        if not steps:
-            raise FinanceConflict("审批工作流没有步骤")
-        for step in steps:
-            if step.assignee_user_id == record.applicant_user_id:
-                raise FinanceConflict("申请人不能审批自己的报销单", code="separation_of_duties")
         # Lock lines where supported; SQLite serializes writers and ignores FOR UPDATE.
         line_ids = sorted({item.budget_line_id for item in items})
         lines = {
@@ -675,29 +669,9 @@ class FinanceServiceV2:
                     budget_line_id=line.id,
                     amount=item.amount,
                 ))
-        snapshot = [{
-            "order": step.step_order,
-            "name": step.name,
-            "assignee_role": step.assignee_role,
-            "assignee_user_id": step.assignee_user_id,
-        } for step in steps]
-        submission_no = int(self.db.query(func.coalesce(func.max(ApprovalInstance.submission_no), 0)).filter_by(reimbursement_id=record.id).scalar()) + 1
-        instance = ApprovalInstance(
-            reimbursement_id=record.id,
-            submission_no=submission_no,
-            workflow_definition_id=workflow.id,
-            workflow_snapshot=snapshot,
-        )
-        self.db.add(instance)
-        self.db.flush()
-        first = steps[0]
-        self.db.add(ApprovalTask(
-            approval_instance_id=instance.id,
-            step_order=1,
-            assignee_role=first.assignee_role,
-            assignee_user_id=first.assignee_user_id,
-        ))
-        record.status = "submitted"
+        # Personal-use mode has no approval workflow. Submission reserves budget
+        # and makes the reimbursement immediately eligible for payment.
+        record.status = "payment_pending"
         record.submitted_at = now()
         record.lock_version += 1
         self.audit("reimbursement.submitted", record)
@@ -954,17 +928,9 @@ class FinanceServiceV2:
     def create_payment(self, request: PaymentCreate) -> dict[str, Any]:
         self.require("finance_admin", "cashier")
         record = self.db.get(Reimbursement, request.reimbursement_id)
-        if not record or record.status != "approved":
-            raise FinanceConflict("只有审批通过的报销单可以登记付款")
+        if not record or record.status != "payment_pending":
+            raise FinanceConflict("只有待付款的报销单可以登记付款")
         self.require_project(record.project_id, write=True)
-        if record.applicant_user_id == self.user_id:
-            raise FinanceConflict("申请人不能为自己的报销单登记付款", code="separation_of_duties")
-        approver = self.db.query(ApprovalTask.id).join(ApprovalInstance).filter(
-            ApprovalInstance.reimbursement_id == record.id,
-            ApprovalTask.acted_by == self.user_id,
-        ).first()
-        if approver:
-            raise FinanceConflict("审批人不能为同一报销单登记付款", code="separation_of_duties")
         payment = Payment(
             payment_no=f"PAY-{now():%Y%m%d}-{uuid.uuid4().hex[:8].upper()}",
             reimbursement_id=record.id,
@@ -991,8 +957,6 @@ class FinanceServiceV2:
             raise FinanceConflict("付款记录版本冲突", code="version_conflict", details={"version": payment.lock_version})
         record = self.db.get(Reimbursement, payment.reimbursement_id)
         self.require_project(record.project_id, write=True)
-        if record.applicant_user_id == self.user_id:
-            raise FinanceConflict("申请人不能确认自己的付款", code="separation_of_duties")
         reservations = self.db.query(BudgetReservation).join(ReimbursementItem).filter(
             ReimbursementItem.reimbursement_id == record.id,
             BudgetReservation.status == "reserved",
@@ -1145,7 +1109,7 @@ class FinanceServiceV2:
                 "spent_amount": budget["totals"]["spent_amount"],
                 "available_amount": budget["totals"]["available_amount"],
                 "reimbursements": len(reimbursements),
-                "pending_approvals": self.db.query(ApprovalTask).filter_by(status="pending").count(),
+                "pending_approvals": 0,
                 "invoices": len(invoices),
                 "pending_payments": sum(1 for item in payments if item.status == "pending"),
                 "unmatched_transactions": self.db.query(BankTransaction).filter_by(status="unmatched").count(),

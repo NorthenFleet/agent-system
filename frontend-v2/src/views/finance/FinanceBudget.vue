@@ -22,7 +22,7 @@
         <el-card shadow="never"><template #header><b>预算版本</b></template>
           <el-collapse accordion>
             <el-collapse-item v-for="budget in budgets" :key="budget.id" :name="budget.id">
-              <template #title><span class="budget-title">{{ budget.name }} · V{{ budget.version_no }} <el-tag size="small">{{ budget.status }}</el-tag> <b>{{ formatMoney(budget.approved_amount) }}</b></span></template>
+              <template #title><span class="budget-title">{{ budget.name }} · V{{ budget.version_no }} <el-tag size="small" type="success">{{ budget.status === 'approved' ? '生效' : budget.status }}</el-tag> <b>{{ formatMoney(budget.approved_amount) }}</b></span></template>
               <el-table :data="budget.lines" size="small">
                 <el-table-column prop="category" label="科目" />
                 <el-table-column label="额度"><template #default="{row}">{{ formatMoney(row.amount) }}</template></el-table-column>
@@ -30,9 +30,8 @@
                 <el-table-column label="支出"><template #default="{row}">{{ formatMoney(row.spent_amount) }}</template></el-table-column>
                 <el-table-column label="可用"><template #default="{row}">{{ formatMoney(Number(row.amount)-Number(row.reserved_amount)-Number(row.spent_amount)) }}</template></el-table-column>
               </el-table>
-              <div class="actions" v-if="budget.status === 'draft'">
+              <div class="actions" v-if="!['superseded','cancelled'].includes(budget.status)">
                 <el-button @click="editBudget(budget)">编辑科目</el-button>
-                <el-button type="success" @click="approve(budget)">审批预算</el-button>
               </div>
             </el-collapse-item>
           </el-collapse>
@@ -51,13 +50,13 @@
     <el-dialog v-model="budgetDialog" title="编制预算" width="700px">
       <el-form label-width="100px"><el-form-item label="预算名称"><el-input v-model="budgetForm.name" /></el-form-item><el-form-item label="批复金额"><el-input-number v-model="budgetForm.approved_amount" :min="0.01" :precision="2" /></el-form-item></el-form>
       <el-table :data="budgetForm.lines" size="small"><el-table-column prop="category" label="科目" /><el-table-column label="额度"><template #default="{row}"><el-input-number v-model="row.amount" :min="0" :precision="2" /></template></el-table-column></el-table>
-      <template #footer><el-button @click="budgetDialog=false">取消</el-button><el-button type="primary" @click="saveBudget">保存草稿</el-button></template>
+      <template #footer><el-button @click="budgetDialog=false">取消</el-button><el-button type="primary" @click="saveBudget">保存预算</el-button></template>
     </el-dialog>
   </section>
 </template>
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { financeApi, formatMoney, type BudgetVersion, type FinanceProject, type FundAllocation } from '@/api/finance'
 const categories = ['差旅费','设备费','会议费','外协费','管理费','材料费','劳务费','其他']
 const loading=ref(false), projectDialog=ref(false), allocationDialog=ref(false), budgetDialog=ref(false), projectId=ref('')
@@ -71,8 +70,7 @@ async function createProject(){if(!projectForm.project_key||!projectForm.name)re
 async function createAllocation(){await financeApi.createAllocation({...allocationForm,project_id:projectId.value});allocationDialog.value=false;await loadProjectData();ElMessage.success('经费拨付已登记')}
 function resetBudget(){budgetForm.id='';budgetForm.version=1;budgetForm.name='';budgetForm.approved_amount=0;budgetForm.lines=categories.map(category=>({category,amount:0,note:''}))}
 function editBudget(item:BudgetVersion){budgetForm.id=item.id;budgetForm.version=item.lock_version;budgetForm.name=item.name;budgetForm.approved_amount=Number(item.approved_amount);budgetForm.lines=categories.map(category=>{const line=item.lines.find(row=>row.category===category);return {category,amount:Number(line?.amount||0),note:line?.note||''}});budgetDialog.value=true}
-async function saveBudget(){let id=budgetForm.id,version=budgetForm.version;if(!id){const created=await financeApi.createBudget({project_id:projectId.value,name:budgetForm.name,approved_amount:budgetForm.approved_amount});id=created.id;version=created.lock_version}await financeApi.replaceBudgetLines(id,{version,lines:budgetForm.lines});budgetDialog.value=false;resetBudget();await loadProjectData();ElMessage.success('预算草稿已保存')}
-async function approve(item:BudgetVersion){await ElMessageBox.confirm('审批后本版本将成为项目有效预算，确认继续？','审批预算',{type:'warning'});await financeApi.approveBudget(item.id,item.lock_version);await loadProjectData();ElMessage.success('预算已审批')}
+async function saveBudget(){let id=budgetForm.id,version=budgetForm.version;if(!id){const created=await financeApi.createBudget({project_id:projectId.value,name:budgetForm.name,approved_amount:budgetForm.approved_amount});id=created.id;version=created.lock_version}await financeApi.replaceBudgetLines(id,{version,lines:budgetForm.lines});budgetDialog.value=false;resetBudget();await loadProjectData();ElMessage.success('预算已保存')}
 onMounted(load)
 </script>
 <style scoped>.toolbar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}.toolbar .el-select{width:280px}.budget-title{display:flex;gap:12px;align-items:center;width:100%}.budget-title b{margin-left:auto;margin-right:16px}.actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}</style>

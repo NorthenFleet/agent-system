@@ -29,7 +29,6 @@ const metrics = computed(() => {
     { label: '预算占用', value: formatMoney(s?.reserved_amount) },
     { label: '已支出', value: formatMoney(s?.spent_amount) },
     { label: '可用预算', value: formatMoney(s?.available_amount) },
-    { label: '待审批', value: String(s?.pending_approvals || 0) },
     { label: '待付款', value: String(s?.pending_payments || 0) },
     { label: '待对账流水', value: String(s?.unmatched_transactions || 0) },
     { label: '发票', value: String(s?.invoices || 0) },
