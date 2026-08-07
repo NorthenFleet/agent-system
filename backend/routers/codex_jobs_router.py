@@ -12,6 +12,7 @@ from codex_job_service import (
     CODEX_RUNNER_MODE,
     codex_job_service,
 )
+from services.development_automation_service import development_automation_service
 
 router = APIRouter(prefix="/api/v2/codex", tags=["codex-jobs"])
 
@@ -34,12 +35,27 @@ class CodexLoopCreate(BaseModel):
     max_rounds: int = 2
 
 
+def _enforce_target_policy(task_id: str) -> None:
+    policy = development_automation_service.target_execution_policy(task_id)
+    if policy == "document_forbidden":
+        raise HTTPException(
+            status_code=409,
+            detail="文档任务不能进入 one-sim 软件 Codex Runner，请在文档写作工作区推进",
+        )
+    if policy == "software_requires_plan":
+        raise HTTPException(
+            status_code=409,
+            detail="程序开发任务必须先生成自动化计划并由管理员批准，不能直接启动 Codex 执行",
+        )
+
+
 @router.get("/status")
-def codex_status():
+def codex_status(force: bool = Query(False)):
     runner_mode = "ssh" if CODEX_RUNNER_MODE in {"ssh", "remote"} else "local"
+    health = codex_job_service.runner_health(force=force)
     return {
         "codex_bin": CODEX_BIN,
-        "available": os.path.isfile(CODEX_BIN) if runner_mode == "local" else bool(CODEX_REMOTE_HOST),
+        "available": health["available"],
         "runner": "codex exec",
         "runner_mode": runner_mode,
         "remote_host": CODEX_REMOTE_HOST or None,
@@ -47,6 +63,7 @@ def codex_status():
         "remote_repo": CODEX_REMOTE_REPO or None,
         "sandbox": "workspace-write",
         "approval": "never",
+        "health": health,
     }
 
 
@@ -63,6 +80,7 @@ def list_loops(task_id: Optional[str] = Query(None), limit: int = Query(50, ge=1
 @router.post("/loops", status_code=201)
 def create_loop(request: CodexLoopCreate):
     try:
+        _enforce_target_policy(request.task_id)
         return {"loop": codex_job_service.create_loop(
             task_id=request.task_id,
             title=request.title or request.task_id,
@@ -88,6 +106,8 @@ def get_loop(loop_id: str):
 @router.post("/jobs", status_code=201)
 def create_job(request: CodexJobCreate):
     try:
+        if request.task_id:
+            _enforce_target_policy(request.task_id)
         return {"job": codex_job_service.create_job(
             agent_id=request.agent_id,
             instruction=request.instruction,

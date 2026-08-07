@@ -10,6 +10,7 @@ Dev Spec: DEV-SCHEDULED-TASKS v2.0
 """
 
 import asyncio
+import json
 import logging
 import os
 import shlex
@@ -17,12 +18,12 @@ import time
 from typing import Optional
 
 import httpx
+from services.openclaw_cli import openclaw_command
 
 logger = logging.getLogger(__name__)
 
 # ── 配置 ──
 OPENCLAW_GATEWAY_URL = os.getenv("OPENCLAW_GATEWAY_URL", "http://localhost:18789")
-OPENCLAW_BIN = os.getenv("OPENCLAW_BIN", "openclaw")
 ALLOW_SCHEDULED_SHELL = os.getenv("ALLOW_SCHEDULED_SHELL", "false").lower() == "true"
 SCHEDULED_SHELL_ALLOWLIST = {
     item.strip()
@@ -30,6 +31,29 @@ SCHEDULED_SHELL_ALLOWLIST = {
     if item.strip()
 }
 SHELL_CONTROL_TOKENS = {"|", "&", ";", "&&", "||", ">", ">>", "<", "$(", "`"}
+
+
+def _agent_visible_output(stdout: str) -> str:
+    try:
+        payload = json.loads(stdout)
+    except (TypeError, json.JSONDecodeError):
+        return stdout
+    result = payload.get("result") if isinstance(payload, dict) else None
+    if isinstance(result, dict):
+        for key in ("finalAssistantVisibleText", "finalAssistantRawText"):
+            value = result.get(key)
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+        payloads = result.get("payloads")
+        if isinstance(payloads, list):
+            texts = [
+                item.get("text", "").strip()
+                for item in payloads
+                if isinstance(item, dict) and isinstance(item.get("text"), str)
+            ]
+            if texts:
+                return "\n".join(text for text in texts if text)
+    return stdout
 
 
 class ExecutionResult:
@@ -182,7 +206,16 @@ class OpenClawTaskExecutor:
 
         命令格式: openclaw agent --agent <id> "<message>"
         """
-        cmd = [OPENCLAW_BIN, "agent", "--agent", agent_id, message]
+        cmd = openclaw_command(
+            "agent",
+            "--agent",
+            agent_id,
+            "--message",
+            message,
+            "--json",
+            "--timeout",
+            str(max(30, timeout_seconds)),
+        )
         logger.info(f"CLI 执行: {' '.join(cmd)}")
 
         proc = await asyncio.create_subprocess_exec(
@@ -204,7 +237,7 @@ class OpenClawTaskExecutor:
         stderr = stderr_bytes.decode("utf-8", errors="replace").strip()
 
         success = proc.returncode == 0
-        output = stdout or stderr
+        output = _agent_visible_output(stdout) if stdout else stderr
 
         return ExecutionResult(
             success=success,

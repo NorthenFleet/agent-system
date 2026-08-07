@@ -13,7 +13,31 @@ from sqlalchemy.orm import Session
 from database import get_db
 from services.task_service import TaskService
 from services.cache_service import cache_service
+from services.project_task_sync import reconcile_project_task_ledger
 from routers.auth_router import get_current_user, require_role
+
+AGENT_DISPLAY_NAMES = {
+    "optimus": "擎天柱",
+    "wheeljack": "千斤顶",
+    "ironhide": "铁皮",
+    "ultra-magnus": "通天晓",
+    "ratchet": "救护车",
+    "perceptor": "感知器",
+    "jazz": "爵士",
+    "shockwave": "震荡波",
+    "soundwave": "声波",
+    "bumblebee": "大黄蜂",
+    "leonardo": "李奥纳多",
+    "raphael": "拉斐尔",
+    "donatello": "多纳泰罗",
+    "michelangelo": "米开朗基罗",
+    "command-center": "指挥中心",
+}
+
+
+def _tag_value(tags: list[str], prefix: str) -> str | None:
+    return next((tag.split(":", 1)[1] for tag in tags if tag.startswith(prefix)), None)
+
 
 router = APIRouter(
     prefix="/api/v2/tasks",
@@ -99,6 +123,9 @@ def list_tasks(
     user: dict = Depends(get_current_user),
     service: TaskService = Depends(get_task_service),
 ):
+    sync_result = reconcile_project_task_ledger(service.db)
+    if sync_result["changed"] or sync_result["deleted"]:
+        cache_service.invalidate_pattern("v2:tasks:*")
     cache_key = f"v2:tasks:list:{_tasks_cache_key(status, priority, assignee, sprint, source, search, page, page_size, sort_by, sort_order)}"
     cached = cache_service.get(cache_key)
     if cached is not None:
@@ -115,6 +142,22 @@ def list_tasks(
         sort_by=sort_by,
         sort_order=sort_order,
     )
+    parent_ids = {item.get("parent_task_id") for item in result["tasks"] if item.get("parent_task_id")}
+    parent_titles = {}
+    for parent_id in parent_ids:
+        parent = service.get_by_task_id(parent_id)
+        if parent:
+            parent_titles[parent_id] = parent.title
+    for item in result["tasks"]:
+        tags = item.get("tags") or []
+        item["project_id"] = _tag_value(tags, "project-id:")
+        item["project_name"] = _tag_value(tags, "project:")
+        item["mission_id"] = _tag_value(tags, "mission-id:")
+        item["mission_type"] = _tag_value(tags, "mission-type:")
+        item["work_item_type"] = _tag_value(tags, "entity:") or "task"
+        item["parent_title"] = parent_titles.get(item.get("parent_task_id"))
+        item["assignee_name"] = AGENT_DISPLAY_NAMES.get(str(item.get("assignee") or ""), item.get("assignee") or None)
+    result["ledger_sync"] = sync_result
     cache_service.set(cache_key, result, ttl=60)
     return result
 

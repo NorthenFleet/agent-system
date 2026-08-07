@@ -15,7 +15,11 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 from path_config import data_path
-from services.project_composition import normalize_project_composition
+from services.project_composition import (
+    PROJECT_RELATION_TYPES,
+    normalize_project_composition,
+    project_relation_id,
+)
 from services.product_delivery_service import product_delivery_service
 from services.product_service import product_registry_service
 from unified_data_manager import unified_data_manager
@@ -158,17 +162,7 @@ class ProjectManager:
     def _recalculate_task(self, task: dict) -> None:
         points = _as_list(task.get("development_points"))
         if points:
-            total_weight = sum(max(float(p.get("weight", 1) or 1), 0) for p in points) or 1
-            done_weight = sum(
-                max(float(p.get("weight", 1) or 1), 0)
-                for p in points
-                if _is_done(str(p.get("status", "")))
-            )
-            task["progress"] = round(done_weight * 100 / total_weight, 1)
-            if task["progress"] >= 100:
-                task["status"] = "done"
-            elif task.get("status") in {"todo", "pending"} and task["progress"] > 0:
-                task["status"] = "in_progress"
+            self._sync_task_progress_unlocked(task, touch=False)
         else:
             task["progress"] = round(float(task.get("progress", 0) or 0), 1)
         task["updated_at"] = task.get("updated_at") or _now_iso()
@@ -250,7 +244,8 @@ class ProjectManager:
 
             project_id = payload.get("id") or _new_id("proj")
             project_type = _normalize_project_type(payload.get("project_type") or payload.get("type"))
-            context = _as_dict(payload.get("context"))
+            context = dict(_as_dict(payload.get("context")))
+            context.pop("project_relations", None)
             context["project_type"] = project_type
             project = {
                 "id": project_id,
@@ -266,6 +261,7 @@ class ProjectManager:
                 "context": context,
                 "enabled_modules": _as_list(payload.get("enabled_modules")),
                 "product_bindings": _as_list(payload.get("product_bindings")),
+                "project_relations": [],
                 "design_doc": self._normalize_design_doc(payload.get("design_doc"), project_id, now),
                 "document_spec": self._normalize_document_spec(payload.get("document_spec"), project_id, now),
                 "tasks": [],
@@ -285,6 +281,17 @@ class ProjectManager:
             data["projects"] = [project for project in projects if project.get("id") != project_id]
             if len(data["projects"]) == before:
                 return False
+            for project in data["projects"]:
+                normalize_project_composition(project)
+                relations = [
+                    relation for relation in _as_list(project.get("project_relations"))
+                    if project_id not in {
+                        relation.get("source_project_id"),
+                        relation.get("target_project_id"),
+                    }
+                ]
+                project["project_relations"] = relations
+                project.setdefault("context", {})["project_relations"] = relations
             data["logs"] = [log for log in data.get("logs", []) if log.get("project_id") != project_id]
             return True
 
@@ -310,6 +317,12 @@ class ProjectManager:
                         project.setdefault("context", {})["project_type"] = project_type
                     elif key == "document_spec":
                         project["document_spec"] = self._normalize_document_spec(value, project_id, project.get("created_at") or _now_iso())
+                    elif key == "context":
+                        next_context = dict(_as_dict(value))
+                        next_context.pop("project_relations", None)
+                        current_context = dict(_as_dict(project.get("context")))
+                        current_context.update(next_context)
+                        project["context"] = current_context
                     else:
                         project[key] = value
             project["updated_at"] = _now_iso()
@@ -329,6 +342,249 @@ class ProjectManager:
             return changed
 
         return int(self._with_data(mutate))
+
+    def link_projects(
+        self,
+        source_project_id: str,
+        target_project_id: str,
+        *,
+        relation_type: str = "course_implementation",
+        purpose: str = "",
+        source_role: str = "",
+        target_role: str = "",
+        context_policy: str = "bidirectional_summary",
+        context_contract: Optional[dict] = None,
+        actor_id: str = "project-manager",
+    ) -> Optional[dict]:
+        relation_type = str(relation_type or "course_implementation").strip()
+        if relation_type not in PROJECT_RELATION_TYPES:
+            raise ValueError(f"不支持的项目关系类型：{relation_type}")
+        if not source_project_id or not target_project_id or source_project_id == target_project_id:
+            raise ValueError("项目关系必须连接两个不同项目")
+        now = _now_iso()
+
+        def mutate(data):
+            source = self._find_project_unlocked(data, source_project_id)
+            target = self._find_project_unlocked(data, target_project_id)
+            if not source or not target:
+                return None
+            normalize_project_composition(source)
+            normalize_project_composition(target)
+            source_type = _normalize_project_type(source.get("project_type"))
+            target_type = _normalize_project_type(target.get("project_type"))
+            if relation_type == "course_implementation" and (source_type != "document" or target_type != "software"):
+                raise ValueError("course_implementation 必须从文档课程项目指向软件实现项目")
+            relation = {
+                "id": project_relation_id(source_project_id, target_project_id, relation_type),
+                "source_project_id": source_project_id,
+                "target_project_id": target_project_id,
+                "relation_type": relation_type,
+                "status": "active",
+                "purpose": str(purpose or ""),
+                "source_role": str(source_role or ("course_documentation" if source_type == "document" else "source")),
+                "target_role": str(target_role or ("software_implementation" if target_type == "software" else "reference_document")),
+                "context_policy": str(context_policy or "bidirectional_summary"),
+                "context_contract": _as_dict(context_contract),
+                "created_by": actor_id,
+                "created_at": now,
+                "updated_at": now,
+            }
+            for project in (source, target):
+                relations = [
+                    item for item in _as_list(project.get("project_relations"))
+                    if item.get("id") != relation["id"]
+                ]
+                relations.append(copy.deepcopy(relation))
+                project["project_relations"] = relations
+                project.setdefault("context", {})["project_relations"] = relations
+                project["updated_at"] = now
+            self._append_log(
+                data,
+                source_project_id,
+                None,
+                actor_id,
+                "project_relation_linked",
+                f"关联项目：{source.get('name')} → {target.get('name')}（{relation_type}）",
+            )
+            self._append_log(
+                data,
+                target_project_id,
+                None,
+                actor_id,
+                "project_relation_linked",
+                f"关联项目：{source.get('name')} → {target.get('name')}（{relation_type}）",
+            )
+            return relation
+
+        return self._with_data(mutate)
+
+    def remove_project_relation(
+        self,
+        project_id: str,
+        relation_id: str,
+        actor_id: str = "project-manager",
+    ) -> bool:
+        def mutate(data):
+            owner = self._find_project_unlocked(data, project_id)
+            if not owner:
+                return False
+            normalize_project_composition(owner)
+            relation = next(
+                (item for item in _as_list(owner.get("project_relations")) if item.get("id") == relation_id),
+                None,
+            )
+            if not relation:
+                return False
+            for project in data.get("projects", []):
+                normalize_project_composition(project)
+                relations = [
+                    item for item in _as_list(project.get("project_relations"))
+                    if item.get("id") != relation_id
+                ]
+                project["project_relations"] = relations
+                project.setdefault("context", {})["project_relations"] = relations
+            self._append_log(
+                data,
+                project_id,
+                None,
+                actor_id,
+                "project_relation_removed",
+                f"移除项目关系：{relation_id}",
+            )
+            return True
+
+        return bool(self._with_data(mutate))
+
+    def get_project_relationship_context(self, project_id: str) -> Optional[dict]:
+        data = self._read()
+        project = self._find_project_unlocked(data, project_id)
+        if not project:
+            return None
+        return self._build_project_relationship_context(project, data.get("projects", []))
+
+    @staticmethod
+    def _relation_project_summary(project: dict) -> dict:
+        project_type = _normalize_project_type(project.get("project_type"))
+        context = _as_dict(project.get("context"))
+        tasks = _as_list(project.get("tasks"))
+        if project_type == "document":
+            spec = _as_dict(project.get("document_spec"))
+            work_object = {
+                "document_type": spec.get("document_type", ""),
+                "writing_goal": spec.get("writing_goal", ""),
+                "target_audience": spec.get("target_audience", ""),
+                "chapters": [
+                    {
+                        "id": item.get("id"),
+                        "title": item.get("title"),
+                        "summary": item.get("summary") or item.get("main_content") or "",
+                        "status": item.get("status"),
+                    }
+                    for item in _as_list(spec.get("chapters"))[:12]
+                    if isinstance(item, dict)
+                ],
+                "next_step": context.get("next_step", ""),
+            }
+        else:
+            design = _as_dict(project.get("design_doc"))
+            work_object = {
+                "summary": design.get("summary", ""),
+                "usage_requirements": _as_list(design.get("usage_requirements"))[:12],
+                "system_functions": _as_list(design.get("system_functions"))[:16],
+                "api_interfaces": _as_list(design.get("api_interfaces"))[:12],
+                "repository": context.get("repository") or context.get("repo") or context.get("workspace_path") or "",
+            }
+        return {
+            "id": project.get("id"),
+            "name": project.get("name"),
+            "project_type": project_type,
+            "description": project.get("description", ""),
+            "goal": context.get("goal") or (
+                _as_dict(project.get("document_spec")).get("writing_goal")
+                if project_type == "document"
+                else project.get("description", "")
+            ),
+            "status": project.get("status"),
+            "progress": project.get("progress", 0),
+            "current_phase": project.get("current_phase", ""),
+            "task_summary": {
+                "total": len(tasks),
+                "open": len([task for task in tasks if not _is_done(str(task.get("status", "")))]),
+                "recent": [
+                    {
+                        "id": task.get("id"),
+                        "title": task.get("title"),
+                        "status": task.get("status"),
+                        "progress": task.get("progress", 0),
+                    }
+                    for task in tasks[:10]
+                ],
+            },
+            "work_object": work_object,
+        }
+
+    def _build_project_relationship_context(self, project: dict, projects: list[dict]) -> dict:
+        project_id = str(project.get("id") or "")
+        project_type = _normalize_project_type(project.get("project_type"))
+        project_map = {str(item.get("id")): item for item in projects if item.get("id")}
+        resolved_relations: list[dict] = []
+        implementation_project = None
+        source_documents: list[dict] = []
+        for relation in _as_list(project.get("project_relations")):
+            if relation.get("status") != "active":
+                continue
+            is_source = relation.get("source_project_id") == project_id
+            counterpart_id = (
+                relation.get("target_project_id") if is_source else relation.get("source_project_id")
+            )
+            counterpart = project_map.get(str(counterpart_id or ""))
+            counterpart_summary = self._relation_project_summary(counterpart) if counterpart else {
+                "id": counterpart_id,
+                "name": "关联项目已不存在",
+                "project_type": "unknown",
+                "status": "missing",
+            }
+            current_role = relation.get("source_role") if is_source else relation.get("target_role")
+            counterpart_role = relation.get("target_role") if is_source else relation.get("source_role")
+            resolved = {
+                **relation,
+                "direction": "outbound" if is_source else "inbound",
+                "current_role": current_role,
+                "counterpart_role": counterpart_role,
+                "counterpart": counterpart_summary,
+            }
+            resolved_relations.append(resolved)
+            if counterpart_summary.get("project_type") == "software" and implementation_project is None:
+                implementation_project = counterpart_summary
+            if counterpart_summary.get("project_type") == "document":
+                source_documents.append(counterpart_summary)
+
+        current_responsibility = (
+            "维护课程体系、兵棋规则与教学文档，提供软件需求和验收依据，不直接执行代码开发。"
+            if project_type == "document"
+            else "实现水面舰艇作战软件与兵棋推演能力，只修改软件仓库，并用关联课程/规则文档作为需求与验收来源。"
+        )
+        related_summaries = [item["counterpart"] for item in resolved_relations]
+        goals = [
+            str(item.get("goal") or item.get("description") or "").strip()
+            for item in [self._relation_project_summary(project), *related_summaries]
+        ]
+        return {
+            "project_id": project_id,
+            "operating_model": "课程文档项目负责教学与规则事实；软件项目负责代码、测试与运行交付；双方通过稳定项目 ID 共享摘要背景。",
+            "current_project_role": "course_documentation" if project_type == "document" else "software_implementation",
+            "current_project_responsibility": current_responsibility,
+            "shared_goal": "；".join(dict.fromkeys(goal for goal in goals if goal))[:1200],
+            "relations": resolved_relations,
+            "implementation_project": implementation_project,
+            "source_documents": source_documents,
+            "boundaries": [
+                "文档任务不得直接作为软件 Codex Job 执行。",
+                "软件任务必须在 software 项目中生成计划并由管理员批准。",
+                "智能体只读取关联项目摘要与关键验收信息，不无边界拼接全部历史。",
+                "部署发布、权限扩大和高风险变更仍需单独审批。",
+            ],
+        }
 
 
     def get_design_doc(self, project_id: str) -> Optional[dict]:
@@ -527,11 +783,53 @@ class ProjectManager:
                 return None
             point = self._make_point(task_id, payload, now)
             task.setdefault("development_points", []).append(point)
+            self._sync_task_progress_unlocked(task)
             if project:
                 self._append_log(data, project["id"], task_id, payload.get("assigned_agent") or "system", "point_created", f"开发要点创建：{point['title']}")
             return point
 
         return self._with_data(mutate)
+
+    @staticmethod
+    def _sync_task_progress_unlocked(task: dict, *, touch: bool = True) -> None:
+        points = _as_list(task.get("development_points"))
+        if not points:
+            return
+        total_weight = sum(max(float(point.get("weight", 1) or 1), 0.0) for point in points)
+        if total_weight <= 0:
+            total_weight = float(len(points))
+        progress_factor = {
+            "todo": 0.0,
+            "ready": 0.0,
+            "in_progress": 0.5,
+            "running": 0.5,
+            "blocked": 0.5,
+            "review": 0.9,
+            "done": 1.0,
+            "completed": 1.0,
+        }
+        weighted_progress = sum(
+            max(float(point.get("weight", 1) or 1), 0.0)
+            * progress_factor.get(str(point.get("status") or "todo"), 0.0)
+            for point in points
+        )
+        task["progress"] = round(min(100.0, weighted_progress / total_weight * 100.0), 1)
+        statuses = {str(point.get("status") or "todo") for point in points}
+        if statuses <= {"done", "completed"}:
+            task["status"] = "done"
+            task["progress"] = 100.0
+        elif statuses & {"review"}:
+            task["status"] = "review"
+        elif statuses & {"in_progress", "running"}:
+            task["status"] = "in_progress"
+        elif statuses & {"blocked"}:
+            task["status"] = "blocked"
+        elif statuses & {"done", "completed"}:
+            task["status"] = "in_progress"
+        else:
+            task["status"] = "todo"
+        if touch:
+            task["updated_at"] = _now_iso()
 
     def _record_task_completion_by_id(self, task_id: str) -> None:
         if not task_id:
@@ -556,7 +854,16 @@ class ProjectManager:
             return
 
     def update_point(self, point_id: str, payload: dict) -> Optional[dict]:
-        allowed = {"title", "description", "status", "weight", "completion_evidence", "checklist", "assigned_agent"}
+        allowed = {
+            "title",
+            "description",
+            "status",
+            "weight",
+            "completion_evidence",
+            "checklist",
+            "assigned_agent",
+            "context",
+        }
 
         def mutate(data):
             project, task, point = self._find_point_unlocked(data, point_id)
@@ -570,6 +877,7 @@ class ProjectManager:
             elif not _is_done(str(point.get("status", ""))):
                 point["completed_at"] = None
             if project and task:
+                self._sync_task_progress_unlocked(task)
                 self._append_log(data, project["id"], task["id"], payload.get("assigned_agent") or "system", "point_updated", f"开发要点更新：{point['title']}")
             return point
 
@@ -624,6 +932,8 @@ class ProjectManager:
             "release": "todo",
             "block": "blocked",
             "submit_review": "review",
+            "reject_review": "todo",
+            "retry": "todo",
         }
         if action not in status_by_action:
             return None
@@ -639,21 +949,23 @@ class ProjectManager:
             point["completed_at"] = None
             if action == "release":
                 point["assigned_agent"] = ""
-            elif agent_id:
+            elif agent_id and action not in {"reject_review", "retry"}:
                 point["assigned_agent"] = agent_id
             if completion_evidence:
                 point["completion_evidence"] = completion_evidence
-            elif reason and action in {"block", "submit_review"}:
+            elif reason and action in {"block", "submit_review", "reject_review", "retry"}:
                 point["completion_evidence"] = reason
             if result_summary:
                 task["result_summary"] = result_summary
-            task["updated_at"] = now
+            self._sync_task_progress_unlocked(task)
             project["updated_at"] = now
             action_name = {
                 "claim": "point_claimed",
                 "release": "point_released",
                 "block": "point_blocked",
                 "submit_review": "point_submitted_review",
+                "reject_review": "point_review_rejected",
+                "retry": "point_requeued",
             }[action]
             log = self._append_log(
                 data,
@@ -682,7 +994,7 @@ class ProjectManager:
                 point["assigned_agent"] = point.get("assigned_agent") or agent_id
             if result_summary:
                 task["result_summary"] = result_summary
-            task["updated_at"] = now
+            self._sync_task_progress_unlocked(task)
             project["updated_at"] = now
             log = self._append_log(
                 data,
@@ -763,6 +1075,11 @@ class ProjectManager:
         project = self.get_project(project_id)
         if not project:
             return None
+        relationship_context = self.get_project_relationship_context(project_id) or {
+            "project_id": project_id,
+            "relations": [],
+            "boundaries": [],
+        }
         project_type = _normalize_project_type(project.get("project_type") or project.get("type") or _as_dict(project.get("context")).get("project_type"))
         messages = self.list_conversation(project_id, limit) or []
         if project_type == "document":
@@ -798,6 +1115,8 @@ class ProjectManager:
                 "progress": project.get("progress", 0),
             },
             "work_object": work_object,
+            "relationship_context": relationship_context,
+            "background_context": relationship_context,
             "tasks": _as_list(project.get("tasks"))[:40],
             "recent_conversation": messages,
             "recent_logs": self.list_logs(project_id, 12),
@@ -807,6 +1126,11 @@ class ProjectManager:
         project = self.get_project(project_id)
         if not project:
             return None
+        relationship_context = self.get_project_relationship_context(project_id) or {
+            "project_id": project_id,
+            "relations": [],
+            "boundaries": [],
+        }
         tasks = project.get("tasks", [])
         open_points = []
         blocked_items = []
@@ -816,15 +1140,22 @@ class ProjectManager:
         for task in tasks:
             task_status = str(task.get("status", ""))
             task_agent = task.get("assignee_agent") or ""
+            task_points = list(task.get("development_points") or [])
             if task_agent:
                 workload = agent_workloads.setdefault(task_agent, {"agent_id": task_agent, "open_tasks": 0, "open_points": 0})
                 if not _is_done(task_status):
                     workload["open_tasks"] += 1
-            if task_status == "blocked":
+            if task_status == "blocked" and not any(
+                str(point.get("status") or "") == "blocked"
+                for point in task_points
+            ):
                 blocked_items.append({"type": "task", "task_id": task["id"], "title": task["title"], "assignee_agent": task_agent})
-            if task_status == "review":
+            if task_status == "review" and not any(
+                str(point.get("status") or "") == "review"
+                for point in task_points
+            ):
                 review_items.append({"type": "task", "task_id": task["id"], "title": task["title"], "assignee_agent": task_agent})
-            for point in task.get("development_points", []):
+            for point in task_points:
                 all_points.append(point)
                 point_status = str(point.get("status", ""))
                 point_agent = point.get("assigned_agent") or task_agent
@@ -893,6 +1224,12 @@ class ProjectManager:
             suggestions.append({"action": "assign_open_points", "reason": "open development points are available", "count": len(open_points)})
         if not tasks:
             suggestions.append({"action": "decompose_initial_tasks", "reason": "project has no tasks yet", "count": 0})
+        if not relationship_context.get("relations"):
+            suggestions.append({
+                "action": "link_project_background",
+                "reason": "project has no related course, document, or implementation project",
+                "count": 0,
+            })
         return {
             "project": project,
             "progress": project.get("progress", 0),
@@ -903,6 +1240,8 @@ class ProjectManager:
             "blocked_items": blocked_items,
             "review_items": review_items,
             "product_context": product_context,
+            "relationship_context": relationship_context,
+            "background_context": relationship_context,
             "recent_logs": recent_logs,
             "available_agents": available_agents,
             "agent_workloads": list(agent_workloads.values()),
@@ -917,6 +1256,8 @@ class ProjectManager:
                 "blocked_items": blocked_items,
                 "review_items": review_items,
                 "product_context": product_context,
+                "relationship_context": relationship_context,
+                "background_context": relationship_context,
                 "available_agents": available_agents,
                 "recent_logs": recent_logs,
             },
@@ -974,6 +1315,241 @@ class ProjectManager:
             if runtime_issues:
                 summary["products_with_runtime_issues"].append(product_id)
         return {"products": rows, "summary": summary}
+
+    def update_software_spec(self, project_id: str, payload: dict, agent_id: str = "project-manager") -> Optional[dict]:
+        def mutate(data):
+            project = self._find_project_unlocked(data, project_id)
+            if not project or _normalize_project_type(project.get("project_type")) != "software":
+                return None
+            now = _now_iso()
+            current = _as_dict(project.get("design_doc"))
+            nested = _as_dict(payload.get("design_doc"))
+            merged = {**current, **nested}
+            field_map = {
+                "requirements": "usage_requirements",
+                "architecture": "system_architecture",
+                "database_design": "data_structure",
+                "api_design": "api_interfaces",
+                "frontend_design": "frontend_design",
+                "test_plan": "test_plan",
+                "deployment_plan": "deployment_plan",
+            }
+            for source, target in field_map.items():
+                if source in payload and payload[source] is not None:
+                    merged[target] = payload[source]
+            merged["version"] = max(int(current.get("version") or 1), int(merged.get("version") or 1)) + 1
+            merged["author_agent"] = agent_id
+            merged["updated_at"] = now
+            project["design_doc"] = self._normalize_design_doc(
+                merged,
+                project_id,
+                project.get("created_at") or now,
+            )
+            project["updated_at"] = now
+            log = self._append_log(
+                data,
+                project_id,
+                None,
+                agent_id,
+                "software_spec_updated",
+                f"更新软件规格至版本 {project['design_doc']['version']}",
+            )
+            return {"project_id": project_id, "design_doc": project["design_doc"], "log": log}
+
+        return self._with_data(mutate)
+
+    def add_document_section(self, project_id: str, payload: dict, agent_id: str = "project-manager") -> Optional[dict]:
+        def mutate(data):
+            project = self._find_project_unlocked(data, project_id)
+            if not project or _normalize_project_type(project.get("project_type")) != "document":
+                return None
+            now = _now_iso()
+            spec = _as_dict(project.get("document_spec"))
+            chapters = list(_as_list(spec.get("chapters")))
+            raw = dict(payload)
+            raw.setdefault("id", _new_id("chapter"))
+            raw.setdefault("project_id", project_id)
+            raw.setdefault("order_index", len(chapters))
+            normalized = self._normalize_document_spec(
+                {**spec, "chapters": [raw]},
+                project_id,
+                project.get("created_at") or now,
+            )["chapters"][0]
+            chapters.append(normalized)
+            project["document_spec"] = self._normalize_document_spec(
+                {**spec, "chapters": chapters, "updated_at": now},
+                project_id,
+                project.get("created_at") or now,
+            )
+            project["updated_at"] = now
+            log = self._append_log(data, project_id, None, agent_id, "document_section_created", normalized["title"])
+            return {"project_id": project_id, "section": normalized, "log": log}
+
+        return self._with_data(mutate)
+
+    def update_document_section(
+        self,
+        project_id: str,
+        section_id: str,
+        payload: dict,
+        agent_id: str = "project-manager",
+    ) -> Optional[dict]:
+        def mutate(data):
+            project = self._find_project_unlocked(data, project_id)
+            if not project or _normalize_project_type(project.get("project_type")) != "document":
+                return None
+            spec = _as_dict(project.get("document_spec"))
+            chapters = list(_as_list(spec.get("chapters")))
+            section = next((item for item in chapters if item.get("id") == section_id), None)
+            if not section:
+                return None
+            aliases = {"content_brief": "main_content", "assigned_agent_id": "assigned_agent"}
+            for key, value in payload.items():
+                if value is not None and key not in {"id", "project_id"}:
+                    section[aliases.get(key, key)] = value
+            now = _now_iso()
+            project["document_spec"] = self._normalize_document_spec(
+                {**spec, "chapters": chapters, "updated_at": now},
+                project_id,
+                project.get("created_at") or now,
+            )
+            normalized = next(
+                item for item in project["document_spec"]["chapters"]
+                if item.get("id") == section_id
+            )
+            project["updated_at"] = now
+            log = self._append_log(data, project_id, None, agent_id, "document_section_updated", normalized["title"])
+            return {"project_id": project_id, "section": normalized, "log": log}
+
+        return self._with_data(mutate)
+
+    def delete_document_section(
+        self,
+        project_id: str,
+        section_id: str,
+        agent_id: str = "project-manager",
+    ) -> Optional[dict]:
+        def mutate(data):
+            project = self._find_project_unlocked(data, project_id)
+            if not project or _normalize_project_type(project.get("project_type")) != "document":
+                return None
+            spec = _as_dict(project.get("document_spec"))
+            chapters = list(_as_list(spec.get("chapters")))
+            removed = next((item for item in chapters if item.get("id") == section_id), None)
+            if not removed:
+                return None
+            now = _now_iso()
+            remaining = [item for item in chapters if item.get("id") != section_id]
+            assets = [
+                item for item in _as_list(spec.get("assets"))
+                if item.get("chapter_id") != section_id
+            ]
+            project["document_spec"] = self._normalize_document_spec(
+                {**spec, "chapters": remaining, "assets": assets, "updated_at": now},
+                project_id,
+                project.get("created_at") or now,
+            )
+            project["updated_at"] = now
+            log = self._append_log(data, project_id, None, agent_id, "document_section_deleted", removed.get("title", section_id))
+            return {"project_id": project_id, "deleted_section_id": section_id, "log": log}
+
+        return self._with_data(mutate)
+
+    def add_document_asset(self, project_id: str, payload: dict, agent_id: str = "project-manager") -> Optional[dict]:
+        def mutate(data):
+            project = self._find_project_unlocked(data, project_id)
+            if not project or _normalize_project_type(project.get("project_type")) != "document":
+                return None
+            now = _now_iso()
+            spec = _as_dict(project.get("document_spec"))
+            assets = list(_as_list(spec.get("assets")))
+            raw = dict(payload)
+            raw.setdefault("id", _new_id("asset"))
+            raw.setdefault("project_id", project_id)
+            raw.setdefault("order_index", len(assets))
+            normalized = self._normalize_document_spec(
+                {**spec, "assets": [raw]},
+                project_id,
+                project.get("created_at") or now,
+            )["assets"][0]
+            assets.append(normalized)
+            project["document_spec"] = self._normalize_document_spec(
+                {**spec, "assets": assets, "updated_at": now},
+                project_id,
+                project.get("created_at") or now,
+            )
+            project["updated_at"] = now
+            log = self._append_log(data, project_id, None, agent_id, "document_asset_created", normalized["title"])
+            return {"project_id": project_id, "asset": normalized, "log": log}
+
+        return self._with_data(mutate)
+
+    def update_document_asset(
+        self,
+        project_id: str,
+        asset_id: str,
+        payload: dict,
+        agent_id: str = "project-manager",
+    ) -> Optional[dict]:
+        def mutate(data):
+            project = self._find_project_unlocked(data, project_id)
+            if not project or _normalize_project_type(project.get("project_type")) != "document":
+                return None
+            spec = _as_dict(project.get("document_spec"))
+            assets = list(_as_list(spec.get("assets")))
+            asset = next((item for item in assets if item.get("id") == asset_id), None)
+            if not asset:
+                return None
+            aliases = {"section_id": "chapter_id"}
+            for key, value in payload.items():
+                if value is not None and key not in {"id", "project_id"}:
+                    asset[aliases.get(key, key)] = value
+            now = _now_iso()
+            project["document_spec"] = self._normalize_document_spec(
+                {**spec, "assets": assets, "updated_at": now},
+                project_id,
+                project.get("created_at") or now,
+            )
+            normalized = next(
+                item for item in project["document_spec"]["assets"]
+                if item.get("id") == asset_id
+            )
+            project["updated_at"] = now
+            log = self._append_log(data, project_id, None, agent_id, "document_asset_updated", normalized["title"])
+            return {"project_id": project_id, "asset": normalized, "log": log}
+
+        return self._with_data(mutate)
+
+    def delete_document_asset(
+        self,
+        project_id: str,
+        asset_id: str,
+        agent_id: str = "project-manager",
+    ) -> Optional[dict]:
+        def mutate(data):
+            project = self._find_project_unlocked(data, project_id)
+            if not project or _normalize_project_type(project.get("project_type")) != "document":
+                return None
+            spec = _as_dict(project.get("document_spec"))
+            assets = list(_as_list(spec.get("assets")))
+            removed = next((item for item in assets if item.get("id") == asset_id), None)
+            if not removed:
+                return None
+            now = _now_iso()
+            project["document_spec"] = self._normalize_document_spec(
+                {
+                    **spec,
+                    "assets": [item for item in assets if item.get("id") != asset_id],
+                    "updated_at": now,
+                },
+                project_id,
+                project.get("created_at") or now,
+            )
+            project["updated_at"] = now
+            log = self._append_log(data, project_id, None, agent_id, "document_asset_deleted", removed.get("title", asset_id))
+            return {"project_id": project_id, "deleted_asset_id": asset_id, "log": log}
+
+        return self._with_data(mutate)
 
     def add_knowledge_link(self, target_type: str, target_id: str, payload: dict) -> Optional[dict]:
         def mutate(data):
@@ -1204,6 +1780,9 @@ class ProjectManager:
             },
             "system_functions": _as_list(payload.get("system_functions") or payload.get("features")),
             "api_interfaces": _as_list(payload.get("api_interfaces") or payload.get("api_contracts")),
+            "frontend_design": _as_dict(payload.get("frontend_design")),
+            "test_plan": _as_list(payload.get("test_plan")),
+            "deployment_plan": _as_list(payload.get("deployment_plan")),
             "task_breakdown_guidance": _as_list(payload.get("task_breakdown_guidance")),
             "parallel_tasks": _as_list(payload.get("parallel_tasks")),
             "risks": _as_list(payload.get("risks")),
@@ -1254,7 +1833,12 @@ class ProjectManager:
             "document_type": payload.get("document_type", "报告"),
             "writing_goal": payload.get("writing_goal", ""),
             "target_audience": payload.get("target_audience", ""),
+            "course_profile": _as_dict(payload.get("course_profile")),
             "edition": payload.get("edition", ""),
+            "current_edition_label": payload.get("current_edition_label", ""),
+            "obsidian_edition_label": payload.get("obsidian_edition_label", ""),
+            "publication_edition_label": payload.get("publication_edition_label", ""),
+            "version_role_note": payload.get("version_role_note", ""),
             "expected_chapters": int(payload.get("expected_chapters") or 0),
             "outline": _as_list(payload.get("outline")),
             "chapters": chapters,

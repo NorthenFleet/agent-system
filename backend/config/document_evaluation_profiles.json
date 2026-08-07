@@ -1,0 +1,233 @@
+{
+  "schema": "openclaw.document-evaluation-profiles.v1",
+  "profiles": [
+    {
+      "id": "rich_text.doctoral.v1",
+      "name": "通用博士论文评价标准",
+      "version": "1.0.0",
+      "kind": "rich_text",
+      "document_types": ["博士论文"],
+      "pass_threshold": 80,
+      "dimensions": [
+        {"id": "topic_value", "name": "选题价值与问题定义", "weight": 8, "min_score": 60, "source": "ai", "description": "研究问题的重要性、边界和可研究性"},
+        {"id": "literature_review", "name": "国内外研究现状", "weight": 10, "min_score": 60, "source": "ai", "description": "文献准确性、时效性、观点归纳和研究空白"},
+        {"id": "theory", "name": "理论体系", "weight": 12, "min_score": 60, "source": "ai", "description": "概念、假设、模型和理论关系的完整性"},
+        {"id": "method", "name": "方法设计", "weight": 15, "min_score": 70, "source": "ai", "description": "方法合理性、完整性、可实现性和适用边界"},
+        {"id": "innovation", "name": "创新性", "weight": 18, "min_score": 70, "source": "ai", "description": "原创贡献的明确性、载体和可验证性"},
+        {"id": "evidence", "name": "实验与证据", "weight": 17, "min_score": 70, "source": "ai", "description": "基线、对照、指标、实验结果和证据强度"},
+        {"id": "argument_closure", "name": "论证闭环", "weight": 10, "min_score": 70, "source": "ai", "description": "研究问题、方法、结果和结论的逐项对应"},
+        {"id": "writing", "name": "写作表达", "weight": 5, "min_score": 60, "source": "ai", "description": "学术语言的准确性、清晰度和一致性"},
+        {"id": "traceability", "name": "规范与可追溯性", "weight": 5, "min_score": 60, "source": "mixed", "description": "引用、图表、公式、版本和数据的可追溯性"}
+      ],
+      "gates": [
+        {"id": "structure_complete", "name": "结构完整", "source": "automatic", "required": true, "critical": false},
+        {"id": "problem_closure", "name": "问题闭环", "source": "ai", "required": true, "critical": false},
+        {"id": "innovation_explicit", "name": "创新明确", "source": "ai", "required": true, "critical": false},
+        {"id": "evidence_complete", "name": "证据完整", "source": "ai", "required": true, "critical": false},
+        {"id": "experiment_valid", "name": "实验有效", "source": "ai", "required": true, "critical": false},
+        {"id": "citation_compliant", "name": "引用合规", "source": "automatic", "required": true, "critical": false},
+        {"id": "figures_complete", "name": "图表完整", "source": "automatic", "required": true, "critical": false},
+        {"id": "consistent", "name": "前后一致", "source": "ai", "required": true, "critical": false},
+        {"id": "format_compliant", "name": "格式合规", "source": "human", "required": true, "critical": false},
+        {"id": "academic_ethics", "name": "学术伦理确认", "source": "external", "required": true, "critical": true}
+      ],
+      "maturity_labels": ["材料汇集", "结构草稿", "正文完整", "内审合格", "送审就绪", "答辩就绪"]
+    },
+    {
+      "id": "rich_text.academic_paper.v1",
+      "name": "学术论文基础评价标准",
+      "version": "1.0.0",
+      "kind": "rich_text",
+      "document_types": ["学术论文"],
+      "pass_threshold": 75,
+      "dimensions": [
+        {"id": "problem", "name": "问题定义", "weight": 15, "min_score": 60, "source": "ai"},
+        {"id": "related_work", "name": "相关工作", "weight": 15, "min_score": 60, "source": "ai"},
+        {"id": "novelty", "name": "创新贡献", "weight": 20, "min_score": 70, "source": "ai"},
+        {"id": "method", "name": "研究方法", "weight": 20, "min_score": 65, "source": "ai"},
+        {"id": "evidence", "name": "实验与证据", "weight": 20, "min_score": 65, "source": "ai"},
+        {"id": "writing", "name": "表达与规范", "weight": 10, "min_score": 60, "source": "mixed"}
+      ],
+      "gates": [
+        {"id": "structure_complete", "name": "结构完整", "source": "automatic", "required": true, "critical": false},
+        {"id": "citation_compliant", "name": "引用合规", "source": "automatic", "required": true, "critical": false},
+        {"id": "evidence_complete", "name": "证据充分", "source": "ai", "required": true, "critical": false},
+        {"id": "academic_ethics", "name": "学术伦理确认", "source": "external", "required": true, "critical": true}
+      ],
+      "maturity_labels": ["材料汇集", "结构草稿", "正文完整", "内审合格", "投稿就绪", "发表就绪"]
+    },
+    {
+      "id": "rich_text.research_report.v1",
+      "name": "研究报告基础评价标准",
+      "version": "1.0.0",
+      "kind": "rich_text",
+      "document_types": ["研究报告"],
+      "pass_threshold": 75,
+      "dimensions": [
+        {"id": "objective", "name": "目标与范围", "weight": 15, "min_score": 60, "source": "ai"},
+        {"id": "method", "name": "研究方法", "weight": 20, "min_score": 60, "source": "ai"},
+        {"id": "findings", "name": "研究发现", "weight": 25, "min_score": 65, "source": "ai"},
+        {"id": "evidence", "name": "数据与证据", "weight": 20, "min_score": 65, "source": "ai"},
+        {"id": "recommendations", "name": "结论与建议", "weight": 15, "min_score": 60, "source": "ai"},
+        {"id": "traceability", "name": "规范与追溯", "weight": 5, "min_score": 60, "source": "mixed"}
+      ],
+      "gates": [
+        {"id": "structure_complete", "name": "结构完整", "source": "automatic", "required": true, "critical": false},
+        {"id": "source_integrity", "name": "数据来源真实", "source": "human", "required": true, "critical": true},
+        {"id": "evidence_complete", "name": "证据充分", "source": "ai", "required": true, "critical": false}
+      ],
+      "maturity_labels": ["材料汇集", "结构草稿", "正文完整", "内审合格", "交付就绪", "应用就绪"]
+    },
+    {
+      "id": "rich_text.technical_report.v1",
+      "name": "技术报告基础评价标准",
+      "version": "1.0.0",
+      "kind": "rich_text",
+      "document_types": ["技术报告"],
+      "pass_threshold": 75,
+      "dimensions": [
+        {"id": "requirements", "name": "需求与边界", "weight": 15, "min_score": 60, "source": "ai"},
+        {"id": "architecture", "name": "技术架构", "weight": 20, "min_score": 65, "source": "ai"},
+        {"id": "implementation", "name": "实现说明", "weight": 20, "min_score": 65, "source": "ai"},
+        {"id": "verification", "name": "验证与测试", "weight": 25, "min_score": 70, "source": "ai"},
+        {"id": "risk", "name": "风险与边界", "weight": 10, "min_score": 60, "source": "ai"},
+        {"id": "maintainability", "name": "可维护与追溯", "weight": 10, "min_score": 60, "source": "mixed"}
+      ],
+      "gates": [
+        {"id": "structure_complete", "name": "结构完整", "source": "automatic", "required": true, "critical": false},
+        {"id": "verification_complete", "name": "验证完成", "source": "ai", "required": true, "critical": false},
+        {"id": "source_integrity", "name": "技术数据真实", "source": "human", "required": true, "critical": true}
+      ],
+      "maturity_labels": ["材料汇集", "结构草稿", "说明完整", "内审合格", "交付就绪", "运行就绪"]
+    },
+    {
+      "id": "rich_text.patent.v1",
+      "name": "专利文档基础评价标准",
+      "version": "1.0.0",
+      "kind": "rich_text",
+      "document_types": ["专利文档"],
+      "pass_threshold": 75,
+      "dimensions": [
+        {"id": "novelty", "name": "新颖性线索", "weight": 20, "min_score": 65, "source": "ai"},
+        {"id": "inventiveness", "name": "创造性论证", "weight": 20, "min_score": 65, "source": "ai"},
+        {"id": "utility", "name": "实用性", "weight": 15, "min_score": 60, "source": "ai"},
+        {"id": "claims", "name": "权利要求支撑", "weight": 20, "min_score": 70, "source": "ai"},
+        {"id": "enablement", "name": "充分公开", "weight": 15, "min_score": 65, "source": "ai"},
+        {"id": "consistency", "name": "术语与附图一致", "weight": 10, "min_score": 60, "source": "mixed"}
+      ],
+      "gates": [
+        {"id": "claims_present", "name": "权利要求完整", "source": "automatic", "required": true, "critical": false},
+        {"id": "source_integrity", "name": "技术来源真实", "source": "human", "required": true, "critical": true},
+        {"id": "legal_review", "name": "专业法律审查", "source": "external", "required": true, "critical": true}
+      ],
+      "maturity_labels": ["材料汇集", "交底草稿", "文本完整", "内审合格", "申请就绪", "审查就绪"]
+    },
+    {
+      "id": "rich_text.project_plan.v1",
+      "name": "项目方案基础评价标准",
+      "version": "1.0.0",
+      "kind": "rich_text",
+      "document_types": ["项目方案"],
+      "pass_threshold": 75,
+      "dimensions": [
+        {"id": "objective", "name": "目标与范围", "weight": 15, "min_score": 60, "source": "ai"},
+        {"id": "solution", "name": "总体方案", "weight": 20, "min_score": 65, "source": "ai"},
+        {"id": "schedule", "name": "计划与里程碑", "weight": 15, "min_score": 60, "source": "ai"},
+        {"id": "resources", "name": "资源与预算", "weight": 15, "min_score": 60, "source": "ai"},
+        {"id": "risk", "name": "风险与应对", "weight": 15, "min_score": 60, "source": "ai"},
+        {"id": "acceptance", "name": "验收与可行性", "weight": 20, "min_score": 65, "source": "ai"}
+      ],
+      "gates": [
+        {"id": "scope_complete", "name": "范围明确", "source": "ai", "required": true, "critical": false},
+        {"id": "acceptance_defined", "name": "验收标准明确", "source": "ai", "required": true, "critical": false},
+        {"id": "budget_confirmed", "name": "资源预算确认", "source": "human", "required": true, "critical": true}
+      ],
+      "maturity_labels": ["材料汇集", "方案草稿", "方案完整", "内审合格", "审批就绪", "执行就绪"]
+    },
+    {
+      "id": "presentation.doctoral_defense.v1",
+      "name": "博士答辩演示评价标准",
+      "version": "1.0.0",
+      "kind": "presentation",
+      "document_types": ["博士论文"],
+      "pass_threshold": 80,
+      "dimensions": [
+        {"id": "structure_alignment", "name": "论文结构一致性", "weight": 20, "min_score": 75, "source": "automatic"},
+        {"id": "narrative", "name": "答辩叙事闭环", "weight": 20, "min_score": 70, "source": "ai"},
+        {"id": "evidence", "name": "证据支撑", "weight": 20, "min_score": 70, "source": "mixed"},
+        {"id": "notes", "name": "讲解稿覆盖", "weight": 15, "min_score": 70, "source": "automatic"},
+        {"id": "visual", "name": "视觉可读性", "weight": 15, "min_score": 65, "source": "ai"},
+        {"id": "defense_structure", "name": "答辩组织", "weight": 10, "min_score": 65, "source": "ai"}
+      ],
+      "gates": [
+        {"id": "structure_aligned", "name": "论文结构映射一致", "source": "automatic", "required": true, "critical": false},
+        {"id": "preview_ready", "name": "预览生成成功", "source": "automatic", "required": true, "critical": false},
+        {"id": "notes_complete", "name": "主线讲解稿完整", "source": "automatic", "required": true, "critical": false},
+        {"id": "evidence_truth", "name": "演示证据真实", "source": "human", "required": true, "critical": true}
+      ],
+      "maturity_labels": ["材料汇集", "演示草稿", "页面完整", "预演合格", "答辩就绪", "正式答辩"]
+    },
+    {
+      "id": "presentation.generic.v1",
+      "name": "通用演示文档评价标准",
+      "version": "1.0.0",
+      "kind": "presentation",
+      "document_types": [],
+      "pass_threshold": 75,
+      "dimensions": [
+        {"id": "structure", "name": "结构清晰度", "weight": 25, "min_score": 60, "source": "ai"},
+        {"id": "message", "name": "页面主张", "weight": 25, "min_score": 60, "source": "ai"},
+        {"id": "evidence", "name": "内容支撑", "weight": 20, "min_score": 60, "source": "ai"},
+        {"id": "notes", "name": "讲解稿", "weight": 15, "min_score": 60, "source": "automatic"},
+        {"id": "visual", "name": "视觉可读性", "weight": 15, "min_score": 60, "source": "ai"}
+      ],
+      "gates": [
+        {"id": "preview_ready", "name": "预览生成成功", "source": "automatic", "required": true, "critical": false},
+        {"id": "content_integrity", "name": "内容完整", "source": "human", "required": true, "critical": true}
+      ],
+      "maturity_labels": ["材料汇集", "演示草稿", "页面完整", "内审合格", "交付就绪", "演示就绪"]
+    },
+    {
+      "id": "workbook.research_evidence.v1",
+      "name": "研究数据工作簿评价标准",
+      "version": "1.0.0",
+      "kind": "workbook",
+      "document_types": ["博士论文", "学术论文", "研究报告"],
+      "pass_threshold": 80,
+      "dimensions": [
+        {"id": "source", "name": "数据来源", "weight": 20, "min_score": 70, "source": "human"},
+        {"id": "formula", "name": "公式完整性", "weight": 20, "min_score": 70, "source": "automatic"},
+        {"id": "validation", "name": "字段与校验", "weight": 15, "min_score": 65, "source": "automatic"},
+        {"id": "reproducibility", "name": "可复现性", "weight": 20, "min_score": 70, "source": "ai"},
+        {"id": "binding", "name": "证据绑定", "weight": 15, "min_score": 65, "source": "mixed"},
+        {"id": "freshness", "name": "数据时效性", "weight": 10, "min_score": 60, "source": "human"}
+      ],
+      "gates": [
+        {"id": "workbook_integrity", "name": "文件可解析", "source": "automatic", "required": true, "critical": false},
+        {"id": "source_integrity", "name": "数据来源真实", "source": "human", "required": true, "critical": true},
+        {"id": "formula_errors", "name": "无关键公式错误", "source": "automatic", "required": true, "critical": false}
+      ],
+      "maturity_labels": ["材料汇集", "数据草稿", "数据完整", "校验合格", "证据就绪", "复现就绪"]
+    },
+    {
+      "id": "workbook.generic.v1",
+      "name": "通用工作簿评价标准",
+      "version": "1.0.0",
+      "kind": "workbook",
+      "document_types": [],
+      "pass_threshold": 75,
+      "dimensions": [
+        {"id": "integrity", "name": "文件完整性", "weight": 25, "min_score": 60, "source": "automatic"},
+        {"id": "formula", "name": "公式完整性", "weight": 20, "min_score": 60, "source": "automatic"},
+        {"id": "validation", "name": "字段与校验", "weight": 20, "min_score": 60, "source": "automatic"},
+        {"id": "traceability", "name": "数据追溯", "weight": 20, "min_score": 60, "source": "human"},
+        {"id": "freshness", "name": "数据时效性", "weight": 15, "min_score": 60, "source": "human"}
+      ],
+      "gates": [
+        {"id": "workbook_integrity", "name": "文件可解析", "source": "automatic", "required": true, "critical": false},
+        {"id": "source_integrity", "name": "数据来源真实", "source": "human", "required": true, "critical": true}
+      ],
+      "maturity_labels": ["材料汇集", "数据草稿", "数据完整", "校验合格", "交付就绪", "应用就绪"]
+    }
+  ]
+}

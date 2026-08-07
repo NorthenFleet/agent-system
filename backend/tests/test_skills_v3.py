@@ -21,7 +21,9 @@ def setup_module():
     (skill_dir / "SKILL.md").write_text(
         "---\n"
         "name: backend-api\n"
-        "description: Build backend API endpoints and tests.\n"
+        "description: |\n"
+        "  Build backend API endpoints and tests.\n"
+        "  Preserve stable contracts.\n"
         "---\n"
         "# backend-api\n"
         "Use python, pytest and curl for API work.\n",
@@ -49,6 +51,7 @@ async def test_skill_registry_lists_and_binds_agent_skills(client):
     skill = next(row for row in data["skills"] if row["id"] == "backend-api")
     assert skill["status"] == "available"
     assert skill["source"] == "test"
+    assert skill["description"] == "Build backend API endpoints and tests.\nPreserve stable contracts."
     assert "python" in skill["required_tools"]
 
     detail_resp = await client.get("/api/v3/skills/backend-api")
@@ -68,3 +71,8 @@ async def test_skill_registry_lists_and_binds_agent_skills(client):
     raphael = next(agent for agent in dashboard_resp.json()["agents"] if agent["id"] == "raphael")
     assert raphael["skill_summary"]["total"] >= 1
     assert any(skill["id"] == "backend-api" for skill in raphael["skills"])
+
+
+def test_skill_roots_include_openclaw_managed_directory():
+    roots = dict(skill_manager._skill_roots())
+    assert roots["openclaw-managed"] == Path(os.path.expanduser("~/.openclaw/skills"))

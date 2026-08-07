@@ -76,6 +76,59 @@ async def test_project_task_point_progress_rollup(client):
 
 
 @pytest.mark.asyncio
+async def test_point_lifecycle_updates_task_progress_before_completion(client):
+    project_resp = await client.post(
+        "/api/v3/projects",
+        json={"name": "要点状态进度项目"},
+    )
+    project_id = project_resp.json()["id"]
+    task_resp = await client.post(
+        f"/api/v3/projects/{project_id}/tasks",
+        json={
+            "title": "课程基线",
+            "development_points": [
+                {"title": "执行要点", "assigned_agent": "ultra-magnus"},
+                {"title": "审校要点", "assigned_agent": "michelangelo"},
+            ],
+        },
+    )
+    points = task_resp.json()["development_points"]
+
+    claimed = await client.post(
+        f"/api/v3/points/{points[0]['id']}/claim",
+        json={"agent_id": "ultra-magnus", "reason": "开始执行"},
+    )
+    assert claimed.status_code == 200
+    project = (await client.get(f"/api/v3/projects/{project_id}")).json()
+    assert project["tasks"][0]["status"] == "in_progress"
+    assert project["tasks"][0]["progress"] == 25.0
+
+    submitted = await client.post(
+        f"/api/v3/points/{points[0]['id']}/submit-review",
+        json={
+            "agent_id": "ultra-magnus",
+            "completion_evidence": "已形成执行证据",
+        },
+    )
+    assert submitted.status_code == 200
+    project = (await client.get(f"/api/v3/projects/{project_id}")).json()
+    assert project["tasks"][0]["status"] == "review"
+    assert project["tasks"][0]["progress"] == 45.0
+
+    completed = await client.post(
+        f"/api/v3/points/{points[0]['id']}/complete",
+        json={
+            "agent_id": "admin",
+            "completion_evidence": "项目经理评审通过",
+        },
+    )
+    assert completed.status_code == 200
+    project = (await client.get(f"/api/v3/projects/{project_id}")).json()
+    assert project["tasks"][0]["status"] == "in_progress"
+    assert project["tasks"][0]["progress"] == 50.0
+
+
+@pytest.mark.asyncio
 async def test_iteration_context_and_decompose(client):
     project_resp = await client.post("/api/v3/projects", json={"name": "迭代项目"})
     project_id = project_resp.json()["id"]
@@ -124,7 +177,7 @@ async def test_agent_status_projection_matches_project_task_points(client):
         "assignee_agent": "donatello",
         "status": "in_progress",
         "development_points": [
-            {"title": "projection api", "assigned_agent": "raphael"},
+            {"title": "projection api", "assigned_agent": "raphael", "status": "in_progress"},
             {"title": "status card", "assigned_agent": "donatello"},
         ],
     })
@@ -147,6 +200,38 @@ async def test_agent_status_projection_matches_project_task_points(client):
 
     missing_resp = await client.get("/api/v3/agents/not-exists/current-work")
     assert missing_resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_agent_status_keeps_assigned_todo_work_in_queue(client):
+    project_resp = await client.post("/api/v3/projects", json={"name": "queued agent work"})
+    assert project_resp.status_code == 201
+    project = project_resp.json()
+
+    task_resp = await client.post(f"/api/v3/projects/{project['id']}/tasks", json={
+        "title": "尚未领取的课程任务",
+        "assignee_agent": "michelangelo",
+        "status": "todo",
+        "development_points": [
+            {
+                "title": "待执行的质量检查",
+                "assigned_agent": "michelangelo",
+                "status": "todo",
+            },
+        ],
+    })
+    assert task_resp.status_code == 201
+
+    status_resp = await client.get("/api/v3/agents/status")
+    assert status_resp.status_code == 200
+    michelangelo = next(
+        row for row in status_resp.json()["agents"]
+        if row["agent_id"] == "michelangelo"
+    )
+    assert michelangelo["current_task_id"] is None
+    assert michelangelo["current_development_point_id"] is None
+    assert michelangelo["queued_task_count"] >= 1
+    assert michelangelo["queued_point_count"] >= 1
 
 
 @pytest.mark.asyncio
@@ -379,7 +464,11 @@ async def test_agent_dashboard_unifies_sources_and_project_work(client):
         "title": "dashboard current work",
         "assignee_agent": "wheeljack",
         "status": "in_progress",
-        "development_points": [{"title": "dashboard point", "assigned_agent": "wheeljack"}],
+        "development_points": [{
+            "title": "dashboard point",
+            "assigned_agent": "wheeljack",
+            "status": "in_progress",
+        }],
     })
     assert task_resp.status_code == 201
     task = task_resp.json()

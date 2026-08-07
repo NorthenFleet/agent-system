@@ -83,6 +83,10 @@ export interface DocumentSpec {
   target_audience?: string
   output_format?: string
   edition?: string
+  current_edition_label?: string
+  obsidian_edition_label?: string
+  publication_edition_label?: string
+  version_role_note?: string
   expected_chapters?: number
   outline?: string[]
   chapters?: DocumentSection[]
@@ -93,6 +97,33 @@ export interface DocumentSpec {
   working_markdown?: DocumentWorkingMarkdown
   section_links?: DocumentSectionLink[]
   sync_status?: DocumentSyncStatus
+  course_profile?: CourseProfile
+}
+
+export interface CourseUnit {
+  id: string
+  order: number
+  title: string
+  delivery_mode: 'theory' | 'practice' | 'assessment'
+  hours: number
+}
+
+export interface CourseProfile {
+  template_key: string
+  version: string
+  canonical_title: string
+  course_code: string
+  target_audience: string
+  course_nature: string
+  total_hours: number
+  unit_hours: number
+  theory_hours: number
+  practice_hours: number
+  assessment_hours: number
+  theory_sessions: number
+  practice_sessions: number
+  assessment_sessions: number
+  units: CourseUnit[]
 }
 
 export interface DocumentTargetOutlineItem {
@@ -174,6 +205,7 @@ export interface Project {
   current_phase?: string
   enabled_modules?: string[]
   product_bindings?: import('./products').ProjectProductBinding[]
+  project_relations?: ProjectRelation[]
   context?: {
     project_type?: string
     mission_planning?: import('./missionPlanning').MissionPlanningIntegration
@@ -192,10 +224,57 @@ export interface Project {
   tasks: ProjectTask[]
 }
 
+export interface ProjectRelationSummary {
+  id: string
+  name: string
+  project_type: 'software' | 'document' | string
+  description?: string
+  goal?: string
+  status?: string
+  progress?: number
+  current_phase?: string
+  task_summary?: {
+    total: number
+    open: number
+    recent: Array<{ id?: string; title?: string; status?: string; progress?: number }>
+  }
+  work_object?: Record<string, unknown>
+}
+
+export interface ProjectRelation {
+  id: string
+  source_project_id: string
+  target_project_id: string
+  relation_type: string
+  status: string
+  purpose?: string
+  source_role?: string
+  target_role?: string
+  current_role?: string
+  counterpart_role?: string
+  direction?: 'inbound' | 'outbound'
+  context_contract?: Record<string, unknown>
+  counterpart?: ProjectRelationSummary
+}
+
+export interface ProjectRelationshipContext {
+  project_id: string
+  operating_model?: string
+  current_project_role?: string
+  current_project_responsibility?: string
+  shared_goal?: string
+  relations: ProjectRelation[]
+  implementation_project?: ProjectRelationSummary | null
+  source_documents?: ProjectRelationSummary[]
+  boundaries?: string[]
+}
+
 export interface ProjectChatContext {
   suggested_next_actions?: Array<{ action?: string; reason?: string } | string>
   open_points?: Array<{ id?: string; title?: string; task_title?: string }>
   project?: Project
+  relationship_context?: ProjectRelationshipContext
+  background_context?: ProjectRelationshipContext
 }
 
 export interface ProjectChatMessage {
@@ -205,6 +284,96 @@ export interface ProjectChatMessage {
   message?: string
   content?: string
   created_at?: string
+}
+
+export interface SoftwareDocumentNode {
+  id: string
+  label: string
+  path: string
+  kind: 'folder' | 'file'
+  category?: string
+  extension?: string
+  children: SoftwareDocumentNode[]
+}
+
+export interface SoftwareDocumentEntry {
+  path: string
+  name: string
+  extension: string
+  category: string
+  size_bytes: number
+  modified_at?: string
+}
+
+export interface SoftwareWorkspace {
+  project_id: string
+  machine: { name: string; host: string; user?: string | null; status: string }
+  repository: { path: string; branch: string; commit: string; dirty_count: number }
+  documents: SoftwareDocumentEntry[]
+  tree: SoftwareDocumentNode[]
+  coverage: Array<{ key: string; label: string; count: number; status: 'available' | 'missing' | string }>
+  total_documents: number
+  generated_at: string
+}
+
+export interface SoftwareDocumentContent {
+  project_id: string
+  path: string
+  name: string
+  extension: string
+  category: string
+  content: string
+  truncated: boolean
+  size_bytes: number
+}
+
+export interface SoftwareGitChange {
+  path: string
+  original_path?: string
+  index_status: string
+  worktree_status: string
+  index_code: string
+  worktree_code: string
+  staged: boolean
+  unstaged: boolean
+}
+
+export interface SoftwareGitCommit {
+  hash: string
+  author: string
+  date: string
+  subject: string
+}
+
+export interface SoftwareGitStatus {
+  project_id: string
+  repository_id: string
+  repository_name: string
+  repository: string
+  branch: string
+  commit: string
+  upstream: string
+  ahead: number
+  behind: number
+  staged_count: number
+  unstaged_count: number
+  total_changes: number
+  truncated: boolean
+  changes: SoftwareGitChange[]
+  commits: SoftwareGitCommit[]
+  operation?: string
+  output?: string
+  error?: string
+}
+
+export interface SoftwareGitDiff {
+  project_id: string
+  repository_id: string
+  path: string
+  staged: boolean
+  content: string
+  truncated: boolean
+  binary: boolean
 }
 
 export function getProjects(params?: { project_type?: 'software' | 'document'; enabled_module?: string }) {
@@ -259,4 +428,60 @@ export function syncProjectDocumentWorkdraft(projectId: string, payload: { sourc
 
 export function deleteProjectTask(projectId: string, taskId: string) {
   return apiClient.delete(`/api/v3/projects/${encodeURIComponent(projectId)}/tasks/${encodeURIComponent(taskId)}`).then(r => r.data)
+}
+
+export function getProjectSoftwareWorkspace(projectId: string) {
+  return apiClient.get<SoftwareWorkspace>(
+    `/api/v3/projects/${encodeURIComponent(projectId)}/software-workspace`,
+    { timeout: 30000 }
+  ).then(r => r.data)
+}
+
+export function getProjectSoftwareDocument(projectId: string, path: string) {
+  return apiClient.get<SoftwareDocumentContent>(
+    `/api/v3/projects/${encodeURIComponent(projectId)}/software-workspace/document`,
+    { params: { path }, timeout: 30000 }
+  ).then(r => r.data)
+}
+
+export function getProjectSoftwareGitRepositories(projectId: string) {
+  return apiClient.get<{ project_id: string; repositories: SoftwareGitStatus[] }>(
+    `/api/v3/projects/${encodeURIComponent(projectId)}/software-workspace/git/repositories`,
+    { timeout: 45000 }
+  ).then(r => r.data)
+}
+
+export function getProjectSoftwareGitStatus(projectId: string, repositoryId: string) {
+  return apiClient.get<SoftwareGitStatus>(
+    `/api/v3/projects/${encodeURIComponent(projectId)}/software-workspace/git/status`,
+    { params: { repository_id: repositoryId }, timeout: 30000 }
+  ).then(r => r.data)
+}
+
+export function getProjectSoftwareGitDiff(projectId: string, repositoryId: string, path: string, staged: boolean) {
+  return apiClient.get<SoftwareGitDiff>(
+    `/api/v3/projects/${encodeURIComponent(projectId)}/software-workspace/git/diff`,
+    { params: { repository_id: repositoryId, path, staged }, timeout: 30000 }
+  ).then(r => r.data)
+}
+
+export function stageProjectSoftwareFiles(projectId: string, repositoryId: string, paths: string[]) {
+  return apiClient.post<SoftwareGitStatus>(
+    `/api/v3/projects/${encodeURIComponent(projectId)}/software-workspace/git/stage`,
+    { repository_id: repositoryId, paths }, { timeout: 30000 }
+  ).then(r => r.data)
+}
+
+export function unstageProjectSoftwareFiles(projectId: string, repositoryId: string, paths: string[]) {
+  return apiClient.post<SoftwareGitStatus>(
+    `/api/v3/projects/${encodeURIComponent(projectId)}/software-workspace/git/unstage`,
+    { repository_id: repositoryId, paths }, { timeout: 30000 }
+  ).then(r => r.data)
+}
+
+export function commitProjectSoftwareFiles(projectId: string, repositoryId: string, message: string) {
+  return apiClient.post<SoftwareGitStatus>(
+    `/api/v3/projects/${encodeURIComponent(projectId)}/software-workspace/git/commit`,
+    { repository_id: repositoryId, message }, { timeout: 45000 }
+  ).then(r => r.data)
 }

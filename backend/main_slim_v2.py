@@ -8,13 +8,20 @@ from api_registry import (
     data_manager,
     device_manager,
     register_api_routes,
+    start_command_center_worker,
     start_elastic_agent_runner,
     start_mission_planning_monitor,
+    start_writing_collaboration_worker,
+    stop_command_center_worker,
     stop_elastic_agent_runner,
     stop_mission_planning_monitor,
+    stop_writing_collaboration_worker,
 )
 from websocket_manager import manager
 from routers._slim_helpers import _is_legacy_admin_write, require_admin_request
+from routers.auth_router import router as auth_router
+from routers.scheduler_router import router as scheduler_router
+from routers.memory_router import router as memory_router
 
 app = FastAPI(title="团队状态看板 API")
 FD2 = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend-v2", "dist")
@@ -69,6 +76,7 @@ def _module_for_path(path: str):
         (("/api/finance",), "finance"),
         (("/api/skills",), "skills"),
         (("/api/scheduled",), "scheduled"),
+        (("/api/v2/scheduler",), "scheduler"),
         (("/api/devices",), "monitoring"),
         (("/api/community", "/api/forum", "/api/bar"), "community"),
         (("/api/news",), "news-center"),
@@ -115,18 +123,35 @@ def _check_module_access(req: Request):
 # API routes
 register_api_routes(app)
 
+# Auth & Scheduler routes (explicitly registered for slim mode)
+app.include_router(auth_router)
+app.include_router(scheduler_router)
+app.include_router(memory_router)
+
 # Pages
 app.get("/")(lambda: _r(_fe()))
 app.get("/login")(lambda: _r(_fe()))
 app.get("/favicon.ico")(lambda: JSONResponse(status_code=204, content=None))
 app.get("/health")(lambda: {"status": "ok", "port": int(os.getenv("API_PORT", os.getenv("PORT", "3021")))})
 if os.path.isdir(FD2): app.mount("/assets", StaticFiles(directory=os.path.join(FD2, "assets")), name="v2")
+if os.path.isdir(os.path.join(FD2, "vendor")):
+    app.mount("/vendor", StaticFiles(directory=os.path.join(FD2, "vendor")), name="v2-vendor")
+if os.path.isdir(os.path.join(FD2, "icons")):
+    app.mount("/icons", StaticFiles(directory=os.path.join(FD2, "icons")), name="v2-icons")
+
+
+@app.get("/manifest.json")
+def _manifest_v2(): return _r(os.path.join(FD2, "manifest.json")) if V2 and os.path.isfile(os.path.join(FD2, "manifest.json")) else _raise_404()
+
+
+@app.get("/sw.js")
+def _service_worker_v2(): return _r(os.path.join(FD2, "sw.js")) if V2 and os.path.isfile(os.path.join(FD2, "sw.js")) else _raise_404()
 
 
 def _raise_404(): raise HTTPException(404)
-for _legacy_page in ("/index-old", "/legacy", "/modular", "/mobile", "/forum", "/manifest.json", "/sw.js"):
+for _legacy_page in ("/index-old", "/legacy", "/modular", "/mobile", "/forum"):
     app.get(_legacy_page)(_raise_404)
-for _legacy_prefix in ("/static/{path:path}", "/js/{path:path}", "/views/{path:path}", "/icons/{path:path}"):
+for _legacy_prefix in ("/static/{path:path}", "/js/{path:path}", "/views/{path:path}"):
     app.get(_legacy_prefix)(_raise_404)
 
 
@@ -192,6 +217,14 @@ async def startup():
         start_mission_planning_monitor()
     except Exception as e:
         print(f"[MissionPlanningMonitor] 启动失败: {e}")
+    try:
+        start_command_center_worker()
+    except Exception as e:
+        print(f"[CommandCenter] 启动失败: {e}")
+    try:
+        start_writing_collaboration_worker()
+    except Exception as e:
+        print(f"[WritingCollaboration] 启动失败: {e}")
 
     if os.getenv("DISABLE_SCHEDULER", "false").lower() == "true":
         print("[Scheduler] 已禁用（DISABLE_SCHEDULER=true）")
@@ -213,6 +246,12 @@ async def shutdown():
     try:
         await stop_mission_planning_monitor()
     except Exception as e: print(f"[MissionPlanningMonitor] 关闭异常: {e}")
+    try:
+        await stop_command_center_worker()
+    except Exception as e: print(f"[CommandCenter] 关闭异常: {e}")
+    try:
+        await stop_writing_collaboration_worker()
+    except Exception as e: print(f"[WritingCollaboration] 关闭异常: {e}")
     try:
         from services.scheduler_service import scheduler_service; scheduler_service.shutdown_scheduler(wait=True)
     except Exception as e: print(f"[Scheduler] 关闭异常: {e}")

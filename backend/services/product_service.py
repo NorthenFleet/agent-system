@@ -387,6 +387,7 @@ class ProductRegistryService:
                 allowed = {
                     "name", "kind", "category", "description", "version", "status", "owner",
                     "repository", "deployment", "capabilities", "dependencies", "tags",
+                    "auth_config",
                 }
                 product.update({key: value for key, value in payload.items() if key in allowed})
                 product["updated_at"] = _now()

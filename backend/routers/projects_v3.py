@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from data_manager import data_manager
@@ -22,6 +22,8 @@ from knowledge_manager import knowledge_manager
 from openclaw_integration import openclaw_integration
 from unified_data_manager import unified_data_manager
 from services.project_task_sync import sync_v3_task_to_v2
+from services.software_workspace_service import SoftwareWorkspaceError, software_workspace_service
+from routers.auth_router import require_role
 from services.work_run_service import (
     InvalidWorkTransition,
     WorkRunLeaseConflict,
@@ -144,6 +146,16 @@ class ProjectUpdate(BaseModel):
     document_spec: Optional[dict[str, Any]] = None
 
 
+class ProjectRelationCreate(BaseModel):
+    target_project_id: str
+    relation_type: str = "course_implementation"
+    purpose: str = ""
+    source_role: str = ""
+    target_role: str = ""
+    context_policy: str = "bidirectional_summary"
+    context_contract: dict[str, Any] = Field(default_factory=dict)
+
+
 class DevelopmentPointCreate(BaseModel):
     id: Optional[str] = None
     task_id: Optional[str] = None
@@ -246,6 +258,16 @@ class SoftwareSpecUpdate(BaseModel):
     test_plan: Optional[list[Any]] = None
     deployment_plan: Optional[list[Any]] = None
     agent_id: str = "project-manager"
+
+
+class GitPathsRequest(BaseModel):
+    repository_id: str = Field(..., min_length=1, max_length=64)
+    paths: list[str] = Field(..., min_length=1, max_length=200)
+
+
+class GitCommitRequest(BaseModel):
+    repository_id: str = Field(..., min_length=1, max_length=64)
+    message: str = Field(..., min_length=1, max_length=2000)
 
 
 class DocumentSectionCreate(BaseModel):
@@ -1552,6 +1574,54 @@ def update_project(project_id: str, req: ProjectUpdate):
     return project
 
 
+@router.get("/projects/{project_id}/relations")
+def get_project_relations(project_id: str):
+    context = project_manager.get_project_relationship_context(project_id)
+    if context is None:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return context
+
+
+@router.post("/projects/{project_id}/relations", status_code=201)
+def create_project_relation(
+    project_id: str,
+    req: ProjectRelationCreate,
+    user: dict = Depends(require_role("admin")),
+):
+    try:
+        relation = project_manager.link_projects(
+            project_id,
+            req.target_project_id,
+            relation_type=req.relation_type,
+            purpose=req.purpose,
+            source_role=req.source_role,
+            target_role=req.target_role,
+            context_policy=req.context_policy,
+            context_contract=req.context_contract,
+            actor_id=str(user.get("sub") or user.get("username") or user.get("id") or "admin"),
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if relation is None:
+        raise HTTPException(status_code=404, detail="Source or target project not found")
+    return {
+        "relation": relation,
+        "relationship_context": project_manager.get_project_relationship_context(project_id),
+    }
+
+
+@router.delete("/projects/{project_id}/relations/{relation_id}")
+def delete_project_relation(
+    project_id: str,
+    relation_id: str,
+    user: dict = Depends(require_role("admin")),
+):
+    actor_id = str(user.get("sub") or user.get("username") or user.get("id") or "admin")
+    if not project_manager.remove_project_relation(project_id, relation_id, actor_id):
+        raise HTTPException(status_code=404, detail="Project relation not found")
+    return {"project_id": project_id, "relation_id": relation_id, "deleted": True}
+
+
 @router.get("/projects/{project_id}/document-workdraft")
 def get_project_document_workdraft(project_id: str):
     project = project_manager.get_project(project_id)
@@ -1631,6 +1701,118 @@ def get_project_design_doc(project_id: str):
     if not design_doc:
         raise HTTPException(status_code=404, detail="Project not found")
     return design_doc
+
+
+@router.get("/projects/{project_id}/software-workspace")
+def get_project_software_workspace(project_id: str):
+    project = project_manager.get_project(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    if str(project.get("project_type") or project.get("type") or "software").lower() != "software":
+        raise HTTPException(status_code=400, detail="Only software projects have a software workspace")
+    try:
+        return software_workspace_service.list_workspace(project)
+    except SoftwareWorkspaceError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+@router.get("/projects/{project_id}/software-workspace/document")
+def get_project_software_document(project_id: str, path: str = Query(..., min_length=1, max_length=500)):
+    project = project_manager.get_project(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    if str(project.get("project_type") or project.get("type") or "software").lower() != "software":
+        raise HTTPException(status_code=400, detail="Only software projects have a software workspace")
+    try:
+        return software_workspace_service.read_document(project, path)
+    except SoftwareWorkspaceError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.get("/projects/{project_id}/software-workspace/git/repositories")
+def get_project_software_git_repositories(project_id: str):
+    project = project_manager.get_project(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    try:
+        return software_workspace_service.list_git_repositories(project)
+    except SoftwareWorkspaceError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+@router.get("/projects/{project_id}/software-workspace/git/status")
+def get_project_software_git_status(
+    project_id: str,
+    repository_id: str = Query(..., min_length=1, max_length=64),
+):
+    project = project_manager.get_project(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    try:
+        return software_workspace_service.git_status(project, repository_id)
+    except SoftwareWorkspaceError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+@router.get("/projects/{project_id}/software-workspace/git/diff")
+def get_project_software_git_diff(
+    project_id: str,
+    repository_id: str = Query(..., min_length=1, max_length=64),
+    path: str = Query(..., min_length=1, max_length=500),
+    staged: bool = False,
+):
+    project = project_manager.get_project(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    try:
+        return software_workspace_service.git_diff(project, repository_id, path, staged)
+    except SoftwareWorkspaceError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/projects/{project_id}/software-workspace/git/stage")
+def stage_project_software_files(
+    project_id: str,
+    req: GitPathsRequest,
+    _admin: dict = Depends(require_role("admin")),
+):
+    project = project_manager.get_project(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    try:
+        return software_workspace_service.git_stage(project, req.repository_id, req.paths)
+    except SoftwareWorkspaceError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/projects/{project_id}/software-workspace/git/unstage")
+def unstage_project_software_files(
+    project_id: str,
+    req: GitPathsRequest,
+    _admin: dict = Depends(require_role("admin")),
+):
+    project = project_manager.get_project(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    try:
+        return software_workspace_service.git_unstage(project, req.repository_id, req.paths)
+    except SoftwareWorkspaceError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/projects/{project_id}/software-workspace/git/commit")
+def commit_project_software_files(
+    project_id: str,
+    req: GitCommitRequest,
+    _admin: dict = Depends(require_role("admin")),
+):
+    project = project_manager.get_project(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    try:
+        return software_workspace_service.git_commit(project, req.repository_id, req.message)
+    except SoftwareWorkspaceError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @router.put("/projects/{project_id}/design-doc")
@@ -2188,6 +2370,7 @@ def _agent_rows(agents: Optional[list[dict[str, Any]]] = None):
     agents = agents if agents is not None else data_manager.get_agents()
     rows = []
     done = {"done", "completed"}
+    active = {"in_progress", "doing", "running", "review", "blocked"}
     for agent in agents:
         aid = agent.get("id", "")
         row = {
@@ -2203,24 +2386,59 @@ def _agent_rows(agents: Optional[list[dict[str, Any]]] = None):
             "current_task_title": None,
             "current_development_point_id": None,
             "current_development_point_title": None,
+            "current_work_status": None,
             "task_progress": 0,
             "project_progress": 0,
+            "queued_task_count": 0,
+            "queued_point_count": 0,
             "source": "projects-v3",
         }
+        active_task = None
+        active_point = None
         for project in projects:
             for task in project.get("tasks", []):
                 task_agent = task.get("assignee_agent")
-                if task_agent == aid and task.get("status") not in done:
-                    row.update({"current_project_id": project.get("id"), "current_project_name": project.get("name"), "current_task_id": task.get("id"), "current_task_title": task.get("title"), "task_progress": task.get("progress", 0), "project_progress": project.get("progress", 0), "status": "busy"})
+                task_status = str(task.get("status") or "todo").lower()
+                if task_agent == aid:
+                    if task_status in active and active_task is None:
+                        active_task = (project, task)
+                    elif task_status not in done:
+                        row["queued_task_count"] += 1
                 for point in task.get("development_points", []):
                     point_agent = point.get("assigned_agent") or task_agent
-                    if point_agent == aid and point.get("status") not in done:
-                        row.update({"current_project_id": project.get("id"), "current_project_name": project.get("name"), "current_task_id": task.get("id"), "current_task_title": task.get("title"), "current_development_point_id": point.get("id"), "current_development_point_title": point.get("title"), "task_progress": task.get("progress", 0), "project_progress": project.get("progress", 0), "status": "busy"})
-                        break
-                if row["current_development_point_id"]:
-                    break
-            if row["current_development_point_id"]:
-                break
+                    point_status = str(point.get("status") or "todo").lower()
+                    if point_agent != aid:
+                        continue
+                    if point_status in active and active_point is None:
+                        active_point = (project, task, point)
+                    elif point_status not in done:
+                        row["queued_point_count"] += 1
+        if active_point:
+            project, task, point = active_point
+            row.update({
+                "current_project_id": project.get("id"),
+                "current_project_name": project.get("name"),
+                "current_task_id": task.get("id"),
+                "current_task_title": task.get("title"),
+                "current_development_point_id": point.get("id"),
+                "current_development_point_title": point.get("title"),
+                "current_work_status": point.get("status"),
+                "task_progress": task.get("progress", 0),
+                "project_progress": project.get("progress", 0),
+                "status": "busy",
+            })
+        elif active_task:
+            project, task = active_task
+            row.update({
+                "current_project_id": project.get("id"),
+                "current_project_name": project.get("name"),
+                "current_task_id": task.get("id"),
+                "current_task_title": task.get("title"),
+                "current_work_status": task.get("status"),
+                "task_progress": task.get("progress", 0),
+                "project_progress": project.get("progress", 0),
+                "status": "busy",
+            })
         rows.append(row)
     return rows
 
@@ -2551,6 +2769,7 @@ def list_agent_dashboard():
                 "task_title": work.get("current_task_title"),
                 "development_point_id": work.get("current_development_point_id"),
                 "development_point_title": work.get("current_development_point_title"),
+                "status": work.get("current_work_status"),
                 "task_progress": work.get("task_progress", 0),
                 "project_progress": work.get("project_progress", 0),
                 "source": "projects-v3",
@@ -2576,6 +2795,9 @@ def list_agent_dashboard():
             "current_task_title": work.get("current_task_title"),
             "current_development_point_id": work.get("current_development_point_id"),
             "current_development_point_title": work.get("current_development_point_title"),
+            "current_work_status": work.get("current_work_status"),
+            "queued_task_count": work.get("queued_task_count", 0),
+            "queued_point_count": work.get("queued_point_count", 0),
             "task_progress": work.get("task_progress", 0),
             "project_progress": work.get("project_progress", 0),
             "updated_at": observed_at,

@@ -585,6 +585,14 @@ class WorkRunService:
     ) -> None:
         if not task_id:
             return
+        table_exists = conn.execute(
+            """
+            SELECT 1 FROM sqlite_master
+            WHERE type='table' AND name='project_tasks'
+            """
+        ).fetchone()
+        if not table_exists:
+            return
         exists = conn.execute("SELECT 1 FROM project_tasks WHERE id=?", (task_id,)).fetchone()
         if not exists:
             return

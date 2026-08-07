@@ -17,7 +17,7 @@
         <div v-if="section.items.length" class="menu-section-title">{{ section.title }}</div>
         <el-menu-item v-for="item in section.items" :key="item.module_key" :index="item.route_path">
           <el-icon><component :is="iconMap[item.icon || 'Monitor'] || Monitor" /></el-icon>
-          <span>{{ item.name }}</span>
+          <span>{{ displayModuleName(item) }}</span>
         </el-menu-item>
       </template>
     </el-menu>
@@ -53,6 +53,7 @@ import { useAuthStore } from '@/stores/auth'
 const route = useRoute()
 const auth = useAuthStore()
 
+const overviewModuleKeys = ['dashboard', 'command-center']
 const productModuleKeys = ['projects', 'development', 'writing', 'finance', 'products']
 const productionModuleKeys = [
   'data-admin',
@@ -98,17 +99,27 @@ const menuItems = computed(() => {
     .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
 })
 
+function displayModuleName(item: { module_key: string; name: string }) {
+  if (item.module_key === 'writing') return '文档管理'
+  return item.name
+}
+
 const menuSections = computed(() => {
   const byKey = new Map(menuItems.value.map(item => [item.module_key, item]))
   const sectionItems = (keys: string[]) => keys.map(key => byKey.get(key)).filter(Boolean) as typeof menuItems.value
-  const sectioned = new Set([...productModuleKeys, ...productionModuleKeys, ...systemModuleKeys])
+  const sectioned = new Set([
+    ...overviewModuleKeys,
+    ...productModuleKeys,
+    ...productionModuleKeys,
+    ...systemModuleKeys
+  ])
   return [
-    { key: 'home', title: '总览', items: sectionItems(['dashboard']) },
+    { key: 'home', title: '总览', items: sectionItems(overviewModuleKeys) },
     { key: 'product', title: '产品侧', items: sectionItems(productModuleKeys) },
     { key: 'production', title: '生产侧', items: sectionItems(productionModuleKeys) },
     { key: 'system', title: '系统', items: [
       ...sectionItems(systemModuleKeys),
-      ...menuItems.value.filter(item => !sectioned.has(item.module_key) && item.module_key !== 'dashboard')
+      ...menuItems.value.filter(item => !sectioned.has(item.module_key))
     ] }
   ]
 })
@@ -122,6 +133,7 @@ const activeMenu = computed(() => {
     .sort((a, b) => b.route_path.length - a.route_path.length)[0]
   if (parent) return parent.route_path
   if (path.startsWith('/tools')) return '/tools'
+  if (path.startsWith('/command-center')) return '/command-center'
   if (path.startsWith('/development')) return '/development'
   if (path.startsWith('/writing')) return '/writing'
   if (path.startsWith('/projects')) return '/projects'

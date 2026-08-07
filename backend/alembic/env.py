@@ -23,6 +23,7 @@ if config.config_file_name is not None:
 from models.v2_models import Base as V2Base
 from models.task_plan import Base as TPBase
 from models import finance_models  # noqa: F401 - register finance metadata
+from models import writing_collaboration  # noqa: F401 - register writing metadata
 
 database_url = os.getenv("DATABASE_URL")
 if database_url:

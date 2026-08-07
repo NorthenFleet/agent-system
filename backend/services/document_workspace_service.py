@@ -8,16 +8,21 @@ import hashlib
 import json
 import os
 import re
-import signal
 import shutil
 import subprocess
 import tempfile
-import time
+import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from zipfile import BadZipFile, ZIP_DEFLATED, ZipFile
 
 from knowledge_manager import knowledge_manager
+from services.document_outline_service import (
+    build_document_directory,
+    build_document_structure_snapshot,
+    compare_document_structures,
+)
 
 
 def _now() -> str:
@@ -25,7 +30,10 @@ def _now() -> str:
 
 
 def _safe_name(value: str) -> str:
-    cleaned = "".join(ch if ch.isalnum() or ch in {"-", "_", " "} else "-" for ch in value.strip())
+    cleaned = "".join(
+        ch if ch.isalnum() or ch in {"-", "_", " ", "·", "—"} else "-"
+        for ch in value.strip()
+    )
     return cleaned.strip(" -") or "document-project"
 
 
@@ -61,6 +69,905 @@ def _citation_numbers(text: str) -> list[int]:
     return numbers
 
 
+_CHINESE_DIGITS = {
+    "零": 0,
+    "〇": 0,
+    "一": 1,
+    "二": 2,
+    "三": 3,
+    "四": 4,
+    "五": 5,
+    "六": 6,
+    "七": 7,
+    "八": 8,
+    "九": 9,
+}
+
+
+def _chapter_number(value: str) -> int | None:
+    """Read Arabic or common Chinese chapter numbers from a heading."""
+    match = re.search(r"第\s*([0-9零〇一二三四五六七八九十百]+)\s*章", value or "")
+    if not match:
+        return None
+    raw = match.group(1)
+    if raw.isdigit():
+        return int(raw)
+    total = 0
+    current = 0
+    for char in raw:
+        if char in _CHINESE_DIGITS:
+            current = _CHINESE_DIGITS[char]
+        elif char == "十":
+            total += (current or 1) * 10
+            current = 0
+        elif char == "百":
+            total += (current or 1) * 100
+            current = 0
+        else:
+            return None
+    return total + current or None
+
+
+W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+W = f"{{{W_NS}}}"
+PPR_PROPERTY_ORDER = (
+    "pStyle",
+    "keepNext",
+    "keepLines",
+    "pageBreakBefore",
+    "framePr",
+    "widowControl",
+    "numPr",
+    "suppressLineNumbers",
+    "pBdr",
+    "shd",
+    "tabs",
+    "suppressAutoHyphens",
+    "kinsoku",
+    "wordWrap",
+    "overflowPunct",
+    "topLinePunct",
+    "autoSpaceDE",
+    "autoSpaceDN",
+    "bidi",
+    "adjustRightInd",
+    "snapToGrid",
+    "spacing",
+    "ind",
+    "contextualSpacing",
+    "mirrorIndents",
+    "suppressOverlap",
+    "jc",
+    "textDirection",
+    "textAlignment",
+    "textboxTightWrap",
+    "outlineLvl",
+    "divId",
+    "cnfStyle",
+    "rPr",
+    "sectPr",
+    "pPrChange",
+)
+TRPR_PROPERTY_ORDER = (
+    "cnfStyle",
+    "divId",
+    "gridBefore",
+    "gridAfter",
+    "wBefore",
+    "wAfter",
+    "cantSplit",
+    "trHeight",
+    "tblHeader",
+    "tblCellSpacing",
+    "jc",
+    "hidden",
+    "ins",
+    "del",
+    "trPrChange",
+)
+TBLPR_PROPERTY_ORDER = (
+    "tblStyle",
+    "tblpPr",
+    "tblOverlap",
+    "bidiVisual",
+    "tblStyleRowBandSize",
+    "tblStyleColBandSize",
+    "tblW",
+    "jc",
+    "tblCellSpacing",
+    "tblInd",
+    "tblBorders",
+    "shd",
+    "tblLayout",
+    "tblCellMar",
+    "tblLook",
+    "tblCaption",
+    "tblDescription",
+    "tblPrChange",
+)
+TCPR_PROPERTY_ORDER = (
+    "cnfStyle",
+    "tcW",
+    "gridSpan",
+    "hMerge",
+    "vMerge",
+    "tcBorders",
+    "shd",
+    "noWrap",
+    "tcMar",
+    "textDirection",
+    "tcFitText",
+    "vAlign",
+    "hideMark",
+    "headers",
+    "cellIns",
+    "cellDel",
+    "cellMerge",
+    "tcPrChange",
+)
+SECTPR_PROPERTY_ORDER = (
+    "headerReference",
+    "footerReference",
+    "footnotePr",
+    "endnotePr",
+    "type",
+    "pgSz",
+    "pgMar",
+    "paperSrc",
+    "pgBorders",
+    "lnNumType",
+    "pgNumType",
+    "cols",
+    "formProt",
+    "vAlign",
+    "noEndnote",
+    "titlePg",
+    "textDirection",
+    "bidi",
+    "rtlGutter",
+    "docGrid",
+    "printerSettings",
+    "sectPrChange",
+)
+for _prefix, _namespace in {
+    "w": W_NS,
+    "m": "http://schemas.openxmlformats.org/officeDocument/2006/math",
+    "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
+    "o": "urn:schemas-microsoft-com:office:office",
+    "v": "urn:schemas-microsoft-com:vml",
+    "w10": "urn:schemas-microsoft-com:office:word",
+    "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
+    "pic": "http://schemas.openxmlformats.org/drawingml/2006/picture",
+    "wp": "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing",
+}.items():
+    ET.register_namespace(_prefix, _namespace)
+
+
+def _word_property(parent: ET.Element, tag: str) -> ET.Element:
+    element = parent.find(f"{W}{tag}")
+    if element is None:
+        element = ET.SubElement(parent, f"{W}{tag}")
+    return element
+
+
+def _ordered_word_property(
+    parent: ET.Element,
+    tag: str,
+    property_order: tuple[str, ...],
+) -> ET.Element:
+    element = parent.find(f"{W}{tag}")
+    if element is not None:
+        return element
+    element = ET.Element(f"{W}{tag}")
+    target_order = property_order.index(tag)
+    for index, child in enumerate(parent):
+        child_tag = child.tag.rsplit("}", 1)[-1]
+        if child_tag in property_order and property_order.index(child_tag) > target_order:
+            parent.insert(index, element)
+            return element
+    parent.append(element)
+    return element
+
+
+def _paragraph_properties(paragraph: ET.Element) -> ET.Element:
+    properties = paragraph.find(f"{W}pPr")
+    if properties is None:
+        properties = ET.Element(f"{W}pPr")
+        paragraph.insert(0, properties)
+    return properties
+
+
+def _table_properties(table: ET.Element) -> ET.Element:
+    properties = table.find(f"./{W}tblPr")
+    if properties is None:
+        properties = ET.Element(f"{W}tblPr")
+        table.insert(0, properties)
+    return properties
+
+
+def _cell_properties(cell: ET.Element) -> ET.Element:
+    properties = cell.find(f"./{W}tcPr")
+    if properties is None:
+        properties = ET.Element(f"{W}tcPr")
+        cell.insert(0, properties)
+    return properties
+
+
+def _set_table_print_layout(table: ET.Element) -> None:
+    """Give every table deterministic width, columns and visible print borders."""
+    table_properties = _table_properties(table)
+    table_style = _ordered_word_property(
+        table_properties,
+        "tblStyle",
+        TBLPR_PROPERTY_ORDER,
+    )
+    table_style.set(f"{W}val", "TableGrid")
+    table_width = _ordered_word_property(
+        table_properties,
+        "tblW",
+        TBLPR_PROPERTY_ORDER,
+    )
+    table_width.set(f"{W}type", "pct")
+    table_width.set(f"{W}w", "5000")
+    table_layout = _ordered_word_property(
+        table_properties,
+        "tblLayout",
+        TBLPR_PROPERTY_ORDER,
+    )
+    table_layout.set(f"{W}type", "fixed")
+
+    borders = _ordered_word_property(
+        table_properties,
+        "tblBorders",
+        TBLPR_PROPERTY_ORDER,
+    )
+    for edge in ("top", "left", "bottom", "right", "insideH", "insideV"):
+        border = borders.find(f"{W}{edge}")
+        if border is None:
+            border = ET.SubElement(borders, f"{W}{edge}")
+        border.set(f"{W}val", "single")
+        border.set(f"{W}sz", "4")
+        border.set(f"{W}space", "0")
+        border.set(f"{W}color", "808080")
+
+    grid = table.find(f"./{W}tblGrid")
+    grid_widths: list[int] = []
+    if grid is not None:
+        for column in grid.findall(f"./{W}gridCol"):
+            try:
+                grid_widths.append(max(1, int(column.get(f"{W}w", "0"))))
+            except ValueError:
+                grid_widths.append(1)
+    if not grid_widths:
+        first_row = table.find(f"./{W}tr")
+        column_count = len(first_row.findall(f"./{W}tc")) if first_row is not None else 0
+        grid_widths = [7920 // column_count] * column_count if column_count else []
+
+    for row in table.findall(f"./{W}tr"):
+        grid_index = 0
+        for cell in row.findall(f"./{W}tc"):
+            cell_properties = _cell_properties(cell)
+            grid_span = cell_properties.find(f"./{W}gridSpan")
+            try:
+                span = max(1, int(grid_span.get(f"{W}val", "1"))) if grid_span is not None else 1
+            except ValueError:
+                span = 1
+            width = sum(grid_widths[grid_index : grid_index + span])
+            if width <= 0:
+                width = max(1, 7920 // max(1, len(row.findall(f"./{W}tc"))))
+            cell_width = _ordered_word_property(
+                cell_properties,
+                "tcW",
+                TCPR_PROPERTY_ORDER,
+            )
+            cell_width.set(f"{W}type", "dxa")
+            cell_width.set(f"{W}w", str(width))
+            grid_index += span
+
+    for paragraph in table.findall(f".//{W}p"):
+        paragraph_properties = _paragraph_properties(paragraph)
+        paragraph_style = paragraph_properties.find(f"./{W}pStyle")
+        if paragraph_style is not None and paragraph_style.get(f"{W}val") == "Compact":
+            # Pandoc emits Compact even when the reference DOCX does not define it.
+            # Word falls back gracefully; LibreOffice can separate cell text from the
+            # table grid during PDF conversion, so use an explicit existing style.
+            paragraph_style.set(f"{W}val", "Normal")
+        spacing = _ordered_word_property(
+            paragraph_properties,
+            "spacing",
+            PPR_PROPERTY_ORDER,
+        )
+        spacing.set(f"{W}after", "0")
+        spacing.set(f"{W}line", "240")
+        spacing.set(f"{W}lineRule", "auto")
+        indentation = _ordered_word_property(
+            paragraph_properties,
+            "ind",
+            PPR_PROPERTY_ORDER,
+        )
+        indentation.set(f"{W}firstLine", "0")
+
+
+def _set_page_break_before(paragraph: ET.Element) -> None:
+    page_break = _ordered_word_property(
+        _paragraph_properties(paragraph),
+        "pageBreakBefore",
+        PPR_PROPERTY_ORDER,
+    )
+    page_break.set(f"{W}val", "1")
+
+
+def _postprocess_standard_a4_docx(path: Path) -> None:
+    """Set every Word section to A4 while preserving its current orientation."""
+    with ZipFile(path, "r") as source:
+        parts = {
+            entry.filename: (entry, source.read(entry.filename))
+            for entry in source.infolist()
+        }
+    document_entry, document_payload = parts["word/document.xml"]
+    document_root = ET.fromstring(document_payload)
+
+    for section in document_root.findall(f".//{W}sectPr"):
+        page_size = _ordered_word_property(
+            section,
+            "pgSz",
+            SECTPR_PROPERTY_ORDER,
+        )
+        landscape = page_size.get(f"{W}orient") == "landscape"
+        page_size.set(f"{W}w", "16838" if landscape else "11906")
+        page_size.set(f"{W}h", "11906" if landscape else "16838")
+
+    parts["word/document.xml"] = (
+        document_entry,
+        ET.tostring(document_root, encoding="utf-8", xml_declaration=True),
+    )
+    with tempfile.NamedTemporaryFile(
+        suffix=".docx",
+        prefix="standard-a4-",
+        dir=path.parent,
+        delete=False,
+    ) as handle:
+        temporary = Path(handle.name)
+    try:
+        with ZipFile(temporary, "w", compression=ZIP_DEFLATED) as target:
+            for entry, payload in parts.values():
+                target.writestr(entry, payload)
+        temporary.replace(path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def _set_style_font(
+    style: ET.Element,
+    *,
+    east_asia: str,
+    latin: str,
+    size_half_points: str,
+    bold: bool = False,
+) -> None:
+    run_properties = style.find(f"./{W}rPr")
+    if run_properties is None:
+        run_properties = ET.SubElement(style, f"{W}rPr")
+    fonts = _word_property(run_properties, "rFonts")
+    for key, value in {"ascii": latin, "hAnsi": latin, "eastAsia": east_asia, "cs": latin}.items():
+        fonts.set(f"{W}{key}", value)
+    size = _word_property(run_properties, "sz")
+    size.set(f"{W}val", size_half_points)
+    complex_size = _word_property(run_properties, "szCs")
+    complex_size.set(f"{W}val", size_half_points)
+    color = _word_property(run_properties, "color")
+    color.set(f"{W}val", "000000")
+    existing_bold = run_properties.find(f"./{W}b")
+    if bold:
+        if existing_bold is None:
+            existing_bold = ET.SubElement(run_properties, f"{W}b")
+        existing_bold.set(f"{W}val", "1")
+    elif existing_bold is not None:
+        run_properties.remove(existing_bold)
+
+
+def _set_style_paragraph(
+    style: ET.Element,
+    *,
+    before: str = "0",
+    after: str = "0",
+    line: str = "360",
+    line_rule: str = "exact",
+    first_line: str = "0",
+    alignment: str = "both",
+    keep_next: bool = False,
+    page_break_before: bool = False,
+) -> None:
+    properties = style.find(f"./{W}pPr")
+    if properties is None:
+        properties = ET.SubElement(style, f"{W}pPr")
+    spacing = _word_property(properties, "spacing")
+    spacing.set(f"{W}before", before)
+    spacing.set(f"{W}after", after)
+    spacing.set(f"{W}line", line)
+    spacing.set(f"{W}lineRule", line_rule)
+    indentation = _word_property(properties, "ind")
+    indentation.set(f"{W}firstLine", first_line)
+    justification = _word_property(properties, "jc")
+    justification.set(f"{W}val", alignment)
+    if keep_next:
+        _word_property(properties, "keepNext").set(f"{W}val", "1")
+    if page_break_before:
+        _word_property(properties, "pageBreakBefore").set(f"{W}val", "1")
+
+
+def _cover_paragraph(
+    text: str,
+    *,
+    style_id: str = "Normal",
+    before: str = "0",
+    bold: bool = False,
+    size: str = "24",
+    page_break_after: bool = False,
+) -> ET.Element:
+    paragraph = ET.Element(f"{W}p")
+    properties = ET.SubElement(paragraph, f"{W}pPr")
+    style = ET.SubElement(properties, f"{W}pStyle")
+    style.set(f"{W}val", style_id)
+    spacing = ET.SubElement(properties, f"{W}spacing")
+    spacing.set(f"{W}before", before)
+    spacing.set(f"{W}after", "0")
+    justification = ET.SubElement(properties, f"{W}jc")
+    justification.set(f"{W}val", "center")
+    run = ET.SubElement(paragraph, f"{W}r")
+    run_properties = ET.SubElement(run, f"{W}rPr")
+    fonts = ET.SubElement(run_properties, f"{W}rFonts")
+    fonts.set(f"{W}ascii", "Times New Roman")
+    fonts.set(f"{W}hAnsi", "Times New Roman")
+    fonts.set(f"{W}eastAsia", "宋体")
+    if bold:
+        ET.SubElement(run_properties, f"{W}b").set(f"{W}val", "1")
+    ET.SubElement(run_properties, f"{W}sz").set(f"{W}val", size)
+    ET.SubElement(run_properties, f"{W}szCs").set(f"{W}val", size)
+    node = ET.SubElement(run, f"{W}t")
+    node.text = text
+    if page_break_after:
+        break_run = ET.SubElement(paragraph, f"{W}r")
+        ET.SubElement(break_run, f"{W}br").set(f"{W}type", "page")
+    return paragraph
+
+
+def _footer_payload(root: ET.Element) -> bytes:
+    for child in list(root):
+        root.remove(child)
+    paragraph = ET.SubElement(root, f"{W}p")
+    properties = ET.SubElement(paragraph, f"{W}pPr")
+    ET.SubElement(properties, f"{W}jc").set(f"{W}val", "center")
+    for value in ("- ",):
+        run = ET.SubElement(paragraph, f"{W}r")
+        ET.SubElement(run, f"{W}t").text = value
+    begin = ET.SubElement(paragraph, f"{W}r")
+    ET.SubElement(begin, f"{W}fldChar").set(f"{W}fldCharType", "begin")
+    instruction = ET.SubElement(paragraph, f"{W}r")
+    field = ET.SubElement(instruction, f"{W}instrText")
+    field.set("{http://www.w3.org/XML/1998/namespace}space", "preserve")
+    field.text = " PAGE "
+    separate = ET.SubElement(paragraph, f"{W}r")
+    ET.SubElement(separate, f"{W}fldChar").set(f"{W}fldCharType", "separate")
+    cached = ET.SubElement(paragraph, f"{W}r")
+    ET.SubElement(cached, f"{W}t").text = "1"
+    end = ET.SubElement(paragraph, f"{W}r")
+    ET.SubElement(end, f"{W}fldChar").set(f"{W}fldCharType", "end")
+    suffix = ET.SubElement(paragraph, f"{W}r")
+    ET.SubElement(suffix, f"{W}t").text = " -"
+    return ET.tostring(root, encoding="utf-8", xml_declaration=True)
+
+
+def _libreoffice_preview_env(profile_dir: Path) -> dict[str, str]:
+    """Map formal Windows font names for macOS/Linux previews only."""
+    cache_dir = profile_dir / "font-cache"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    config = profile_dir / "fonts.conf"
+    config.write_text(
+        f"""<?xml version="1.0"?>
+<!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">
+<fontconfig>
+  <dir>/System/Library/Fonts</dir><dir>/Library/Fonts</dir><dir>{Path.home() / 'Library/Fonts'}</dir>
+  <dir>/usr/share/fonts</dir><dir>/usr/local/share/fonts</dir>
+  <cachedir>{cache_dir}</cachedir>
+  <alias><family>宋体</family><prefer><family>Songti SC</family><family>Noto Serif CJK SC</family><family>STSong</family></prefer></alias>
+  <alias><family>SimSun</family><prefer><family>Songti SC</family><family>Noto Serif CJK SC</family><family>STSong</family></prefer></alias>
+  <alias><family>黑体</family><prefer><family>Heiti SC</family><family>Noto Sans CJK SC</family><family>STHeiti</family></prefer></alias>
+  <alias><family>SimHei</family><prefer><family>Heiti SC</family><family>Noto Sans CJK SC</family><family>STHeiti</family></prefer></alias>
+</fontconfig>
+""",
+        encoding="utf-8",
+    )
+    environment = os.environ.copy()
+    environment["FONTCONFIG_FILE"] = str(config)
+    return environment
+
+
+def _field_run(paragraph: ET.Element, instruction: str, cached: str = "0") -> None:
+    begin = ET.SubElement(paragraph, f"{W}r")
+    ET.SubElement(begin, f"{W}fldChar").set(f"{W}fldCharType", "begin")
+    instruction_run = ET.SubElement(paragraph, f"{W}r")
+    instruction_node = ET.SubElement(instruction_run, f"{W}instrText")
+    instruction_node.set("{http://www.w3.org/XML/1998/namespace}space", "preserve")
+    instruction_node.text = f" {instruction} "
+    separate = ET.SubElement(paragraph, f"{W}r")
+    ET.SubElement(separate, f"{W}fldChar").set(f"{W}fldCharType", "separate")
+    cached_run = ET.SubElement(paragraph, f"{W}r")
+    ET.SubElement(cached_run, f"{W}t").text = cached
+    end = ET.SubElement(paragraph, f"{W}r")
+    ET.SubElement(end, f"{W}fldChar").set(f"{W}fldCharType", "end")
+
+
+def _materialize_toc_cache(
+    document_root: ET.Element,
+    style_names: dict[str, str],
+    toc_style_ids: dict[int, str],
+) -> None:
+    """Give headless PDF previews a visible TOC while retaining a real TOC field."""
+    entries: list[tuple[int, str, str]] = []
+    bookmark_id = 10000
+    for paragraph in document_root.findall(f".//{W}p"):
+        style = paragraph.find(f"./{W}pPr/{W}pStyle")
+        style_id = style.get(f"{W}val", "") if style is not None else ""
+        normalized = style_names.get(style_id, style_id).replace(" ", "")
+        if normalized not in {"heading1", "heading2", "heading3"}:
+            continue
+        text = "".join(node.text or "" for node in paragraph.findall(f".//{W}t")).strip()
+        if not text:
+            continue
+        level = int(normalized[-1])
+        anchor = f"toc_anchor_{bookmark_id}"
+        start = ET.Element(f"{W}bookmarkStart")
+        start.set(f"{W}id", str(bookmark_id))
+        start.set(f"{W}name", anchor)
+        end = ET.Element(f"{W}bookmarkEnd")
+        end.set(f"{W}id", str(bookmark_id))
+        insert_at = 1 if paragraph.find(f"./{W}pPr") is not None else 0
+        paragraph.insert(insert_at, start)
+        paragraph.append(end)
+        entries.append((level, text, anchor))
+        bookmark_id += 1
+    toc = next(
+        (
+            node
+            for node in document_root.findall(f".//{W}sdt")
+            if node.find(f"./{W}sdtPr/{W}docPartObj/{W}docPartGallery") is not None
+            and node.find(f"./{W}sdtPr/{W}docPartObj/{W}docPartGallery").get(f"{W}val") == "Table of Contents"
+        ),
+        None,
+    )
+    if toc is None or not entries:
+        return
+    content = toc.find(f"./{W}sdtContent")
+    if content is None:
+        return
+    title = content.find(f"./{W}p")
+    for child in list(content):
+        content.remove(child)
+    if title is not None:
+        content.append(title)
+    field_start = ET.SubElement(content, f"{W}p")
+    begin_run = ET.SubElement(field_start, f"{W}r")
+    ET.SubElement(begin_run, f"{W}fldChar").set(f"{W}fldCharType", "begin")
+    instruction_run = ET.SubElement(field_start, f"{W}r")
+    instruction = ET.SubElement(instruction_run, f"{W}instrText")
+    instruction.set("{http://www.w3.org/XML/1998/namespace}space", "preserve")
+    instruction.text = ' TOC \\o "1-3" \\h \\z \\u '
+    separate_run = ET.SubElement(field_start, f"{W}r")
+    ET.SubElement(separate_run, f"{W}fldChar").set(f"{W}fldCharType", "separate")
+    for level, text, anchor in entries:
+        paragraph = ET.SubElement(content, f"{W}p")
+        properties = ET.SubElement(paragraph, f"{W}pPr")
+        style = ET.SubElement(properties, f"{W}pStyle")
+        style.set(f"{W}val", toc_style_ids.get(level, "TOC1"))
+        text_run = ET.SubElement(paragraph, f"{W}r")
+        ET.SubElement(text_run, f"{W}t").text = text
+        tab_run = ET.SubElement(paragraph, f"{W}r")
+        ET.SubElement(tab_run, f"{W}tab")
+        _field_run(paragraph, f"PAGEREF {anchor} \\h")
+    field_end = ET.SubElement(content, f"{W}p")
+    end_run = ET.SubElement(field_end, f"{W}r")
+    ET.SubElement(end_run, f"{W}fldChar").set(f"{W}fldCharType", "end")
+
+
+def _refresh_toc_cache_from_pdf(docx_path: Path, pdf_path: Path) -> bool:
+    """Use native PDFKit text extraction to cache accurate TOC page numbers."""
+    script = (
+        'ObjC.import("PDFKit"); ObjC.import("Foundation");'
+        f'var d=$.PDFDocument.alloc.initWithURL($.NSURL.fileURLWithPath({json.dumps(str(pdf_path))}));'
+        'var a=[]; for(var i=0;i<d.pageCount;i++){a.push(ObjC.unwrap(d.pageAtIndex(i).string)||"");}'
+        'JSON.stringify(a);'
+    )
+    try:
+        result = subprocess.run(
+            ["/usr/bin/osascript", "-l", "JavaScript", "-e", script],
+            capture_output=True,
+            text=True,
+            timeout=180,
+        )
+        page_texts = json.loads(result.stdout.strip()) if result.returncode == 0 else []
+    except (OSError, subprocess.TimeoutExpired, ValueError, json.JSONDecodeError):
+        return False
+    if not isinstance(page_texts, list) or not page_texts:
+        return False
+    normalized_pages = [re.sub(r"\s+", "", str(text)) for text in page_texts]
+    normalized_lines = [
+        {
+            re.sub(r"\s+", "", line)
+            for line in str(text).splitlines()
+            if re.sub(r"\s+", "", line)
+        }
+        for text in page_texts
+    ]
+    with ZipFile(docx_path, "r") as source:
+        parts = {entry.filename: (entry, source.read(entry.filename)) for entry in source.infolist()}
+    document_entry, payload = parts["word/document.xml"]
+    root = ET.fromstring(payload)
+    page_by_anchor: dict[str, int] = {}
+    for paragraph in root.findall(f".//{W}p"):
+        bookmark = paragraph.find(f"./{W}bookmarkStart")
+        if bookmark is None:
+            continue
+        anchor = str(bookmark.get(f"{W}name") or "")
+        if not anchor.startswith("toc_anchor_"):
+            continue
+        text = re.sub(r"\s+", "", "".join(node.text or "" for node in paragraph.findall(f".//{W}t")))
+        if not text:
+            continue
+        for page_index, page_lines in enumerate(normalized_lines):
+            if text in page_lines:
+                page_by_anchor[anchor] = page_index + 1
+                break
+        else:
+            # Long headings can wrap across PDF text lines. Retain a conservative
+            # fallback, but prefer the first body occurrence after the cover.
+            for page_index, page_text in enumerate(normalized_pages[1:], start=2):
+                if text in page_text:
+                    page_by_anchor[anchor] = page_index
+                    break
+    changed = False
+    for paragraph in root.findall(f".//{W}p"):
+        instruction = next(
+            (node.text or "" for node in paragraph.findall(f".//{W}instrText") if "PAGEREF toc_anchor_" in (node.text or "")),
+            "",
+        )
+        match = re.search(r"PAGEREF\s+(toc_anchor_\d+)", instruction)
+        if not match or match.group(1) not in page_by_anchor:
+            continue
+        texts = paragraph.findall(f".//{W}t")
+        if texts:
+            texts[-1].text = str(page_by_anchor[match.group(1)])
+            changed = True
+    if not changed:
+        return False
+    parts["word/document.xml"] = (document_entry, ET.tostring(root, encoding="utf-8", xml_declaration=True))
+    with tempfile.NamedTemporaryFile(suffix=".docx", prefix="toc-cache-", dir=docx_path.parent, delete=False) as handle:
+        temporary = Path(handle.name)
+    try:
+        with ZipFile(temporary, "w", compression=ZIP_DEFLATED) as target:
+            for entry, part_payload in parts.values():
+                target.writestr(entry, part_payload)
+        temporary.replace(docx_path)
+    finally:
+        temporary.unlink(missing_ok=True)
+    return True
+
+
+def _postprocess_formal_docx(path: Path, cover: dict[str, Any] | None = None) -> None:
+    """Apply a reusable formal-document layout contract to a Pandoc DOCX."""
+    with ZipFile(path, "r") as source:
+        parts = {entry.filename: (entry, source.read(entry.filename)) for entry in source.infolist()}
+    document_entry, document_payload = parts["word/document.xml"]
+    styles_entry, styles_payload = parts["word/styles.xml"]
+    settings_entry, settings_payload = parts["word/settings.xml"]
+    document_root = ET.fromstring(document_payload)
+    styles_root = ET.fromstring(styles_payload)
+    settings_root = ET.fromstring(settings_payload)
+
+    styles = {node.get(f"{W}styleId", ""): node for node in styles_root.findall(f"./{W}style")}
+    def style_name(node: ET.Element) -> str:
+        name_node = node.find(f"./{W}name")
+        return str(name_node.get(f"{W}val", "") if name_node is not None else "").strip().lower()
+
+    style_names = {style_id: style_name(node) for style_id, node in styles.items()}
+
+    def styles_named(*names: str) -> list[ET.Element]:
+        wanted = {name.strip().lower() for name in names}
+        return [styles[style_id] for style_id, name in style_names.items() if name in wanted or style_id.lower() in wanted]
+
+    for style in styles_named("Normal", "Body Text", "First Paragraph", "XT2_0正文"):
+        _set_style_font(style, east_asia="宋体", latin="Times New Roman", size_half_points="21")
+        _set_style_paragraph(style, first_line="430")
+    heading_styles = {
+        1: styles_named("Heading 1", "Heading1"),
+        2: styles_named("Heading 2", "Heading2"),
+        3: styles_named("Heading 3", "Heading3"),
+    }
+    for style in heading_styles[1]:
+        _set_style_font(style, east_asia="黑体", latin="Times New Roman", size_half_points="28", bold=True)
+        _set_style_paragraph(style, before="360", first_line="0", alignment="left", keep_next=True, page_break_before=True)
+    for style in heading_styles[2]:
+        _set_style_font(style, east_asia="黑体", latin="Times New Roman", size_half_points="24", bold=True)
+        _set_style_paragraph(style, before="360", line="320", first_line="0", alignment="left", keep_next=True)
+    for style in heading_styles[3]:
+        _set_style_font(style, east_asia="宋体", latin="Times New Roman", size_half_points="21", bold=True)
+        _set_style_paragraph(style, before="180", first_line="0", alignment="left", keep_next=True)
+    for style in [*heading_styles[1], *heading_styles[2], *heading_styles[3]]:
+        numbering = style.find(f"./{W}pPr/{W}numPr") if style is not None else None
+        properties = style.find(f"./{W}pPr") if style is not None else None
+        if numbering is not None and properties is not None:
+            properties.remove(numbering)
+    toc_style_ids: dict[int, str] = {}
+    for index, indent in ((1, "0"), (2, "420"), (3, "960")):
+        toc_styles = styles_named(f"TOC {index}", f"TOC{index}")
+        if toc_styles:
+            toc_style_ids[index] = toc_styles[0].get(f"{W}styleId", f"TOC{index}")
+        for style in toc_styles:
+            _set_style_font(style, east_asia="宋体", latin="Times New Roman", size_half_points="24")
+            _set_style_paragraph(style, line="360", line_rule="auto", first_line="0", alignment="left")
+            properties = style.find(f"./{W}pPr")
+            _word_property(properties, "ind").set(f"{W}left", indent)
+    for title_role in ("Title", "Subtitle"):
+        for style in styles_named(title_role):
+            _set_style_font(style, east_asia="黑体" if title_role == "Title" else "宋体", latin="Times New Roman", size_half_points="36" if title_role == "Title" else "24", bold=title_role == "Title")
+            _set_style_paragraph(style, first_line="0", alignment="center")
+
+    for section in document_root.findall(f".//{W}sectPr"):
+        page_size = _ordered_word_property(section, "pgSz", SECTPR_PROPERTY_ORDER)
+        page_size.set(f"{W}w", "11906")
+        page_size.set(f"{W}h", "16838")
+        page_size.attrib.pop(f"{W}orient", None)
+        margins = _ordered_word_property(section, "pgMar", SECTPR_PROPERTY_ORDER)
+        for key, value in {"top": "2098", "bottom": "1984", "left": "1587", "right": "1474", "header": "850", "footer": "907", "gutter": "0"}.items():
+            margins.set(f"{W}{key}", value)
+        _ordered_word_property(section, "titlePg", SECTPR_PROPERTY_ORDER).set(f"{W}val", "1")
+
+    for paragraph in document_root.findall(f".//{W}p"):
+        style = paragraph.find(f"./{W}pPr/{W}pStyle")
+        style_id = style.get(f"{W}val", "") if style is not None else ""
+        style_name = style_names.get(style_id, style_id).replace(" ", "")
+        if style_name in {"heading1", "heading2", "heading3"}:
+            properties = _paragraph_properties(paragraph)
+            numbering = properties.find(f"./{W}numPr")
+            if numbering is not None:
+                properties.remove(numbering)
+            keep = _ordered_word_property(properties, "keepNext", PPR_PROPERTY_ORDER)
+            keep.set(f"{W}val", "1")
+            if style_name == "heading1":
+                _set_page_break_before(paragraph)
+        if paragraph.find(".//{http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing}inline") is not None:
+            _ordered_word_property(_paragraph_properties(paragraph), "jc", PPR_PROPERTY_ORDER).set(f"{W}val", "center")
+
+    _materialize_toc_cache(document_root, style_names, toc_style_ids)
+
+    for table in document_root.findall(f".//{W}tbl"):
+        _set_table_print_layout(table)
+        for index, row in enumerate(table.findall(f"./{W}tr")):
+            row_properties = row.find(f"./{W}trPr")
+            if row_properties is None:
+                row_properties = ET.Element(f"{W}trPr")
+                row.insert(0, row_properties)
+            _ordered_word_property(row_properties, "cantSplit", TRPR_PROPERTY_ORDER).set(f"{W}val", "1")
+            if index == 0:
+                _ordered_word_property(row_properties, "tblHeader", TRPR_PROPERTY_ORDER).set(f"{W}val", "1")
+
+    cover = cover or {}
+    body = document_root.find(f"./{W}body")
+    if body is not None and cover.get("title"):
+        normal_styles = styles_named("Normal", "XT2_0正文")
+        normal_style_id = normal_styles[0].get(f"{W}styleId", "Normal") if normal_styles else "Normal"
+        title_styles = styles_named("Title")
+        title_style_id = title_styles[0].get(f"{W}styleId", "Title") if title_styles else "Title"
+        cover_nodes = [
+            _cover_paragraph(str(cover.get("title") or ""), style_id=title_style_id, before="1680", bold=True, size="36"),
+            _cover_paragraph(str(cover.get("author") or ""), style_id=normal_style_id, before="1040", size="24"),
+            _cover_paragraph(f"指导教师：{cover.get('advisor', '')} {cover.get('advisor_title', '')}".strip(), style_id=normal_style_id, before="360", size="24"),
+            _cover_paragraph(str(cover.get("institution") or ""), style_id=normal_style_id, before="180", size="24"),
+            _cover_paragraph(str(cover.get("date") or ""), style_id=normal_style_id, before="720", size="24", page_break_after=True),
+        ]
+        for index, paragraph in reversed(list(enumerate(cover_nodes))):
+            body.insert(0, paragraph)
+
+    _word_property(settings_root, "updateFields").set(f"{W}val", "true")
+    parts["word/document.xml"] = (document_entry, ET.tostring(document_root, encoding="utf-8", xml_declaration=True))
+    parts["word/styles.xml"] = (styles_entry, ET.tostring(styles_root, encoding="utf-8", xml_declaration=True))
+    parts["word/settings.xml"] = (settings_entry, ET.tostring(settings_root, encoding="utf-8", xml_declaration=True))
+    for name, (entry, payload) in list(parts.items()):
+        if name.startswith("word/header") and name.endswith(".xml"):
+            root = ET.fromstring(payload)
+            for child in list(root):
+                root.remove(child)
+            ET.SubElement(root, f"{W}p")
+            parts[name] = (entry, ET.tostring(root, encoding="utf-8", xml_declaration=True))
+        elif name.startswith("word/footer") and name.endswith(".xml"):
+            parts[name] = (entry, _footer_payload(ET.fromstring(payload)))
+
+    with tempfile.NamedTemporaryFile(suffix=".docx", prefix="formal-layout-", dir=path.parent, delete=False) as handle:
+        temporary = Path(handle.name)
+    try:
+        with ZipFile(temporary, "w", compression=ZIP_DEFLATED) as target:
+            for entry, payload in parts.values():
+                target.writestr(entry, payload)
+        temporary.replace(path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def _postprocess_wargame_docx(path: Path) -> None:
+    """Apply print-safe pagination and table behavior without a runtime Office dependency."""
+    with ZipFile(path, "r") as source:
+        parts = {
+            entry.filename: (entry, source.read(entry.filename))
+            for entry in source.infolist()
+        }
+    document_entry, document_payload = parts["word/document.xml"]
+    settings_entry, settings_payload = parts["word/settings.xml"]
+    document_root = ET.fromstring(document_payload)
+    settings_root = ET.fromstring(settings_payload)
+
+    for paragraph in document_root.findall(f".//{W}p"):
+        text = "".join(node.text or "" for node in paragraph.findall(f".//{W}t")).strip()
+        style = paragraph.find(f"./{W}pPr/{W}pStyle")
+        style_id = style.get(f"{W}val", "") if style is not None else ""
+        if text == "目录" or text.startswith("想定名称：") or style_id == "Heading1":
+            _set_page_break_before(paragraph)
+        if style_id == "Heading1":
+            keep_next = _ordered_word_property(
+                _paragraph_properties(paragraph),
+                "keepNext",
+                PPR_PROPERTY_ORDER,
+            )
+            keep_next.set(f"{W}val", "1")
+
+    for table in document_root.findall(f".//{W}tbl"):
+        _set_table_print_layout(table)
+        rows = table.findall(f"./{W}tr")
+        for index, row in enumerate(rows):
+            row_properties = row.find(f"./{W}trPr")
+            if row_properties is None:
+                row_properties = ET.Element(f"{W}trPr")
+                row.insert(0, row_properties)
+            cant_split = _ordered_word_property(
+                row_properties,
+                "cantSplit",
+                TRPR_PROPERTY_ORDER,
+            )
+            cant_split.set(f"{W}val", "1")
+            if index == 0:
+                repeat = _ordered_word_property(
+                    row_properties,
+                    "tblHeader",
+                    TRPR_PROPERTY_ORDER,
+                )
+                repeat.set(f"{W}val", "1")
+
+    update_fields = _word_property(settings_root, "updateFields")
+    update_fields.set(f"{W}val", "true")
+    parts["word/document.xml"] = (
+        document_entry,
+        ET.tostring(document_root, encoding="utf-8", xml_declaration=True),
+    )
+    parts["word/settings.xml"] = (
+        settings_entry,
+        ET.tostring(settings_root, encoding="utf-8", xml_declaration=True),
+    )
+
+    with tempfile.NamedTemporaryFile(
+        suffix=".docx",
+        prefix="wargame-print-",
+        dir=path.parent,
+        delete=False,
+    ) as handle:
+        temporary = Path(handle.name)
+    try:
+        with ZipFile(temporary, "w", compression=ZIP_DEFLATED) as target:
+            for entry, payload in parts.values():
+                target.writestr(entry, payload)
+        temporary.replace(path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
 class DocumentWorkspaceError(RuntimeError):
     pass
 
@@ -69,11 +976,25 @@ class DocumentVersionConflict(DocumentWorkspaceError):
     pass
 
 
+class DocumentProductionBlocked(DocumentWorkspaceError):
+    def __init__(self, message: str, blockers: list[dict[str, Any]] | None = None):
+        super().__init__(message)
+        self.blockers = blockers or []
+
+
 class DocumentWorkspaceService:
     def __init__(self) -> None:
         self.vault = knowledge_manager.vault_path.resolve()
 
     def _workspace_root(self, project: dict[str, Any]) -> Path:
+        override = str(project.get("_workspace_root_override") or "").strip()
+        if override:
+            resolved = Path(override).resolve()
+            try:
+                resolved.relative_to(self.vault)
+            except ValueError as exc:
+                raise DocumentWorkspaceError("文档工作区必须位于知识库内") from exc
+            return resolved
         projects_root = self.vault / "06-项目库-Projects"
         project_name = _safe_name(str(project.get("name") or project.get("id")))
         project_id = _safe_name(str(project.get("id") or "document"))
@@ -245,7 +1166,10 @@ class DocumentWorkspaceService:
             initial = root / "versions" / "v0001-import.md"
             if not initial.exists():
                 shutil.copy2(working, initial)
+            previous_source_word = Path(str(manifest.get("source_word") or ""))
             source_word = self._find_source_word(project)
+            if source_word is None and previous_source_word.is_file():
+                source_word = previous_source_word.resolve()
             spec = project.get("document_spec") if isinstance(project.get("document_spec"), dict) else {}
             working_spec = spec.get("working_markdown") if isinstance(spec.get("working_markdown"), dict) else {}
             asset_base_value = str(spec.get("asset_base_dir") or working_spec.get("asset_base_dir") or "").strip()
@@ -302,19 +1226,21 @@ class DocumentWorkspaceService:
             start = heading["line"]
             end = top[index + 1]["line"] if index + 1 < len(top) else len(lines)
             content = "\n".join(lines[start:end]).strip() + "\n"
+            title = heading["title"]
+            section_id = f"section-{index + 1:02d}-{_slug(title)[:48]}"
             outline = [
                 {
                     "id": f"outline-{item['line'] + 1}",
                     "title": item["title"],
                     "level": item["level"],
                     "line": item["line"] + 1,
+                    "local_line": item["line"] - start + 1,
                     "anchor": _slug(item["title"]),
+                    "target_id": f"{section_id}-heading-{item['line'] - start + 1}",
                 }
                 for item in headings
                 if start < item["line"] < end and item["level"] <= 4
             ]
-            title = heading["title"]
-            section_id = f"section-{index + 1:02d}-{_slug(title)[:48]}"
             sections.append({
                 "id": section_id,
                 "title": title,
@@ -322,6 +1248,7 @@ class DocumentWorkspaceService:
                 "order_index": index,
                 "start_line": start + 1,
                 "end_line": end,
+                "target_id": f"{section_id}-heading-1",
                 "summary": self._summary("\n".join(lines[start + 1:end])),
                 "outline": outline,
                 "word_count": len(re.sub(r"\s+", "", content)),
@@ -332,6 +1259,14 @@ class DocumentWorkspaceService:
                 "content": content,
             })
         return sections
+
+    def _directory(
+        self,
+        sections: list[dict[str, Any]],
+        document_title: str,
+        document_id: str = "",
+    ) -> list[dict[str, Any]]:
+        return build_document_directory(sections, document_title, document_id=document_id)
 
     def _stats(self, markdown: str, sections: list[dict[str, Any]]) -> dict[str, Any]:
         return {
@@ -353,6 +1288,26 @@ class DocumentWorkspaceService:
         manifest, markdown, sections = self._read(project)
         quality = self.quality(project, prepared=(manifest, markdown, sections))
         references = self.references(project, prepared=(manifest, markdown, sections))
+        document_title = str(
+            project.get("_document_title") or project.get("name") or "正文文档"
+        )
+        current_structure = build_document_structure_snapshot(
+            sections,
+            document_title=document_title,
+            version=int(manifest.get("version") or 1),
+            source_path=_relative(Path(manifest["working_markdown"]), self.vault),
+            source_sha256=hashlib.sha256(markdown.encode("utf-8")).hexdigest(),
+            generated_at=str(manifest.get("updated_at") or ""),
+        )
+        spec = (
+            project.get("document_spec")
+            if isinstance(project.get("document_spec"), dict)
+            else {}
+        )
+        structure_sync = compare_document_structures(
+            current_structure,
+            spec.get("target_structure"),
+        )
         return {
             "project": {
                 "id": project.get("id"),
@@ -365,7 +1320,14 @@ class DocumentWorkspaceService:
             },
             "manifest": self._public_manifest(manifest),
             "stats": manifest["stats"],
+            "current_structure": current_structure,
+            "structure_sync": structure_sync,
             "sections": [{key: value for key, value in row.items() if key != "content"} for row in sections],
+            "directory": self._directory(
+                sections,
+                document_title,
+                str(project.get("_document_id") or project.get("id") or ""),
+            ),
             "quality": quality["summary"],
             "reference_summary": references["summary"],
         }
@@ -403,6 +1365,10 @@ class DocumentWorkspaceService:
         with self._lock_path(project).open("w", encoding="utf-8") as lock:
             fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
             manifest = self._load_manifest(project)
+            if manifest.get("content_authority") == "structured_json":
+                raise DocumentVersionConflict(
+                    "该文档已启用结构化协同编辑，旧 Markdown 章节接口仅提供只读兼容"
+                )
             current_version = int(manifest.get("version") or 1)
             if expected_version != current_version:
                 raise DocumentVersionConflict(f"工作稿已更新，当前版本为 v{current_version}")
@@ -414,6 +1380,8 @@ class DocumentWorkspaceService:
                 raise DocumentWorkspaceError("章节不存在")
             lines = markdown.splitlines()
             replacement = content.strip().splitlines()
+            if replacement and row["end_line"] < len(lines) and lines[row["end_line"]].lstrip().startswith("#"):
+                replacement.append("")
             next_markdown = "\n".join(lines[:row["start_line"] - 1] + replacement + lines[row["end_line"]:]).strip() + "\n"
             version_path = self._workspace_root(project) / "versions" / f"v{current_version:04d}-before-{_safe_name(actor)}.md"
             if not version_path.exists():
@@ -433,6 +1401,73 @@ class DocumentWorkspaceService:
             "version": next_version,
             "asset_paths": list(dict.fromkeys(re.findall(r"!\[[^\]]*\]\(([^)]+)\)", updated_section["content"]))),
         }
+
+    def apply_structured_projection(
+        self,
+        project: dict[str, Any],
+        markdown: str,
+        document_revision: int,
+        actor: str,
+        *,
+        checkpoint_label: str = "",
+    ) -> dict[str, Any]:
+        """Replace the Markdown compatibility projection without touching source files."""
+        self.ensure_workspace(project)
+        with self._lock_path(project).open("w", encoding="utf-8") as lock:
+            fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+            manifest = self._load_manifest(project)
+            projected_revision = int(manifest.get("structured_projection_revision") or 0)
+            if projected_revision > document_revision:
+                raise DocumentVersionConflict(
+                    f"Markdown 投影已更新到修订 {projected_revision}，拒绝写入旧修订 {document_revision}"
+                )
+            working = Path(manifest["working_markdown"])
+            if checkpoint_label and working.is_file():
+                safe_label = _safe_name(checkpoint_label)[:80] or "checkpoint"
+                checkpoint = (
+                    self._workspace_root(project)
+                    / "versions"
+                    / f"r{document_revision:06d}-{safe_label}.md"
+                )
+                if not checkpoint.exists():
+                    shutil.copy2(working, checkpoint)
+            working.write_text(markdown.strip() + "\n", encoding="utf-8")
+            sections = self._parse_sections(markdown)
+            manifest.update({
+                "content_authority": "structured_json",
+                "authority_schema_version": "tiptap-json-v1",
+                "structured_projection_revision": document_revision,
+                "projection_status": "current",
+                "projection_error": "",
+                "version": document_revision,
+                "last_actor": actor,
+                "stats": self._stats(markdown, sections),
+            })
+            self._write_manifest(project, manifest)
+            return copy.deepcopy(manifest)
+
+    def mark_structured_projection_stale(
+        self,
+        project: dict[str, Any],
+        document_revision: int,
+        error: str,
+    ) -> None:
+        """Record projection failure while leaving structured JSON authoritative."""
+        self.ensure_workspace(project)
+        with self._lock_path(project).open("w", encoding="utf-8") as lock:
+            fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+            manifest = self._load_manifest(project)
+            manifest.update({
+                "content_authority": "structured_json",
+                "authority_schema_version": "tiptap-json-v1",
+                "structured_projection_revision": min(
+                    int(manifest.get("structured_projection_revision") or 0),
+                    document_revision,
+                ),
+                "projection_status": "stale",
+                "projection_error": error[:2000],
+            })
+            self._write_manifest(project, manifest)
 
     def references(self, project: dict[str, Any], prepared=None) -> dict[str, Any]:
         manifest, markdown, sections = prepared or self._read(project)
@@ -568,10 +1603,10 @@ class DocumentWorkspaceService:
             except DocumentWorkspaceError:
                 unresolved_assets.append(raw_path)
         chapter_numbers = {
-            int(match.group(1))
+            number
             for row in sections
-            for match in [re.search(r"第\s*(\d+)\s*章", row["title"])]
-            if match
+            for number in [_chapter_number(row["title"])]
+            if number is not None
         }
         expected_chapters = max(int(manifest.get("expected_chapters") or 10), 1)
         missing_chapters = sorted(set(range(1, expected_chapters + 1)) - chapter_numbers)
@@ -585,7 +1620,107 @@ class DocumentWorkspaceService:
         uncited = references["summary"]["uncited"]
         if uncited:
             issues.append({"severity": "warning", "type": "uncited_references", "message": f"{uncited} 条正式文献尚未在正文中检出引用"})
-        score = max(0, 100 - len(missing_refs) * 3 - len(unresolved_assets) * 2 - len(missing_chapters) * 10 - min(uncited, 20))
+        course_record = (
+            project.get("_course_document_record")
+            if isinstance(project.get("_course_document_record"), dict)
+            else {}
+        )
+        course_profile = (
+            (project.get("document_spec") or {}).get("course_profile")
+            if isinstance(project.get("document_spec"), dict)
+            else {}
+        )
+        if isinstance(course_profile, dict) and course_profile.get("template_key"):
+            product_type = str(course_record.get("product_type") or "")
+            word_count = len(re.sub(r"\s+", "", markdown))
+
+            def require_minimum(minimum: int, label: str) -> None:
+                if word_count < minimum:
+                    issues.append(
+                        {
+                            "severity": "blocker",
+                            "type": "document_too_short",
+                            "message": f"{label}正文不足 {minimum} 字符，当前 {word_count} 字符",
+                        }
+                    )
+
+            def require_terms(terms: list[str], label: str) -> None:
+                for term in terms:
+                    if term not in markdown:
+                        issues.append(
+                            {
+                                "severity": "blocker",
+                                "type": "required_section_missing",
+                                "message": f"{label}缺少“{term}”内容",
+                            }
+                        )
+
+            if product_type == "course_plan":
+                require_minimum(6000, "课程教学计划")
+                if "20" not in markdown or len(course_profile.get("units") or []) != 10:
+                    issues.append(
+                        {
+                            "severity": "blocker",
+                            "type": "hour_total_mismatch",
+                            "message": "课程教学计划必须采用10讲、20学时基线",
+                        }
+                    )
+            elif product_type == "teaching_schedule":
+                require_minimum(500, "教学进度表")
+                schedule_rows = re.findall(r"^\|\s*\d+\s*\|", markdown, flags=re.M)
+                if len(schedule_rows) < 10 or "20" not in markdown:
+                    issues.append(
+                        {
+                            "severity": "blocker",
+                            "type": "hour_total_mismatch",
+                            "message": "教学进度表必须包含10次课并合计20学时",
+                        }
+                    )
+            elif product_type == "lesson_plan":
+                require_minimum(1500, "课程教案")
+                require_terms(
+                    ["教学目标", "教学重点", "教学难点", "教学内容", "教学方法", "时间分配", "考核", "来源依据"],
+                    "课程教案",
+                )
+                if "120分钟" not in markdown and "2学时" not in markdown:
+                    issues.append(
+                        {
+                            "severity": "blocker",
+                            "type": "unit_time_mismatch",
+                            "message": "单讲教案时间分配必须合计2学时或120分钟",
+                        }
+                    )
+            elif product_type == "practice_guide":
+                require_minimum(5000, "实作指导书")
+                require_terms(
+                    ["实作目标", "环境与器材", "规则版本", "软件版本", "作战想定", "组织分工", "操作步骤", "记录", "复盘", "报告要求"],
+                    "实作指导书",
+                )
+            elif product_type == "assessment":
+                require_minimum(2500, "考核方案")
+                require_terms(["理论", "操作", "推演", "复盘", "评分"], "考核方案")
+
+        course_blockers = sum(
+            1
+            for row in issues
+            if row["severity"] == "blocker"
+            and row["type"]
+            in {
+                "document_too_short",
+                "required_section_missing",
+                "hour_total_mismatch",
+                "unit_time_mismatch",
+            }
+        )
+        score = max(
+            0,
+            100
+            - len(missing_refs) * 3
+            - len(unresolved_assets) * 2
+            - len(missing_chapters) * 10
+            - min(uncited, 20)
+            - course_blockers * 10,
+        )
         return {
             "summary": {
                 "score": score,
@@ -666,13 +1801,30 @@ class DocumentWorkspaceService:
 
     def export(self, project: dict[str, Any], output_format: str) -> Path:
         manifest = self.ensure_workspace(project)
+        if (
+            manifest.get("content_authority") == "structured_json"
+            and (
+                manifest.get("projection_status") != "current"
+                or int(manifest.get("structured_projection_revision") or 0)
+                < int(manifest.get("version") or 0)
+            )
+        ):
+            raise DocumentProductionBlocked(
+                "结构化正文尚未生成最新 Markdown 投影，暂不能导出",
+                ["markdown_projection_stale"],
+            )
         output_format = output_format.lower()
         if output_format not in {"docx", "pdf"}:
             raise DocumentWorkspaceError("只支持导出 docx 或 pdf")
         root = self._workspace_root(project)
         exports = root / "exports"
         exports.mkdir(parents=True, exist_ok=True)
-        stem = f"{_safe_name(str(project.get('name') or '文档'))}-v{manifest['version']}"
+        layout_binding = project.get("_document_layout_binding")
+        layout_binding = layout_binding if isinstance(layout_binding, dict) else {}
+        stem = str(layout_binding.get("delivery_basename") or "").strip()
+        if not stem:
+            stem = f"{_safe_name(str(project.get('name') or '文档'))}-v{manifest['version']}"
+        stem = _safe_name(stem)
         docx_path = exports / f"{stem}.docx"
         markdown = Path(manifest["working_markdown"]).read_text(encoding="utf-8", errors="replace")
 
@@ -684,6 +1836,8 @@ class DocumentWorkspaceService:
             return f"![{match.group(1)}]({resolved.as_posix()})"
 
         export_markdown = re.sub(r"!\[([^\]]*)\]\(([^)]+)\)", export_asset, markdown)
+        if export_markdown.startswith("---\n"):
+            export_markdown = re.sub(r"\A---\n.*?\n---\n+", "", export_markdown, count=1, flags=re.DOTALL)
         export_source = exports / f".{stem}-export.md"
         export_source.write_text(export_markdown, encoding="utf-8")
         resource_path = str(Path(manifest["source_base_dir"]))
@@ -695,75 +1849,67 @@ class DocumentWorkspaceService:
             "--resource-path", resource_path,
             "--output", str(docx_path),
         ]
+        print_profile = str(project.get("_document_print_profile") or "standard_a4")
+        layout_template = Path(str(layout_binding.get("template_path") or ""))
+        if layout_binding.get("profile_id") and layout_template.is_file():
+            command.extend([
+                "--reference-doc", str(layout_template),
+                "--toc",
+                "--toc-depth", "3",
+                "--metadata", "toc-title=目录",
+                "--metadata", "lang=zh-CN",
+                "--standalone",
+            ])
+        elif print_profile == "wargame_a4":
+            reference_doc = Path(__file__).resolve().parents[1] / "assets" / "wargame_a4_reference.docx"
+            if not reference_doc.is_file():
+                raise DocumentWorkspaceError("Word 导出失败：缺少 wargame_a4 排版模板")
+            command.extend([
+                "--reference-doc", str(reference_doc),
+                "--toc",
+                "--toc-depth", "3",
+                "--metadata", "lang=zh-CN",
+            ])
         result = subprocess.run(command, capture_output=True, text=True, timeout=180)
         if result.returncode != 0 or not docx_path.exists():
             raise DocumentWorkspaceError(f"Word 导出失败：{result.stderr[-500:]}")
+        try:
+            if layout_binding.get("profile_id") and layout_template.is_file():
+                _postprocess_formal_docx(docx_path, dict(layout_binding.get("cover") or {}))
+            elif print_profile == "standard_a4":
+                _postprocess_standard_a4_docx(docx_path)
+            elif print_profile == "wargame_a4":
+                _postprocess_wargame_docx(docx_path)
+        except (OSError, ValueError, KeyError, ET.ParseError, BadZipFile) as exc:
+            raise DocumentWorkspaceError(f"Word 导出后处理失败：{exc}") from exc
         if output_format == "docx":
             return docx_path
         pdf_path = exports / f"{stem}.pdf"
-        html_path = exports / f".{stem}-export.html"
-        html_result = subprocess.run(
-            [
-                "/opt/homebrew/bin/pandoc", str(export_source),
-                "--from", "markdown", "--to", "html5", "--standalone",
-                "--resource-path", resource_path, "--output", str(html_path),
-            ],
-            capture_output=True,
-            text=True,
-            timeout=180,
-        )
-        if html_result.returncode != 0 or not html_path.exists():
-            raise DocumentWorkspaceError(f"PDF 中间稿生成失败：{html_result.stderr[-500:]}")
-        html = html_path.read_text(encoding="utf-8", errors="replace")
-        print_style = """<style>
-@page { size: A4; margin: 22mm 20mm 22mm 25mm; }
-body { font-family: 'Songti SC', 'Noto Serif CJK SC', serif; font-size: 11pt; line-height: 1.75; color: #111; }
-h1 { font-size: 20pt; text-align: center; page-break-before: always; margin: 0 0 18pt; }
-h1:first-of-type { page-break-before: avoid; }
-h2 { font-size: 16pt; margin-top: 18pt; } h3 { font-size: 14pt; margin-top: 14pt; }
-p { text-align: justify; margin: 0 0 7pt; } img { display: block; max-width: 92%; max-height: 210mm; margin: 12pt auto; }
-table { border-collapse: collapse; width: 100%; font-size: 9pt; page-break-inside: avoid; }
-th, td { border: 1px solid #777; padding: 4pt; } pre, code { font-family: Menlo, monospace; font-size: 8.5pt; }
-</style>"""
-        html_path.write_text(html.replace("</head>", print_style + "</head>"), encoding="utf-8")
-        chrome = Path("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
-        if not chrome.exists():
-            raise DocumentWorkspaceError("PDF 导出失败：未安装 Google Chrome")
-        if pdf_path.exists():
-            pdf_path.unlink()
-        with tempfile.TemporaryDirectory(prefix="openclaw-chrome-", dir="/private/tmp") as profile:
-            process = subprocess.Popen(
-                [
-                    str(chrome), "--headless=new", "--disable-gpu", "--no-sandbox",
-                    "--disable-background-networking", "--disable-component-update", "--no-first-run",
-                    "--allow-file-access-from-files", "--no-pdf-header-footer",
-                    f"--user-data-dir={profile}", f"--print-to-pdf={pdf_path}", html_path.as_uri(),
-                ],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                start_new_session=True,
-            )
-            deadline = time.monotonic() + 180
-            stable_size = -1
-            stable_since = time.monotonic()
-            while time.monotonic() < deadline:
-                size = pdf_path.stat().st_size if pdf_path.exists() else 0
-                if size > 0 and size == stable_size and time.monotonic() - stable_since >= 1:
-                    break
-                if size != stable_size:
-                    stable_size = size
-                    stable_since = time.monotonic()
-                if process.poll() is not None and size > 0:
-                    break
-                time.sleep(0.25)
-            if process.poll() is None:
-                os.killpg(process.pid, signal.SIGTERM)
-                try:
-                    process.wait(timeout=5)
-                except subprocess.TimeoutExpired:
-                    os.killpg(process.pid, signal.SIGKILL)
-            if not pdf_path.exists() or pdf_path.stat().st_size == 0:
-                raise DocumentWorkspaceError("PDF 导出失败：浏览器打印未生成文件")
+        def convert_pdf() -> None:
+            if pdf_path.exists():
+                pdf_path.unlink()
+            with tempfile.TemporaryDirectory(prefix="openclaw-soffice-", dir="/private/tmp") as profile:
+                profile_path = Path(profile)
+                result = subprocess.run(
+                    [
+                        "/opt/homebrew/bin/soffice",
+                        f"-env:UserInstallation={profile_path.as_uri()}",
+                        "--headless",
+                        "--convert-to", "pdf",
+                        "--outdir", str(exports),
+                        str(docx_path),
+                    ],
+                    capture_output=True,
+                    text=True,
+                    timeout=300,
+                    env=_libreoffice_preview_env(profile_path),
+                )
+            if result.returncode != 0 or not pdf_path.exists() or pdf_path.stat().st_size == 0:
+                raise DocumentWorkspaceError(f"PDF 导出失败：{result.stderr[-500:]}")
+
+        convert_pdf()
+        if layout_binding.get("profile_id") and _refresh_toc_cache_from_pdf(docx_path, pdf_path):
+            convert_pdf()
         return pdf_path
 
 

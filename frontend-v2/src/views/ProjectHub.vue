@@ -388,7 +388,7 @@
       <p class="module-dialog-copy">按项目需要组合业务能力。关闭模块不会删除已有数据，重新启用后仍可继续使用。</p>
       <el-checkbox-group v-model="moduleSelection" class="module-selector">
         <el-checkbox
-          v-for="option in projectModuleOptions"
+          v-for="option in availableProjectModuleOptions"
           :key="option.value"
           :value="option.value"
           border
@@ -486,6 +486,13 @@ const projectModuleOptions = [
   { value: 'products', label: '产品矩阵', description: '绑定规划、仿真或其他专业产品' },
   { value: 'mission-planning', label: '无人集群任务规划', description: '接入 AI Planning 5130 与 one-sim 仿真' }
 ]
+
+const availableProjectModuleOptions = computed(() => {
+  if (projectTypeValue(moduleProject.value) === 'document') {
+    return projectModuleOptions.filter(option => !['development', 'mission-planning'].includes(option.value))
+  }
+  return projectModuleOptions
+})
 
 const missionBusy = computed(() => (
   bindingMission.value || startingMission.value || refreshingMission.value || stoppingMission.value

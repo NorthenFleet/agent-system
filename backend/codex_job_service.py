@@ -12,6 +12,8 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
+from services.git_workspace_service import GitWorkspaceService
+
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data", "codex_jobs")
 INDEX_FILE = os.path.join(DATA_DIR, "jobs.json")
 LOOP_INDEX_FILE = os.path.join(DATA_DIR, "loops.json")
@@ -29,6 +31,10 @@ CODEX_REMOTE_REPO = os.getenv("CODEX_REMOTE_REPO", "").strip()
 CODEX_REMOTE_CODEX_BIN = os.getenv("CODEX_REMOTE_CODEX_BIN", "/opt/homebrew/bin/codex").strip()
 CODEX_REMOTE_PATH = os.getenv("CODEX_REMOTE_PATH", CODEX_PATH).strip()
 CODEX_REMOTE_SSH_KEY = os.getenv("CODEX_REMOTE_SSH_KEY", "").strip()
+CODEX_REMOTE_WORKTREE_ROOT = os.getenv(
+    "CODEX_REMOTE_WORKTREE_ROOT",
+    f"/Users/{CODEX_REMOTE_USER}/.openclaw/codex-worktrees" if CODEX_REMOTE_USER else "/tmp/openclaw-codex-worktrees",
+).strip()
 
 
 DEVELOPMENT_AGENTS = {
@@ -40,7 +46,7 @@ DEVELOPMENT_AGENTS = {
     "michelangelo": "测试工程",
 }
 
-TERMINAL_STATUSES = {"succeeded", "failed", "cancelled"}
+TERMINAL_STATUSES = {"succeeded", "failed", "cancelled", "needs_attention"}
 
 
 class CodexJobService:
@@ -48,6 +54,15 @@ class CodexJobService:
         os.makedirs(DATA_DIR, exist_ok=True)
         self._processes: Dict[str, subprocess.Popen] = {}
         self._lock = threading.RLock()
+        self._health_cache: Dict[str, Any] = {}
+        self._health_checked_monotonic = 0.0
+        remote_target = self._remote_target() if self._runner_mode() == "ssh" else ""
+        self.workspace_service = GitWorkspaceService(
+            root=CODEX_REMOTE_WORKTREE_ROOT if remote_target else os.getenv("CODEX_WORKTREE_ROOT", "~/.openclaw/codex-worktrees"),
+            remote_target=remote_target,
+            remote_port=CODEX_REMOTE_PORT,
+            remote_key=CODEX_REMOTE_SSH_KEY,
+        )
 
     def list_jobs(self, agent_id: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
         self._reconcile_interrupted_jobs()
@@ -71,6 +86,8 @@ class CodexJobService:
         return {"job": self._public_job(job), "logs": logs[-tail:]}
 
     def list_loops(self, task_id: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
+        self._reconcile_interrupted_jobs()
+        self._reconcile_interrupted_loops()
         loops = self._load_loops()
         if task_id:
             loops = [loop for loop in loops if loop.get("task_id") == task_id]
@@ -78,7 +95,26 @@ class CodexJobService:
         return loops[:limit]
 
     def get_loop(self, loop_id: str) -> Optional[Dict[str, Any]]:
+        self._reconcile_interrupted_jobs()
+        self._reconcile_interrupted_loops()
         return self._find_loop(loop_id)
+
+    def retry_loop_integration(self, loop_id: str) -> Dict[str, Any]:
+        loop = self._find_loop(loop_id)
+        if not loop:
+            raise KeyError(loop_id)
+        if loop.get("status") != "needs_attention" or not loop.get("evaluation_passed"):
+            raise ValueError("只有评估已通过但集成失败的 Loop 可以重试合并")
+        integration = self.workspace_service.integrate(loop, loop_id)
+        loop.update(integration)
+        self._replace_loop(loop)
+        self.workspace_service.release_execution_worktree(loop)
+        loop = self._find_loop(loop_id) or loop
+        loop["execution_repo"] = None
+        loop["repo"] = loop.get("source_repo")
+        self._replace_loop(loop)
+        self._finish_loop(loop_id, "succeeded", loop.get("summary") or "人工处理后已合入集成分支。")
+        return self._find_loop(loop_id) or loop
 
     def create_loop(
         self,
@@ -90,17 +126,31 @@ class CodexJobService:
         planner_agent_id: str = "leonardo",
         evaluator_agent_id: str = "michelangelo",
         max_rounds: int = 2,
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         if not instruction.strip():
             raise ValueError("instruction is required")
         loop_id = f"loop-{datetime.now().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:8]}"
         now = self._now()
+        requested_repo = os.path.abspath(repo or DEFAULT_REPO)
+        source_repo = os.path.abspath(CODEX_REMOTE_REPO or requested_repo) if self._runner_mode() == "ssh" else requested_repo
         loop = {
             "id": loop_id,
             "task_id": task_id,
             "title": title or task_id,
             "instruction": instruction.strip(),
-            "repo": os.path.abspath(repo or DEFAULT_REPO),
+            "repo": source_repo,
+            "source_repo": source_repo,
+            "execution_repo": None,
+            "source_branch": None,
+            "execution_branch": None,
+            "integration_branch": None,
+            "base_commit": None,
+            "result_commit": None,
+            "merge_commit": None,
+            "workspace_status": "pending",
+            "handoff_reason": None,
+            "evaluation_passed": False,
             "status": "queued",
             "current_round": 0,
             "current_stage": "queued",
@@ -115,6 +165,8 @@ class CodexJobService:
             "summary": "",
             "error": None,
         }
+        if metadata:
+            loop.update(metadata)
         self._append_loop(loop)
         thread = threading.Thread(target=self._run_loop, args=(loop_id,), daemon=True)
         thread.start()
@@ -171,6 +223,14 @@ class CodexJobService:
         if not loop:
             return
         try:
+            try:
+                workspace = self.workspace_service.prepare(loop["source_repo"], loop_id)
+            except Exception as exc:
+                self._finish_loop(loop_id, "needs_attention", f"无法建立隔离工作树：{exc}")
+                return
+            loop.update(workspace)
+            loop["repo"] = workspace["execution_repo"]
+            loop["workspace_status"] = "ready"
             previous_feedback = ""
             loop["status"] = "running"
             loop["updated_at"] = self._now()
@@ -216,6 +276,18 @@ class CodexJobService:
                     continue
 
                 loop = self._find_loop(loop_id) or loop
+                try:
+                    checkpoint = self.workspace_service.checkpoint(loop, loop_id, round_index)
+                    self._update_loop_round(loop_id, round_index, {"checkpoint": checkpoint})
+                    loop = self._find_loop(loop_id) or loop
+                    loop["result_commit"] = checkpoint.get("commit_sha")
+                    loop["workspace_status"] = "checkpointed"
+                    self._replace_loop(loop)
+                except Exception as exc:
+                    self._finish_loop(loop_id, "needs_attention", f"代码检查点提交失败：{exc}")
+                    return
+
+                loop = self._find_loop(loop_id) or loop
                 loop["current_stage"] = "evaluate"
                 self._replace_loop(loop)
                 evaluate_job = self.create_job(
@@ -228,13 +300,36 @@ class CodexJobService:
                 self._append_loop_round_job(loop_id, round_index, evaluate_job.get("id"))
                 evaluate_job = self._wait_for_job(evaluate_job["id"])
                 previous_feedback = self._job_feedback(evaluate_job)
+                self._update_loop_round(loop_id, round_index, {
+                    "evaluation": {
+                        "job_id": evaluate_job.get("id"),
+                        "status": evaluate_job.get("status"),
+                        "passed": evaluate_job.get("status") == "succeeded" and self._evaluation_passed(previous_feedback),
+                        "summary": previous_feedback[:6000],
+                    },
+                })
                 if evaluate_job.get("status") == "succeeded" and self._evaluation_passed(previous_feedback):
+                    loop = self._find_loop(loop_id) or loop
+                    loop["evaluation_passed"] = True
+                    self._replace_loop(loop)
+                    try:
+                        integration = self.workspace_service.integrate(loop, loop_id)
+                        loop.update(integration)
+                        self._replace_loop(loop)
+                        self.workspace_service.release_execution_worktree(loop)
+                        loop = self._find_loop(loop_id) or loop
+                        loop["execution_repo"] = None
+                        loop["repo"] = loop.get("source_repo")
+                        self._replace_loop(loop)
+                    except Exception as exc:
+                        self._finish_loop(loop_id, "needs_attention", f"评估已通过，但合入集成分支失败：{exc}")
+                        return
                     self._finish_loop(loop_id, "succeeded", previous_feedback)
                     return
 
             self._finish_loop(loop_id, "failed", previous_feedback or "达到最大轮次，评估仍未通过。")
         except Exception as exc:
-            self._finish_loop(loop_id, "failed", str(exc))
+            self._finish_loop(loop_id, "needs_attention", str(exc))
 
     def cancel_job(self, job_id: str) -> Dict[str, Any]:
         job = self._find_job(job_id)
@@ -345,6 +440,138 @@ class CodexJobService:
     def _runner_mode(self) -> str:
         return "ssh" if CODEX_RUNNER_MODE in {"ssh", "remote"} else "local"
 
+    def runner_health(self, force: bool = False) -> Dict[str, Any]:
+        now_monotonic = time.monotonic()
+        if (
+            not force
+            and self._health_cache
+            and now_monotonic - self._health_checked_monotonic < 30
+        ):
+            return dict(self._health_cache)
+        checked_at = self._now()
+        runner_mode = self._runner_mode()
+        repo = CODEX_REMOTE_REPO if runner_mode == "ssh" else DEFAULT_REPO
+        health: Dict[str, Any] = {
+            "configured": bool(CODEX_REMOTE_HOST) if runner_mode == "ssh" else bool(CODEX_BIN),
+            "available": False,
+            "reachable": False,
+            "codex_executable": False,
+            "codex_version": "",
+            "repo": repo,
+            "repo_exists": False,
+            "repo_writable": False,
+            "git_root": "",
+            "repo_relative_path": "",
+            "repo_is_git_root": False,
+            "checked_at": checked_at,
+            "error": "",
+        }
+        try:
+            if runner_mode == "local":
+                health["reachable"] = True
+                health["codex_executable"] = os.path.isfile(CODEX_BIN) and os.access(CODEX_BIN, os.X_OK)
+                if health["codex_executable"]:
+                    version = subprocess.run(
+                        [CODEX_BIN, "--version"],
+                        capture_output=True,
+                        text=True,
+                        timeout=8,
+                        env={**os.environ, "PATH": CODEX_PATH},
+                    )
+                    health["codex_version"] = (version.stdout or version.stderr or "").strip()[:200]
+                    health["codex_executable"] = version.returncode == 0
+                health["repo_exists"] = os.path.isdir(repo)
+                health["repo_writable"] = health["repo_exists"] and os.access(repo, os.W_OK)
+                if health["repo_exists"]:
+                    git_root = subprocess.run(
+                        ["git", "-C", repo, "rev-parse", "--show-toplevel"],
+                        capture_output=True,
+                        text=True,
+                        timeout=8,
+                    )
+                    if git_root.returncode == 0:
+                        health["git_root"] = git_root.stdout.strip()
+                        prefix = subprocess.run(
+                            ["git", "-C", repo, "rev-parse", "--show-prefix"],
+                            capture_output=True,
+                            text=True,
+                            timeout=8,
+                        )
+                        relative_path = prefix.stdout.strip().rstrip("/") if prefix.returncode == 0 else ""
+                        health["repo_relative_path"] = relative_path or "."
+                        health["repo_is_git_root"] = not bool(relative_path)
+            else:
+                if not CODEX_REMOTE_HOST:
+                    raise ValueError("CODEX_REMOTE_HOST 未配置")
+                ssh_command = ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=6", "-o", "StrictHostKeyChecking=accept-new"]
+                if CODEX_REMOTE_PORT:
+                    ssh_command.extend(["-p", CODEX_REMOTE_PORT])
+                if CODEX_REMOTE_SSH_KEY:
+                    ssh_command.extend(["-i", os.path.expanduser(CODEX_REMOTE_SSH_KEY)])
+                script = "\n".join([
+                    "set +e",
+                    f"export PATH={shlex.quote(CODEX_REMOTE_PATH)}",
+                    f"version=$({shlex.quote(CODEX_REMOTE_CODEX_BIN)} --version 2>&1)",
+                    "codex_rc=$?",
+                    "printf 'CODEX_RC:%s\\n' \"$codex_rc\"",
+                    "printf 'CODEX_VERSION:%s\\n' \"$version\"",
+                    f"if [ -d {shlex.quote(repo)} ]; then printf 'REPO_EXISTS:yes\\n'; else printf 'REPO_EXISTS:no\\n'; fi",
+                    f"if [ -w {shlex.quote(repo)} ]; then printf 'REPO_WRITABLE:yes\\n'; else printf 'REPO_WRITABLE:no\\n'; fi",
+                    f"git_root=$(git -C {shlex.quote(repo)} rev-parse --show-toplevel 2>/dev/null)",
+                    "printf 'GIT_ROOT:%s\\n' \"$git_root\"",
+                    f"git_prefix=$(git -C {shlex.quote(repo)} rev-parse --show-prefix 2>/dev/null)",
+                    "printf 'GIT_PREFIX:%s\\n' \"$git_prefix\"",
+                ])
+                ssh_command.extend([self._remote_target(), "bash", "-lc", shlex.quote(script)])
+                probe = subprocess.run(
+                    ssh_command,
+                    capture_output=True,
+                    text=True,
+                    timeout=12,
+                    env={**os.environ, "PATH": CODEX_PATH},
+                )
+                health["reachable"] = probe.returncode == 0
+                values: Dict[str, str] = {}
+                for line in (probe.stdout or "").splitlines():
+                    key, separator, value = line.partition(":")
+                    if separator:
+                        values[key] = value.strip()
+                health["codex_executable"] = values.get("CODEX_RC") == "0"
+                health["codex_version"] = values.get("CODEX_VERSION", "")[:200]
+                health["repo_exists"] = values.get("REPO_EXISTS") == "yes"
+                health["repo_writable"] = values.get("REPO_WRITABLE") == "yes"
+                health["git_root"] = values.get("GIT_ROOT", "")
+                relative_path = values.get("GIT_PREFIX", "").rstrip("/")
+                health["repo_relative_path"] = relative_path or "."
+                health["repo_is_git_root"] = not bool(relative_path)
+                if probe.returncode != 0:
+                    health["error"] = (probe.stderr or probe.stdout or "SSH Runner 不可达").strip()[:1000]
+            health["available"] = bool(
+                health["reachable"]
+                and health["codex_executable"]
+                and health["repo_exists"]
+                and health["repo_writable"]
+                and health["git_root"]
+            )
+            if not health["available"] and not health["error"]:
+                missing = [
+                    label
+                    for field, label in (
+                        ("reachable", "Runner 不可达"),
+                        ("codex_executable", "Codex CLI 不可执行"),
+                        ("repo_exists", "仓库不存在"),
+                        ("repo_writable", "仓库不可写"),
+                        ("git_root", "目标目录不在 Git 工作树中"),
+                    )
+                    if not health[field]
+                ]
+                health["error"] = "；".join(missing)
+        except (OSError, subprocess.SubprocessError, ValueError) as exc:
+            health["error"] = str(exc)[:1000]
+        self._health_cache = dict(health)
+        self._health_checked_monotonic = now_monotonic
+        return health
+
     def _remote_target(self) -> str:
         if not CODEX_REMOTE_HOST:
             raise ValueError("CODEX_REMOTE_HOST is required when CODEX_RUNNER_MODE=ssh")
@@ -366,7 +593,7 @@ class CodexJobService:
                 prompt,
             ], None, "local"
 
-        remote_repo = os.path.abspath(os.path.expanduser(CODEX_REMOTE_REPO or repo_path))
+        remote_repo = os.path.abspath(os.path.expanduser(repo_path or CODEX_REMOTE_REPO))
         remote_final = f"/tmp/openclaw-codex/{job_id}.final.md"
         ssh_command = ["ssh", "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=accept-new"]
         if CODEX_REMOTE_PORT:
@@ -488,9 +715,12 @@ class CodexJobService:
         if not loop:
             return
         loop["status"] = status
-        loop["current_stage"] = "done" if status == "succeeded" else "failed"
+        loop["current_stage"] = "done" if status == "succeeded" else ("handoff" if status == "needs_attention" else "failed")
         loop["summary"] = summary[:12000] if summary else ""
         loop["error"] = "" if status == "succeeded" else (summary[:1200] if summary else "Loop 执行失败")
+        loop["handoff_reason"] = summary[:1200] if status == "needs_attention" else None
+        if status == "needs_attention":
+            loop["workspace_status"] = "retained_for_handoff"
         loop["finished_at"] = self._now()
         loop["updated_at"] = loop["finished_at"]
         self._replace_loop(loop)
@@ -509,6 +739,19 @@ class CodexJobService:
         jobs = target.setdefault("jobs", [])
         if job_id not in jobs:
             jobs.append(job_id)
+        loop["updated_at"] = self._now()
+        self._replace_loop(loop)
+
+    def _update_loop_round(self, loop_id: str, round_index: int, values: Dict[str, Any]) -> None:
+        loop = self._find_loop(loop_id)
+        if not loop:
+            return
+        rounds = loop.setdefault("rounds", [])
+        target = next((item for item in rounds if item.get("round") == round_index), None)
+        if not target:
+            target = {"round": round_index, "stage": loop.get("current_stage", ""), "jobs": []}
+            rounds.append(target)
+        target.update(values)
         loop["updated_at"] = self._now()
         self._replace_loop(loop)
 
@@ -540,6 +783,31 @@ class CodexJobService:
                 changed = True
             if changed:
                 self._save_jobs(jobs)
+
+    def _reconcile_interrupted_loops(self) -> None:
+        with self._lock:
+            loops = self._load_loops()
+            jobs = self._load_jobs()
+            active_loop_ids = {
+                job.get("loop_id") for job in jobs
+                if job.get("status") in {"queued", "running"} and job.get("loop_id")
+            }
+            changed = False
+            now = self._now()
+            for loop in loops:
+                if loop.get("status") not in {"queued", "running"} or loop.get("id") in active_loop_ids:
+                    continue
+                if self._age_seconds(loop.get("updated_at") or loop.get("created_at")) < 30:
+                    continue
+                reason = "自动化 Loop 已中断：服务重启或执行线程退出，隔离工作树已保留。"
+                loop.update({
+                    "status": "needs_attention", "current_stage": "handoff",
+                    "workspace_status": "retained_for_handoff", "handoff_reason": reason,
+                    "error": reason, "finished_at": now, "updated_at": now,
+                })
+                changed = True
+            if changed:
+                self._save_loops(loops)
 
     def _age_seconds(self, value: Optional[str]) -> float:
         if not value:

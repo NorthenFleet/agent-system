@@ -22,6 +22,12 @@ const routes: RouteRecordRaw[] = [
         meta: { module: 'dashboard' }
       },
       {
+        path: 'command-center',
+        name: 'CommandCenter',
+        component: () => import('@/views/CommandCenter.vue'),
+        meta: { module: 'command-center' }
+      },
+      {
         path: 'projects',
         name: 'Projects',
         component: () => import('@/views/ProjectHub.vue'),

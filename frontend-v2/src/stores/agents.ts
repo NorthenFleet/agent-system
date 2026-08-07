@@ -11,6 +11,15 @@ export interface Agent {
   status: 'online' | 'busy' | 'idle' | 'offline'
   raw_status?: string
   current_task: string | null
+  current_project_id?: string | null
+  current_project_name?: string | null
+  current_task_id?: string | null
+  current_task_title?: string | null
+  current_development_point_id?: string | null
+  current_development_point_title?: string | null
+  current_work_status?: string | null
+  task_progress?: number | null
+  project_progress?: number | null
   last_heartbeat: string | null
   heartbeat_age_seconds: number | null
   seconds_ago?: number
@@ -43,8 +52,12 @@ export interface AgentListResponse {
 
 export interface AgentHistoryResponse {
   agent_id: string
-  history: AgentStatusHistory[]
-  total: number
+  history?: AgentStatusHistory[]
+  status_history?: AgentStatusHistory[]
+  heartbeats?: unknown[]
+  total?: number
+  total_history?: number
+  total_heartbeats?: number
 }
 
 export interface WsMessage {
@@ -166,6 +179,15 @@ export const useAgentsStore = defineStore('agents', () => {
       status: normalizeStatus(rawStatus),
       raw_status: rawStatus,
       current_task: live?.current_task || dashboard?.current_task || dashboard?.current_task_title || null,
+      current_project_id: dashboard?.current_project_id ?? null,
+      current_project_name: dashboard?.current_project_name ?? null,
+      current_task_id: dashboard?.current_task_id ?? null,
+      current_task_title: dashboard?.current_task_title ?? null,
+      current_development_point_id: dashboard?.current_development_point_id ?? null,
+      current_development_point_title: dashboard?.current_development_point_title ?? null,
+      current_work_status: dashboard?.current_work_status ?? null,
+      task_progress: dashboard?.task_progress ?? null,
+      project_progress: dashboard?.project_progress ?? null,
       last_heartbeat: live?.last_heartbeat || dashboard?.last_seen || dashboard?.updated_at || null,
       heartbeat_age_seconds: heartbeatAge,
       seconds_ago: live?.seconds_ago,
@@ -189,7 +211,11 @@ export const useAgentsStore = defineStore('agents', () => {
   async function fetchAgentHistory(agentId: string) {
     try {
       const res = await getAgentHistory(agentId, { limit: 50 })
-      selectedAgentHistory.value = res.history
+      selectedAgentHistory.value = Array.isArray(res.history)
+        ? res.history
+        : Array.isArray(res.status_history)
+          ? res.status_history
+          : []
     } catch {
       selectedAgentHistory.value = []
     }

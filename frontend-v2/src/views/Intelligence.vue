@@ -17,17 +17,42 @@
       </el-input>
     </section>
 
-    <nav class="topic-tabs" aria-label="情报专题视图">
-      <el-tabs v-model="activeTopicTab">
-        <el-tab-pane label="情报态势" name="overview" />
-        <el-tab-pane label="2026 美加墨世界杯" name="world-cup-2026" />
+    <nav class="workspace-tabs" aria-label="情报工作区">
+      <el-tabs v-model="activeWorkspaceTab">
+        <el-tab-pane label="态势总览" name="overview" />
+        <el-tab-pane label="事件研判" name="events">
+          <template #label>事件研判 <el-badge v-if="openAlertCount" :value="openAlertCount" type="danger" /></template>
+        </el-tab-pane>
+        <el-tab-pane label="目标与航迹" name="targets" />
+        <el-tab-pane label="专题资料" name="topics" />
+        <el-tab-pane label="数据接入" name="sources" />
       </el-tabs>
     </nav>
 
-    <WorldCup2026Topic v-if="activeTopicTab === 'world-cup-2026'" />
+    <section v-show="activeWorkspaceTab === 'overview'" class="metric-grid overview-metrics" aria-label="态势总览指标">
+      <article class="metric-card alert-metric">
+        <span>待处置预警</span>
+        <strong>{{ openAlertCount }}</strong>
+        <small>{{ filteredEvents.length }} 条空间情报事件</small>
+      </article>
+      <article class="metric-card">
+        <span>采集专题</span>
+        <strong>{{ activeDomains }}</strong>
+        <small>{{ filteredDomains.length }} 个专题可用</small>
+      </article>
+      <article class="metric-card">
+        <span>跟踪目标</span>
+        <strong>{{ aisVessels.length }}</strong>
+        <small>{{ trackPointCount }} 个历史轨迹点</small>
+      </article>
+      <article class="metric-card">
+        <span>关联新闻</span>
+        <strong>{{ relatedNews.length }}</strong>
+        <small>按当前空间焦点聚合</small>
+      </article>
+    </section>
 
-    <template v-else>
-    <section class="space-grid">
+    <section v-if="activeWorkspaceTab === 'overview'" class="space-grid">
       <IntelligenceGlobe
         ref="globeRef"
         v-model:show-vessels="showAisLayer"
@@ -43,13 +68,13 @@
       <aside class="linked-panel">
         <div class="section-head compact">
           <div>
-            <h2>空间与新闻联动</h2>
+          <h2>当前焦点</h2>
             <p>{{ activeSummary }}</p>
           </div>
         </div>
         <div class="linked-list">
           <article
-            v-for="item in spatialItems"
+            v-for="item in overviewSpatialItems"
             :key="item.key"
             class="linked-card"
             :class="{ active: activeSpatialKey === item.key }"
@@ -81,35 +106,26 @@
       </aside>
     </section>
 
-    <section class="metric-grid">
-      <article class="metric-card">
-        <span>专题领域</span>
-        <strong>{{ filteredDomains.length }}</strong>
-        <small>{{ activeDomains }} 个持续采集中</small>
-      </article>
-      <article class="metric-card">
-        <span>AIS 舰艇</span>
-        <strong>{{ aisVessels.length }}</strong>
-        <small>{{ trackPointCount }} 个历史轨迹点</small>
-      </article>
-      <article class="metric-card">
-        <span>空间点位</span>
-        <strong>{{ spatialItems.length }}</strong>
-        <small>专题、事件、舰艇与新闻统一显示</small>
-      </article>
-      <article class="metric-card">
-        <span>联动新闻</span>
-        <strong>{{ relatedNews.length }}</strong>
-        <small>来自新闻资讯模块的位置数据</small>
-      </article>
-      <article class="metric-card alert-metric">
-        <span>未处置预警</span>
-        <strong>{{ openAlertCount }}</strong>
-        <small>{{ filteredEvents.length }} 条空间情报事件</small>
-      </article>
+    <section v-show="activeWorkspaceTab === 'overview'" class="section-panel overview-alerts">
+      <div class="section-head">
+        <div>
+          <h2>待处置事件</h2>
+          <p>优先显示高等级、尚未关闭的空间情报事件</p>
+        </div>
+        <el-button size="small" text type="primary" @click="activeWorkspaceTab = 'events'">进入事件研判</el-button>
+      </div>
+      <div v-if="priorityEvents.length" class="priority-event-list">
+        <button v-for="event in priorityEvents" :key="event.id" type="button" class="priority-event" @click="openEventWorkspace(event)">
+          <el-tag size="small" :type="eventSeverityType(event.severity)" effect="plain">{{ eventSeverityLabel(event.severity) }}</el-tag>
+          <strong>{{ event.title }}</strong>
+          <span>{{ event.locationName }}</span>
+          <small>{{ eventStatusLabel(event.status) }}</small>
+        </button>
+      </div>
+      <el-empty v-else description="当前没有待处置高优先级事件" :image-size="64" />
     </section>
 
-    <section class="section-panel event-panel">
+    <section v-show="activeWorkspaceTab === 'events'" class="section-panel event-panel">
       <div class="section-head">
         <div>
           <h2>空间情报事件</h2>
@@ -136,8 +152,9 @@
           </el-button>
         </div>
       </div>
-      <div v-if="filteredEvents.length" class="event-timeline">
-        <article
+      <div v-if="filteredEvents.length" class="event-workbench">
+        <div class="event-timeline">
+          <article
           v-for="event in filteredEvents"
           :key="event.id"
           class="event-card"
@@ -184,7 +201,31 @@
               >标记已解决</el-button>
             </div>
           </div>
-        </article>
+          </article>
+        </div>
+        <aside v-if="activeEvent" class="event-detail-panel">
+          <div class="detail-title">
+            <div>
+              <span>当前事件</span>
+              <h3>{{ activeEvent.title }}</h3>
+            </div>
+            <el-tag :type="eventStatusType(activeEvent.status)" effect="plain">{{ eventStatusLabel(activeEvent.status) }}</el-tag>
+          </div>
+          <p>{{ activeEvent.summary || '暂无事件摘要' }}</p>
+          <dl class="event-detail-grid">
+            <span>发生时间</span><strong>{{ formatDate(activeEvent.occurredAt) }}</strong>
+            <span>空间位置</span><strong>{{ activeEvent.locationName }}</strong>
+            <span>关联专题</span><strong>{{ activeEvent.topicName || '未关联' }}</strong>
+            <span>关联目标</span><strong>{{ activeEvent.vesselName || '未关联' }}</strong>
+            <span>置信度</span><strong>{{ Math.round(activeEvent.confidence * 100) }}%</strong>
+            <span>处置智能体</span><strong>{{ activeEvent.assigneeAgentId || '待分配' }}</strong>
+          </dl>
+          <div class="event-detail-actions">
+            <el-button size="small" @click="openOverviewForEvent(activeEvent)">定位至态势</el-button>
+            <el-button size="small" @click="openEventDialog(activeEvent)">编辑事件</el-button>
+            <el-button v-if="activeEvent.status !== 'resolved'" size="small" type="success" plain @click="resolveEvent(activeEvent)">标记已解决</el-button>
+          </div>
+        </aside>
       </div>
       <el-empty v-else description="当前筛选条件下没有情报事件" :image-size="80" />
     </section>
@@ -238,14 +279,13 @@
       </template>
     </el-dialog>
 
-    <section class="section-panel">
+    <section v-show="activeWorkspaceTab === 'targets'" class="section-panel">
       <div class="section-head">
         <div>
           <h2>AIS 舰艇坐标与航迹</h2>
           <p>已接入后端 AIS 数据库，支持舰艇点、航迹线、状态、航速航向和时间点切换</p>
         </div>
         <div class="ais-actions">
-          <el-button size="small" type="primary" plain @click="aisImportOpen = true">导入 AIS</el-button>
           <div class="time-control">
             <span>{{ selectedTrackTime }}</span>
             <el-slider v-model="trackTimeIndex" :min="0" :max="maxTrackIndex" :show-tooltip="false" size="small" />
@@ -276,35 +316,27 @@
           </div>
         </article>
       </div>
-      <div class="source-panel">
-        <div class="source-head">
+      <aside v-if="activeVessel" class="target-detail-panel">
+        <div class="detail-title">
           <div>
-            <h3>AIS 数据源</h3>
-            <span>{{ aisSources.length }} 个外部源，手动同步后进入同一套去重入库流程</span>
+            <span>当前跟踪目标</span>
+            <h3>{{ activeVessel.name }}</h3>
           </div>
-          <el-button size="small" plain @click="openSourceDialog()">添加源</el-button>
+          <el-tag :type="vesselStatusType(activeVessel.status)" effect="plain">
+            {{ vesselStatusLabel(activeVessel.status) }}
+          </el-tag>
         </div>
-        <div v-if="aisSources.length" class="source-grid">
-          <article v-for="source in aisSources" :key="source.id" class="source-card">
-            <div>
-              <strong>{{ source.name }}</strong>
-              <span>{{ source.format.toUpperCase() }} · {{ source.url }}</span>
-            </div>
-            <div class="source-state">
-              <el-tag size="small" :type="source.last_status === 'error' ? 'danger' : source.last_status === 'ok' ? 'success' : 'info'" effect="plain">
-                {{ source.last_status || 'idle' }}
-              </el-tag>
-              <span>{{ source.last_message || '尚未同步' }}</span>
-            </div>
-            <div class="source-actions">
-              <el-button size="small" text @click="syncSource(source)">同步</el-button>
-              <el-button size="small" text @click="openSourceDialog(source)">编辑</el-button>
-              <el-button size="small" text type="danger" @click="removeSource(source)">删除源</el-button>
-            </div>
-          </article>
+        <dl class="event-detail-grid">
+          <span>MMSI</span><strong>{{ activeVessel.mmsi }}</strong>
+          <span>最新坐标</span><strong>{{ vesselCoordinate(activeVessel) }}</strong>
+          <span>航速</span><strong>{{ currentVesselPoint(activeVessel)?.speed || '--' }} kn</strong>
+          <span>航向</span><strong>{{ currentVesselPoint(activeVessel)?.course || '--' }}°</strong>
+          <span>轨迹点</span><strong>{{ activeVessel.track.length }} 个</strong>
+        </dl>
+        <div class="event-detail-actions">
+          <el-button size="small" @click="activeWorkspaceTab = 'overview'">在态势中查看</el-button>
         </div>
-        <el-empty v-else description="暂无 AIS 外部数据源" :image-size="72" />
-      </div>
+      </aside>
     </section>
 
     <el-dialog v-model="aisImportOpen" title="AIS 数据导入" width="720px">
@@ -358,7 +390,14 @@
       </template>
     </el-dialog>
 
-    <section class="section-panel">
+    <section v-show="activeWorkspaceTab === 'topics'" class="topic-subtabs" aria-label="专题资料视图">
+      <el-tabs v-model="activeTopicView">
+        <el-tab-pane label="专题情报库" name="library" />
+        <el-tab-pane label="2026 美加墨世界杯" name="world-cup-2026" />
+      </el-tabs>
+    </section>
+
+    <section v-show="activeWorkspaceTab === 'topics' && activeTopicView === 'library'" class="section-panel">
       <div class="section-head">
         <div>
           <h2>专题情报库</h2>
@@ -424,6 +463,8 @@
       </div>
     </section>
 
+    <WorldCup2026Topic v-if="activeWorkspaceTab === 'topics' && activeTopicView === 'world-cup-2026'" />
+
     <el-dialog v-model="topicDialogOpen" :title="topicForm.id ? '编辑情报专题' : '新增情报专题'" width="720px">
       <div class="topic-form">
         <div class="topic-form-title">
@@ -457,7 +498,7 @@
       </template>
     </el-dialog>
 
-    <section class="section-panel">
+    <section v-show="activeWorkspaceTab === 'topics' && activeTopicView === 'library'" class="section-panel">
       <div class="section-head">
         <div>
           <h2>关联新闻资讯</h2>
@@ -484,7 +525,40 @@
       <el-empty v-else description="暂无空间关联新闻" :image-size="90" />
     </section>
 
-    <section class="section-panel">
+    <section v-show="activeWorkspaceTab === 'sources'" class="section-panel source-workspace">
+      <div class="section-head">
+        <div>
+          <h2>数据源与同步</h2>
+          <p>接入、同步与导入在同一治理工作区中完成，不干扰目标跟踪与态势观察。</p>
+        </div>
+        <div class="event-actions">
+          <el-button size="small" plain @click="aisImportOpen = true">导入 AIS</el-button>
+          <el-button size="small" type="primary" @click="openSourceDialog()">添加源</el-button>
+        </div>
+      </div>
+      <div v-if="aisSources.length" class="source-grid">
+        <article v-for="source in aisSources" :key="source.id" class="source-card">
+          <div>
+            <strong>{{ source.name }}</strong>
+            <span>{{ source.format.toUpperCase() }} · {{ source.url }}</span>
+          </div>
+          <div class="source-state">
+            <el-tag size="small" :type="source.last_status === 'error' ? 'danger' : source.last_status === 'ok' ? 'success' : 'info'" effect="plain">
+              {{ source.last_status || 'idle' }}
+            </el-tag>
+            <span>{{ source.last_message || '尚未同步' }}</span>
+          </div>
+          <div class="source-actions">
+            <el-button size="small" text @click="syncSource(source)">同步</el-button>
+            <el-button size="small" text @click="openSourceDialog(source)">编辑</el-button>
+            <el-button size="small" text type="danger" @click="removeSource(source)">删除源</el-button>
+          </div>
+        </article>
+      </div>
+      <el-empty v-else description="暂无 AIS 外部数据源" :image-size="72" />
+    </section>
+
+    <section v-show="activeWorkspaceTab === 'sources'" class="section-panel">
       <div class="section-head">
         <div>
           <h2>采集与沉淀流程</h2>
@@ -500,12 +574,12 @@
         </article>
       </div>
     </section>
-    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Edit, Plus, Search } from '@element-plus/icons-vue'
 import IntelligenceGlobe from '@/components/intelligence/IntelligenceGlobe.vue'
@@ -517,7 +591,6 @@ import {
   deleteIntelligenceTopic,
   getAisVessels,
   getAisSources,
-  getLocationNews,
   getIntelligenceTopics,
   getIntelligenceEvents,
   getNews,
@@ -544,7 +617,14 @@ type VesselStatus = 'underway' | 'loitering' | 'silent' | 'unknown'
 
 type IntelligenceDomain = IntelligenceTopic
 
-const activeTopicTab = ref('overview')
+type WorkspaceTab = 'overview' | 'events' | 'targets' | 'topics' | 'sources'
+
+const route = useRoute()
+const router = useRouter()
+const workspaceTabs = new Set<WorkspaceTab>(['overview', 'events', 'targets', 'topics', 'sources'])
+const queryWorkspace = String(route.query.tab || '') as WorkspaceTab
+const activeWorkspaceTab = ref<WorkspaceTab>(workspaceTabs.has(queryWorkspace) ? queryWorkspace : 'overview')
+const activeTopicView = ref(route.query.topic === 'world-cup-2026' ? 'world-cup-2026' : 'library')
 
 type SpatialItem = GlobeSpatialItem
 
@@ -762,6 +842,25 @@ const activeSummary = computed(() => {
   const item = spatialItems.value.find(row => row.key === activeSpatialKey.value)
   if (!item) return '选择地球点位或专题卡片查看关联新闻'
   return `${item.name}：${item.locationLabel}`
+})
+
+const activeEvent = computed(() => {
+  const eventId = activeSpatialKey.value.startsWith('event:') ? activeSpatialKey.value.slice(6) : ''
+  return intelligenceEvents.value.find(event => event.id === eventId) || filteredEvents.value[0]
+})
+
+const priorityEvents = computed(() => filteredEvents.value
+  .filter(event => event.status !== 'resolved' && ['critical', 'high'].includes(event.severity))
+  .slice(0, 4)
+)
+
+const overviewSpatialItems = computed(() => {
+  const active = spatialItems.value.find(item => item.key === activeSpatialKey.value)
+  const highPriority = spatialItems.value.filter(item => item.type === 'event').slice(0, 4)
+  const targets = spatialItems.value.filter(item => item.type === 'vessel').slice(0, 2)
+  const topics = spatialItems.value.filter(item => item.type === 'domain').slice(0, 2)
+  const ordered = [active, ...highPriority, ...targets, ...topics].filter(Boolean) as SpatialItem[]
+  return [...new Map(ordered.map(item => [item.key, item])).values()].slice(0, 8)
 })
 
 function statusLabel(status: DomainStatus) {
@@ -1010,8 +1109,7 @@ async function loadSpatialNews() {
   try {
     const [newsData, locationsData] = await Promise.all([
       getNews(120),
-      getNewsLocations(),
-      getLocationNews()
+      getNewsLocations()
     ])
     news.value = newsData.news || []
     newsLocations.value = locationsData.locations || {}
@@ -1247,6 +1345,41 @@ function focusEvent(event: IntelligenceEvent) {
   })
 }
 
+function openEventWorkspace(event: IntelligenceEvent) {
+  focusEvent(event)
+  activeWorkspaceTab.value = 'events'
+}
+
+function openOverviewForEvent(event: IntelligenceEvent) {
+  focusEvent(event)
+  activeWorkspaceTab.value = 'overview'
+}
+
+watch(activeWorkspaceTab, tab => {
+  if (route.query.tab === tab) return
+  const { topic: _topic, ...query } = route.query
+  void router.replace({
+    query: tab === 'topics'
+      ? { ...query, tab, topic: activeTopicView.value }
+      : { ...query, tab }
+  })
+})
+
+watch(activeTopicView, topic => {
+  if (activeWorkspaceTab.value !== 'topics' || route.query.topic === topic) return
+  void router.replace({ query: { ...route.query, tab: 'topics', topic } })
+})
+
+watch(() => route.query.tab, tab => {
+  const next = String(tab || '') as WorkspaceTab
+  if (workspaceTabs.has(next) && next !== activeWorkspaceTab.value) activeWorkspaceTab.value = next
+})
+
+watch(() => route.query.topic, topic => {
+  const next = topic === 'world-cup-2026' ? 'world-cup-2026' : 'library'
+  if (next !== activeTopicView.value) activeTopicView.value = next
+})
+
 onMounted(async () => {
   await Promise.all([loadTopics(), loadEvents(), loadSpatialNews(), loadAisVessels(), loadAisSources()])
 })
@@ -1320,18 +1453,21 @@ onMounted(async () => {
   width: 320px;
 }
 
-.topic-tabs {
+.workspace-tabs,
+.topic-subtabs {
   padding: 0 16px;
   background: var(--card-bg);
   border: 1px solid var(--line-color);
   border-radius: 8px;
 }
 
-.topic-tabs :deep(.el-tabs__header) {
+.workspace-tabs :deep(.el-tabs__header),
+.topic-subtabs :deep(.el-tabs__header) {
   margin: 0;
 }
 
-.topic-tabs :deep(.el-tabs__content) {
+.workspace-tabs :deep(.el-tabs__content),
+.topic-subtabs :deep(.el-tabs__content) {
   display: none;
 }
 
@@ -1474,6 +1610,56 @@ onMounted(async () => {
   color: #f85149;
 }
 
+.overview-metrics {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.overview-alerts {
+  padding-bottom: 12px;
+}
+
+.priority-event-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+}
+
+.priority-event {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 7px 9px;
+  align-items: center;
+  min-width: 0;
+  padding: 11px;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  background: var(--card-bg-soft);
+  border: 1px solid var(--line-color);
+  border-radius: 7px;
+}
+
+.priority-event:hover {
+  border-color: var(--view-color-strong-border);
+  background: var(--view-color-panel);
+}
+
+.priority-event strong,
+.priority-event span,
+.priority-event small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.priority-event span,
+.priority-event small {
+  grid-column: 2;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
 .event-actions,
 .event-card-actions,
 .event-title-line,
@@ -1491,6 +1677,12 @@ onMounted(async () => {
 
 .event-actions :deep(.el-select) {
   width: 124px;
+}
+
+.event-workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(290px, 360px);
+  gap: 14px;
 }
 
 .event-timeline {
@@ -1594,6 +1786,60 @@ onMounted(async () => {
   border-top: 1px solid var(--line-color);
 }
 
+.event-detail-panel,
+.target-detail-panel {
+  align-self: start;
+  padding: 14px;
+  background: var(--card-bg-soft);
+  border: 1px solid var(--line-color);
+  border-radius: 8px;
+}
+
+.event-detail-panel > p {
+  margin: 10px 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.detail-title > div > span {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.detail-title h3 {
+  margin: 4px 0 0;
+  font-size: 16px;
+}
+
+.event-detail-grid {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr);
+  gap: 9px 12px;
+  margin: 14px 0 0;
+  font-size: 12px;
+}
+
+.event-detail-grid span {
+  color: var(--text-secondary);
+}
+
+.event-detail-grid strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.event-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
 .event-form {
   display: flex;
   flex-direction: column;
@@ -1633,6 +1879,10 @@ onMounted(async () => {
 .vessel-card.active {
   border-color: rgba(124, 231, 255, 0.58);
   background: rgba(124, 231, 255, 0.055);
+}
+
+.target-detail-panel {
+  margin-top: 12px;
 }
 
 .vessel-head h3 {
@@ -1894,8 +2144,12 @@ onMounted(async () => {
 
 @media (max-width: 1180px) {
   .space-grid,
-  .metric-grid,
+  .overview-metrics,
   .pipeline-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .event-workbench {
     grid-template-columns: 1fr;
   }
 
@@ -1914,7 +2168,8 @@ onMounted(async () => {
     width: 100%;
   }
 
-  .metric-grid {
+  .metric-grid,
+  .overview-metrics {
     grid-template-columns: 1fr;
   }
 

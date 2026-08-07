@@ -32,7 +32,7 @@ const pageTitle = computed(() => {
     '/': '仪表盘',
     '/projects': '项目中枢',
     '/development': '程序开发',
-    '/writing': '文档撰写',
+    '/writing': '文档管理',
     '/data-admin': '数据管理',
     '/tasks': '任务管理',
     '/tasks/kanban': '看板视图',

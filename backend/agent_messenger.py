@@ -20,7 +20,7 @@ OPENCLAW_BIN = os.getenv(
 )
 OPENCLAW_PATH = os.getenv(
     "OPENCLAW_PATH",
-    "/opt/homebrew/opt/node/bin:/opt/homebrew/Cellar/node/25.6.1_1/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+    "/opt/homebrew/opt/node@22/bin:/opt/homebrew/opt/node/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
 )
 
 
@@ -62,7 +62,7 @@ class AgentMessenger:
         """发送消息到指定智能体"""
         safe_attachments = self._normalize_attachments(attachments or [])
         openclaw_message = self._compose_openclaw_message(message, safe_attachments)
-        response_text = await self._call_openclaw(agent_id, openclaw_message)
+        response_text = await self.request_agent(agent_id, openclaw_message)
 
         self.add_message(agent_id, "user", message, safe_attachments)
         self.add_message(agent_id, "agent", response_text)
@@ -75,6 +75,18 @@ class AgentMessenger:
             "attachments": safe_attachments,
             "timestamp": datetime.now().isoformat()
         }
+
+    async def request_agent(self, agent_id: str, message: str, *, timeout_seconds: int = 180) -> str:
+        """Run an authenticated server-side OpenClaw request without chat side effects."""
+        if not agent_id or not message.strip():
+            raise ValueError("agent_id 和 message 不能为空")
+        try:
+            return await asyncio.wait_for(
+                self._call_openclaw(agent_id, message),
+                timeout=max(int(timeout_seconds), 1),
+            )
+        except asyncio.TimeoutError as exc:
+            raise RuntimeError(f"OpenClaw 智能体调用超时（{timeout_seconds}s）") from exc
     
     def get_agent_name(self, agent_id: str) -> str:
         """获取智能体显示名称"""

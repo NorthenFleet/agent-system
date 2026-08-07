@@ -59,11 +59,30 @@ def _parse_skill_doc(path: Path) -> dict[str, Any]:
         if end != -1:
             header = text[3:end].strip()
             body = text[end + 4 :]
-            for raw in header.splitlines():
+            lines = header.splitlines()
+            index = 0
+            while index < len(lines):
+                raw = lines[index]
                 if ":" not in raw:
+                    index += 1
                     continue
                 key, value = raw.split(":", 1)
-                meta[key.strip().lower()] = value.strip().strip("'\"")
+                key = key.strip().lower()
+                value = value.strip()
+                if value in {"|", ">"}:
+                    block: list[str] = []
+                    index += 1
+                    while index < len(lines):
+                        candidate = lines[index]
+                        if candidate and not candidate[0].isspace():
+                            break
+                        block.append(candidate.strip())
+                        index += 1
+                    separator = "\n" if value == "|" else " "
+                    meta[key] = separator.join(block).strip()
+                    continue
+                meta[key] = value.strip("'\"")
+                index += 1
     if not meta.get("name"):
         heading = re.search(r"^#\s+(.+)$", body, re.M)
         if heading:
@@ -91,7 +110,7 @@ def _infer_category(name: str, description: str, source: str) -> str:
     for category, keywords in checks:
         if any(keyword in haystack for keyword in keywords):
             return category
-    return "openclaw" if source == "openclaw-workspace" else "general"
+    return "openclaw" if source.startswith("openclaw-") else "general"
 
 
 def _extract_triggers(name: str, description: str, body: str) -> list[str]:
@@ -127,6 +146,7 @@ def _skill_roots() -> list[tuple[str, Path]]:
             roots.append((source.strip() or "custom", Path(os.path.expanduser(raw_path.strip()))))
     roots.extend([
         ("openclaw-workspace", Path(os.path.expanduser("~/.openclaw/workspace/skills"))),
+        ("openclaw-managed", Path(os.path.expanduser("~/.openclaw/skills"))),
         ("codex", Path(os.path.expanduser("~/.codex/skills"))),
         ("local-agents", Path(os.path.expanduser("~/.agents/skills"))),
         ("repo-agents", Path.cwd() / ".agents" / "skills"),

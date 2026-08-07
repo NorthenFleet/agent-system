@@ -150,6 +150,37 @@ class TaskService(BaseService[Task, TaskRepository]):
         self._cache_invalidate_prefix()
         return obj
 
+    def upsert_external_task(
+        self,
+        task_id: str,
+        task_data: Dict[str, Any],
+        created_by: str = "system-sync",
+    ) -> tuple[Task, bool]:
+        """Create or update a task whose stable ID is owned by another module."""
+        existing = self.repository.get_by_task_id(self.db, task_id)
+        if existing:
+            changes = {
+                field: value
+                for field, value in task_data.items()
+                if hasattr(existing, field) and getattr(existing, field) != value
+            }
+            if not changes:
+                return existing, False
+            changes["updated_at"] = datetime.now(timezone.utc)
+            obj = self.repository.update_by_task_id(self.db, task_id, changes)
+        else:
+            data = {
+                **task_data,
+                "task_id": task_id,
+                "created_by": created_by,
+                "start_date": task_data.get("start_date") or datetime.now(timezone.utc),
+            }
+            obj = self.repository.create(self.db, data)
+
+        self.db.commit()
+        self._cache_invalidate_prefix()
+        return obj, True
+
     def update_status(self, task_id: str, new_status: str, changed_by: Optional[str] = None) -> Optional[Task]:
         """更新任务状态，自动记录历史"""
         task = self.repository.get_by_task_id(self.db, task_id)

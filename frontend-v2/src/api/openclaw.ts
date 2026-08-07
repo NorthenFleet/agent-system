@@ -31,6 +31,7 @@ export interface AgentDashboardItem {
   current_task_title?: string | null
   current_development_point_id?: string | null
   current_development_point_title?: string | null
+  current_work_status?: string | null
   task_progress?: number
   project_progress?: number
   updated_at?: string

@@ -16,6 +16,17 @@ PROJECT_MODULES = {
     "mission-planning",
 }
 
+PROJECT_TYPE_MODULES = {
+    "software": PROJECT_MODULES,
+    "document": {"writing", "finance", "knowledge", "products"},
+}
+
+PROJECT_RELATION_TYPES = {
+    "course_implementation",
+    "reference_document",
+    "supporting_software",
+}
+
 DEFAULT_MODULES = {
     "software": ["development", "finance", "knowledge", "products"],
     "document": ["writing", "finance", "knowledge", "products"],
@@ -31,16 +42,26 @@ def _binding_id(project_id: str, product_id: str) -> str:
     return f"binding-{digest}"
 
 
+def project_relation_id(source_project_id: str, target_project_id: str, relation_type: str) -> str:
+    digest = hashlib.sha256(
+        f"{source_project_id}:{target_project_id}:{relation_type}".encode("utf-8")
+    ).hexdigest()[:12]
+    return f"relation-{digest}"
+
+
 def normalize_enabled_modules(project: dict[str, Any]) -> list[str]:
     project_type = str(project.get("project_type") or project.get("type") or "software").lower()
+    if project_type not in PROJECT_TYPE_MODULES:
+        project_type = "software"
     context = project.get("context") if isinstance(project.get("context"), dict) else {}
     requested = project.get("enabled_modules")
     if not isinstance(requested, list):
         requested = context.get("enabled_modules")
-    values = [str(value) for value in requested if str(value) in PROJECT_MODULES] if isinstance(requested, list) else []
+    allowed_modules = PROJECT_TYPE_MODULES[project_type]
+    values = [str(value) for value in requested if str(value) in allowed_modules] if isinstance(requested, list) else []
     if not values:
         values = list(DEFAULT_MODULES.get(project_type, DEFAULT_MODULES["software"]))
-    if isinstance(context.get("mission_planning"), dict) and context["mission_planning"].get("scenario_id"):
+    if project_type == "software" and isinstance(context.get("mission_planning"), dict) and context["mission_planning"].get("scenario_id"):
         values.extend(["products", "mission-planning"])
     if project_type == "document" and "writing" not in values:
         values.append("writing")
@@ -87,20 +108,63 @@ def normalize_product_bindings(project: dict[str, Any]) -> list[dict[str, Any]]:
     return bindings
 
 
+def normalize_project_relations(project: dict[str, Any]) -> list[dict[str, Any]]:
+    context = project.get("context") if isinstance(project.get("context"), dict) else {}
+    source = project.get("project_relations")
+    if not isinstance(source, list):
+        source = context.get("project_relations")
+    relations: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for value in source if isinstance(source, list) else []:
+        if not isinstance(value, dict):
+            continue
+        source_id = str(value.get("source_project_id") or "").strip()
+        target_id = str(value.get("target_project_id") or "").strip()
+        relation_type = str(value.get("relation_type") or "course_implementation").strip()
+        if not source_id or not target_id or source_id == target_id:
+            continue
+        if relation_type not in PROJECT_RELATION_TYPES:
+            relation_type = "course_implementation"
+        relation_id = str(value.get("id") or project_relation_id(source_id, target_id, relation_type))
+        if relation_id in seen:
+            continue
+        seen.add(relation_id)
+        relations.append({
+            "id": relation_id,
+            "source_project_id": source_id,
+            "target_project_id": target_id,
+            "relation_type": relation_type,
+            "status": str(value.get("status") or "active"),
+            "purpose": str(value.get("purpose") or ""),
+            "source_role": str(value.get("source_role") or "course_documentation"),
+            "target_role": str(value.get("target_role") or "software_implementation"),
+            "context_policy": str(value.get("context_policy") or "bidirectional_summary"),
+            "context_contract": value.get("context_contract") if isinstance(value.get("context_contract"), dict) else {},
+            "created_by": str(value.get("created_by") or "project-manager"),
+            "created_at": value.get("created_at") or _now(),
+            "updated_at": value.get("updated_at") or _now(),
+        })
+    return relations
+
+
 def normalize_project_composition(project: dict[str, Any]) -> bool:
     before_modules = project.get("enabled_modules")
     before_bindings = project.get("product_bindings")
+    before_relations = project.get("project_relations")
     modules = normalize_enabled_modules(project)
     bindings = normalize_product_bindings(project)
+    relations = normalize_project_relations(project)
     project["enabled_modules"] = modules
     project["product_bindings"] = bindings
+    project["project_relations"] = relations
     context = project.get("context") if isinstance(project.get("context"), dict) else {}
     context["enabled_modules"] = modules
     # The unified SQLite project table persists the context JSON. Keep the
     # top-level compatibility fields and the persisted representation aligned.
     context["product_bindings"] = bindings
+    context["project_relations"] = relations
     project["context"] = context
-    return before_modules != modules or before_bindings != bindings
+    return before_modules != modules or before_bindings != bindings or before_relations != relations
 
 
 def upsert_product_binding(

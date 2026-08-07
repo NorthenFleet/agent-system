@@ -13,6 +13,14 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@tiptap/core": "^3.29.2",
+    "@tiptap/extension-image": "^3.29.2",
+    "@tiptap/extension-placeholder": "^3.29.2",
+    "@tiptap/extension-table": "^3.29.2",
+    "@tiptap/extension-text-align": "^3.29.2",
+    "@tiptap/extension-underline": "^3.29.2",
+    "@tiptap/starter-kit": "^3.29.2",
+    "@tiptap/vue-3": "^3.29.2",
     "axios": "^1.18.1",
     "echarts": "^6.1.0",
     "element-plus": "^2.14.2",

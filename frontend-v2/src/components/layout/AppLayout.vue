@@ -20,6 +20,7 @@ const route = useRoute()
 
 const routeThemes: Record<string, { name: string; rgb: string }> = {
   '/': { name: 'dashboard', rgb: '88, 166, 255' },
+  '/command-center': { name: 'command-center', rgb: '88, 166, 255' },
   '/projects': { name: 'projects', rgb: '88, 166, 255' },
   '/development': { name: 'development', rgb: '88, 166, 255' },
   '/writing': { name: 'writing', rgb: '88, 166, 255' },
@@ -81,7 +82,7 @@ const themeStyle = computed(() => ({ '--view-rgb': activeTheme.value.rgb }))
   padding: 20px;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 820px) {
   .app-layout {
     display: block;
   }

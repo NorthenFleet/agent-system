@@ -201,7 +201,7 @@
     <el-drawer
       v-model="drawerVisible"
       :title="drawerTitle"
-      size="480px"
+      size="min(480px, 100vw)"
       direction="rtl"
     >
       <template v-if="selectedAgent">
@@ -220,8 +220,34 @@
         <el-divider />
 
         <div class="drawer-section">
-          <h3>📋 当前任务</h3>
-          <p>{{ selectedAgent.current_task || '暂无任务' }}</p>
+          <h3>📋 当前项目工作</h3>
+          <el-descriptions :column="1" size="small">
+            <el-descriptions-item label="项目">
+              {{ selectedAgent.current_project_name || selectedAgent.current_project_id || '未绑定项目' }}
+            </el-descriptions-item>
+            <el-descriptions-item label="任务">
+              {{ selectedAgent.current_task_title || selectedAgent.current_task || '暂无任务' }}
+            </el-descriptions-item>
+            <el-descriptions-item label="开发要点">
+              {{ selectedAgent.current_development_point_title || '暂无开发要点' }}
+            </el-descriptions-item>
+            <el-descriptions-item label="工作状态">
+              <el-tag
+                v-if="selectedAgent.current_work_status"
+                :type="workStatusType(selectedAgent.current_work_status)"
+                size="small"
+              >
+                {{ workStatusLabel(selectedAgent.current_work_status) }}
+              </el-tag>
+              <span v-else>待分配</span>
+            </el-descriptions-item>
+            <el-descriptions-item
+              v-if="selectedAgent.task_progress != null"
+              label="任务进度"
+            >
+              {{ selectedAgent.task_progress }}%
+            </el-descriptions-item>
+          </el-descriptions>
         </div>
 
         <div class="drawer-section">
@@ -265,11 +291,11 @@
         </div>
 
         <!-- 状态变更历史 -->
-        <div v-if="agentsStore.selectedAgentHistory.length" class="drawer-section">
+        <div v-if="agentsStore.selectedAgentHistory?.length" class="drawer-section">
           <h3>📜 状态变更历史</h3>
           <el-timeline size="small">
             <el-timeline-item
-              v-for="h in agentsStore.selectedAgentHistory.slice(0, 10)"
+              v-for="h in (agentsStore.selectedAgentHistory || []).slice(0, 10)"
               :key="h.id"
               :type="statusType(h.to_status)"
               placement="top"
@@ -390,6 +416,34 @@ function statusLabel(status: string): string {
     offline: '离线'
   }
   return map[status] || status || '未知'
+}
+
+function workStatusType(status: string): '' | 'success' | 'warning' | 'info' | 'danger' {
+  const map: Record<string, '' | 'success' | 'warning' | 'info' | 'danger'> = {
+    completed: 'success',
+    review: 'warning',
+    in_progress: '',
+    running: '',
+    ready: 'info',
+    queued: 'info',
+    blocked: 'danger',
+    failed: 'danger'
+  }
+  return map[status] || 'info'
+}
+
+function workStatusLabel(status: string): string {
+  const map: Record<string, string> = {
+    completed: '已完成',
+    review: '待评审',
+    in_progress: '执行中',
+    running: '执行中',
+    ready: '待执行',
+    queued: '排队中',
+    blocked: '已阻塞',
+    failed: '执行失败'
+  }
+  return map[status] || status
 }
 
 function healthLabel(health: string): string {

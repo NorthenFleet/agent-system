@@ -23,6 +23,14 @@
               <div class="project-card-meta">
                 {{ phaseLabel(project.current_phase || project.status) }} · {{ project.tasks.length }} 个任务
               </div>
+              <div class="project-card-badges">
+                <el-tag size="small" :type="projectTypeValue(project) === 'software' ? 'primary' : 'info'">
+                  {{ projectTypeValue(project) === 'software' ? '软件项目' : '文档项目' }}
+                </el-tag>
+                <el-tag v-if="project.project_relations?.length" size="small" type="success">
+                  已关联 {{ project.project_relations.length }} 个项目
+                </el-tag>
+              </div>
               <el-progress :percentage="Math.round(project.progress || 0)" :show-text="false" />
             </button>
           </div>
@@ -39,7 +47,17 @@
                   <div class="project-title">{{ selectedProject.name }}</div>
                   <div class="muted">{{ selectedProject.description || '暂无项目描述' }}</div>
                 </div>
-                <el-tag :type="statusType(selectedProject.status)">{{ statusLabel(selectedProject.status) }}</el-tag>
+                <div class="project-header-actions">
+                  <el-button
+                    v-if="isOneSimProject"
+                    size="small"
+                    type="primary"
+                    plain
+                    :icon="Share"
+                    @click="scrollToArchitectureGraph"
+                  >系统架构</el-button>
+                  <el-tag :type="statusType(selectedProject.status)">{{ statusLabel(selectedProject.status) }}</el-tag>
+                </div>
               </div>
             </template>
 
@@ -69,6 +87,99 @@
                 </div>
               </el-col>
             </el-row>
+
+            <section class="project-background-panel">
+              <div class="project-background-head">
+                <div>
+                  <h3>工作背景与关联项目</h3>
+                  <p class="muted">
+                    {{ sidecarLoading ? '正在加载项目背景…' : relationshipContext?.current_project_responsibility || '当前项目尚未形成关联背景契约。' }}
+                  </p>
+                </div>
+                <el-tag :type="sidecarLoading ? 'info' : sidecarError ? 'danger' : relationshipContext?.relations?.length ? 'success' : 'warning'">
+                  {{ sidecarLoading ? '加载中' : sidecarError ? '加载失败' : relationshipContext?.relations?.length ? '背景已关联' : '待建立关联' }}
+                </el-tag>
+              </div>
+
+              <div v-if="relationshipContext?.relations?.length" class="project-relation-list">
+                <article
+                  v-for="relation in relationshipContext.relations"
+                  :key="relation.id"
+                  class="project-relation-card"
+                >
+                  <div class="project-relation-copy">
+                    <div class="project-relation-title">
+                      <strong>{{ relation.counterpart?.status === 'missing' ? '关联项目已失效' : relation.counterpart?.name || '关联项目已失效' }}</strong>
+                      <el-tag size="small" :type="relation.counterpart?.status === 'missing' ? 'danger' : relation.counterpart?.project_type === 'software' ? 'primary' : 'info'">
+                        {{ relation.counterpart?.status === 'missing' ? '关联失效' : relation.counterpart?.project_type === 'software' ? '软件实现' : '课程/规则文档' }}
+                      </el-tag>
+                    </div>
+                    <p class="muted">{{ relation.purpose || relationshipContext.operating_model }}</p>
+                    <small>
+                      {{ relation.counterpart_role || '关联角色' }} ·
+                      {{ relation.counterpart?.task_summary?.open || 0 }} 个未完成任务 ·
+                      {{ Math.round(relation.counterpart?.progress || 0) }}%
+                    </small>
+                  </div>
+                  <el-button
+                    size="small"
+                    type="primary"
+                    plain
+                    :disabled="!relation.counterpart?.id || relation.counterpart?.status === 'missing'"
+                    @click="openRelatedProject(relation.counterpart?.id, relation.counterpart?.project_type)"
+                  >
+                    {{ relation.counterpart?.project_type === 'software' ? '打开软件项目' : '查看课程文档' }}
+                  </el-button>
+                </article>
+              </div>
+              <el-alert
+                v-else-if="sidecarError"
+                type="error"
+                :closable="false"
+                show-icon
+                :title="sidecarError"
+              />
+              <el-alert
+                v-else-if="!sidecarLoading"
+                type="warning"
+                :closable="false"
+                show-icon
+                title="智能体只能看到当前单一项目，尚未获得课程—软件联合背景"
+              />
+
+              <div v-if="!isDocumentProject" class="runner-health-card">
+                <div>
+                  <strong>Codex Runner 真实健康检查</strong>
+                  <p class="muted">
+                    {{ codexStatus?.health?.codex_version || codexStatus?.runner || '尚未检查' }} ·
+                    {{ codexStatus?.health?.repo || codexStatus?.remote_repo || '未配置仓库' }}
+                  </p>
+                </div>
+                <div class="runner-health-states">
+                  <el-tag size="small" :type="!codexStatus?.health ? 'info' : codexStatus.health.configured ? 'success' : 'danger'">
+                    {{ !codexStatus?.health ? '配置未知' : codexStatus.health.configured ? 'Runner 已配置' : 'Runner 未配置' }}
+                  </el-tag>
+                  <el-tag size="small" :type="!codexStatus?.health ? 'info' : codexStatus.health.reachable ? 'success' : 'danger'">
+                    {{ !codexStatus?.health ? '连通性未知' : codexStatus.health.reachable ? 'SSH/本机可达' : 'Runner 不可达' }}
+                  </el-tag>
+                  <el-tag size="small" :type="!codexStatus?.health ? 'info' : codexStatus.health.codex_executable ? 'success' : 'danger'">
+                    {{ !codexStatus?.health ? 'Codex 状态未知' : codexStatus.health.codex_executable ? 'Codex 可执行' : 'Codex 不可执行' }}
+                  </el-tag>
+                  <el-tag size="small" :type="!codexStatus?.health ? 'info' : codexStatus.health.repo_exists ? 'success' : 'danger'">
+                    {{ !codexStatus?.health ? '仓库状态未知' : codexStatus.health.repo_exists ? '仓库存在' : '仓库不存在' }}
+                  </el-tag>
+                  <el-tag size="small" :type="!codexStatus?.health ? 'info' : codexStatus.health.repo_writable ? 'success' : 'danger'">
+                    {{ !codexStatus?.health ? '写权限未知' : codexStatus.health.repo_writable ? '仓库可写' : '仓库不可写' }}
+                  </el-tag>
+                  <el-tag v-if="codexStatus?.health?.repo_relative_path && !codexStatus.health.repo_is_git_root" size="small" type="warning">
+                    子目录隔离：{{ codexStatus.health.repo_relative_path }}
+                  </el-tag>
+                  <el-button size="small" :loading="checkingCodexHealth" @click="loadCodexRunnerStatus(true)">重新检查</el-button>
+                </div>
+                <p v-if="codexStatus?.health?.error" class="runner-health-error">{{ codexStatus.health.error }}</p>
+                <p v-else-if="codexHealthError" class="runner-health-error">{{ codexHealthError }}</p>
+              </div>
+            </section>
 
             <el-divider />
 
@@ -331,6 +442,28 @@
                 </div>
               </div>
             </div>
+
+            <section v-if="selectedProject?.project_type === 'software'" class="architecture-diagram-section">
+              <LanshuArchitecturePanel
+                :project-id="selectedProject.id"
+                :diagram-key="diagramKeyForProject"
+              />
+            </section>
+
+            <section v-if="isOneSimProject" ref="architectureGraphPanelRef" class="engineering-assets-panel">
+              <el-tabs v-model="engineeringAssetTab" class="engineering-assets-tabs">
+                <el-tab-pane label="项目文档与研发态势" name="documents">
+                  <SoftwareWorkspacePanel
+                    :project="selectedProject"
+                    :jobs="codexJobs"
+                    :codex-status="codexStatus"
+                  />
+                </el-tab-pane>
+                <el-tab-pane label="系统架构" name="graph" lazy>
+                  <OneSimArchitecturePanel />
+                </el-tab-pane>
+              </el-tabs>
+            </section>
           </el-card>
 
           <el-card class="panel tasks-panel" shadow="hover">
@@ -342,13 +475,20 @@
                   <el-tag type="success">{{ executablePointCount }} 个待执行{{ pointLabel }}</el-tag>
                   <el-tag v-if="!isDocumentProject" type="warning">{{ loopActiveCount }} 个 Codex 执行中</el-tag>
                   <el-button
+                    v-if="isDocumentProject"
+                    size="small"
+                    type="primary"
+                    @click="openDocumentWorkspace"
+                  >
+                    转到文档写作
+                  </el-button>
+                  <el-button
+                    v-else
                     size="small"
                     type="primary"
                     :loading="autoDispatchingProject"
-                    @click="autoDispatchProject"
-                  >
-                    启动项目协同
-                  </el-button>
+                    @click="generateProjectDevelopmentPlans"
+                  >为未完成任务生成计划</el-button>
                   <el-button size="small" :loading="loadingCodexJobs" @click="loadCodexJobs">刷新执行反馈</el-button>
                 </div>
               </div>
@@ -393,8 +533,8 @@
                 <div v-show="!isTaskCollapsed(task.id)" class="task-details">
                   <div class="execution-list">
                   <div class="execution-list-head">
-                    <strong>{{ isDocumentProject ? '写作要点执行' : '开发要点执行' }}</strong>
-                    <small>每个{{ pointLabel }}单独交给{{ isDocumentProject ? '文档协作智能体' : '忍者神龟开发组' }}，通过 Codex 执行、反馈、验证并进入下一轮</small>
+                    <strong>{{ isDocumentProject ? '写作要点状态' : '开发要点执行' }}</strong>
+                    <small>{{ isDocumentProject ? `文档项目在写作工作区推进；这里仅展示${pointLabel}状态和与软件项目共享的需求背景` : `每个${pointLabel}先生成执行计划，管理员批准后由多角色 Codex Loop 自动开发、测试和返工` }}</small>
                   </div>
                   <div v-if="task.development_points.length === 0" class="muted">暂无可执行{{ pointLabel }}</div>
                   <div v-for="point in task.development_points" :key="point.id" class="execution-row">
@@ -415,23 +555,15 @@
                       <span>{{ latestCodexFeedback(point.id) }}</span>
                     </div>
                     <div class="execution-actions">
-                      <el-button
-                        size="small"
-                        :loading="creatingPointIds.has(point.id)"
-                        :disabled="!isExecutablePoint(point) || hasActiveJob(point.id)"
-                        @click="startPointCodexJob(task, point)"
-                      >
-                        {{ isExecutablePoint(point) ? `执行${pointLabel}` : '已完成' }}
-                      </el-button>
-                      <el-button
-                        size="small"
-                        type="primary"
-                        :loading="creatingLoopIds.has(point.id)"
-                        :disabled="!isExecutablePoint(point) || hasActiveLoop(point.id)"
-                        @click="startCollaborativePointLoop(task, point)"
-                      >
-                        协同 Loop
-                      </el-button>
+                      <template v-if="!isDocumentProject">
+                        <el-button
+                          size="small"
+                          type="primary"
+                          :loading="creatingPlanIds.has(point.id)"
+                          :disabled="!isExecutablePoint(point) || isPlanActive(point.id)"
+                          @click="generatePointDevelopmentPlan(task, point)"
+                        >生成执行计划</el-button>
+                      </template>
                       <el-button
                         v-if="latestJobForPoint(point.id)"
                         size="small"
@@ -440,15 +572,37 @@
                         查看反馈
                       </el-button>
                     </div>
+                    <div v-if="!isDocumentProject && latestPlanForTarget(point.id)" class="development-plan-strip">
+                      <div>
+                        <el-tag size="small" :type="developmentPlanStatusType(latestPlanForTarget(point.id)!.status)">
+                          {{ developmentPlanStatusLabel(latestPlanForTarget(point.id)!.status) }}
+                        </el-tag>
+                        <span>{{ developmentTaskTypeLabel(latestPlanForTarget(point.id)!.task_type) }}</span>
+                        <small>预审 {{ latestPlanForTarget(point.id)!.review_score }} 分 · v{{ latestPlanForTarget(point.id)!.version }}</small>
+                      </div>
+                      <div class="development-plan-actions" v-if="latestPlanForTarget(point.id)!.status === 'pending_approval'">
+                        <el-button size="small" type="primary" :loading="decidingPlanIds.has(latestPlanForTarget(point.id)!.id)" @click="decidePlan(latestPlanForTarget(point.id)!, 'approve')">批准并执行</el-button>
+                        <el-button size="small" @click="decidePlan(latestPlanForTarget(point.id)!, 'revise')">退回修改</el-button>
+                        <el-button size="small" type="danger" plain @click="decidePlan(latestPlanForTarget(point.id)!, 'reject')">拒绝</el-button>
+                      </div>
+                      <div class="development-plan-actions" v-else-if="isPlanRedispatchable(latestPlanForTarget(point.id)!)">
+                        <el-button
+                          size="small"
+                          type="warning"
+                          :loading="decidingPlanIds.has(latestPlanForTarget(point.id)!.id)"
+                          @click="redispatchPlanExecution(latestPlanForTarget(point.id)!)"
+                        >基于原批准计划重新派发</el-button>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div class="codex-task-panel">
                   <div class="codex-task-head">
                     <div>
-                      <strong>{{ isDocumentProject ? '任务派发控制' : '任务执行控制' }}</strong>
-                      <small>{{ isDocumentProject ? `项目经理可一键派发本任务全部未完成${pointLabel}，也可保留整任务指令` : '按开发要点创建 Codex Job，完成读代码、修改、验证和反馈闭环' }}</small>
+                      <strong>{{ isDocumentProject ? '文档任务边界' : '任务执行控制' }}</strong>
+                      <small>{{ isDocumentProject ? '课程文档用于需求、规则和验收，不直接进入 one-sim 软件 Codex Runner' : '智能体先生成并预审计划，管理员批准后自动进入方案、开发、评估和返工循环' }}</small>
                     </div>
-                    <el-select v-model="taskCodexAgents[task.id]" size="small" style="width: 138px">
+                    <el-select v-if="!isDocumentProject" v-model="taskCodexAgents[task.id]" size="small" style="width: 138px">
                       <el-option label="擎天柱" value="optimus" />
                       <el-option label="通天晓" value="ultra-magnus" />
                       <el-option label="千斤顶" value="wheeljack" />
@@ -461,6 +615,7 @@
                     </el-select>
                   </div>
                   <el-input
+                    v-if="!isDocumentProject"
                     v-model="taskCodexInstructions[task.id]"
                     type="textarea"
                     :rows="2"
@@ -468,30 +623,86 @@
                     :placeholder="defaultCodexInstruction(task)"
                   />
                   <div class="codex-task-actions">
-                    <el-button
-                      size="small"
-                      type="primary"
-                      :loading="creatingLoopIds.has(task.id)"
-                      :disabled="hasActiveLoop(task.id)"
-                      @click="startCollaborativeTaskLoop(task)"
-                    >
-                      启动协同 Loop
-                    </el-button>
-                    <el-button
-                      size="small"
-                      :loading="creatingTaskIds.has(task.id)"
-                      @click="autoDispatchTask(task)"
-                    >
-                      派发全部要点
-                    </el-button>
-                    <el-button
-                      size="small"
-                      :loading="creatingTaskIds.has(task.id)"
-                      @click="startProjectCodexJob(task)"
-                    >
-                      整任务执行
+                    <template v-if="!isDocumentProject">
+                      <el-button
+                        size="small"
+                        type="primary"
+                        :loading="creatingPlanIds.has(task.id)"
+                        :disabled="isPlanActive(task.id)"
+                        @click="generateTaskDevelopmentPlan(task)"
+                      >生成自动化计划</el-button>
+                    </template>
+                    <el-button v-else size="small" @click="openDocumentWorkspace">
+                      转到文档写作
                     </el-button>
                     <el-button size="small" :loading="loadingCodexJobs" @click="loadCodexJobs">刷新执行反馈</el-button>
+                  </div>
+                  <div v-if="!isDocumentProject && latestPlanForTarget(task.id)" class="development-plan-card">
+                    <div class="development-plan-head">
+                      <div>
+                        <strong>{{ latestPlanForTarget(task.id)!.title }}</strong>
+                        <small>{{ developmentTaskTypeLabel(latestPlanForTarget(task.id)!.task_type) }} · v{{ latestPlanForTarget(task.id)!.version }}</small>
+                      </div>
+                      <el-tag :type="developmentPlanStatusType(latestPlanForTarget(task.id)!.status)">
+                        {{ developmentPlanStatusLabel(latestPlanForTarget(task.id)!.status) }}
+                      </el-tag>
+                    </div>
+                    <div class="development-plan-review">
+                      <span>方案 {{ agentLabel(latestPlanForTarget(task.id)!.planner_agent_id) }}</span>
+                      <span>开发 {{ agentLabel(latestPlanForTarget(task.id)!.developer_agent_id) }}</span>
+                      <span>评估 {{ agentLabel(latestPlanForTarget(task.id)!.evaluator_agent_id) }}</span>
+                      <strong>预审 {{ latestPlanForTarget(task.id)!.review_score }} 分</strong>
+                    </div>
+                    <pre>{{ latestPlanForTarget(task.id)!.plan_markdown }}</pre>
+                    <div v-if="latestPlanForTarget(task.id)!.execution_error" class="development-plan-error">
+                      {{ latestPlanForTarget(task.id)!.execution_error }}
+                    </div>
+                    <div v-if="latestPlanForTarget(task.id)!.execution_branch" class="development-delivery">
+                      <div><span>执行分支</span><code>{{ latestPlanForTarget(task.id)!.execution_branch }}</code></div>
+                      <div><span>集成分支</span><code>{{ latestPlanForTarget(task.id)!.integration_branch || 'codex/integration' }}</code></div>
+                      <div v-if="latestPlanForTarget(task.id)!.result_commit"><span>结果提交</span><code>{{ shortSha(latestPlanForTarget(task.id)!.result_commit) }}</code></div>
+                      <div v-if="latestPlanForTarget(task.id)!.merge_commit"><span>合并提交</span><code>{{ shortSha(latestPlanForTarget(task.id)!.merge_commit) }}</code></div>
+                    </div>
+                    <div v-if="planRounds(latestPlanForTarget(task.id)!).length" class="development-rounds">
+                      <div v-for="round in planRounds(latestPlanForTarget(task.id)!)" :key="round.round" class="development-round">
+                        <strong>第 {{ round.round }} 轮</strong>
+                        <span>{{ round.checkpoint?.changed_files?.length || 0 }} 个文件</span>
+                        <code v-if="round.checkpoint?.commit_sha">{{ shortSha(round.checkpoint.commit_sha) }}</code>
+                        <el-tag size="small" :type="round.evaluation?.passed ? 'success' : 'warning'">
+                          {{ round.evaluation?.passed ? '评估通过' : '等待/未通过' }}
+                        </el-tag>
+                      </div>
+                    </div>
+                    <el-alert
+                      v-if="latestPlanForTarget(task.id)!.status === 'manual_takeover'"
+                      type="warning"
+                      :closable="false"
+                      show-icon
+                      title="自动执行已停止，隔离工作树已保留供人工接管"
+                      :description="latestPlanForTarget(task.id)!.handoff_reason || latestPlanForTarget(task.id)!.execution_error || ''"
+                    />
+                    <div v-if="latestPlanForTarget(task.id)!.status === 'manual_takeover' && latestPlanForTarget(task.id)!.result_commit" class="development-plan-actions">
+                      <el-button
+                        size="small"
+                        type="primary"
+                        :loading="decidingPlanIds.has(latestPlanForTarget(task.id)!.id)"
+                        @click="retryPlanIntegration(latestPlanForTarget(task.id)!)"
+                      >冲突处理完成，重试合入</el-button>
+                    </div>
+                    <div v-if="isPlanRedispatchable(latestPlanForTarget(task.id)!)" class="development-plan-actions">
+                      <el-button
+                        size="small"
+                        type="warning"
+                        :loading="decidingPlanIds.has(latestPlanForTarget(task.id)!.id)"
+                        @click="redispatchPlanExecution(latestPlanForTarget(task.id)!)"
+                      >基于原批准计划重新派发</el-button>
+                      <small>原执行历史保留；系统会创建新的隔离工作树和 Loop。</small>
+                    </div>
+                    <div v-if="latestPlanForTarget(task.id)!.status === 'pending_approval'" class="development-plan-actions">
+                      <el-button type="primary" size="small" :loading="decidingPlanIds.has(latestPlanForTarget(task.id)!.id)" @click="decidePlan(latestPlanForTarget(task.id)!, 'approve')">批准并开始多轮执行</el-button>
+                      <el-button size="small" @click="decidePlan(latestPlanForTarget(task.id)!, 'revise')">退回修改</el-button>
+                      <el-button type="danger" plain size="small" @click="decidePlan(latestPlanForTarget(task.id)!, 'reject')">拒绝</el-button>
+                    </div>
                   </div>
                   <div v-if="jobsForTask(task.id).length" class="codex-job-list">
                     <button v-for="job in jobsForTask(task.id)" :key="job.id" class="codex-job" @click="selectCodexJob(job)">
@@ -576,6 +787,10 @@
             <div class="chat-context muted">
               {{ isDocumentProject ? `文档上下文：${documentSections.length} 章，${documentAssets.length} 个图片/图表计划` : `开发上下文：${selectedProject.tasks.length} 个任务，${totalPoints} 个${pointLabel}` }}
             </div>
+            <div v-if="relationshipContext?.relations?.length" class="chat-context relationship-chat-context">
+              联合背景：{{ relationshipContext.relations.map(item => item.counterpart?.name).filter(Boolean).join('、') }}。
+              {{ relationshipContext.current_project_responsibility }}
+            </div>
             <div v-if="chatMessages.length" class="chat-history">
               <div v-for="message in chatMessages.slice(-3)" :key="message.id || message.created_at || message.message" class="chat-message">
                 <strong>{{ message.agent_id || message.role || 'system' }}</strong>
@@ -648,10 +863,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { ArrowDown, ArrowUp, Delete } from '@element-plus/icons-vue'
+import { ArrowDown, ArrowUp, Delete, Share } from '@element-plus/icons-vue'
+import OneSimArchitecturePanel from '@/components/OneSimArchitecturePanel.vue'
+import SoftwareWorkspacePanel from '@/components/SoftwareWorkspacePanel.vue'
+import LanshuArchitecturePanel from '@/components/LanshuArchitecturePanel.vue'
 import {
   createProjectAgentAction,
   getProjectChatContext,
@@ -672,27 +890,41 @@ import {
   type ProjectTask
 } from '@/api/projects'
 import {
-  createCodexJob,
-  createCodexLoop,
+  createDevelopmentPlan,
+  decideDevelopmentPlan,
+  getCodexStatus,
   getCodexJobLogs,
   listCodexJobs,
   listCodexLoops,
+  listDevelopmentPlans,
+  redispatchDevelopmentPlan,
+  retryDevelopmentPlanIntegration,
   type CodexJob,
+  type CodexStatus,
   type CodexJobStatus,
-  type CodexLoop
+  type CodexLoop,
+  type DevelopmentPlan
 } from '@/api/codex'
 
 type DisplayDocumentAsset = DocumentAsset & { suggested?: boolean }
 
 const route = useRoute()
+const router = useRouter()
 const loading = ref(false)
 const loadingCodexJobs = ref(false)
 const loadingCodexLoops = ref(false)
+const checkingCodexHealth = ref(false)
 const projects = ref<Project[]>([])
 const selectedProjectId = ref('')
 const codexJobs = ref<CodexJob[]>([])
+const codexStatus = ref<CodexStatus | null>(null)
+const codexHealthError = ref('')
 const codexLoops = ref<CodexLoop[]>([])
+const developmentPlans = ref<DevelopmentPlan[]>([])
 const projectContext = ref<ProjectChatContext | null>(null)
+const sidecarLoading = ref(false)
+const sidecarError = ref('')
+const sidecarRequestSequence = ref(0)
 const chatMessages = ref<ProjectChatMessage[]>([])
 const chatText = ref('')
 const chatAgent = ref('optimus')
@@ -740,9 +972,8 @@ const chatLoading = ref(false)
 const rightPanelSections = ref(['docs', 'repos'])
 const taskCodexAgents = reactive<Record<string, string>>({})
 const taskCodexInstructions = reactive<Record<string, string>>({})
-const creatingTaskIds = ref(new Set<string>())
-const creatingPointIds = ref(new Set<string>())
-const creatingLoopIds = ref(new Set<string>())
+const creatingPlanIds = ref(new Set<string>())
+const decidingPlanIds = ref(new Set<string>())
 const collapsedTaskIds = ref(new Set<string>())
 const deletingTaskIds = ref(new Set<string>())
 const promotingReferenceIds = ref(new Set<string>())
@@ -752,6 +983,45 @@ let codexRefreshTimer: number | undefined
 
 const selectedProject = computed(() => projects.value.find(project => project.id === selectedProjectId.value) || projects.value[0])
 const isDocumentProject = computed(() => projectTypeValue(selectedProject.value) === 'document')
+const relationshipContext = computed(() =>
+  projectContext.value?.relationship_context || projectContext.value?.background_context
+)
+const isOneSimProject = computed(() => {
+  const identity = `${selectedProject.value?.id || ''} ${selectedProject.value?.name || ''}`.toLowerCase()
+  return identity.includes('one-sim') || identity.includes('one_sim')
+})
+const diagramKeyForProject = computed(() => {
+  const name = (selectedProject.value?.name || '').toLowerCase()
+  const id = String(selectedProject.value?.id || '')
+  const keyMap: Record<string, string> = {
+    'kanban': 'kanban-v3',
+    '看板': 'kanban-v3',
+    'one-sim': 'one-sim',
+    '仿真': 'one-sim',
+    'phd': 'phd-thesis',
+    '博士': 'phd-thesis',
+    '论文': 'phd-thesis',
+    'command': 'command-center',
+    '指挥中心': 'command-center',
+    '3021': 'command-center',
+    'ninja': 'ninja-dispatch',
+    '忍者': 'ninja-dispatch',
+    '神龟': 'ninja-dispatch',
+    'pm dashboard': 'pm-dashboard',
+    'pm_dashboard': 'pm-dashboard',
+    '震荡波': 'pm-dashboard',
+    'shockwave': 'pm-dashboard',
+    '系统全景': 'system-overview',
+    'system': 'system-overview',
+    'openclaw': 'system-overview',
+  }
+  for (const [keyword, key] of Object.entries(keyMap)) {
+    if (name.includes(keyword)) return key
+  }
+  return id
+})
+const architectureGraphPanelRef = ref<HTMLElement | null>(null)
+const engineeringAssetTab = ref('documents')
 const pointLabel = computed(() => isDocumentProject.value ? '写作要点' : '开发要点')
 const totalPoints = computed(() => selectedProject.value?.tasks.reduce((sum, task) => sum + (task.development_points?.length || 0), 0) || 0)
 const executablePointCount = computed(() => (selectedProject.value?.tasks || []).reduce(
@@ -823,6 +1093,27 @@ function projectTypeValue(project?: Project): 'software' | 'document' {
   return value === 'document' ? 'document' : 'software'
 }
 
+function openRelatedProject(projectId?: string, projectType?: string) {
+  if (!projectId) {
+    ElMessage.warning('关联项目不存在或已失效')
+    return
+  }
+  router.push({
+    path: projectType === 'software' ? '/development' : '/writing',
+    query: { project_id: projectId }
+  })
+}
+
+function openDocumentWorkspace() {
+  openRelatedProject(selectedProject.value?.id, 'document')
+}
+
+async function scrollToArchitectureGraph() {
+  engineeringAssetTab.value = 'graph'
+  await nextTick()
+  architectureGraphPanelRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
 function suggestionText(item: { action?: string; reason?: string } | string): string {
   if (typeof item === 'string') return item
   return [item.action, item.reason].filter(Boolean).join(' · ') || '暂无建议'
@@ -852,6 +1143,54 @@ function loopsForPoint(pointId: string) {
   return codexLoops.value
     .filter(loop => loop.task_id === pointId)
     .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
+}
+
+function plansForTarget(targetId: string) {
+  return developmentPlans.value
+    .filter(plan => plan.target_id === targetId)
+    .sort((a, b) => b.version - a.version || String(b.updated_at).localeCompare(String(a.updated_at)))
+}
+
+function latestPlanForTarget(targetId: string) {
+  return plansForTarget(targetId)[0]
+}
+
+function isPlanActive(targetId: string) {
+  return plansForTarget(targetId).some(plan => ['pending_approval', 'approved', 'running'].includes(plan.status))
+}
+
+const developmentTaskTypeLabels: Record<string, string> = {
+  architecture: '架构设计', backend: '后端开发', frontend: '前端开发', database: '数据库',
+  testing: '测试验证', integration: '系统集成', deployment: '部署发布', documentation: '开发文档',
+  security: '安全审查', performance: '性能优化'
+}
+
+function developmentTaskTypeLabel(type: string) {
+  return developmentTaskTypeLabels[type] || type
+}
+
+function developmentPlanStatusLabel(status: DevelopmentPlan['status']) {
+  return {
+    pending_approval: '待管理员批准', revision_requested: '退回修改', rejected: '已拒绝', approved: '已批准',
+    running: '自动迭代中', completed: '已合入集成分支', failed: '执行失败', cancelled: '已取消',
+    manual_takeover: '待人工接管'
+  }[status] || status
+}
+
+function developmentPlanStatusType(status: DevelopmentPlan['status']): 'primary' | 'success' | 'warning' | 'danger' | 'info' {
+  if (status === 'completed') return 'success'
+  if (status === 'running' || status === 'approved') return 'primary'
+  if (status === 'pending_approval' || status === 'revision_requested' || status === 'manual_takeover') return 'warning'
+  if (status === 'failed' || status === 'rejected') return 'danger'
+  return 'info'
+}
+
+function shortSha(value?: string | null) {
+  return value ? value.slice(0, 10) : ''
+}
+
+function planRounds(plan: DevelopmentPlan) {
+  return plan.evidence_json?.rounds || []
 }
 
 function executionLabel(id?: string) {
@@ -951,10 +1290,6 @@ function hasActiveJob(pointId: string) {
   return jobsForPoint(pointId).some(job => ['queued', 'running'].includes(job.status))
 }
 
-function hasActiveLoop(taskId: string) {
-  return codexLoops.value.some(loop => loop.task_id === taskId && ['queued', 'running'].includes(loop.status))
-}
-
 function defaultCodexAgent(task: ProjectTask) {
   return defaultCodexAgentForProject(task, selectedProject.value)
 }
@@ -995,6 +1330,21 @@ function plannerAgent(task: ProjectTask, point?: DevelopmentPoint) {
   return 'leonardo'
 }
 
+function projectBackgroundInstruction() {
+  const context = relationshipContext.value
+  if (!context?.relations?.length) return ''
+  const related = context.relations
+    .map(item => `${item.counterpart?.name || '关联项目'}（${item.counterpart_role || item.relation_type}）`)
+    .join('、')
+  return [
+    '联合工作背景：',
+    `- 当前职责：${context.current_project_responsibility || '按当前项目类型执行。'}`,
+    `- 关联项目：${related}`,
+    context.shared_goal ? `- 共同目标：${context.shared_goal}` : '',
+    ...(context.boundaries || []).slice(0, 4).map(item => `- 边界：${item}`)
+  ].filter(Boolean).join('\n')
+}
+
 function defaultCodexInstruction(task: ProjectTask) {
   const project = selectedProject.value
   const points = task.development_points.map(point => `- ${point.title}（${statusLabel(point.status)}）`).join('\n')
@@ -1003,6 +1353,7 @@ function defaultCodexInstruction(task: ProjectTask) {
     `项目：${project?.name || '未命名项目'}`,
     `任务：${task.title}`,
     `说明：${task.description || '暂无'}`,
+    projectBackgroundInstruction(),
     points ? `${documentProject ? '写作要点' : '开发要点'}：\n${points}` : '',
     documentProject
       ? '请阅读当前文档结构、章节目标和引用材料，完成最小必要写作或资料整理，最后反馈更新内容、引用/图表建议和待审校风险。'
@@ -1019,6 +1370,7 @@ function defaultPointCodexInstruction(task: ProjectTask, point: DevelopmentPoint
       `写作子项：${point.title}`,
       `当前状态：${statusLabel(point.status)}`,
       `任务说明：${task.description || '暂无'}`,
+      projectBackgroundInstruction(),
       '执行要求：',
       '- 先阅读当前文档结构、章节目标和已有上下文。',
       '- 完成该写作要点所需的章节内容、资料整理、审校意见或图表建议。',
@@ -1032,6 +1384,7 @@ function defaultPointCodexInstruction(task: ProjectTask, point: DevelopmentPoint
     `子项：${point.title}`,
     `当前状态：${statusLabel(point.status)}`,
     `任务说明：${task.description || '暂无'}`,
+    projectBackgroundInstruction(),
     '执行要求：',
     '- 先阅读相关代码和接口，不要做无关重构。',
     '- 完成该子项所需的最小代码修改。',
@@ -1053,6 +1406,19 @@ async function loadCodexJobs() {
   }
 }
 
+async function loadCodexRunnerStatus(force = false) {
+  checkingCodexHealth.value = true
+  codexHealthError.value = ''
+  try {
+    codexStatus.value = await getCodexStatus(force)
+  } catch (error: any) {
+    codexStatus.value = null
+    codexHealthError.value = error?.response?.data?.detail || error?.message || 'Runner 健康检查失败'
+  } finally {
+    checkingCodexHealth.value = false
+  }
+}
+
 async function loadCodexLoops() {
   loadingCodexLoops.value = true
   try {
@@ -1065,6 +1431,19 @@ async function loadCodexLoops() {
   }
 }
 
+async function loadDevelopmentPlans() {
+  if (!selectedProject.value || isDocumentProject.value) {
+    developmentPlans.value = []
+    return
+  }
+  try {
+    const res = await listDevelopmentPlans(selectedProject.value.id)
+    developmentPlans.value = res.plans || []
+  } catch {
+    developmentPlans.value = []
+  }
+}
+
 function startCodexLoopPolling() {
   stopCodexLoopPolling()
   codexRefreshTimer = window.setInterval(() => {
@@ -1072,65 +1451,197 @@ function startCodexLoopPolling() {
       loadCodexJobs()
       loadCodexLoops()
     }
+    if (developmentPlans.value.some(plan => plan.status === 'running')) {
+      loadDevelopmentPlans()
+    }
   }, 5000)
 }
 
-async function startCollaborativeTaskLoop(task: ProjectTask) {
-  if (hasActiveLoop(task.id)) {
-    ElMessage.warning('该任务已有执行中的协同 Loop')
-    return
-  }
-  const next = new Set(creatingLoopIds.value)
+async function generateTaskDevelopmentPlan(task: ProjectTask) {
+  const project = selectedProject.value
+  if (!project) return
+  const next = new Set(creatingPlanIds.value)
   next.add(task.id)
-  creatingLoopIds.value = next
+  creatingPlanIds.value = next
   try {
-    await createCodexLoop({
-      task_id: task.id,
-      title: task.title,
+    await createDevelopmentPlan({
+      project_id: project.id,
+      target_kind: 'task',
+      target_id: task.id,
       instruction: taskCodexInstructions[task.id]?.trim() || defaultCodexInstruction(task),
       developer_agent_id: taskCodexAgents[task.id] || task.assignee_agent || defaultCodexAgent(task),
       planner_agent_id: plannerAgent(task),
       evaluator_agent_id: 'michelangelo',
-      max_rounds: 2
+      max_rounds: 3
     })
     taskCodexInstructions[task.id] = ''
-    ElMessage.success('已启动角色协同型 Loop：方案 → 开发 → 评估')
-    await Promise.all([loadCodexJobs(), loadCodexLoops()])
-  } catch {
-    ElMessage.error('协同 Loop 启动失败')
+    ElMessage.success('计划已生成并完成智能体预审，等待管理员批准')
+    await loadDevelopmentPlans()
+  } catch (error: any) {
+    ElMessage.error(error?.response?.data?.detail || '自动化计划生成失败')
   } finally {
-    const done = new Set(creatingLoopIds.value)
+    const done = new Set(creatingPlanIds.value)
     done.delete(task.id)
-    creatingLoopIds.value = done
+    creatingPlanIds.value = done
   }
 }
 
-async function startCollaborativePointLoop(task: ProjectTask, point: DevelopmentPoint) {
-  if (hasActiveLoop(point.id)) {
-    ElMessage.warning('该子项已有执行中的协同 Loop')
+async function generateProjectDevelopmentPlans() {
+  const project = selectedProject.value
+  if (!project || isDocumentProject.value) return
+  const targets = project.tasks.filter(task =>
+    !['done', 'completed', 'succeeded', 'cancelled'].includes(String(task.status || '').toLowerCase()) && !isPlanActive(task.id)
+  )
+  if (!targets.length) {
+    ElMessage.info('所有未完成任务都已有待审批或执行中的计划')
     return
   }
-  const next = new Set(creatingLoopIds.value)
-  next.add(point.id)
-  creatingLoopIds.value = next
+  autoDispatchingProject.value = true
+  let created = 0
   try {
-    await createCodexLoop({
-      task_id: point.id,
-      title: `${task.title} / ${point.title}`,
+    for (const task of targets) {
+      await createDevelopmentPlan({
+        project_id: project.id,
+        target_kind: 'task',
+        target_id: task.id,
+        instruction: defaultCodexInstruction(task),
+        developer_agent_id: task.assignee_agent || defaultCodexAgent(task),
+        planner_agent_id: plannerAgent(task),
+        evaluator_agent_id: 'michelangelo',
+        max_rounds: 3
+      })
+      created += 1
+    }
+    ElMessage.success(`已生成 ${created} 个任务计划，等待管理员逐项批准`)
+    await loadDevelopmentPlans()
+  } catch (error: any) {
+    ElMessage.error(`${created ? `已生成 ${created} 个；` : ''}${error?.response?.data?.detail || '批量生成计划失败'}`)
+    await loadDevelopmentPlans()
+  } finally {
+    autoDispatchingProject.value = false
+  }
+}
+
+async function generatePointDevelopmentPlan(task: ProjectTask, point: DevelopmentPoint) {
+  const project = selectedProject.value
+  if (!project) return
+  const next = new Set(creatingPlanIds.value)
+  next.add(point.id)
+  creatingPlanIds.value = next
+  try {
+    await createDevelopmentPlan({
+      project_id: project.id,
+      target_kind: 'development_point',
+      target_id: point.id,
       instruction: defaultPointCodexInstruction(task, point),
       developer_agent_id: pointAgent(task, point),
       planner_agent_id: plannerAgent(task, point),
       evaluator_agent_id: 'michelangelo',
-      max_rounds: 2
+      max_rounds: 3
     })
-    ElMessage.success('已启动子项协同 Loop')
-    await Promise.all([loadCodexJobs(), loadCodexLoops()])
-  } catch {
-    ElMessage.error('子项协同 Loop 启动失败')
+    ElMessage.success('子任务计划已生成，等待管理员批准')
+    await loadDevelopmentPlans()
+  } catch (error: any) {
+    ElMessage.error(error?.response?.data?.detail || '子任务计划生成失败')
   } finally {
-    const done = new Set(creatingLoopIds.value)
+    const done = new Set(creatingPlanIds.value)
     done.delete(point.id)
-    creatingLoopIds.value = done
+    creatingPlanIds.value = done
+  }
+}
+
+async function decidePlan(plan: DevelopmentPlan, action: 'approve' | 'revise' | 'reject') {
+  let comment = action === 'approve' ? '批准按当前范围自动迭代执行' : ''
+  try {
+    if (action === 'approve') {
+      await ElMessageBox.confirm(
+        '批准后将自动启动 Codex 多角色 Loop，并在既定范围内连续迭代。部署发布仍需单独批准。',
+        '批准自动化计划',
+        { confirmButtonText: '批准并执行', cancelButtonText: '取消', type: 'warning' }
+      )
+    } else {
+      const result = await ElMessageBox.prompt(
+        action === 'revise' ? '请说明需要补充或调整的内容' : '请说明拒绝原因',
+        action === 'revise' ? '退回修改' : '拒绝计划',
+        { confirmButtonText: '确认', cancelButtonText: '取消', inputValidator: value => Boolean(value?.trim()) || '请填写原因' }
+      )
+      comment = result.value.trim()
+    }
+  } catch {
+    return
+  }
+  const next = new Set(decidingPlanIds.value)
+  next.add(plan.id)
+  decidingPlanIds.value = next
+  try {
+    await decideDevelopmentPlan(plan.id, { action, comment, auto_execute: action === 'approve' })
+    ElMessage.success(action === 'approve' ? '已批准，Codex 多角色 Loop 开始执行' : action === 'revise' ? '已退回修改' : '计划已拒绝')
+    await Promise.all([loadDevelopmentPlans(), loadCodexJobs(), loadCodexLoops()])
+  } catch (error: any) {
+    ElMessage.error(error?.response?.data?.detail || '计划审批失败')
+  } finally {
+    const done = new Set(decidingPlanIds.value)
+    done.delete(plan.id)
+    decidingPlanIds.value = done
+  }
+}
+
+async function retryPlanIntegration(plan: DevelopmentPlan) {
+  try {
+    await ElMessageBox.confirm(
+      '系统将重新把执行分支合入 codex/integration。请确认工作树中的冲突已经处理并提交。',
+      '重试集成',
+      { confirmButtonText: '重试合入', cancelButtonText: '取消', type: 'warning' }
+    )
+  } catch {
+    return
+  }
+  const next = new Set(decidingPlanIds.value)
+  next.add(plan.id)
+  decidingPlanIds.value = next
+  try {
+    await retryDevelopmentPlanIntegration(plan.id)
+    ElMessage.success('执行结果已合入集成分支')
+    await Promise.all([loadDevelopmentPlans(), loadCodexLoops()])
+  } catch (error: any) {
+    ElMessage.error(error?.response?.data?.detail || '集成分支仍存在冲突')
+  } finally {
+    const done = new Set(decidingPlanIds.value)
+    done.delete(plan.id)
+    decidingPlanIds.value = done
+  }
+}
+
+function isPlanRedispatchable(plan: DevelopmentPlan) {
+  if (plan.status === 'failed' || plan.status === 'cancelled') return Boolean(plan.approved_by)
+  if (plan.status !== 'manual_takeover' || !plan.approved_by) return false
+  const reason = `${plan.handoff_reason || ''} ${plan.execution_error || ''}`
+  return /中断|服务重启|process exited|runner stopped/i.test(reason)
+}
+
+async function redispatchPlanExecution(plan: DevelopmentPlan) {
+  try {
+    await ElMessageBox.confirm(
+      '系统会保留原 Job/Loop 历史，并基于原批准范围创建新的隔离工作树重新执行。该操作不会伪装成原进程续跑。',
+      '重新派发已批准计划',
+      { confirmButtonText: '重新派发', cancelButtonText: '取消', type: 'warning' }
+    )
+  } catch {
+    return
+  }
+  const next = new Set(decidingPlanIds.value)
+  next.add(plan.id)
+  decidingPlanIds.value = next
+  try {
+    await redispatchDevelopmentPlan(plan.id)
+    ElMessage.success('已创建新的隔离 Loop，原执行历史继续保留')
+    await Promise.all([loadDevelopmentPlans(), loadCodexJobs(), loadCodexLoops()])
+  } catch (error: any) {
+    ElMessage.error(error?.response?.data?.detail || '计划重新派发失败')
+  } finally {
+    const done = new Set(decidingPlanIds.value)
+    done.delete(plan.id)
+    decidingPlanIds.value = done
   }
 }
 
@@ -1138,119 +1649,6 @@ function stopCodexLoopPolling() {
   if (codexRefreshTimer) {
     window.clearInterval(codexRefreshTimer)
     codexRefreshTimer = undefined
-  }
-}
-
-async function startProjectCodexJob(task: ProjectTask) {
-  const agentId = taskCodexAgents[task.id] || task.assignee_agent || defaultCodexAgent(task)
-  const instruction = taskCodexInstructions[task.id]?.trim() || defaultCodexInstruction(task)
-  const next = new Set(creatingTaskIds.value)
-  next.add(task.id)
-  creatingTaskIds.value = next
-  try {
-    await createCodexJob({
-      agent_id: agentId,
-      task_id: task.id,
-      instruction
-    })
-    taskCodexAgents[task.id] = agentId
-    taskCodexInstructions[task.id] = ''
-    ElMessage.success(`已交给 ${agentLabel(agentId)} 启动 Codex 迭代`)
-    await loadCodexJobs()
-  } catch {
-    ElMessage.error('Codex 任务创建失败')
-  } finally {
-    const done = new Set(creatingTaskIds.value)
-    done.delete(task.id)
-    creatingTaskIds.value = done
-  }
-}
-
-async function dispatchPointCodexJob(task: ProjectTask, point: DevelopmentPoint, notify = true) {
-  const agentId = pointAgent(task, point)
-  const next = new Set(creatingPointIds.value)
-  next.add(point.id)
-  creatingPointIds.value = next
-  try {
-    await createCodexJob({
-      agent_id: agentId,
-      task_id: point.id,
-      instruction: defaultPointCodexInstruction(task, point)
-    })
-    if (notify) ElMessage.success(`已交给 ${agentLabel(agentId)} 迭代：${point.title}`)
-  } finally {
-    const done = new Set(creatingPointIds.value)
-    done.delete(point.id)
-    creatingPointIds.value = done
-  }
-}
-
-async function startPointCodexJob(task: ProjectTask, point: DevelopmentPoint) {
-  if (hasActiveJob(point.id)) {
-    ElMessage.warning('该子项已有排队或执行中的 Codex 迭代')
-    return
-  }
-  try {
-    await dispatchPointCodexJob(task, point)
-    await loadCodexJobs()
-  } catch {
-    ElMessage.error('子项派发失败')
-  }
-}
-
-async function autoDispatchTask(task: ProjectTask) {
-  const candidates = (task.development_points || []).filter(point => isExecutablePoint(point) && !hasActiveJob(point.id))
-  if (!candidates.length) {
-    ElMessage.info('该任务暂无需要启动 Loop 的子项')
-    return
-  }
-  const next = new Set(creatingTaskIds.value)
-  next.add(task.id)
-  creatingTaskIds.value = next
-  let successCount = 0
-  try {
-    for (const point of candidates) {
-      await dispatchPointCodexJob(task, point, false)
-      successCount += 1
-    }
-    ElMessage.success(`已启动 ${successCount} 个子项 Loop，交给${isDocumentProject.value ? '文档协作智能体' : '忍者神龟团队'}`)
-    await loadCodexJobs()
-  } catch {
-    ElMessage.error(`已启动 ${successCount} 个子项，后续 Loop 启动失败`)
-    await loadCodexJobs()
-  } finally {
-    const done = new Set(creatingTaskIds.value)
-    done.delete(task.id)
-    creatingTaskIds.value = done
-  }
-}
-
-async function autoDispatchProject() {
-  const project = selectedProject.value
-  if (!project) return
-  const candidates = project.tasks.flatMap(task =>
-    (task.development_points || [])
-      .filter(point => isExecutablePoint(point) && !hasActiveJob(point.id))
-      .map(point => ({ task, point }))
-  )
-  if (!candidates.length) {
-    ElMessage.info('当前项目暂无需要启动 Loop 的子项')
-    return
-  }
-  autoDispatchingProject.value = true
-  let successCount = 0
-  try {
-    for (const item of candidates) {
-      await dispatchPointCodexJob(item.task, item.point, false)
-      successCount += 1
-    }
-    ElMessage.success(`已启动 ${successCount} 个项目子项 Loop，交给${isDocumentProject.value ? '文档协作智能体' : '忍者神龟团队'}`)
-    await loadCodexJobs()
-  } catch {
-    ElMessage.error(`已启动 ${successCount} 个子项，后续 Loop 启动失败`)
-    await loadCodexJobs()
-  } finally {
-    autoDispatchingProject.value = false
   }
 }
 
@@ -1635,7 +2033,8 @@ function loopStatusLabel(status: string) {
     running: '协同中',
     succeeded: '已通过',
     failed: '未通过',
-    cancelled: '已取消'
+    cancelled: '已取消',
+    needs_attention: '待人工接管'
   }[status] || status
 }
 
@@ -1646,7 +2045,8 @@ function loopStageLabel(stage: string) {
     develop: '开发实现',
     evaluate: '测试评估',
     done: '完成',
-    failed: '待下一轮'
+    failed: '待下一轮',
+    handoff: '人工接管'
   }[stage] || stage
 }
 
@@ -1676,7 +2076,10 @@ function progressColor(percentage: number) {
 async function loadProjects() {
   loading.value = true
   try {
-    const data = await getProjects({ enabled_module: workspaceModule.value })
+    const data = await getProjects({
+      project_type: workspaceProjectType.value,
+      enabled_module: workspaceModule.value
+    })
     projects.value = data.projects
     applyRouteSelection()
     collapseAllProjectTasks(selectedProject.value)
@@ -1707,16 +2110,28 @@ function applyRouteSelection() {
 
 async function loadProjectSidecar(projectId: string) {
   if (!projectId) return
+  const requestSequence = ++sidecarRequestSequence.value
+  sidecarLoading.value = true
+  sidecarError.value = ''
+  projectContext.value = null
+  chatMessages.value = []
   try {
     const [context, conversation] = await Promise.all([
-      getProjectChatContext(projectId).catch(() => null),
+      getProjectChatContext(projectId),
       getProjectConversation(projectId).catch(() => ({ messages: [], conversation: [] }))
     ])
+    if (requestSequence !== sidecarRequestSequence.value || selectedProjectId.value !== projectId) return
     projectContext.value = context
     chatMessages.value = conversation.messages || conversation.conversation || []
-  } catch {
+  } catch (error: any) {
+    if (requestSequence !== sidecarRequestSequence.value || selectedProjectId.value !== projectId) return
     projectContext.value = null
     chatMessages.value = []
+    sidecarError.value = error?.response?.data?.detail || error?.message || '项目背景加载失败'
+  } finally {
+    if (requestSequence === sidecarRequestSequence.value && selectedProjectId.value === projectId) {
+      sidecarLoading.value = false
+    }
   }
 }
 
@@ -1780,7 +2195,10 @@ async function generateTaskFromChat() {
 watch(() => route.query.project_id, applyRouteSelection)
 watch(workspaceProjectType, () => {
   selectedProjectId.value = ''
+  sidecarRequestSequence.value += 1
   projectContext.value = null
+  sidecarError.value = ''
+  sidecarLoading.value = false
   chatMessages.value = []
   loadProjects()
 })
@@ -1788,12 +2206,15 @@ watch(() => selectedProject.value?.id, projectId => {
   if (projectId) {
     collapseAllProjectTasks(selectedProject.value)
     loadProjectSidecar(projectId)
+    loadDevelopmentPlans()
   }
 }, { immediate: true })
 
 onMounted(loadProjects)
 onMounted(loadCodexJobs)
+onMounted(loadCodexRunnerStatus)
 onMounted(loadCodexLoops)
+onMounted(loadDevelopmentPlans)
 onMounted(startCodexLoopPolling)
 onUnmounted(stopCodexLoopPolling)
 </script>
@@ -1836,6 +2257,12 @@ onUnmounted(stopCodexLoopPolling)
   flex-wrap: wrap;
 }
 
+.project-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .project-list-panel {
   position: sticky;
   top: 0;
@@ -1874,6 +2301,13 @@ onUnmounted(stopCodexLoopPolling)
   line-height: 1.6;
 }
 
+.project-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0;
+}
+
 .project-title {
   font-size: 20px;
   font-weight: 800;
@@ -1903,10 +2337,131 @@ onUnmounted(stopCodexLoopPolling)
   font-size: 22px;
 }
 
+.project-background-panel {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid var(--view-color-border);
+  border-radius: 8px;
+  background: var(--view-color-faint);
+}
+
+.project-background-head,
+.project-relation-card,
+.runner-health-card,
+.project-relation-title,
+.runner-health-states {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.project-background-head,
+.project-relation-card,
+.runner-health-card {
+  justify-content: space-between;
+}
+
+.project-background-head h3 {
+  margin: 0 0 4px;
+  color: var(--text);
+  font-size: 15px;
+}
+
+.project-relation-list {
+  display: grid;
+  gap: 8px;
+}
+
+.project-relation-card,
+.runner-health-card {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--view-color-border);
+  border-radius: 8px;
+  background: var(--card);
+}
+
+.project-relation-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.project-relation-copy p {
+  margin: 0;
+}
+
+.project-relation-copy small {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.project-relation-title {
+  flex-wrap: wrap;
+}
+
+.project-relation-title strong,
+.runner-health-card strong {
+  color: var(--text);
+  font-size: 14px;
+}
+
+.runner-health-card {
+  position: relative;
+  flex-wrap: wrap;
+}
+
+.runner-health-card p {
+  margin: 4px 0 0;
+}
+
+.runner-health-states {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.runner-health-error {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--el-color-danger);
+  font-size: 12px;
+}
+
+.relationship-chat-context {
+  padding: 8px 10px;
+  border-left: 2px solid var(--view-color-strong);
+  background: var(--view-color-faint);
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
 .doc-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
+}
+
+.engineering-assets-panel {
+  margin-top: 18px;
+  padding-top: 10px;
+  border-top: 1px solid var(--view-color-border);
+}
+
+.engineering-assets-tabs :deep(.el-tabs__header) {
+  margin-bottom: 0;
+}
+
+.engineering-assets-tabs :deep(.el-tabs__content) {
+  overflow: visible;
+}
+
+.engineering-assets-panel :deep(.software-workspace-panel) {
+  margin-top: 0;
+  padding-top: 12px;
+  border-top: 0;
 }
 
 .document-workspace {
@@ -2507,6 +3062,128 @@ onUnmounted(stopCodexLoopPolling)
   display: block;
 }
 
+.development-plan-strip {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 10px;
+  border: 1px solid var(--view-color-strong-border);
+  border-radius: 6px;
+  background: var(--view-color-panel);
+}
+
+.development-plan-strip > div,
+.development-plan-review,
+.development-plan-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.development-plan-strip small,
+.development-plan-card small {
+  color: var(--text-secondary);
+}
+
+.development-plan-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--view-color-strong-border);
+  border-radius: 6px;
+  background: var(--view-color-panel);
+}
+
+.development-plan-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.development-plan-head strong,
+.development-plan-head small {
+  display: block;
+}
+
+.development-plan-review {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.development-plan-card pre {
+  max-height: 260px;
+  margin: 0;
+  padding: 10px;
+  overflow: auto;
+  border: 1px solid var(--view-color-border);
+  border-radius: 6px;
+  background: var(--card);
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.development-plan-error {
+  color: var(--el-color-danger);
+  font-size: 12px;
+}
+
+.development-delivery {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--view-color-border);
+  border-radius: 6px;
+  background: var(--view-color-faint);
+}
+
+.development-delivery div,
+.development-round {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.development-delivery span,
+.development-round span {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.development-delivery code,
+.development-round code {
+  overflow: hidden;
+  color: var(--view-color-strong);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.development-rounds {
+  display: grid;
+  gap: 6px;
+}
+
+.development-round {
+  padding: 8px 10px;
+  border-left: 2px solid var(--view-color-strong);
+  background: var(--view-color-faint);
+}
+
+.development-round strong {
+  color: var(--text);
+  font-size: 12px;
+}
+
 .codex-task-head strong {
   color: var(--text);
   font-size: 14px;
@@ -2665,6 +3342,17 @@ onUnmounted(stopCodexLoopPolling)
   .project-list-panel,
   .right-rail {
     position: static;
+  }
+
+  .project-background-head,
+  .project-relation-card,
+  .runner-health-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .runner-health-states {
+    justify-content: flex-start;
   }
 }
 </style>

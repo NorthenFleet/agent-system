@@ -319,7 +319,11 @@ async function fetchHistory() {
   if (!agentId.value) return
   try {
     const res = await getAgentHistory(agentId.value, { limit: historyLimit.value })
-    history.value = res.history || []
+    history.value = Array.isArray(res.history)
+      ? res.history
+      : Array.isArray(res.status_history)
+        ? res.status_history
+        : []
   } catch {
     history.value = []
   }

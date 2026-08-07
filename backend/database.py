@@ -138,8 +138,10 @@ def ensure_db_initialized():
         # SQLite remains a self-contained development/test option. Production
         # PostgreSQL schemas are owned exclusively by Alembic.
         from models.task_plan import Base as TaskPlanBase
+        from models import writing_collaboration  # noqa: F401
 
         TaskPlanBase.metadata.create_all(bind=engine)
+        Base.metadata.create_all(bind=engine)
         ensure_v2_schema_compatibility()
     _initialized = True
 
@@ -168,9 +170,12 @@ def init_db():
     注意：生产环境应使用 Alembic 进行数据库迁移
     """
     from models.task_plan import Base as TaskPlanBase
+    from models import writing_collaboration  # noqa: F401
     
     # 创建所有表
     TaskPlanBase.metadata.create_all(bind=engine)
+    if DATABASE_URL.startswith("sqlite"):
+        Base.metadata.create_all(bind=engine)
     ensure_v2_schema_compatibility()
     print("数据库表已创建")
 

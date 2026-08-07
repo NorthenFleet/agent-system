@@ -14,9 +14,10 @@ from models.v2_models import FeatureModule, User, UserFeatureModule
 
 DEFAULT_MODULES = [
     {"module_key": "dashboard", "name": "仪表盘", "route_path": "/", "icon": "Monitor", "sort_order": 10, "description": "系统概览与近期协作状态"},
+    {"module_key": "command-center", "name": "指挥中心", "route_path": "/command-center", "icon": "Platform", "sort_order": 15, "description": "通过擎天柱接收目标、审批计划、跟踪多智能体异步执行与反馈"},
     {"module_key": "projects", "name": "项目中枢", "route_path": "/projects", "icon": "FolderOpened", "sort_order": 20, "description": "完整项目画像与产品侧模块入口"},
     {"module_key": "development", "name": "程序开发", "route_path": "/development", "icon": "Promotion", "sort_order": 30, "description": "软件项目开发、任务拆解和执行反馈"},
-    {"module_key": "writing", "name": "文档撰写", "route_path": "/writing", "icon": "EditPen", "sort_order": 40, "description": "文档类项目工作区"},
+    {"module_key": "writing", "name": "文档管理", "route_path": "/writing", "icon": "EditPen", "sort_order": 40, "description": "文档类项目管理、撰写和交付工作区"},
     {"module_key": "finance", "name": "财务管理", "route_path": "/finance", "icon": "Money", "sort_order": 50, "description": "预算、报销和财务信息分析"},
     {"module_key": "products", "name": "产品矩阵", "route_path": "/products", "icon": "Grid", "sort_order": 60, "description": "产品、依赖和推进状态"},
     {"module_key": "data-admin", "name": "数据管理", "route_path": "/data-admin", "icon": "Coin", "sort_order": 110, "description": "统一数据源、备份和数据健康"},
@@ -38,10 +39,10 @@ LEGACY_DISABLED_MODULE_KEYS = {"skills", "scheduled", "devices", "agent-dispatch
 ROLE_DEFAULT_MODULES = {
     "admin": [m["module_key"] for m in DEFAULT_MODULES],
     "agent": [
-        "dashboard", "projects", "development", "writing", "agents",
+        "dashboard", "command-center", "projects", "development", "writing", "agents",
         "knowledge", "tools", "intelligence", "tasks", "products", "monitoring",
     ],
-    "viewer": ["dashboard", "projects", "development", "writing", "knowledge", "intelligence", "news-center", "products"],
+    "viewer": ["dashboard", "command-center", "projects", "development", "writing", "knowledge", "intelligence", "news-center", "products"],
 }
 
 

@@ -18,6 +18,7 @@ from routers import (
     mission_planning,
     openclaw_status,
     products_router,
+    product_invocation_router,
     projects_v3,
     system_status,
     workflow,
@@ -28,6 +29,9 @@ from routers.agent_health_router import router as agent_health_router
 from routers.agents_router import router as agents_router
 from routers.auth_router import router as auth_router
 from routers.codex_jobs_router import router as codex_jobs_router
+from routers.command_center_router import router as command_center_router
+from routers.context_router import router as context_router
+from routers.development_automation_router import router as development_automation_router
 from routers.customers_router import router as customers_router
 from routers.modules_router import router as modules_router
 from routers.monitoring_router import router as monitoring_router
@@ -40,6 +44,15 @@ from routers.templates_router import router as templates_router
 from routers.users_router import router as users_router
 from routers.v2_chat_router import router as v2_chat_router
 from routers.analytics_router import router as analytics_router
+from routers.scheduler_router import router as scheduler_router
+from services.command_center_worker import (
+    start_command_center_worker as _start_command_center_worker,
+    stop_command_center_worker as _stop_command_center_worker,
+)
+from services.writing_collaboration_worker import (
+    start_writing_collaboration_worker as _start_writing_collaboration_worker,
+    stop_writing_collaboration_worker as _stop_writing_collaboration_worker,
+)
 
 # Legacy compatibility managers. Keep these imports centralized so their
 # compatibility surface is visible and can be removed in one place later.
@@ -80,6 +93,7 @@ ACTIVE_ROUTERS = (
     knowledge_stack.router,
     data_admin.router,
     products_router.router,
+    product_invocation_router.router,
     agent_os.router,
     finance.router,
     finance.health_router,
@@ -92,6 +106,9 @@ ACTIVE_ROUTERS = (
     customers_router,
     v2_chat_router,
     codex_jobs_router,
+    command_center_router,
+    context_router,
+    development_automation_router,
     task_recommend_router,
     agent_health_router,
     monitoring_router,
@@ -101,6 +118,7 @@ ACTIVE_ROUTERS = (
     notification_router,
     automation_router,
     analytics_router,
+    scheduler_router,
 )
 
 
@@ -148,3 +166,19 @@ def start_mission_planning_monitor() -> None:
 
 async def stop_mission_planning_monitor() -> None:
     await mission_planning.stop_mission_planning_monitor()
+
+
+def start_command_center_worker() -> None:
+    _start_command_center_worker()
+
+
+async def stop_command_center_worker() -> None:
+    await _stop_command_center_worker()
+
+
+def start_writing_collaboration_worker() -> None:
+    _start_writing_collaboration_worker()
+
+
+async def stop_writing_collaboration_worker() -> None:
+    await _stop_writing_collaboration_worker()

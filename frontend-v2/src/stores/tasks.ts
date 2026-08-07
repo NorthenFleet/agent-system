@@ -11,11 +11,18 @@ export interface Task {
   status: string
   priority: string
   assignee: string | null
+  assignee_name?: string | null
   progress: number
   source: string
   sprint: number | null
   tags: string[]
   parent_task_id: string | null
+  parent_title?: string | null
+  project_id?: string | null
+  project_name?: string | null
+  mission_id?: string | null
+  mission_type?: string | null
+  work_item_type?: 'task' | 'point' | 'mission' | 'step'
   created_at: string
   updated_at: string
   completed_at: string | null
@@ -90,6 +97,7 @@ export const useTasksStore = defineStore('tasks', () => {
   const total = ref(0)
   const totalPages = ref(0)
   const loading = ref(false)
+  const error = ref('')
   const selectedTask = ref<Task | null>(null)
   const comments = ref<Comment[]>([])
   const filters = ref({
@@ -101,11 +109,12 @@ export const useTasksStore = defineStore('tasks', () => {
   })
   const pagination = ref({
     page: 1,
-    pageSize: 20
+    pageSize: 50
   })
 
   async function fetchTasks() {
     loading.value = true
+    error.value = ''
     try {
       const res = await getTasks({
         status: filters.value.status || undefined,
@@ -119,10 +128,11 @@ export const useTasksStore = defineStore('tasks', () => {
       tasks.value = res.tasks
       total.value = res.total
       totalPages.value = res.total_pages
-    } catch {
+    } catch (err: any) {
       tasks.value = []
       total.value = 0
       totalPages.value = 0
+      error.value = err?.response?.data?.detail || '任务总账加载失败'
     } finally {
       loading.value = false
     }
@@ -209,6 +219,7 @@ export const useTasksStore = defineStore('tasks', () => {
     total,
     totalPages,
     loading,
+    error,
     selectedTask,
     comments,
     filters,
