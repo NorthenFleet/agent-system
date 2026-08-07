@@ -12,7 +12,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any, Awaitable, Callable
 
-from sqlalchemy import and_, or_, select, update
+from sqlalchemy import and_, func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -21,9 +21,11 @@ from database import SessionLocal
 from models.writing_collaboration import (
     WritingAiJob,
     WritingAiProposal,
+    WritingChangeSet,
     WritingChangeEvent,
     WritingDocumentState,
     WritingDocumentVersion,
+    WritingEvidenceRef,
 )
 from services.document_workspace_service import (
     DocumentVersionConflict,
@@ -44,6 +46,7 @@ TERMINAL_JOB_STATUSES = {
     "partially_applied",
     "applied",
     "conflicted",
+    "review_required",
     "failed",
     "cancelled",
 }
@@ -68,6 +71,13 @@ def _feature_enabled() -> bool:
         "off",
         "no",
     }
+
+
+LOW_RISK_INSTRUCTION = re.compile(r"(润色|措辞|语法|标点|格式|排版|压缩冗余|结构整理|错别字)")
+EVIDENCE_SENSITIVE_TEXT = re.compile(
+    r"(研究表明|实验|结果|结论|显著|提升|降低|准确率|胜率|证据|引用|文献|图\s*\d|表\s*\d|式\s*\d|公式|\[[0-9]+\]|\d+(?:\.\d+)?\s*%)",
+    flags=re.IGNORECASE,
+)
 
 
 class WritingCollaborationDisabled(DocumentWorkspaceError):
@@ -308,7 +318,11 @@ class WritingCollaborationService:
             "diff": proposal.diff,
             "replacement_markdown": proposal.replacement_markdown,
             "status": proposal.status,
-            "requires_rebase": proposal.status == "pending",
+            "risk_level": proposal.risk_level,
+            "approval_required": proposal.approval_required,
+            "evidence_ref_ids": proposal.evidence_ref_ids or [],
+            "concurrency_status": proposal.concurrency_status,
+            "requires_rebase": proposal.status == "pending" and proposal.concurrency_status == "conflicted",
             "created_at": proposal.created_at.isoformat() if proposal.created_at else "",
         }
 
@@ -353,6 +367,8 @@ class WritingCollaborationService:
             "schema_version": state.schema_version,
             "revision": state.document_revision,
             "document_revision": state.document_revision,
+            "approved_revision": state.approved_revision,
+            "published_revision": state.published_revision,
             "document": section_document,
             "draft": {"revision": state.document_revision, "document": section_document},
             "section": section,
@@ -828,6 +844,13 @@ class WritingCollaborationService:
         ).scalar_one_or_none()
         if existing:
             return existing
+        parent_revision = session.execute(
+            select(func.max(WritingDocumentVersion.document_revision)).where(
+                WritingDocumentVersion.project_id == state.project_id,
+                WritingDocumentVersion.document_id == state.document_id,
+                WritingDocumentVersion.document_revision < state.document_revision,
+            )
+        ).scalar_one_or_none() or 0
         row = WritingDocumentVersion(
             id=_uuid("wver"),
             project_id=state.project_id,
@@ -840,6 +863,8 @@ class WritingCollaborationService:
             markdown_snapshot=self.codec.to_markdown(state.content_json),
             actor_type=actor_type,
             actor_id=actor_id,
+            parent_revision=parent_revision,
+            lifecycle_status="working",
         )
         session.add(row)
         return row
@@ -1093,6 +1118,7 @@ class WritingCollaborationService:
         selection["text_sha256"] = _sha256(str(selection.get("text") or ""))
         project_id = str(project.get("id"))
         client_request_id = str(payload.get("client_request_id") or _uuid("request"))[:96]
+        evidence_ref_ids = [str(value) for value in payload.get("evidence_ref_ids") or []]
         with self.session_factory() as session:
             existing = session.execute(
                 select(WritingAiJob).where(
@@ -1108,6 +1134,16 @@ class WritingCollaborationService:
             state = self._load_state(session, project_id, document_id)
             if not state:
                 raise DocumentWorkspaceError("结构化正文状态不存在")
+            if evidence_ref_ids:
+                available = session.execute(select(WritingEvidenceRef.id).where(
+                    WritingEvidenceRef.project_id == project_id,
+                    WritingEvidenceRef.document_id == document_id,
+                    WritingEvidenceRef.id.in_(evidence_ref_ids),
+                    WritingEvidenceRef.immutable.is_(True),
+                    WritingEvidenceRef.perspective_scope.in_({"public", "project", "paper", "aggregate"}),
+                )).scalars().all()
+                if set(available) != set(evidence_ref_ids):
+                    raise DocumentWorkspaceError("AI 任务引用了不存在或无权进入正文的 EvidenceRef")
             canonical_payload = copy.deepcopy(payload)
             section_id = str(canonical_payload.get("section_id") or "")
             if section_id:
@@ -1132,6 +1168,8 @@ class WritingCollaborationService:
                 base_document_revision=state.document_revision,
                 target_blocks=targets,
                 selection=selection,
+                evidence_ref_ids=evidence_ref_ids,
+                risk_policy=copy.deepcopy(payload.get("risk_policy") or {}),
                 status="queued",
                 requested_by=actor,
             )
@@ -1182,6 +1220,8 @@ class WritingCollaborationService:
   ]
 }}
 
+绑定证据引用：{json.dumps(job.evidence_ref_ids or [], ensure_ascii=False)}
+
 规则：
 1. 不得返回完整文档 JSON，只返回上述结构化操作。
 2. replace/delete 的 block_id 必须来自输入；insert_after 使用锚点 block_id。
@@ -1191,6 +1231,64 @@ class WritingCollaborationService:
 目标正文：
 {source}
 """
+
+    def _operation_risk(
+        self,
+        job: WritingAiJob,
+        action: str,
+        current_markdown: str,
+        replacement_markdown: str,
+        current_block: dict[str, Any] | None,
+        replacement_nodes: list[dict[str, Any]],
+    ) -> tuple[str, bool]:
+        """Separate concurrency safety from authorization to enter the draft."""
+        sensitive = bool(EVIDENCE_SENSITIVE_TEXT.search(replacement_markdown))
+        low_risk_instruction = bool(LOW_RISK_INSTRUCTION.search(job.instruction))
+        structural = action in {"delete", "insert_after"}
+        same_shape = bool(
+            action == "replace"
+            and current_block
+            and len(replacement_nodes) == 1
+            and self._semantic_shape(current_block) == self._semantic_shape(replacement_nodes[0])
+        )
+        if sensitive or structural or not same_shape:
+            return ("high", True)
+        def formatting_baseline(value: str) -> str:
+            compact = re.sub(r"\s+", "", value, flags=re.UNICODE)
+            return re.sub(r"[，。！？；：、,.!?;:]+$", "", compact).casefold()
+
+        semantic_before = formatting_baseline(current_markdown)
+        semantic_after = formatting_baseline(replacement_markdown)
+        formatting_only = bool(semantic_before) and semantic_before == semantic_after
+        if (
+            action == "replace"
+            and formatting_only
+            and low_risk_instruction
+            and bool((job.risk_policy or {}).get("allow_auto_draft", True))
+        ):
+            return ("low", False)
+        return ("medium", True)
+
+    @classmethod
+    def _semantic_shape(cls, value: Any) -> Any:
+        """Keep node/mark structure while ignoring text and stable block identity."""
+        if isinstance(value, list):
+            return [cls._semantic_shape(item) for item in value]
+        if not isinstance(value, dict):
+            return value
+        shaped: dict[str, Any] = {}
+        for key, item in value.items():
+            if key == "text":
+                shaped[key] = "<text>"
+            elif key == "attrs" and isinstance(item, dict):
+                shaped[key] = {
+                    name: cls._semantic_shape(attribute)
+                    for name, attribute in item.items()
+                    if name not in {"blockId", "blockRevision"}
+                }
+            else:
+                shaped[key] = cls._semantic_shape(item)
+        return shaped
 
     def _parse_ai_response(self, response: str) -> dict[str, Any]:
         value = response.strip()
@@ -1287,6 +1385,7 @@ class WritingCollaborationService:
                 proposals: list[WritingAiProposal] = []
                 applied_count = 0
                 conflict_count = 0
+                review_count = 0
                 before_sha = state.content_sha256
                 for index, operation in enumerate(payload.get("operations") or []):
                     if not isinstance(operation, dict):
@@ -1307,6 +1406,7 @@ class WritingCollaborationService:
                         and self.codec.block_sha256(current_block) == target["block_sha256"]
                     )
                     replacement_markdown = str(operation.get("replacement_markdown") or "")
+                    current_markdown = self.codec.block_markdown(current_block) if current_block else ""
                     replacement_nodes: list[dict[str, Any]] = []
                     if action != "delete":
                         replacement_nodes = self._replacement_nodes(
@@ -1315,7 +1415,14 @@ class WritingCollaborationService:
                             target_block_id=block_id if action == "replace" else _uuid("block"),
                             target_revision=int(target["block_revision"]) if action == "replace" else 0,
                         )
-                    current_markdown = self.codec.block_markdown(current_block) if current_block else ""
+                    risk_level, approval_required = self._operation_risk(
+                        job,
+                        action,
+                        current_markdown,
+                        replacement_markdown,
+                        current_block,
+                        replacement_nodes,
+                    )
                     diff = "\n".join(difflib.unified_diff(
                         current_markdown.splitlines(),
                         replacement_markdown.splitlines(),
@@ -1337,13 +1444,18 @@ class WritingCollaborationService:
                         diff=diff,
                         summary=str(operation.get("summary") or "AI 修改建议")[:1000],
                         rationale=str(operation.get("rationale") or "")[:4000],
-                        status="applied" if unchanged else "pending",
-                        decided_at=_now() if unchanged else None,
-                        decided_by=job.agent_id if unchanged else "",
+                        risk_level=risk_level,
+                        approval_required=approval_required,
+                        evidence_ref_ids=list(job.evidence_ref_ids or []),
+                        concurrency_status="unchanged" if unchanged else "conflicted",
+                        status="applied" if unchanged and not approval_required else "pending",
+                        decided_at=_now() if unchanged and not approval_required else None,
+                        decided_by=job.agent_id if unchanged and not approval_required else "",
                     )
                     session.add(proposal)
+                    session.flush()
                     proposals.append(proposal)
-                    if unchanged:
+                    if unchanged and not approval_required:
                         if action == "delete":
                             proposed_operations.append({
                                 "op": "delete",
@@ -1379,7 +1491,28 @@ class WritingCollaborationService:
                                 anchor = str((node.get("attrs") or {}).get("blockId") or anchor)
                         applied_count += 1
                     else:
-                        conflict_count += 1
+                        session.add(WritingChangeSet(
+                            id=_uuid("changeset"),
+                            project_id=project_id,
+                            document_id=document_id,
+                            base_revision=job.base_document_revision,
+                            proposal_id=proposal.id,
+                            operations=[{
+                                "op": action,
+                                "block_id": block_id,
+                                "replacement_markdown": replacement_markdown,
+                            }],
+                            evidence_ref_ids=list(job.evidence_ref_ids or []),
+                            risk_level=risk_level,
+                            approval_policy="risk_driven",
+                            status="conflicted" if not unchanged else "review_required",
+                            idempotency_key=f"proposal:{proposal.id}",
+                            summary=proposal.summary,
+                        ))
+                        if unchanged:
+                            review_count += 1
+                        else:
+                            conflict_count += 1
                 if proposed_operations:
                     document = copy.deepcopy(state.content_json)
                     applied, apply_conflicts = self._apply_operations(
@@ -1420,12 +1553,14 @@ class WritingCollaborationService:
                 job.finished_at = _now()
                 job.lease_expires_at = None
                 job.worker_id = ""
-                if applied_count and conflict_count:
+                if applied_count and (conflict_count or review_count):
                     job.status = "partially_applied"
                 elif applied_count:
                     job.status = "applied"
                 elif conflict_count:
                     job.status = "conflicted"
+                elif review_count:
+                    job.status = "review_required"
                 else:
                     job.status = "failed"
                     job.error = "AI 未返回可执行操作"
@@ -1535,6 +1670,8 @@ class WritingCollaborationService:
             "error": job.error,
             "base_document_revision": job.base_document_revision,
             "attempt_count": job.attempt_count,
+            "evidence_ref_ids": job.evidence_ref_ids or [],
+            "risk_policy": job.risk_policy or {},
             "created_at": job.created_at.isoformat() if job.created_at else "",
             "started_at": job.started_at.isoformat() if job.started_at else "",
             "finished_at": job.finished_at.isoformat() if job.finished_at else "",
@@ -1623,6 +1760,8 @@ class WritingCollaborationService:
             section_id = proposal.job.section_id if proposal.job else ""
             if proposal.status != "pending":
                 raise DocumentWorkspaceError("该建议已处理")
+            if EVIDENCE_SENSITIVE_TEXT.search(proposal.replacement_markdown) and not proposal.evidence_ref_ids:
+                raise DocumentWorkspaceError("证据敏感修改未绑定 EvidenceRef，只能保留为证据缺口")
             state = self._load_state(session, project_id, document_id, lock=True)
             if not state:
                 raise DocumentWorkspaceError("结构化正文状态不存在")
@@ -1694,6 +1833,14 @@ class WritingCollaborationService:
             proposal.status = "applied"
             proposal.decided_at = _now()
             proposal.decided_by = actor
+            change_set = session.execute(select(WritingChangeSet).where(
+                WritingChangeSet.proposal_id == proposal.id
+            ).with_for_update()).scalar_one_or_none()
+            if change_set:
+                change_set.status = "approved"
+                change_set.result_revision = state.document_revision
+                change_set.decided_at = _now()
+                change_set.decided_by = actor
             session.add(WritingChangeEvent(
                 id=_uuid("wevt"),
                 project_id=project_id,
@@ -1738,6 +1885,13 @@ class WritingCollaborationService:
                 proposal.status = "rejected"
                 proposal.decided_at = _now()
                 proposal.decided_by = actor
+                change_set = session.execute(select(WritingChangeSet).where(
+                    WritingChangeSet.proposal_id == proposal.id
+                ).with_for_update()).scalar_one_or_none()
+                if change_set:
+                    change_set.status = "rejected"
+                    change_set.decided_at = _now()
+                    change_set.decided_by = actor
                 session.commit()
         return self.get_state(project, document_id, section_id)
 

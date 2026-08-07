@@ -8,7 +8,13 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from database import Base
-from models.writing_collaboration import WritingAiJob, WritingAiProposal, WritingDocumentState
+from models.writing_collaboration import (
+    WritingAiJob,
+    WritingAiProposal,
+    WritingChangeSet,
+    WritingDocumentState,
+    WritingDocumentVersion,
+)
 from services.document_workspace_service import DocumentVersionConflict, DocumentWorkspaceError
 from services.structured_document_service import StructuredDocumentCodec
 from services.writing_collaboration_service import (
@@ -111,6 +117,26 @@ def test_initialization_assigns_stable_ids_and_switches_only_projection_authorit
         stored = session.execute(select(WritingDocumentState)).scalar_one()
         assert stored.projection_status == "current"
         assert stored.projection_revision == stored.document_revision == 1
+
+
+def test_runtime_version_lineage_uses_previous_existing_revision():
+    service, sessions, _ = _service()
+    with sessions() as session:
+        state = session.execute(select(WritingDocumentState)).scalar_one()
+        state.document_revision = 8
+        service._create_version_row(
+            session,
+            state,
+            label="sparse checkpoint",
+            reason="manual",
+            actor_type="human",
+            actor_id="admin",
+        )
+        session.commit()
+        version = session.execute(select(WritingDocumentVersion).where(
+            WritingDocumentVersion.document_revision == 8,
+        )).scalar_one()
+        assert version.parent_revision == 1
 
 
 def test_get_is_side_effect_free_before_explicit_initialization():
@@ -390,12 +416,14 @@ def test_ai_auto_applies_unchanged_block_and_conflicts_on_changed_block():
     initial = service.get_state(project, "document-1", "section-01-first")
     first = _paragraphs(initial)[0]
     first_id = first["attrs"]["blockId"]
+    original_markdown = service.codec.block_markdown(first)
+    formatting_only = original_markdown.strip().rstrip("。！？.!?") + "！"
     response = {
         "summary": "润色完成",
         "operations": [{
             "block_id": first_id,
             "action": "replace",
-            "replacement_markdown": "自动合并后的段落。",
+            "replacement_markdown": formatting_only,
             "summary": "润色段落",
             "rationale": "减少冗余",
         }],
@@ -410,7 +438,7 @@ def test_ai_auto_applies_unchanged_block_and_conflicts_on_changed_block():
     asyncio.run(service.process_ai_job(project, "document-1", job["id"]))
     completed = service.get_ai_job(project, "document-1", job["id"])
     assert completed["status"] == "applied"
-    assert "自动合并后的段落。" in service.codec.to_markdown(
+    assert formatting_only in service.codec.to_markdown(
         service.get_state(project, "document-1", "section-01-first")["document"]
     )
 
@@ -455,6 +483,138 @@ def test_ai_auto_applies_unchanged_block_and_conflicts_on_changed_block():
     with sessions() as session:
         assert session.execute(select(WritingAiProposal)).scalars().all()
         assert session.execute(select(WritingAiJob)).scalars().all()
+
+
+def test_semantic_rewrite_stays_in_review_even_when_instruction_says_polish():
+    project = {"id": "project-1", "name": "项目"}
+    service, _, _ = _service()
+    initial = service.get_state(project, "document-1", "section-01-first")
+    block = _paragraphs(initial)[0]
+    response = {
+        "summary": "润色完成",
+        "operations": [{
+            "block_id": block["attrs"]["blockId"],
+            "action": "replace",
+            "replacement_markdown": "新增了原文没有的实质性判断。",
+            "summary": "改写段落",
+            "rationale": "语义发生变化",
+        }],
+    }
+    service.ai_requester = lambda _agent, _prompt: _async_value(response)
+    job = service.submit_ai_job(project, "document-1", {
+        "agent_id": "ultra-magnus",
+        "scope": "block",
+        "block_id": block["attrs"]["blockId"],
+        "instruction": "润色",
+    }, "human")
+
+    asyncio.run(service.process_ai_job(project, "document-1", job["id"]))
+
+    completed = service.get_ai_job(project, "document-1", job["id"])
+    assert completed["status"] == "review_required"
+    assert completed["proposals"][0]["risk_level"] == "medium"
+    assert completed["proposals"][0]["approval_required"] is True
+
+
+def test_ai_cannot_auto_apply_one_block_as_multiple_nodes():
+    project = {"id": "project-1", "name": "项目"}
+    service, _, workspace = _service(initialize=False)
+    workspace.markdown = "# 第一章\n\n甲 乙\n"
+    service.ensure_state(project, "document-1")
+    initial = service.get_state(project, "document-1", "section-01-first")
+    block = _paragraphs(initial)[0]
+    service.ai_requester = lambda _agent, _prompt: _async_value({
+        "summary": "调整空白",
+        "operations": [{
+            "block_id": block["attrs"]["blockId"],
+            "action": "replace",
+            "replacement_markdown": "甲\n\n乙",
+            "summary": "拆分段落",
+            "rationale": "测试结构边界",
+        }],
+    })
+    job = service.submit_ai_job(project, "document-1", {
+        "agent_id": "ultra-magnus",
+        "scope": "block",
+        "block_id": block["attrs"]["blockId"],
+        "instruction": "润色",
+    }, "human")
+
+    asyncio.run(service.process_ai_job(project, "document-1", job["id"]))
+
+    completed = service.get_ai_job(project, "document-1", job["id"])
+    assert completed["status"] == "review_required"
+    assert completed["proposals"][0]["risk_level"] == "high"
+    assert completed["proposals"][0]["approval_required"] is True
+
+
+def test_sign_change_is_not_treated_as_formatting_only():
+    project = {"id": "project-1", "name": "项目"}
+    service, _, workspace = _service(initialize=False)
+    workspace.markdown = "# 第一章\n\n温度为 -5。\n"
+    service.ensure_state(project, "document-1")
+    initial = service.get_state(project, "document-1", "section-01-first")
+    block = _paragraphs(initial)[0]
+    service.ai_requester = lambda _agent, _prompt: _async_value({
+        "summary": "润色完成",
+        "operations": [{
+            "block_id": block["attrs"]["blockId"],
+            "action": "replace",
+            "replacement_markdown": "温度为 5。",
+            "summary": "调整格式",
+            "rationale": "测试符号变化",
+        }],
+    })
+    job = service.submit_ai_job(project, "document-1", {
+        "agent_id": "ultra-magnus",
+        "scope": "block",
+        "block_id": block["attrs"]["blockId"],
+        "instruction": "润色",
+    }, "human")
+
+    asyncio.run(service.process_ai_job(project, "document-1", job["id"]))
+
+    completed = service.get_ai_job(project, "document-1", job["id"])
+    assert completed["status"] == "review_required"
+    assert completed["proposals"][0]["approval_required"] is True
+
+
+def test_evidence_sensitive_ai_change_requires_approval_without_concurrency_conflict():
+    project = {"id": "project-1", "name": "项目"}
+    service, sessions, _ = _service()
+    initial = service.get_state(project, "document-1", "section-01-first")
+    block = _paragraphs(initial)[0]
+    response = {
+        "summary": "补充实验结论",
+        "operations": [{
+            "block_id": block["attrs"]["blockId"],
+            "action": "replace",
+            "replacement_markdown": "实验结果表明任务成功率提升 20%。",
+            "summary": "补充实验结论",
+            "rationale": "绑定实验结果",
+        }],
+    }
+    service.ai_requester = lambda _agent, _prompt: _async_value(response)
+    job = service.submit_ai_job(project, "document-1", {
+        "agent_id": "ultra-magnus",
+        "scope": "block",
+        "block_id": block["attrs"]["blockId"],
+        "instruction": "补充实验结论",
+    }, "human")
+
+    asyncio.run(service.process_ai_job(project, "document-1", job["id"]))
+
+    completed = service.get_ai_job(project, "document-1", job["id"])
+    assert completed["status"] == "review_required"
+    assert completed["proposals"][0]["approval_required"] is True
+    assert completed["proposals"][0]["requires_rebase"] is False
+    assert "实验结果表明" not in service.codec.to_markdown(
+        service.get_state(project, "document-1", "section-01-first")["document"]
+    )
+    with sessions() as session:
+        change_set = session.execute(select(WritingChangeSet)).scalar_one()
+        assert change_set.status == "review_required"
+        assert change_set.evidence_ref_ids == []
 
 
 def test_invalid_ai_response_fails_without_changing_document():

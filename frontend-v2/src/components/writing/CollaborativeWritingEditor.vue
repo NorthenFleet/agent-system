@@ -67,6 +67,68 @@
         <el-empty v-else description="暂无图表公式" :image-size="40" />
       </section>
 
+      <section class="research-workflow" aria-label="主张证据与运行状态">
+        <header>
+          <span>主张与证据</span>
+          <button type="button" :disabled="workflowBusy" @click="markSelectionAsClaim">标记主张</button>
+        </header>
+        <div class="workflow-counts">
+          <small>缺证 {{ workflow?.gaps.length || 0 }}</small>
+          <small>待审 {{ workflow?.change_sets.length || 0 }}</small>
+          <small>运行 {{ activeRuns.length }}</small>
+        </div>
+        <el-alert v-if="workflow && workflow.revision !== workflow.approved_revision" type="warning" :closable="false" title="当前正文尚未完成章节审批" />
+        <div v-if="workflow?.evidence_refs.length" class="evidence-selector">
+          <span>本次 AI 可引用证据</span>
+          <el-checkbox-group v-model="selectedEvidenceIds">
+            <el-checkbox v-for="evidence in workflow.evidence_refs" :key="evidence.id" :value="evidence.id">
+              {{ evidence.evidence_level }} · {{ evidence.source_system }}
+            </el-checkbox>
+          </el-checkbox-group>
+        </div>
+        <details class="evidence-register">
+          <summary>登记不可变证据</summary>
+          <el-select v-model="evidenceForm.claim_id" placeholder="选择主张" size="small">
+            <el-option v-for="claim in workflow?.claims || []" :key="claim.id" :label="claim.claim_text" :value="claim.id" />
+          </el-select>
+          <el-input v-model="evidenceForm.source_system" placeholder="来源系统，如 one-sim" size="small" />
+          <el-input v-model="evidenceForm.artifact_path" placeholder="原始快照或证据包路径" size="small" />
+          <el-input v-model="evidenceForm.artifact_sha256" placeholder="SHA-256" size="small" />
+          <el-select v-model="evidenceForm.evidence_level" size="small">
+            <el-option v-for="level in evidenceLevels" :key="level" :label="level" :value="level" />
+          </el-select>
+          <el-button size="small" :loading="workflowBusy" @click="registerAndBindEvidence">登记并绑定</el-button>
+        </details>
+        <div v-if="workflow?.gaps.length" class="workflow-list">
+          <article v-for="gap in workflow.gaps" :key="gap.id">
+            <div><strong>缺口 · {{ gap.required_level }}</strong><small>{{ gap.reason }}</small></div>
+            <el-button size="small" text :disabled="!Object.keys(gap.research_matrix || {}).length || workflowBusy" @click="dispatchGap(gap)">{{ gap.dispatched_run_id ? '重试 One-Sim' : '提交 One-Sim' }}</el-button>
+          </article>
+        </div>
+        <div v-if="activeRuns.length" class="workflow-list">
+          <article v-for="run in activeRuns" :key="run.id">
+            <div>
+              <strong>Jarvis · {{ jarvisStatusLabel(run.status) }}</strong>
+              <small>{{ run.error || run.approval_reason || run.recovery_cursor?.next_step || run.run_type }}</small>
+            </div>
+            <div v-if="run.status === 'awaiting_approval'">
+              <el-button size="small" text @click="decideJarvisRun(run.id, 'reject')">拒绝</el-button>
+              <el-button size="small" type="primary" text @click="decideJarvisRun(run.id, 'approve')">批准</el-button>
+            </div>
+          </article>
+        </div>
+        <div v-if="workflow?.change_sets.length" class="workflow-list approvals">
+          <article v-for="changeSet in workflow.change_sets" :key="changeSet.id">
+            <div><strong>{{ changeSet.risk_level }} 风险修改</strong><small>{{ changeSet.summary }}</small></div>
+            <div>
+              <el-button size="small" text @click="decideChangeSet(changeSet.id, 'reject')">拒绝</el-button>
+              <el-button v-if="changeSet.proposal_id" size="small" type="primary" text @click="decideChangeSet(changeSet.id, 'approve')">批准</el-button>
+            </div>
+          </article>
+        </div>
+        <el-button v-if="workflow && workflow.revision !== workflow.approved_revision && !workflow.change_sets.length" size="small" plain :loading="workflowBusy" @click="approveCurrentRevision">审批当前章节修订</el-button>
+      </section>
+
       <label class="instruction-box">
         <span>写作指令</span>
         <el-input
@@ -221,11 +283,19 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import DocumentOutlineTree from '@/components/writing/DocumentOutlineTree.vue'
 import {
   acceptWritingProposal,
+  approveWritingRevision,
+  bindWritingEvidence,
   createWritingAiJob,
+  createWritingClaim,
+  createWritingEvidenceRef,
   createWritingVersion,
+  decideWritingChangeSet,
+  decideWritingJarvisRun,
+  dispatchWritingEvidenceGap,
   getDocumentWritingAsset,
   getWritingAiJob,
   getWritingCollaboration,
+  getWritingResearchWorkflow,
   initializeWritingCollaboration,
   patchWritingCollaborationDraft,
   rejectWritingProposal,
@@ -234,7 +304,9 @@ import {
   type WritingCollaborationAgent,
   type WritingCollaborationState,
   type WritingDirectoryNode,
-  type WritingProposal
+  type WritingEvidenceGap,
+  type WritingProposal,
+  type WritingResearchWorkflow
 } from '@/api/writing'
 
 const props = defineProps<{
@@ -381,6 +453,17 @@ const selectionRevision = ref(0)
 const artifactRevision = ref(0)
 const assetInput = ref<HTMLInputElement>()
 const assetUploading = ref(false)
+const workflow = ref<WritingResearchWorkflow>()
+const workflowBusy = ref(false)
+const selectedEvidenceIds = ref<string[]>([])
+const evidenceLevels = ['diagnostic', 'G1', 'G2', 'A'] as const
+const evidenceForm = ref({
+  claim_id: '',
+  source_system: 'one-sim',
+  artifact_path: '',
+  artifact_sha256: '',
+  evidence_level: 'diagnostic' as typeof evidenceLevels[number]
+})
 const assetPreviewMissing = ref(new Set<string>())
 const assetPreviewUrls = new Map<string, string>()
 let assetPreviewRefresh: Promise<void> | undefined
@@ -390,7 +473,8 @@ let hardFlushTimer: ReturnType<typeof setInterval> | undefined
 let jobPollTimer: ReturnType<typeof setTimeout> | undefined
 let saveQueued = false
 let saveInFlight = false
-let savePromise: Promise<void> | undefined
+let saveDrainPromise: Promise<boolean> | undefined
+const evidenceRetryTokens = new Map<string, string>()
 let lastSavedDocument: JSONContent = { type: 'doc', content: [] }
 let latestDocument: JSONContent = { type: 'doc', content: [{ type: 'paragraph' }] }
 let isUnmounting = false
@@ -447,7 +531,7 @@ const canRunAi = computed(() => Boolean(agentId.value && instruction.value.trim(
 const saveStateLabel = computed(() => ({ saved: '已保存', dirty: '待保存', saving: '保存中', error: '保存失败' })[saveState.value])
 const jobStatusLabel = computed(() => ({
   idle: '就绪', queued: '已排队', running: '生成中', applied: '已自动合并',
-  partially_applied: '部分合并', conflicted: '待审阅', failed: '任务失败', cancelled: '已取消'
+  partially_applied: '部分合并', conflicted: '并发冲突', review_required: '风险待审', failed: '任务失败', cancelled: '已取消'
 } as Record<string, string>)[jobStatus.value] || jobStatus.value)
 const currentSelection = computed(() => {
   void selectionRevision.value
@@ -482,6 +566,20 @@ const artifactCounts = computed(() => artifactRows.value.reduce((counts, item) =
   counts[item.kind] += 1
   return counts
 }, { figure: 0, table: 0, equation: 0 } as Record<'figure' | 'table' | 'equation', number>))
+const activeRuns = computed(() => (workflow.value?.runs || []).filter(run =>
+  ['queued', 'running', 'awaiting_approval', 'waiting_evidence', 'cancellation_requested', 'compensating'].includes(run.status)
+))
+
+function jarvisStatusLabel(status: string) {
+  return ({
+    queued: '排队中',
+    running: '执行中',
+    awaiting_approval: '等待审批',
+    waiting_evidence: '等待证据',
+    cancellation_requested: '正在安全停止',
+    compensating: '正在确认远端停止'
+  } as Record<string, string>)[status] || status
+}
 
 interface CollaborativeWritingExportPreflightIssue {
   severity: 'blocker' | 'warning'
@@ -841,12 +939,164 @@ async function loadCollaboration() {
   try {
     const state = await getWritingCollaboration(props.projectId, props.documentId, props.sectionId)
     applyState(state)
+    await loadResearchWorkflow()
   } catch (error) {
     const message = errorMessage(error, '协同写作内容加载失败')
     initializationRequired.value = message.includes('尚未启用人机双写')
     if (!initializationRequired.value) ElMessage.error(message)
   } finally {
     loading.value = false
+  }
+}
+
+async function loadResearchWorkflow() {
+  try {
+    workflow.value = await getWritingResearchWorkflow(props.projectId, props.documentId)
+    selectedEvidenceIds.value = selectedEvidenceIds.value.filter(id =>
+      workflow.value?.evidence_refs.some(item => item.id === id)
+    )
+  } catch (error) {
+    if (!initializationRequired.value) ElMessage.error(errorMessage(error, '研究工作流加载失败'))
+  }
+}
+
+async function markSelectionAsClaim() {
+  const claimText = currentSelection.value.text.trim()
+  if (!claimText) {
+    ElMessage.warning('请先在正文中选择需要补证的主张')
+    return
+  }
+  workflowBusy.value = true
+  try {
+    if (!(await flushDraft())) return
+    await createWritingClaim(props.projectId, props.documentId, {
+      claim_text: claimText,
+      claim_type: 'argument',
+      minimum_evidence_level: 'G1',
+      document_revision: revision.value,
+      section_id: activeSectionId.value,
+      block_id: currentBlock.value.id || '',
+      research_matrix: {}
+    })
+    await loadResearchWorkflow()
+    ElMessage.success('已登记论文主张并创建证据缺口')
+  } catch (error) {
+    ElMessage.error(errorMessage(error, '主张登记失败'))
+  } finally {
+    workflowBusy.value = false
+  }
+}
+
+async function registerAndBindEvidence() {
+  const form = evidenceForm.value
+  if (!form.claim_id || !form.source_system.trim() || !form.artifact_path.trim() || !/^[a-f0-9]{64}$/i.test(form.artifact_sha256)) {
+    ElMessage.warning('请选择主张，并填写来源、快照路径和有效 SHA-256')
+    return
+  }
+  workflowBusy.value = true
+  try {
+    const evidence = await createWritingEvidenceRef(props.projectId, props.documentId, {
+      source_system: form.source_system.trim(),
+      source_record_id: '',
+      artifact_path: form.artifact_path.trim(),
+      artifact_sha256: form.artifact_sha256.toLowerCase(),
+      perspective_scope: 'project',
+      evidence_level: form.evidence_level,
+      allowed_claim_scope: '',
+      provenance: { registered_from: 'writing-workbench' }
+    })
+    await bindWritingEvidence(props.projectId, props.documentId, {
+      claim_id: form.claim_id,
+      evidence_ref_id: evidence.id
+    })
+    selectedEvidenceIds.value = Array.from(new Set([...selectedEvidenceIds.value, evidence.id]))
+    evidenceForm.value.artifact_path = ''
+    evidenceForm.value.artifact_sha256 = ''
+    await loadResearchWorkflow()
+    ElMessage.success('不可变证据已登记并绑定')
+  } catch (error) {
+    ElMessage.error(errorMessage(error, '证据登记失败'))
+  } finally {
+    workflowBusy.value = false
+  }
+}
+
+async function dispatchGap(gap: WritingEvidenceGap) {
+  workflowBusy.value = true
+  try {
+    const existingRun = workflow.value?.runs.find(run => run.id === gap.dispatched_run_id)
+    const retry = Boolean(existingRun && ['failed', 'cancelled'].includes(existingRun.status))
+    const retryRequestId = retry
+      ? (evidenceRetryTokens.get(gap.id) || globalThis.crypto?.randomUUID?.() || `retry-${Date.now()}`)
+      : undefined
+    if (retryRequestId) evidenceRetryTokens.set(gap.id, retryRequestId)
+    await dispatchWritingEvidenceGap(props.projectId, props.documentId, gap.id, {
+      idempotency_key: `gap:${gap.id}`,
+      retry,
+      retry_request_id: retryRequestId,
+      execution_policy: {
+        estimated_cost: 0,
+        preauthorized_cost_limit: 0,
+        uses_paid_service: false,
+        physical_device: false,
+        protocol_change: false
+      }
+    })
+    evidenceRetryTokens.delete(gap.id)
+    await loadResearchWorkflow()
+    ElMessage.success('Research Matrix 已提交 One-Sim 编译并进入持久化队列')
+  } catch (error) {
+    ElMessage.error(errorMessage(error, '证据任务提交失败'))
+  } finally {
+    workflowBusy.value = false
+  }
+}
+
+async function decideChangeSet(changeSetId: string, decision: 'approve' | 'reject') {
+  workflowBusy.value = true
+  try {
+    const result = await decideWritingChangeSet(props.projectId, props.documentId, changeSetId, decision)
+    const state = await getWritingCollaboration(props.projectId, props.documentId, activeSectionId.value)
+    applyState(state)
+    await loadResearchWorkflow()
+    ElMessage.success(
+      decision === 'reject'
+        ? '修改已拒绝'
+        : result.result_revision > 0
+          ? '修改已批准并写入工作草稿'
+          : '审批决定已记录'
+    )
+  } catch (error) {
+    ElMessage.error(errorMessage(error, '修改审批失败'))
+  } finally {
+    workflowBusy.value = false
+  }
+}
+
+async function decideJarvisRun(runId: string, decision: 'approve' | 'reject') {
+  workflowBusy.value = true
+  try {
+    await decideWritingJarvisRun(props.projectId, props.documentId, runId, decision)
+    await loadResearchWorkflow()
+    ElMessage.success(decision === 'approve' ? 'Jarvis 运行已恢复执行' : 'Jarvis 运行已取消')
+  } catch (error) {
+    ElMessage.error(errorMessage(error, 'Jarvis 运行审批失败'))
+  } finally {
+    workflowBusy.value = false
+  }
+}
+
+async function approveCurrentRevision() {
+  workflowBusy.value = true
+  try {
+    if (!(await flushDraft())) return
+    await approveWritingRevision(props.projectId, props.documentId, revision.value)
+    await loadResearchWorkflow()
+    ElMessage.success('当前正文修订已审批，可进入 Word 发布流水线')
+  } catch (error) {
+    ElMessage.error(errorMessage(error, '正文修订审批失败'))
+  } finally {
+    workflowBusy.value = false
   }
 }
 
@@ -863,13 +1113,7 @@ async function initializeCollaboration() {
   }
 }
 
-async function flushDraft() {
-  if ((!editor.value && !isUnmounting) || saveState.value === 'saved') return
-  if (saveInFlight) {
-    saveQueued = true
-    await savePromise
-    return
-  }
+async function persistDraftOnce(): Promise<boolean> {
   if (saveTimer) clearTimeout(saveTimer)
   const editorJson = editor.value && !isUnmounting ? editor.value.getJSON() : latestDocument
   const content = normaliseDocument(editorJson)
@@ -883,46 +1127,57 @@ async function flushDraft() {
   const serialized = JSON.stringify(content)
   if (serialized === lastSavedJson) {
     saveState.value = 'saved'
-    return
+    return true
   }
   saveInFlight = true
   saveState.value = 'saving'
-  let saveFailed = false
   const sentDocument = cloneDocument(content)
   const changes = draftChanges(lastSavedDocument, sentDocument)
   if (!changes.length) {
+    lastSavedDocument = cloneDocument(sentDocument)
+    lastSavedJson = serialized
     saveState.value = 'saved'
     saveInFlight = false
-    return
+    return true
   }
-  savePromise = (async () => {
-    try {
-      const state = await patchWritingCollaborationDraft(props.projectId, props.documentId, {
-        base_document_revision: revision.value,
-        client_change_id: globalThis.crypto?.randomUUID?.() || `change-${Date.now()}`,
-        changes,
-        section_id: activeSectionId.value
-      })
-      mergeRemoteState(state, sentDocument)
-      if (state.conflicts?.length) ElMessage.warning('部分段落已变化，未覆盖这些段落')
-      emit('saved')
-    } catch (error) {
-      saveFailed = true
-      saveState.value = 'error'
-      ElMessage.error(errorMessage(error, '草稿保存失败'))
-    }
-  })()
   try {
-    await savePromise
+    const state = await patchWritingCollaborationDraft(props.projectId, props.documentId, {
+      base_document_revision: revision.value,
+      client_change_id: globalThis.crypto?.randomUUID?.() || `change-${Date.now()}`,
+      changes,
+      section_id: activeSectionId.value
+    })
+    mergeRemoteState(state, sentDocument)
+    if (state.conflicts?.length) ElMessage.warning('部分段落已变化，未覆盖这些段落')
+    emit('saved')
+    return true
+  } catch (error) {
+    saveState.value = 'error'
+    ElMessage.error(errorMessage(error, '草稿保存失败'))
+    return false
   } finally {
-    savePromise = undefined
     saveInFlight = false
   }
-  const needsAnotherSave = saveQueued
-  saveQueued = false
-  if (needsAnotherSave && !saveFailed) {
-    saveState.value = 'dirty'
-    await flushDraft()
+}
+
+async function flushDraft(): Promise<boolean> {
+  if ((!editor.value && !isUnmounting) || saveState.value === 'saved') return true
+  if (saveDrainPromise) return saveDrainPromise
+  saveDrainPromise = (async () => {
+    do {
+      saveQueued = false
+      const saved = await persistDraftOnce()
+      if (!saved) return false
+      const current = normaliseDocument(editor.value && !isUnmounting ? editor.value.getJSON() : latestDocument)
+      const hasUnsavedContent = JSON.stringify(current) !== lastSavedJson
+      if (saveQueued || hasUnsavedContent) saveState.value = 'dirty'
+    } while (saveQueued || saveState.value === 'dirty')
+    return saveState.value === 'saved'
+  })()
+  try {
+    return await saveDrainPromise
+  } finally {
+    saveDrainPromise = undefined
   }
 }
 
@@ -932,8 +1187,7 @@ function applyQuickAction(value: string) {
 
 async function runAiJob() {
   if (!canRunAi.value) return
-  await flushDraft()
-  if (saveState.value === 'error') return
+  if (!(await flushDraft())) return
   try {
     const selection = currentSelection.value
     const block = currentBlock.value
@@ -947,7 +1201,9 @@ async function runAiJob() {
         ? { ...selection, block_id: block.id, block_revision: block.revision }
         : undefined,
       block_id: scope.value === 'block' ? block.id : undefined,
-      block_revision: scope.value === 'block' ? block.revision : undefined
+      block_revision: scope.value === 'block' ? block.revision : undefined,
+      evidence_ref_ids: selectedEvidenceIds.value,
+      risk_policy: { allow_auto_draft: true }
     })
     activeJobId.value = job.id
     jobStatus.value = job.status
@@ -981,9 +1237,10 @@ async function pollJob() {
     mergeJobProposals(job)
     if (['queued', 'running'].includes(job.status)) scheduleJobPoll()
     else if (job.status === 'failed') ElMessage.error(job.error || 'AI 写作任务失败')
-    else if (['applied', 'partially_applied', 'conflicted'].includes(job.status)) {
+    else if (['applied', 'partially_applied', 'conflicted', 'review_required'].includes(job.status)) {
       const state = await getWritingCollaboration(props.projectId, props.documentId, activeSectionId.value)
       mergeRemoteState(state)
+      await loadResearchWorkflow()
     }
   } catch (error) {
     jobStatus.value = 'failed'
@@ -999,6 +1256,7 @@ async function acceptProposal(proposalId: string) {
     applyState(state)
     emit('saved')
     emit('proposal-applied')
+    await loadResearchWorkflow()
     ElMessage.success('建议已接受并写入草稿')
   } catch (error) {
     ElMessage.error(errorMessage(error, '接受建议失败'))
@@ -1218,13 +1476,14 @@ async function rejectProposal(proposalId: string) {
     const state = await rejectWritingProposal(props.projectId, props.documentId, proposalId)
     if (state?.proposals) proposals.value = state.proposals
     else proposals.value = proposals.value.filter(item => item.id !== proposalId)
+    await loadResearchWorkflow()
   } catch (error) {
     ElMessage.error(errorMessage(error, '拒绝建议失败'))
   }
 }
 
 async function saveVersion() {
-  await flushDraft()
+  if (!(await flushDraft())) return
   try {
     await createWritingVersion(props.projectId, props.documentId, {
       name: `协同写作修订 ${revision.value}`,
@@ -1274,12 +1533,12 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.co-writing { display: grid; grid-template-columns: clamp(360px, 29vw, 480px) minmax(0, 1fr); min-height: calc(100vh - 248px); border: 1px solid var(--line-color); border-radius: 7px; overflow: hidden; background: var(--card-bg); }
+.co-writing { display: grid; grid-template-columns: minmax(0, 1fr) clamp(340px, 27vw, 430px); min-height: calc(100vh - 248px); border: 1px solid var(--line-color); border-radius: 7px; overflow: hidden; background: var(--card-bg); }
 .co-writing.display-document, .co-writing.display-ai { grid-template-columns: minmax(0, 1fr); min-height: 100%; }
-.co-writing.display-ai .ai-panel { max-height: none; border-right: 0; }
+.co-writing.display-ai .ai-panel { max-height: none; border-left: 0; }
 .co-writing.display-document .document-workbench { min-height: 100%; }
 .mobile-panels { display: none; }
-.ai-panel { display: flex; min-width: 0; max-height: calc(100vh - 248px); flex-direction: column; gap: 14px; padding: 16px; overflow-y: auto; border-right: 1px solid var(--line-color); background: color-mix(in srgb, var(--panel-bg) 92%, #101929); }
+.ai-panel { display: flex; order: 2; min-width: 0; max-height: calc(100vh - 248px); flex-direction: column; gap: 14px; padding: 16px; overflow-y: auto; border-left: 1px solid var(--line-color); background: color-mix(in srgb, var(--panel-bg) 92%, #101929); }
 .panel-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .panel-heading span, .ai-config label > span, .instruction-box > span, .proposal-list > header span { color: var(--view-color-primary); font-size: 10px; letter-spacing: .08em; }
 .panel-heading h3 { margin: 4px 0 0; color: var(--text-primary); font-size: 17px; }
@@ -1296,6 +1555,24 @@ onBeforeUnmount(() => {
 .quick-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
 .quick-actions button { display: flex; align-items: center; gap: 6px; padding: 8px 9px; border: 1px solid var(--line-color); border-radius: 5px; color: var(--text-primary); background: var(--view-color-faint); cursor: pointer; }
 .quick-actions button:hover { border-color: var(--view-color-primary); color: var(--view-color-primary); }
+.artifact-list, .research-workflow { display: grid; gap: 9px; padding-block: 4px; }
+.artifact-list > header, .research-workflow > header { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--text-primary); font-size: 11px; }
+.artifact-list > header button, .research-workflow > header button { border: 0; color: var(--view-color-primary); background: transparent; cursor: pointer; }
+.artifact-counts, .workflow-counts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.artifact-counts small, .workflow-counts small { padding: 6px; border: 1px solid var(--line-color); border-radius: 4px; color: var(--text-secondary); text-align: center; }
+.artifact-list ul { display: grid; gap: 5px; margin: 0; padding: 0; list-style: none; }
+.artifact-list li, .workflow-list article { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px; border-top: 1px solid var(--line-color); }
+.artifact-list li div, .workflow-list article > div:first-child { display: grid; min-width: 0; gap: 2px; }
+.artifact-list li span, .artifact-list li small, .workflow-list small { overflow: hidden; color: var(--text-secondary); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.artifact-list li button { border: 0; color: var(--view-color-primary); background: transparent; cursor: pointer; }
+.evidence-selector, .evidence-register { display: grid; gap: 7px; padding: 9px 0; border-top: 1px solid var(--line-color); }
+.evidence-selector > span, .evidence-register summary { color: var(--text-primary); font-size: 10px; cursor: pointer; }
+.evidence-selector :deep(.el-checkbox-group) { display: grid; gap: 4px; }
+.evidence-selector :deep(.el-checkbox) { height: auto; margin-right: 0; }
+.evidence-selector :deep(.el-checkbox__label) { overflow: hidden; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.workflow-list { display: grid; gap: 2px; }
+.workflow-list article strong { color: var(--text-primary); font-size: 10px; }
+.approvals article { align-items: flex-start; }
 .instruction-box :deep(textarea) { font-size: 11px; line-height: 1.6; }
 .run-ai { width: 100%; }
 .proposal-list { display: grid; gap: 9px; padding-top: 4px; }
@@ -1306,7 +1583,7 @@ onBeforeUnmount(() => {
 .proposal-card p { margin: 0; color: var(--text-secondary); font-size: 10px; line-height: 1.55; }
 .proposal-meta small { color: var(--text-secondary); font-size: 9px; }
 .proposal-actions { justify-content: flex-end; }
-.document-workbench { display: grid; grid-template-rows: auto minmax(0, 1fr); min-width: 0; background: #111720; }
+.document-workbench { display: grid; order: 1; grid-template-rows: auto minmax(0, 1fr); min-width: 0; background: #111720; }
 .editor-toolbar { display: flex; align-items: center; gap: 5px; min-width: 0; padding: 8px 10px; overflow-x: auto; border-bottom: 1px solid var(--line-color); background: var(--panel-bg); }
 .asset-input { display: none; }
 .toolbar-group { display: flex; gap: 2px; padding-right: 5px; border-right: 1px solid var(--line-color); }
@@ -1359,7 +1636,7 @@ onBeforeUnmount(() => {
   .mobile-panels :deep(.el-segmented) { width: min(420px, 100%); }
   .mobile-panels :deep(.el-segmented__item) { min-width: 100px; }
   .ai-panel, .document-workbench { display: none; }
-  .mobile-ai .ai-panel { display: flex; max-height: calc(100vh - 290px); border-right: 0; }
+  .mobile-ai .ai-panel { display: flex; max-height: calc(100vh - 290px); border-left: 0; }
   .mobile-document .document-workbench, .mobile-outline .document-workbench { display: grid; min-height: calc(100vh - 290px); }
   .mobile-outline .paper-scroll { display: none; }
   .mobile-outline .document-stage { grid-template-columns: minmax(0, 1fr); }

@@ -2,7 +2,7 @@
 
 ## Source of truth
 - Status: Active
-- Last refreshed: 2026-08-06
+- Last refreshed: 2026-08-07
 - Primary product surfaces: 3021 文档管理、文档撰写、PPT 制作、文档-PPT 联动工作台、项目中枢、数据管理
 - Evidence reviewed: `frontend-v2/src/views/WritingWorkspace.vue`、`frontend-v2/src/components/writing/CollaborativeWritingEditor.vue`、`frontend-v2/src/components/writing/PresentationWorkspace.vue`、`frontend-v2/src/components/writing/DocumentOutlineTree.vue`、人机双写参考截图
 
@@ -34,10 +34,15 @@
 - 专用工作区用于深度编辑；联动工作台提供两个可调窗口，每个窗口可选择文档、PPT 或 AI
 - 联动工作台默认左侧文档、右侧 PPT；AI 窗口始终显示其当前目标文档、章节或 PPT 页
 - 第一阶段复用既有正文与 PPT 权威，不因窗口切换复制正文、PPTX 或联动清单
-- 人工与 AI 以稳定块标识和块修订号协作；不同块自动合并，同块冲突转为修订建议
+- 人工与 AI 以稳定块标识和块修订号协作；并发安全只说明目标块未变化，不代表内容获准进入正文
+- 低风险措辞、语法和格式整理可自动进入工作草稿；论点、数字、引用、公式、图表、实验结论和结构变化进入风险审批
 - 结构化权威切换必须由管理员显式初始化并通过往返校验；只读访问不得触发迁移或写入
 - AI 写作任务由 PostgreSQL 租约队列持久执行，进程重启后可重新领取过期任务
+- 主张、不可变证据、证据缺口、修改集、Word 发布和跨系统运行均由 PostgreSQL 对象追溯；检索结果不能直接升级为证据
+- One-Sim 只返回不可变仿真记录、证据包和论文证据包，3021 不复制或修改实验事实
+- Jarvis 采用至少一次调度、幂等接口、步骤依赖和恢复游标；付费服务、物理设备和实验协议变化停在执行审批门
 - 结构化 JSON 是正文权威，Markdown 是兼容投影，DOCX/PDF 是交付产物
+- 正式 Word/PDF 只能由当前已审批修订生成；Word 内容修改必须以 ChangeSet 回流
 - 不同文档类型根据后端标准包动态展示指标，前端不维护业务评分规则
 - Tradeoffs: 桌面端优先同屏对照；窄屏自动回落为纵向阅读
 
@@ -52,7 +57,7 @@
 ## Components
 - Existing components to reuse: `DocumentStructureStatus`、`el-tag`、`el-button`、`el-progress`、`el-drawer`
 - New/changed components: `WritingWorkspace` 工作区一级导航、`WritingLinkedWorkspace` 双窗容器、`WritingWorkspacePane` 可组合窗口、`DocumentEvaluationPanel`、`CollaborativeWritingEditor`、`PresentationWorkspace`
-- Variants and states: saved、dirty、saving、error；queued、running、partially_applied、applied、conflicted、failed、cancelled；门槛通过、部分满足、失败、待确认
+- Variants and states: saved、dirty、saving、error；queued、running、review_required、partially_applied、applied、conflicted、failed、cancelled；missing、insufficient、sufficient；candidate、ready、approved、published
 - Token/component ownership: 主题变量由全局样式维护，页面只负责布局
 
 ## Accessibility
@@ -64,7 +69,7 @@
 
 ## Responsive behavior
 - Supported breakpoints/devices: 桌面与 iPad；人机双写和联动工作台在 1180px 以下切换为单窗口标签页
-- Layout adaptations: 桌面总览为“当前结构 | 写作结构”；写作页为 360–480px AI 区与自适应纸张编辑区；联动工作台为两个等宽可调窗口；窄屏单面板切换
+- Layout adaptations: 桌面总览为“当前结构 | 写作结构”；写作页为左侧章节/证据状态、中间纸张编辑器、右侧 AI/证据/运行/审批检查器；联动工作台为两个等宽可调窗口；窄屏单面板切换
 - Touch/hover differences: 交互不依赖 hover，按钮保持可点击区域
 
 ## Interaction states

@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
+import re
+import uuid
 from pathlib import Path
 from typing import Any
-from zipfile import BadZipFile
+from zipfile import BadZipFile, ZIP_DEFLATED, ZipFile
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
+from starlette.background import BackgroundTask
 
 from project_manager import project_manager
 from services.auth_service import get_current_user, require_role
@@ -31,6 +34,7 @@ from services.writing_collaboration_service import (
     WritingCollaborationDisabled,
     writing_collaboration_service,
 )
+from services.writing_research_service import writing_research_service
 
 
 router = APIRouter(prefix="/api/v3/writing", tags=["writing-workspace"])
@@ -44,6 +48,7 @@ class SectionUpdate(BaseModel):
 
 class ExportRequest(BaseModel):
     format: str = "docx"
+    release_mode: str = Field(default="candidate", pattern="^(candidate|formal)$")
 
 
 class CollaborationDraftPatch(BaseModel):
@@ -64,6 +69,93 @@ class CollaborationAiJobCreate(BaseModel):
     selection: dict[str, Any] | None = None
     block_id: str | None = Field(default=None, max_length=96)
     block_revision: int | None = Field(default=None, ge=1)
+    evidence_ref_ids: list[str] = Field(default_factory=list, max_length=100)
+    risk_policy: dict[str, Any] = Field(default_factory=dict)
+
+
+class WritingClaimCreate(BaseModel):
+    claim_text: str = Field(min_length=1, max_length=20000)
+    claim_type: str = Field(default="argument", max_length=32)
+    minimum_evidence_level: str = Field(default="diagnostic", pattern="^(diagnostic|G1|G2|A)$")
+    document_revision: int | None = Field(default=None, ge=1)
+    section_id: str = Field(default="", max_length=128)
+    block_id: str = Field(default="", max_length=96)
+    research_matrix: dict[str, Any] = Field(default_factory=dict)
+
+
+class WritingEvidenceRefCreate(BaseModel):
+    source_system: str = Field(min_length=1, max_length=48)
+    source_record_id: str = Field(default="", max_length=160)
+    artifact_path: str = Field(min_length=1, max_length=4000)
+    artifact_sha256: str = Field(min_length=64, max_length=64)
+    perspective_scope: str = Field(default="project", max_length=64)
+    evidence_level: str = Field(default="diagnostic", pattern="^(diagnostic|G1|G2|A)$")
+    allowed_claim_scope: str = Field(default="", max_length=12000)
+    provenance: dict[str, Any] = Field(default_factory=dict)
+
+
+class WritingEvidenceBindingCreate(BaseModel):
+    claim_id: str = Field(min_length=1, max_length=64)
+    evidence_ref_id: str = Field(min_length=1, max_length=64)
+    support_scope: str = Field(default="", max_length=12000)
+
+
+class WritingEvidenceGapDispatch(BaseModel):
+    research_matrix: dict[str, Any] | None = None
+    execution_policy: dict[str, Any] = Field(default_factory=dict)
+    idempotency_key: str = Field(default="", max_length=96)
+    retry: bool = False
+    retry_request_id: str = Field(default="", max_length=64)
+
+
+class WritingChangeSetCreate(BaseModel):
+    base_revision: int | None = Field(default=None, ge=1)
+    operations: list[dict[str, Any]] = Field(default_factory=list, max_length=500)
+    evidence_ref_ids: list[str] = Field(default_factory=list, max_length=100)
+    risk_level: str = Field(default="high", pattern="^(low|medium|high)$")
+    approval_policy: str = Field(default="risk_driven", max_length=32)
+    idempotency_key: str = Field(default="", max_length=96)
+    summary: str = Field(default="", max_length=4000)
+
+
+class WritingChangeSetDecision(BaseModel):
+    decision: str = Field(pattern="^(approve|reject)$")
+    comment: str = Field(default="", max_length=4000)
+
+
+class WritingJarvisRunDecision(BaseModel):
+    decision: str = Field(pattern="^(approve|reject)$")
+    comment: str = Field(default="", max_length=4000)
+
+
+class WritingEvidenceBundleReady(BaseModel):
+    source_system: str = Field(default="one-sim", max_length=48)
+    bundle_id: str = Field(min_length=1, max_length=160)
+    source_record_id: str = Field(default="", max_length=160)
+    simulation_record_id: str = Field(default="", max_length=160)
+    artifact_path: str = Field(min_length=1, max_length=4000)
+    artifact_sha256: str = Field(min_length=64, max_length=64)
+    perspective_scope: str = Field(default="project", max_length=64)
+    evidence_level: str = Field(pattern="^(diagnostic|G1|G2|A)$")
+    allowed_claim_scope: str = Field(default="", max_length=12000)
+    provenance: dict[str, Any] = Field(default_factory=dict)
+    paper_evidence_packet: dict[str, Any] = Field(default_factory=dict)
+
+
+class WritingWordReleaseCreate(BaseModel):
+    document_revision: int | None = Field(default=None, ge=1)
+    template_sha256: str = Field(min_length=64, max_length=64)
+    idempotency_key: str = Field(default="", max_length=96)
+
+
+class WritingWordReleaseUpdate(BaseModel):
+    docx_path: str | None = Field(default=None, max_length=4000)
+    docx_sha256: str | None = Field(default=None, max_length=64)
+    pdf_path: str | None = Field(default=None, max_length=4000)
+    pdf_sha256: str | None = Field(default=None, max_length=64)
+    field_refresh_status: str | None = Field(default=None, pattern="^(pending|running|completed|failed)$")
+    page_check: dict[str, Any] | None = None
+    status: str | None = Field(default=None, pattern="^(candidate|approved|rejected|failed)$")
 
 
 class CollaborationVersionCreate(BaseModel):
@@ -628,6 +720,276 @@ def get_document_collaboration(
     try:
         return writing_collaboration_service.get_state(
             _project(project_id), document_id, section_id
+        )
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.get("/projects/{project_id}/documents/{document_id}/research-workflow")
+def get_document_research_workflow(
+    project_id: str,
+    document_id: str,
+    _user: dict = Depends(require_role("admin")),
+):
+    try:
+        _project(project_id)
+        return writing_research_service.workspace_summary(project_id, document_id)
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.post("/projects/{project_id}/documents/{document_id}/claims", status_code=201)
+def create_document_claim(
+    project_id: str,
+    document_id: str,
+    req: WritingClaimCreate,
+    user: dict = Depends(require_role("admin")),
+):
+    try:
+        _project(project_id)
+        return writing_research_service.create_claim(
+            project_id, document_id, req.model_dump(exclude_none=True), _actor(user)
+        )
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.post("/projects/{project_id}/documents/{document_id}/evidence-refs", status_code=201)
+def create_document_evidence_ref(
+    project_id: str,
+    document_id: str,
+    req: WritingEvidenceRefCreate,
+    user: dict = Depends(require_role("admin")),
+):
+    try:
+        _project(project_id)
+        return writing_research_service.register_evidence(
+            project_id, document_id, req.model_dump(), _actor(user)
+        )
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.post("/projects/{project_id}/documents/{document_id}/evidence-bindings", status_code=201)
+def create_document_evidence_binding(
+    project_id: str,
+    document_id: str,
+    req: WritingEvidenceBindingCreate,
+    user: dict = Depends(require_role("admin")),
+):
+    try:
+        _project(project_id)
+        return writing_research_service.bind_evidence(
+            project_id, document_id, req.model_dump(), _actor(user)
+        )
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.post(
+    "/projects/{project_id}/documents/{document_id}/evidence-gaps/{gap_id}/dispatch",
+    status_code=202,
+)
+def dispatch_document_evidence_gap(
+    project_id: str,
+    document_id: str,
+    gap_id: str,
+    req: WritingEvidenceGapDispatch,
+    user: dict = Depends(require_role("admin")),
+):
+    try:
+        _project(project_id)
+        return writing_research_service.dispatch_gap(
+            project_id,
+            document_id,
+            gap_id,
+            req.model_dump(exclude_none=True),
+            _actor(user),
+        )
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.get("/projects/{project_id}/documents/{document_id}/jarvis-runs/{run_id}")
+def get_document_jarvis_run(
+    project_id: str,
+    document_id: str,
+    run_id: str,
+    _user: dict = Depends(require_role("admin")),
+):
+    try:
+        _project(project_id)
+        return writing_research_service.get_run(project_id, document_id, run_id)
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.post("/projects/{project_id}/documents/{document_id}/jarvis-runs/{run_id}/decision")
+def decide_document_jarvis_run(
+    project_id: str,
+    document_id: str,
+    run_id: str,
+    req: WritingJarvisRunDecision,
+    user: dict = Depends(require_role("admin")),
+):
+    try:
+        _project(project_id)
+        return writing_research_service.decide_run(
+            project_id, document_id, run_id, req.decision, _actor(user)
+        )
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.post("/projects/{project_id}/documents/{document_id}/jarvis-runs/{run_id}/evidence-ready")
+def ingest_document_jarvis_evidence(
+    project_id: str,
+    document_id: str,
+    run_id: str,
+    req: WritingEvidenceBundleReady,
+    user: dict = Depends(require_role("admin")),
+):
+    try:
+        _project(project_id)
+        return writing_research_service.ingest_evidence_bundle(
+            project_id,
+            document_id,
+            run_id,
+            req.model_dump(),
+            _actor(user),
+        )
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.post("/projects/{project_id}/documents/{document_id}/change-sets", status_code=201)
+def create_document_change_set(
+    project_id: str,
+    document_id: str,
+    req: WritingChangeSetCreate,
+    user: dict = Depends(require_role("admin")),
+):
+    try:
+        _project(project_id)
+        return writing_research_service.create_change_set(
+            project_id, document_id, req.model_dump(exclude_none=True), _actor(user)
+        )
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.post("/projects/{project_id}/documents/{document_id}/change-sets/{change_set_id}/decision")
+def decide_document_change_set(
+    project_id: str,
+    document_id: str,
+    change_set_id: str,
+    req: WritingChangeSetDecision,
+    user: dict = Depends(require_role("admin")),
+):
+    try:
+        project = _project(project_id)
+        actor = _actor(user)
+        change_set = writing_research_service.get_change_set(project_id, document_id, change_set_id)
+        result_revision = 0
+        if req.decision == "approve" and not change_set.get("proposal_id"):
+            raise DocumentWorkspaceError("该 ChangeSet 尚无可执行块映射，不能标记为已应用")
+        if change_set.get("proposal_id"):
+            if req.decision == "approve":
+                state = writing_collaboration_service.accept_proposal(
+                    project, document_id, change_set["proposal_id"], actor
+                )
+                result_revision = int(state.get("revision") or 0)
+            else:
+                writing_collaboration_service.reject_proposal(
+                    project, document_id, change_set["proposal_id"], actor
+                )
+        return writing_research_service.decide_change_set(
+            project_id,
+            document_id,
+            change_set_id,
+            req.decision,
+            actor,
+            result_revision=result_revision,
+        )
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.post("/projects/{project_id}/documents/{document_id}/revisions/{revision}/approval")
+def approve_document_revision(
+    project_id: str,
+    document_id: str,
+    revision: int,
+    user: dict = Depends(require_role("admin")),
+):
+    try:
+        _project(project_id)
+        return writing_research_service.approve_revision(
+            project_id, document_id, revision, _actor(user)
+        )
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.post("/projects/{project_id}/documents/{document_id}/word-imports", status_code=201)
+async def import_document_word_changes(
+    project_id: str,
+    document_id: str,
+    file: UploadFile = File(...),
+    base_revision: int = Query(..., ge=1),
+    idempotency_key: str = Query(..., min_length=1, max_length=96),
+    user: dict = Depends(require_role("admin")),
+):
+    try:
+        _project(project_id)
+        content = await file.read()
+        if len(content) > 150 * 1024 * 1024:
+            raise DocumentWorkspaceError("Word 回流文件超过 150MB 限制")
+        return writing_research_service.register_word_import(
+            project_id,
+            document_id,
+            filename=file.filename or "document.docx",
+            content=content,
+            base_revision=base_revision,
+            actor=_actor(user),
+            idempotency_key=idempotency_key,
+        )
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.post("/projects/{project_id}/documents/{document_id}/releases", status_code=201)
+def create_document_word_release(
+    project_id: str,
+    document_id: str,
+    req: WritingWordReleaseCreate,
+    user: dict = Depends(require_role("admin")),
+):
+    try:
+        _project(project_id)
+        return writing_research_service.create_release(
+            project_id, document_id, req.model_dump(exclude_none=True), _actor(user)
+        )
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.patch("/projects/{project_id}/documents/{document_id}/releases/{release_id}")
+def update_document_word_release(
+    project_id: str,
+    document_id: str,
+    release_id: str,
+    req: WritingWordReleaseUpdate,
+    user: dict = Depends(require_role("admin")),
+):
+    try:
+        _project(project_id)
+        return writing_research_service.update_release(
+            project_id,
+            document_id,
+            release_id,
+            req.model_dump(exclude_none=True),
+            _actor(user),
         )
     except DocumentWorkspaceError as exc:
         raise _handle(exc) from exc
@@ -1258,6 +1620,17 @@ def export_project_document(
 ):
     try:
         project = _project(project_id)
+        if req.release_mode == "formal":
+            release = writing_research_service.require_formal_release(project_id, document_id, req.format)
+            key = "pdf_path" if req.format.lower() == "pdf" else "docx_path"
+            path = Path(str(release[key]))
+            deliverable = register_document_export(project, path, req.format)
+            media_type = "application/pdf" if path.suffix.lower() == ".pdf" else "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            response = FileResponse(path, filename=path.name, media_type=media_type)
+            response.headers["X-Writing-Release-Id"] = str(release["id"])
+            if deliverable:
+                response.headers["X-Product-Deliverable-Id"] = str(deliverable["id"])
+            return response
         writing_collaboration_service.ensure_projection_current(project, document_id)
         path = multi_document_service.rich_call(project, document_id, "export", req.format)
         context = multi_document_service.rich_project_context(project, document_id)
@@ -1284,8 +1657,55 @@ def export_project_document_package(
 ):
     try:
         project = _project(project_id)
-        path = multi_document_service.export_package(project)
-        return FileResponse(path, filename=path.name, media_type="application/zip")
+        collection = multi_document_service.list_documents(project, include_archived=False)
+        records = [
+            document
+            for document in collection.get("documents") or []
+            if document.get("status") == "active" and bool(document.get("is_output_product"))
+        ]
+        if not records:
+            raise DocumentWorkspaceError("项目没有可交付的正式文档")
+        artifacts: list[tuple[Path, str]] = []
+        for document in records:
+            title = re.sub(r'[\\/:*?"<>|]+', "-", str(document.get("title") or "文档")).strip() or "文档"
+            if document.get("publication_status") not in {"approved", "published"}:
+                raise DocumentWorkspaceError(f"正式文档尚未批准：{title}")
+            if document.get("kind") == "rich_text":
+                output_format = str(document.get("output_format") or "docx").lower()
+                release = writing_research_service.require_formal_release(
+                    project_id,
+                    str(document.get("id") or ""),
+                    output_format,
+                )
+                key = "pdf_path" if output_format == "pdf" else "docx_path"
+                artifacts.append((Path(str(release[key])), f"{title}.{output_format}"))
+            elif document.get("kind") == "presentation" and document.get("output_format") == "pptx":
+                path = multi_document_service._content_path(project, document)
+                if not path.is_file():
+                    raise DocumentWorkspaceError(f"正式课件文件不存在：{title}")
+                artifacts.append((path, f"{title}.pptx"))
+            else:
+                raise DocumentWorkspaceError(f"正式文档输出格式无效：{title}")
+        package_dir = artifacts[0][0].parent
+        package = package_dir / f"{project_id}-formal-package-{uuid.uuid4().hex[:12]}.zip"
+        temporary = package.with_suffix(".tmp")
+        names: set[str] = set()
+        try:
+            with ZipFile(temporary, "w", compression=ZIP_DEFLATED) as archive:
+                for artifact, name in artifacts:
+                    if name in names:
+                        raise DocumentWorkspaceError("正式文档名称重复，无法生成交付包")
+                    names.add(name)
+                    archive.write(artifact, name)
+            temporary.replace(package)
+        finally:
+            temporary.unlink(missing_ok=True)
+        return FileResponse(
+            package,
+            filename=package.name,
+            media_type="application/zip",
+            background=BackgroundTask(package.unlink, missing_ok=True),
+        )
     except DocumentWorkspaceError as exc:
         raise _handle(exc) from exc
 
@@ -1580,6 +2000,8 @@ def export_document(
 ):
     try:
         project = _project(project_id)
+        if req.release_mode == "formal":
+            raise DocumentWorkspaceError("旧版项目导出不支持正式发布；请从具体文档的 WordRelease 导出")
         path = document_workspace_service.export(project, req.format)
         deliverable = register_document_export(project, path, req.format)
         media_type = "application/pdf" if path.suffix.lower() == ".pdf" else "application/vnd.openxmlformats-officedocument.wordprocessingml.document"

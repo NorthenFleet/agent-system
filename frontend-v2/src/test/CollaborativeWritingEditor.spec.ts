@@ -9,6 +9,7 @@ import {
   getDocumentWritingAsset,
   getWritingAiJob,
   getWritingCollaboration,
+  getWritingResearchWorkflow,
   patchWritingCollaborationDraft,
   uploadDocumentWritingAsset
 } from '@/api/writing'
@@ -23,6 +24,14 @@ vi.mock('@/api/writing', async importOriginal => {
     getDocumentWritingAsset: vi.fn(),
     getWritingAiJob: vi.fn(),
     getWritingCollaboration: vi.fn(),
+    getWritingResearchWorkflow: vi.fn(),
+    approveWritingRevision: vi.fn(),
+    bindWritingEvidence: vi.fn(),
+    createWritingClaim: vi.fn(),
+    createWritingEvidenceRef: vi.fn(),
+    decideWritingChangeSet: vi.fn(),
+    decideWritingJarvisRun: vi.fn(),
+    dispatchWritingEvidenceGap: vi.fn(),
     patchWritingCollaborationDraft: vi.fn(),
     rejectWritingProposal: vi.fn(),
     uploadDocumentWritingAsset: vi.fn()
@@ -109,6 +118,16 @@ beforeEach(() => {
   Object.defineProperty(URL, 'createObjectURL', { value: vi.fn(() => 'blob:preview-image'), configurable: true })
   Object.defineProperty(URL, 'revokeObjectURL', { value: vi.fn(), configurable: true })
   vi.mocked(getWritingCollaboration).mockResolvedValue(collaboration())
+  vi.mocked(getWritingResearchWorkflow).mockResolvedValue({
+    revision: 7,
+    approved_revision: 6,
+    published_revision: 5,
+    claims: [],
+    evidence_refs: [],
+    gaps: [],
+    change_sets: [],
+    runs: []
+  })
   vi.mocked(getDocumentWritingAsset).mockResolvedValue(new Blob(['fake-png'], { type: 'image/png' }))
   vi.mocked(patchWritingCollaborationDraft).mockResolvedValue(collaboration({ revision: 8 }))
   vi.mocked(uploadDocumentWritingAsset).mockResolvedValue({

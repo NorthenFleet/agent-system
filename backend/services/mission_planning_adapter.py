@@ -134,6 +134,79 @@ class MissionPlanningAdapter:
             "running": bool(status.get("running")),
         }
 
+    async def compile_research_matrix(self, payload: dict[str, Any]) -> dict[str, Any]:
+        result = await self._request(
+            "POST",
+            "/api/research/workbench/experiment-matrices/compile",
+            json=payload,
+        )
+        if not isinstance(result, dict):
+            raise MissionPlanningError("5130 Research Matrix 编译响应无效")
+        return result
+
+    async def create_training_plan(self, payload: dict[str, Any]) -> dict[str, Any]:
+        result = await self._request("POST", "/api/training/plans", json=payload)
+        if not isinstance(result, dict):
+            raise MissionPlanningError("5130 训练计划草案响应无效")
+        return result
+
+    async def publish_training_plan(self, plan_id: str, *, expected_revision: int) -> dict[str, Any]:
+        current = await self._request("GET", f"/api/training/plans/{plan_id}")
+        if (
+            isinstance(current, dict)
+            and current.get("status") == "published"
+            and int(current.get("revision") or 0) >= expected_revision
+        ):
+            return {**current, "idempotent_replay": True}
+        result = await self._request(
+            "POST",
+            f"/api/training/plans/{plan_id}/publish",
+            json={"expected_revision": expected_revision},
+        )
+        return result if isinstance(result, dict) else {}
+
+    async def synchronize_training_plan(
+        self,
+        plan_id: str,
+        *,
+        expected_revision: int,
+        idempotency_key: str,
+    ) -> dict[str, Any]:
+        result = await self._request(
+            "POST",
+            f"/api/training/plans/{plan_id}/sync",
+            json={
+                "expected_revision": expected_revision,
+                "idempotency_key": idempotency_key,
+            },
+        )
+        return result if isinstance(result, dict) else {}
+
+    async def start_training_plan(
+        self,
+        plan_id: str,
+        *,
+        expected_revision: int,
+        idempotency_key: str,
+    ) -> dict[str, Any]:
+        result = await self._request(
+            "POST",
+            f"/api/training/plans/{plan_id}/start",
+            json={
+                "expected_revision": expected_revision,
+                "idempotency_key": idempotency_key,
+            },
+        )
+        return result if isinstance(result, dict) else {}
+
+    async def cancel_training_run(self, run_id: str) -> dict[str, Any]:
+        result = await self._request("POST", f"/api/training/runs/{run_id}/cancel")
+        return result if isinstance(result, dict) else {}
+
+    async def get_training_run(self, run_id: str) -> dict[str, Any]:
+        result = await self._request("GET", f"/api/training/runs/{run_id}")
+        return result if isinstance(result, dict) else {}
+
     async def list_scenarios(self) -> list[dict[str, Any]]:
         if self._scenario_cache and time.monotonic() - self._scenario_cache_at < 300:
             return [dict(row) for row in self._scenario_cache]

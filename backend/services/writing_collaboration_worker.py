@@ -13,6 +13,7 @@ from services.writing_collaboration_service import (
     WritingCollaborationDisabled,
     writing_collaboration_service,
 )
+from services.writing_research_service import writing_research_service
 
 
 logger = logging.getLogger(__name__)
@@ -63,6 +64,16 @@ class WritingCollaborationWorker:
                                 project, stale["document_id"]
                             )
                         await asyncio.sleep(idle_seconds)
+                        continue
+                    jarvis_run = writing_research_service.claim_next_run(
+                        self.worker_id,
+                        lease_seconds=300,
+                    )
+                    if jarvis_run:
+                        await writing_research_service.process_run(
+                            jarvis_run["id"],
+                            self.worker_id,
+                        )
                         continue
                     await asyncio.sleep(idle_seconds)
                     continue

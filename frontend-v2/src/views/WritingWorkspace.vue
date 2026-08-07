@@ -518,7 +518,7 @@
                 text
                 @click="openPresentationSlide(item.documentId, item.slide)"
               >当前章节关联 PPT · 第{{ item.slide }}页</el-button>
-              <span>章节修改会自动保存；AI 修改不同段落时自动合并，同段变化转为待审建议。</span>
+              <span>章节修改会自动保存；低风险措辞可进入工作草稿，论点、数据、引用、图表和实验结论必须审批。</span>
             </div>
           </header>
           <el-skeleton v-if="sectionLoading || !currentSection" :rows="14" animated />
@@ -2237,7 +2237,12 @@ async function exportDocument(format: 'docx' | 'pdf') {
   if (!preflightOk) return
   exporting.value = format
   try {
-    const blob = await exportProjectWritingDocument(selectedProjectId.value, selectedDocumentId.value, format)
+    const blob = await exportProjectWritingDocument(
+      selectedProjectId.value,
+      selectedDocumentId.value,
+      format,
+      'candidate'
+    )
     if (format === 'pdf') {
       const url = URL.createObjectURL(blob)
       objectUrls.value.push(url)
@@ -2526,8 +2531,8 @@ onBeforeUnmount(() => {
 .reader-view { display: grid; grid-template-columns: minmax(190px, 250px) minmax(0, 1fr) minmax(230px, 290px); gap: 12px; min-height: calc(100vh - 245px); align-items: stretch; }
 .reader-view.is-collaboration { display: block; }
 .collaboration-reader { display: grid; gap: 8px; min-width: 0; }
-.collaboration-reader__toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--text-secondary); font-size: 10px; }
-.collaboration-reader__context { display: flex; align-items: center; justify-content: flex-end; gap: 8px; min-width: 0; }
+.collaboration-reader__toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; max-width: 100%; overflow: hidden; color: var(--text-secondary); font-size: 10px; }
+.collaboration-reader__context { display: flex; flex: 1; align-items: center; justify-content: flex-end; gap: 8px; min-width: 0; max-width: 100%; overflow-x: auto; white-space: nowrap; }
 .inspector-pane { padding: 12px; }
 .document-pane { min-width: 0; overflow: hidden; }
 .document-toolbar { display: flex; align-items: center; justify-content: space-between; padding: 9px 12px; border-bottom: 1px solid var(--line-color); }

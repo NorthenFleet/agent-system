@@ -76,6 +76,10 @@ export interface WritingProposal {
   original_content?: WritingEditorJson | string
   proposed_content?: WritingEditorJson | string
   created_at?: string
+  risk_level?: 'low' | 'medium' | 'high'
+  approval_required?: boolean
+  evidence_ref_ids?: string[]
+  concurrency_status?: 'unchanged' | 'conflicted' | string
 }
 
 export interface WritingCollaborationState {
@@ -90,6 +94,8 @@ export interface WritingCollaborationState {
     revision?: number
   }
   revision: number
+  approved_revision?: number
+  published_revision?: number
   block_revision?: number
   section?: {
     id: string
@@ -158,6 +164,76 @@ export interface WritingAiJobCreate {
   selection?: { from: number; to: number; text: string; block_id?: string; block_revision?: number }
   block_id?: string
   block_revision?: number
+  evidence_ref_ids?: string[]
+  risk_policy?: { allow_auto_draft?: boolean }
+}
+
+export interface WritingClaim {
+  id: string
+  document_revision: number
+  section_id: string
+  block_id: string
+  claim_text: string
+  claim_type: string
+  minimum_evidence_level: 'diagnostic' | 'G1' | 'G2' | 'A'
+  evidence_status: 'missing' | 'insufficient' | 'sufficient' | string
+  status: string
+}
+
+export interface WritingEvidenceRef {
+  id: string
+  source_system: string
+  source_record_id: string
+  artifact_path: string
+  artifact_sha256: string
+  perspective_scope: string
+  evidence_level: 'diagnostic' | 'G1' | 'G2' | 'A'
+  allowed_claim_scope: string
+  immutable: boolean
+}
+
+export interface WritingEvidenceGap {
+  id: string
+  claim_id: string
+  required_level: 'diagnostic' | 'G1' | 'G2' | 'A'
+  reason: string
+  research_matrix: Record<string, any>
+  status: string
+  dispatched_run_id: string
+}
+
+export interface WritingChangeSet {
+  id: string
+  base_revision: number
+  result_revision: number
+  proposal_id: string
+  operations: Record<string, any>[]
+  evidence_ref_ids: string[]
+  risk_level: 'low' | 'medium' | 'high'
+  approval_policy: string
+  status: string
+  summary: string
+}
+
+export interface WritingJarvisRun {
+  id: string
+  run_type: string
+  status: string
+  approval_reason: string
+  error: string
+  recovery_cursor: Record<string, any>
+  steps: Array<{ id: string; step_key: string; status: string; attempt_count: number; error: string }>
+}
+
+export interface WritingResearchWorkflow {
+  revision: number
+  approved_revision: number
+  published_revision: number
+  claims: WritingClaim[]
+  evidence_refs: WritingEvidenceRef[]
+  gaps: WritingEvidenceGap[]
+  change_sets: WritingChangeSet[]
+  runs: WritingJarvisRun[]
 }
 
 export interface WritingQualitySummary {
@@ -907,6 +983,95 @@ export function rejectWritingProposal(projectId: string, documentId: string, pro
   ).then(r => r.data)
 }
 
+export function getWritingResearchWorkflow(projectId: string, documentId: string) {
+  return apiClient.get<WritingResearchWorkflow>(
+    `${documentBase(projectId, documentId)}/research-workflow`
+  ).then(r => r.data)
+}
+
+export function createWritingClaim(
+  projectId: string,
+  documentId: string,
+  payload: Pick<WritingClaim, 'claim_text' | 'claim_type' | 'minimum_evidence_level' | 'section_id' | 'block_id'> & {
+    document_revision?: number
+    research_matrix?: Record<string, any>
+  }
+) {
+  return apiClient.post<WritingClaim>(`${documentBase(projectId, documentId)}/claims`, payload).then(r => r.data)
+}
+
+export function createWritingEvidenceRef(
+  projectId: string,
+  documentId: string,
+  payload: Omit<WritingEvidenceRef, 'id' | 'immutable'> & { provenance?: Record<string, any> }
+) {
+  return apiClient.post<WritingEvidenceRef>(
+    `${documentBase(projectId, documentId)}/evidence-refs`,
+    payload
+  ).then(r => r.data)
+}
+
+export function bindWritingEvidence(
+  projectId: string,
+  documentId: string,
+  payload: { claim_id: string; evidence_ref_id: string; support_scope?: string }
+) {
+  return apiClient.post(
+    `${documentBase(projectId, documentId)}/evidence-bindings`,
+    payload
+  ).then(r => r.data)
+}
+
+export function dispatchWritingEvidenceGap(
+  projectId: string,
+  documentId: string,
+  gapId: string,
+  payload: {
+    research_matrix?: Record<string, any>
+    execution_policy?: Record<string, any>
+    idempotency_key?: string
+    retry?: boolean
+    retry_request_id?: string
+  } = {}
+) {
+  return apiClient.post<WritingJarvisRun>(
+    `${documentBase(projectId, documentId)}/evidence-gaps/${encodeURIComponent(gapId)}/dispatch`,
+    payload
+  ).then(r => r.data)
+}
+
+export function decideWritingChangeSet(
+  projectId: string,
+  documentId: string,
+  changeSetId: string,
+  decision: 'approve' | 'reject',
+  comment = ''
+) {
+  return apiClient.post<WritingChangeSet>(
+    `${documentBase(projectId, documentId)}/change-sets/${encodeURIComponent(changeSetId)}/decision`,
+    { decision, comment }
+  ).then(r => r.data)
+}
+
+export function decideWritingJarvisRun(
+  projectId: string,
+  documentId: string,
+  runId: string,
+  decision: 'approve' | 'reject',
+  comment = ''
+) {
+  return apiClient.post<WritingJarvisRun>(
+    `${documentBase(projectId, documentId)}/jarvis-runs/${encodeURIComponent(runId)}/decision`,
+    { decision, comment }
+  ).then(r => r.data)
+}
+
+export function approveWritingRevision(projectId: string, documentId: string, revision: number) {
+  return apiClient.post<{ document_revision: number; approved_revision: number }>(
+    `${documentBase(projectId, documentId)}/revisions/${revision}/approval`
+  ).then(r => r.data)
+}
+
 export function createWritingVersion(
   projectId: string,
   documentId: string,
@@ -1113,8 +1278,16 @@ export function getDocumentWritingSourceWord(projectId: string, documentId: stri
   }).then(r => r.data)
 }
 
-export function exportProjectWritingDocument(projectId: string, documentId: string, format: 'docx' | 'pdf') {
-  return apiClient.post<Blob>(`${documentBase(projectId, documentId)}/export`, { format }, {
+export function exportProjectWritingDocument(
+  projectId: string,
+  documentId: string,
+  format: 'docx' | 'pdf',
+  releaseMode: 'candidate' | 'formal' = 'candidate'
+) {
+  return apiClient.post<Blob>(`${documentBase(projectId, documentId)}/export`, {
+    format,
+    release_mode: releaseMode
+  }, {
     responseType: 'blob',
     timeout: 240000
   }).then(r => r.data)
@@ -1441,8 +1614,15 @@ export function getWritingSourceWord(projectId: string) {
   }).then(r => r.data)
 }
 
-export function exportWritingDocument(projectId: string, format: 'docx' | 'pdf') {
-  return apiClient.post<Blob>(`/api/v3/writing/projects/${encodeURIComponent(projectId)}/export`, { format }, {
+export function exportWritingDocument(
+  projectId: string,
+  format: 'docx' | 'pdf',
+  releaseMode: 'candidate' | 'formal' = 'candidate'
+) {
+  return apiClient.post<Blob>(`/api/v3/writing/projects/${encodeURIComponent(projectId)}/export`, {
+    format,
+    release_mode: releaseMode
+  }, {
     responseType: 'blob',
     timeout: 240000
   }).then(r => r.data)
