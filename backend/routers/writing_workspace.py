@@ -27,6 +27,7 @@ from services.document_evaluation_service import (
     document_evaluation_service,
 )
 from services.document_layout_service import document_layout_service
+from services.document_comparison_service import document_comparison_service
 from services.multi_document_service import multi_document_service
 from services.product_delivery_service import register_document_export
 from services.product_service import product_registry_service
@@ -196,8 +197,8 @@ class WorkbenchPanePair(BaseModel):
 
 class WorkbenchPreferenceUpdate(BaseModel):
     expected_revision: int = Field(ge=0)
-    schema_version: int = Field(default=1, ge=1, le=1)
-    preset: str = Field(pattern="^(writing|presentation|comparison|custom)$")
+    schema_version: int = Field(default=2, ge=1, le=2)
+    preset: str = Field(pattern="^(writing|presentation|comparison|document_compare|document_presentation|custom)$")
     split_percent: int = Field(ge=25, le=75)
     maximized_pane: str | None = Field(default=None, pattern="^(left|right)$")
     panes: WorkbenchPanePair
@@ -268,6 +269,9 @@ class ProjectDocumentCreate(BaseModel):
     publication_status: str = ""
     rules_version: str = ""
     data_version: str = ""
+    edit_policy: str = Field(default="editable", pattern="^(editable|read_only)$")
+    delivery_role: str = Field(default="deliverable", pattern="^(deliverable|historical_reference)$")
+    lineage: dict[str, Any] | None = None
 
 
 class ProjectDocumentUpdate(BaseModel):
@@ -287,6 +291,17 @@ class ProjectDocumentUpdate(BaseModel):
     publication_status: str | None = None
     rules_version: str | None = None
     data_version: str | None = None
+    edit_policy: str | None = Field(default=None, pattern="^(editable|read_only)$")
+    delivery_role: str | None = Field(default=None, pattern="^(deliverable|historical_reference)$")
+    lineage: dict[str, Any] | None = None
+
+
+class DocumentComparisonCreate(BaseModel):
+    left_document_id: str = Field(min_length=1, max_length=64)
+    right_document_id: str = Field(min_length=1, max_length=64)
+    left_revision: int | None = Field(default=None, ge=1)
+    right_revision: int | None = Field(default=None, ge=1)
+    section_key: str | None = Field(default=None, max_length=160)
 
 
 class ProjectDocumentOrder(BaseModel):
@@ -656,6 +671,9 @@ def create_project_document(
             publication_status=req.publication_status,
             rules_version=req.rules_version,
             data_version=req.data_version,
+            edit_policy=req.edit_policy,
+            delivery_role=req.delivery_role,
+            lineage=req.lineage,
         )
     except DocumentWorkspaceError as exc:
         raise _handle(exc) from exc
@@ -665,6 +683,18 @@ def create_project_document(
 def get_project_document(project_id: str, document_id: str, _user: dict = Depends(get_current_user)):
     try:
         return multi_document_service.get_document(_project(project_id), document_id)
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.post("/projects/{project_id}/document-comparisons")
+def compare_project_documents(
+    project_id: str,
+    req: DocumentComparisonCreate,
+    _user: dict = Depends(get_current_user),
+):
+    try:
+        return document_comparison_service.compare(_project(project_id), req.model_dump(exclude_none=True))
     except DocumentWorkspaceError as exc:
         raise _handle(exc) from exc
 
@@ -850,6 +880,7 @@ async def replace_project_document_content(
 ):
     try:
         project = _project(project_id)
+        multi_document_service.assert_writable(project, document_id)
         data = await file.read()
         result = multi_document_service.replace_content(
             project,
@@ -1184,6 +1215,7 @@ def patch_document_collaboration_draft(
     user: dict = Depends(require_role("admin")),
 ):
     try:
+        multi_document_service.assert_writable(_project(project_id), document_id)
         return writing_collaboration_service.patch_draft(
             _project(project_id),
             document_id,
@@ -1207,6 +1239,7 @@ def create_document_ai_job(
 ):
     try:
         project = _project(project_id)
+        multi_document_service.assert_writable(project, document_id)
         job = writing_collaboration_service.submit_ai_job(
             project,
             document_id,
@@ -1264,6 +1297,7 @@ def accept_document_ai_proposal(
     user: dict = Depends(require_role("admin")),
 ):
     try:
+        multi_document_service.assert_writable(_project(project_id), document_id)
         return writing_collaboration_service.accept_proposal(
             _project(project_id), document_id, proposal_id, _actor(user)
         )
@@ -1283,6 +1317,7 @@ def reject_document_ai_proposal(
     user: dict = Depends(require_role("admin")),
 ):
     try:
+        multi_document_service.assert_writable(_project(project_id), document_id)
         return writing_collaboration_service.reject_proposal(
             _project(project_id), document_id, proposal_id, _actor(user)
         )
@@ -1302,6 +1337,7 @@ def create_document_collaboration_version(
     user: dict = Depends(require_role("admin")),
 ):
     try:
+        multi_document_service.assert_writable(_project(project_id), document_id)
         return writing_collaboration_service.create_version(
             _project(project_id),
             document_id,
@@ -1340,6 +1376,7 @@ def restore_document_collaboration_version(
     user: dict = Depends(require_role("admin")),
 ):
     try:
+        multi_document_service.assert_writable(_project(project_id), document_id)
         return writing_collaboration_service.restore_version(
             _project(project_id),
             document_id,
@@ -1374,6 +1411,7 @@ def update_document_section(
 ):
     try:
         project = _project(project_id)
+        multi_document_service.assert_writable(project, document_id)
         result = multi_document_service.rich_call(
             project,
             document_id,
@@ -1630,6 +1668,7 @@ def restore_document_version(
 ):
     try:
         project = _project(project_id)
+        multi_document_service.assert_writable(project, document_id)
         result = multi_document_service.restore_version(
             project,
             document_id,
@@ -1664,6 +1703,7 @@ async def upload_document_asset(
     user: dict = Depends(require_role("admin")),
 ):
     try:
+        multi_document_service.assert_writable(_project(project_id), document_id)
         data = await file.read()
         return multi_document_service.upload_rich_text_asset(
             _project(project_id),

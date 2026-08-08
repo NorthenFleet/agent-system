@@ -22,6 +22,9 @@ PROJECT = {"id": "project-1", "name": "测试项目", "enabled_modules": ["writi
 
 
 class FakeDocuments:
+    def assert_writable(self, project, document_id):
+        return {"id": document_id, "edit_policy": "editable"}
+
     def presentation_slide_proposal(
         self,
         project,
@@ -130,7 +133,8 @@ def test_preference_uses_optimistic_revision_and_survives_service_restart(workbe
     )
     restored = restarted.get_preference(PROJECT["id"], "user-1")
     assert restored["revision"] == 1
-    assert restored["preset"] == "comparison"
+    assert restored["preset"] == "document_presentation"
+    assert restored["schema_version"] == 2
 
 
 def test_presentation_conversation_is_idempotent_and_persistent(workbench):

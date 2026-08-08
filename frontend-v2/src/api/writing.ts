@@ -131,7 +131,7 @@ export interface WritingAiJob {
 }
 
 export type WritingPaneModule = 'document' | 'presentation' | 'ai'
-export type WritingWorkbenchPreset = 'writing' | 'presentation' | 'comparison' | 'custom'
+export type WritingWorkbenchPreset = 'writing' | 'presentation' | 'document_compare' | 'document_presentation' | 'custom'
 
 export interface WritingWorkbenchPaneState {
   module: WritingPaneModule
@@ -146,7 +146,7 @@ export interface WritingWorkbenchPaneState {
 export type WorkbenchPaneState = WritingWorkbenchPaneState
 
 export interface WritingWorkbenchPreference {
-  schema_version: 1
+  schema_version: 1 | 2
   revision: number
   preset: WritingWorkbenchPreset
   split_percent: number
@@ -720,6 +720,18 @@ export interface WritingProjectDocument {
   revision: number
   source_path?: string
   source_checksum?: string
+  edit_policy?: 'editable' | 'read_only'
+  delivery_role?: 'deliverable' | 'historical_reference'
+  lineage?: {
+    series_id: string
+    edition_label: string
+    sequence: number
+    source_type: 'markdown' | 'chapter_bundle' | 'structured_authority'
+    parent_document_id?: string
+    source_checksum: string
+    generated_at?: string
+    source_paths?: string[]
+  } | null
   created_at: string
   updated_at: string
   health?: string
@@ -737,6 +749,31 @@ export interface WritingProjectDocument {
     appendix_slide_count?: number
     notes_count?: number
   }
+}
+
+export interface WritingDocumentComparisonChange {
+  operation: 'added' | 'deleted' | 'modified' | 'unchanged'
+  left_index?: number | null
+  right_index?: number | null
+  left_text: string
+  right_text: string
+  similarity: number
+}
+
+export interface WritingDocumentComparison {
+  cache_key: string
+  cached: boolean
+  left: { document_id: string; title: string; revision: number; checksum: string }
+  right: { document_id: string; title: string; revision: number; checksum: string }
+  summary: { added: number; deleted: number; modified: number; unchanged: number }
+  sections: Array<{
+    key: string
+    left_title: string
+    right_title: string
+    matched: boolean
+    summary: WritingDocumentComparison['summary']
+    changes: WritingDocumentComparisonChange[]
+  }>
 }
 
 export interface WritingProjectDocuments {
@@ -1067,6 +1104,22 @@ export function updateWritingWorkbenchPreference(
 ) {
   return apiClient.patch<WritingWorkbenchPreference>(
     `${writingProjectBase(projectId)}/workbench-preference`,
+    payload
+  ).then(r => r.data)
+}
+
+export function compareWritingDocuments(
+  projectId: string,
+  payload: {
+    left_document_id: string
+    right_document_id: string
+    left_revision?: number
+    right_revision?: number
+    section_key?: string
+  }
+) {
+  return apiClient.post<WritingDocumentComparison>(
+    `${writingProjectBase(projectId)}/document-comparisons`,
     payload
   ).then(r => r.data)
 }

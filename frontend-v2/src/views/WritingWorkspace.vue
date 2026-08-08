@@ -243,7 +243,7 @@
       <div v-if="documentCollection?.documents.length" class="document-groups">
         <section class="document-group formal-documents">
           <header>
-            <div><strong>正式文档</strong><small>Word、PDF与PPT统一交付</small></div>
+            <div><strong>正式文档</strong><small>历史基线、当前权威与PPT统一管理</small></div>
             <el-tag type="success" effect="plain">{{ formalDocuments.length }} 册</el-tag>
           </header>
           <div class="project-document-list">
@@ -257,6 +257,12 @@
               <div class="document-card-body">
                 <div>
                   <strong>{{ documentItem.title }}</strong>
+                  <el-tag v-if="documentItem.lineage?.edition_label" size="small" effect="plain">
+                    {{ documentItem.lineage.edition_label }}
+                  </el-tag>
+                  <el-tag v-if="documentItem.delivery_role === 'historical_reference'" size="small" type="info" effect="plain">历史基线</el-tag>
+                  <el-tag v-if="documentItem.lineage?.sequence === 3" size="small" type="success" effect="plain">当前权威</el-tag>
+                  <el-tag v-if="documentItem.edit_policy === 'read_only'" size="small" type="warning" effect="plain">只读</el-tag>
                   <el-tag v-if="documentItem.is_primary" size="small" type="success" effect="plain">主文档</el-tag>
                   <el-tag v-if="documentItem.status === 'archived'" size="small" type="info" effect="plain">已归档</el-tag>
                   <el-tag v-if="documentItem.product_type" size="small" effect="plain">
@@ -357,6 +363,7 @@
       :selected-node-id="selectedDirectoryNodeId"
       :presentation-slide="presentationInitialSlide"
       :initial-preset="workbenchInitialPreset"
+      :initial-preset-override="workbenchInitialPresetOverride"
       @select-outline="selectDirectoryNode"
       @navigate-to-thesis="navigateFromLinkedPresentation"
       @slide-changed="presentationInitialSlide = $event"
@@ -935,7 +942,17 @@ const presentationManifests = ref<Record<string, PresentationManifest>>({})
 const presentationInitialSlide = ref(1)
 const studioMode = ref<'document' | 'presentation' | 'linked' | 'workbook'>('document')
 const linkedPresentationDocumentId = ref('')
-const workbenchInitialPreset = ref<'writing' | 'presentation' | 'comparison' | 'custom'>('writing')
+const initialLegacyMode = String(route.query.mode || '')
+const workbenchInitialPreset = ref<'writing' | 'presentation' | 'document_compare' | 'document_presentation' | 'custom'>(
+  initialLegacyMode === 'presentation'
+    ? 'presentation'
+    : initialLegacyMode === 'linked'
+      ? 'document_presentation'
+      : 'writing'
+)
+const workbenchInitialPresetOverride = ref(
+  ['document', 'presentation', 'linked'].includes(initialLegacyMode)
+)
 const formalDocuments = computed(() => (
   documentCollection.value?.documents.filter(row => row.is_output_product) || []
 ))
@@ -1440,7 +1457,7 @@ async function handleStudioModeChange(value: string | number) {
     )) || presentationDocuments.value[0]
     linkedPresentationDocumentId.value = linkedPresentation?.id || ''
     studioMode.value = 'document'
-    workbenchInitialPreset.value = nextMode === 'document' ? 'writing' : 'comparison'
+    workbenchInitialPreset.value = nextMode === 'document' ? 'writing' : 'document_presentation'
     await selectDocument(sourceDocument.id, undefined, true)
     studioMode.value = 'document'
     activeView.value = 'workbench'
@@ -2411,12 +2428,6 @@ function handleResize() {
 
 onMounted(() => {
   window.addEventListener('resize', handleResize)
-  const legacyMode = String(route.query.mode || '')
-  workbenchInitialPreset.value = legacyMode === 'presentation'
-    ? 'presentation'
-    : legacyMode === 'linked'
-      ? 'comparison'
-      : 'writing'
   loadWorkspace()
 })
 onBeforeUnmount(() => {

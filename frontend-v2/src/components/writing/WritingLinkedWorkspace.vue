@@ -26,6 +26,27 @@
       </div>
     </header>
 
+    <section v-if="comparison" class="comparison-strip">
+      <div class="comparison-summary">
+        <strong>版本差异</strong>
+        <span class="diff-added">新增 {{ comparison.summary.added }}</span>
+        <span class="diff-deleted">删除 {{ comparison.summary.deleted }}</span>
+        <span class="diff-modified">修改 {{ comparison.summary.modified }}</span>
+        <span>未变化 {{ comparison.summary.unchanged }}</span>
+        <el-switch v-model="syncComparisonSections" inline-prompt active-text="同步" inactive-text="独立" />
+      </div>
+      <div v-if="activeDifference" class="difference-row" :class="`is-${activeDifference.change.operation}`">
+        <div><small>{{ activeDifference.section.left_title || '无对应章节' }}</small><p>{{ activeDifference.change.left_text || '本版本无此段落' }}</p></div>
+        <div><small>{{ activeDifference.section.right_title || '无对应章节' }}</small><p>{{ activeDifference.change.right_text || '本版本无此段落' }}</p></div>
+        <div class="difference-actions">
+          <el-button size="small" :disabled="differenceIndex <= 0" @click="differenceIndex--">上一个</el-button>
+          <span>{{ differenceIndex + 1 }} / {{ differences.length }}</span>
+          <el-button size="small" :disabled="differenceIndex >= differences.length - 1" @click="differenceIndex++">下一个</el-button>
+        </div>
+      </div>
+      <el-alert v-else title="两个版本当前没有可显示的段落差异" type="success" :closable="false" show-icon />
+    </section>
+
     <nav class="mobile-pane-switch" aria-label="协同窗口">
       <el-segmented v-model="mobilePane" :options="mobilePaneOptions" size="small" />
     </nav>
@@ -66,7 +87,7 @@
             placeholder="选择文档"
             @change="changeResource('left', String($event || ''))"
           >
-            <el-option v-for="document in sourceOptions" :key="document.id" :label="document.title" :value="document.id" />
+            <el-option v-for="document in sourceOptions" :key="document.id" :label="documentOptionLabel(document)" :value="document.id" />
           </el-select>
           <el-select
             v-else-if="leftPane.module === 'presentation'"
@@ -84,7 +105,7 @@
             placeholder="当前章节"
             @change="markCustomAndPersist"
           >
-            <el-option v-for="section in sectionOptions" :key="section.id" :label="section.title" :value="section.id" />
+            <el-option v-for="section in sectionOptionsFor('left')" :key="section.id" :label="section.title" :value="section.id" />
           </el-select>
           <el-input-number
             v-else-if="leftPane.module === 'presentation'"
@@ -104,9 +125,9 @@
           :project-id="projectId"
           :source-document="leftSource"
           :presentation-document="leftPresentation"
-          :section-id="leftPane.section_id || sectionId"
-          :outline="outline"
-          :selected-node-id="leftPane.section_id || selectedNodeId"
+          :section-id="leftPane.section_id || ''"
+          :outline="outlineFor('left')"
+          :selected-node-id="leftPane.section_id || ''"
           :presentation-slide="leftPane.slide || 1"
           :refresh-token="leftRefreshToken"
           :read-only="leftReadOnly"
@@ -120,6 +141,7 @@
           @select-outline="handleOutlineSelection('left', $event)"
           @navigate-to-thesis="emit('navigate-to-thesis', $event)"
           @slide-changed="handleSlideChanged('left', $event)"
+          @content-scroll="syncPaneScroll('left', $event)"
         />
       </article>
 
@@ -161,7 +183,7 @@
             placeholder="选择文档"
             @change="changeResource('right', String($event || ''))"
           >
-            <el-option v-for="document in sourceOptions" :key="document.id" :label="document.title" :value="document.id" />
+            <el-option v-for="document in sourceOptions" :key="document.id" :label="documentOptionLabel(document)" :value="document.id" />
           </el-select>
           <el-select
             v-else-if="rightPane.module === 'presentation'"
@@ -179,7 +201,7 @@
             placeholder="当前章节"
             @change="markCustomAndPersist"
           >
-            <el-option v-for="section in sectionOptions" :key="section.id" :label="section.title" :value="section.id" />
+            <el-option v-for="section in sectionOptionsFor('right')" :key="section.id" :label="section.title" :value="section.id" />
           </el-select>
           <el-input-number
             v-else-if="rightPane.module === 'presentation'"
@@ -199,9 +221,9 @@
           :project-id="projectId"
           :source-document="rightSource"
           :presentation-document="rightPresentation"
-          :section-id="rightPane.section_id || sectionId"
-          :outline="outline"
-          :selected-node-id="rightPane.section_id || selectedNodeId"
+          :section-id="rightPane.section_id || ''"
+          :outline="outlineFor('right')"
+          :selected-node-id="rightPane.section_id || ''"
           :presentation-slide="rightPane.slide || 1"
           :refresh-token="rightRefreshToken"
           :read-only="rightReadOnly"
@@ -215,6 +237,7 @@
           @select-outline="handleOutlineSelection('right', $event)"
           @navigate-to-thesis="emit('navigate-to-thesis', $event)"
           @slide-changed="handleSlideChanged('right', $event)"
+          @content-scroll="syncPaneScroll('right', $event)"
         />
       </article>
     </div>
@@ -222,7 +245,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { FullScreen, Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import WritingWorkspacePane, {
@@ -231,15 +254,18 @@ import WritingWorkspacePane, {
 } from './WritingWorkspacePane.vue'
 import {
   getWritingWorkbenchPreference,
+  getDocumentWritingWorkspace,
+  compareWritingDocuments,
   updateWritingWorkbenchPreference,
   type WritingWorkbenchPaneState,
   type WritingAiTarget,
+  type WritingDocumentComparison,
   type WritingDirectoryNode,
   type WritingProjectDocument
 } from '@/api/writing'
 
 type PaneSide = 'left' | 'right'
-type WorkbenchPreset = 'writing' | 'presentation' | 'comparison' | 'custom'
+type WorkbenchPreset = 'writing' | 'presentation' | 'document_compare' | 'document_presentation' | 'custom'
 
 const props = defineProps<{
   projectId: string
@@ -252,6 +278,7 @@ const props = defineProps<{
   selectedNodeId?: string
   presentationSlide?: number
   initialPreset?: WorkbenchPreset
+  initialPresetOverride?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -278,6 +305,11 @@ const rightRefreshToken = ref(0)
 const leftContext = ref<WritingPaneContext>()
 const rightContext = ref<WritingPaneContext>()
 const lockedTargets = ref<Partial<Record<PaneSide, WritingAiTarget>>>({})
+const documentOutlines = ref<Record<string, WritingDirectoryNode[]>>({})
+const comparison = ref<WritingDocumentComparison>()
+const comparisonLoading = ref(false)
+const differenceIndex = ref(0)
+const syncComparisonSections = ref(true)
 let persistTimer: ReturnType<typeof setTimeout> | undefined
 
 function defaultPane(module: WritingPaneMode, _side: PaneSide): WritingWorkbenchPaneState {
@@ -301,7 +333,8 @@ const rightPane = ref<WritingWorkbenchPaneState>(defaultPane('document', 'right'
 const presetOptions = [
   { label: '文档写作', value: 'writing' },
   { label: 'PPT 制作', value: 'presentation' },
-  { label: '文档校验', value: 'comparison' },
+  { label: '版本比对', value: 'document_compare' },
+  { label: '文档/PPT校验', value: 'document_presentation' },
   { label: '自定义', value: 'custom' }
 ]
 const paneModeOptions = [
@@ -314,15 +347,22 @@ const mobilePaneOptions = [
   { label: '右窗口', value: 'right' }
 ]
 
-const sectionOptions = computed(() => {
+function flattenOutline(outline: WritingDirectoryNode[]) {
   const rows: Array<{ id: string; title: string }> = []
   const visit = (nodes: WritingDirectoryNode[]) => nodes.forEach(node => {
     if (node.section_id || node.target_id) rows.push({ id: node.section_id || node.target_id, title: node.title })
     if (node.children?.length) visit(node.children)
   })
-  visit(props.outline || [])
+  visit(outline || [])
   return rows
-})
+}
+function outlineFor(side: PaneSide) {
+  const documentId = pane(side).value.resource_id || ''
+  return documentOutlines.value[documentId] || (documentId === props.sourceDocument?.id ? props.outline : [])
+}
+function sectionOptionsFor(side: PaneSide) {
+  return flattenOutline(outlineFor(side))
+}
 const leftSource = computed(() => sourceOptions.value.find(row => row.id === leftPane.value.resource_id) || props.sourceDocument || sourceOptions.value[0])
 const rightSource = computed(() => sourceOptions.value.find(row => row.id === rightPane.value.resource_id) || props.sourceDocument || sourceOptions.value[0])
 const leftPresentation = computed(() => presentationOptions.value.find(row => row.id === leftPane.value.resource_id) || props.presentationDocument || presentationOptions.value[0])
@@ -333,8 +373,12 @@ const sameWritableResource = computed(() => (
   && Boolean(leftPane.value.resource_id)
   && leftPane.value.resource_id === rightPane.value.resource_id
 ))
-const leftReadOnly = computed(() => false)
-const rightReadOnly = computed(() => sameWritableResource.value)
+const leftReadOnly = computed(() => leftSource.value?.edit_policy === 'read_only')
+const rightReadOnly = computed(() => rightSource.value?.edit_policy === 'read_only' || sameWritableResource.value)
+const differences = computed(() => (comparison.value?.sections || []).flatMap(section =>
+  section.changes.filter(change => change.operation !== 'unchanged').map(change => ({ section, change }))
+))
+const activeDifference = computed(() => differences.value[differenceIndex.value])
 const paneGridStyle = computed(() => maximizedPane.value
   ? { gridTemplateColumns: 'minmax(0, 1fr)' }
   : { gridTemplateColumns: `minmax(0, ${splitPercent.value}fr) 8px minmax(0, ${100 - splitPercent.value}fr)` })
@@ -348,10 +392,65 @@ function paneComponent(side: PaneSide) {
   return side === 'left' ? leftPaneComponent.value : rightPaneComponent.value
 }
 
+function syncPaneScroll(source: PaneSide, ratio: number) {
+  if (!syncComparisonSections.value
+    || leftPane.value.module !== 'document'
+    || rightPane.value.module !== 'document') return
+  const target: PaneSide = source === 'left' ? 'right' : 'left'
+  paneComponent(target)?.setContentScrollRatio?.(ratio)
+}
+
 function paneTitle(state: WritingWorkbenchPaneState) {
   if (state.module === 'document') return sourceOptions.value.find(row => row.id === state.resource_id)?.title || '文档'
   if (state.module === 'presentation') return presentationOptions.value.find(row => row.id === state.resource_id)?.title || 'PPT'
   return state.ai_target_locked ? 'AI 协作 · 已锁定目标' : 'AI 协作 · 跟随焦点'
+}
+
+function documentOptionLabel(document: WritingProjectDocument) {
+  const edition = document.lineage?.edition_label ? `${document.lineage.edition_label} · ` : ''
+  const policy = document.edit_policy === 'read_only' ? '（只读）' : document.lineage?.sequence === 3 ? '（当前权威）' : ''
+  return `${edition}${document.title}${policy}`
+}
+
+async function loadDocumentOutline(documentId?: string) {
+  if (!documentId || documentOutlines.value[documentId]) return
+  try {
+    const workspace = await getDocumentWritingWorkspace(props.projectId, documentId)
+    documentOutlines.value = { ...documentOutlines.value, [documentId]: workspace.directory || [] }
+  } catch {
+    documentOutlines.value = { ...documentOutlines.value, [documentId]: [] }
+  }
+}
+
+async function ensurePaneOutline(side: PaneSide) {
+  const state = pane(side).value
+  if (state.module !== 'document') return
+  await loadDocumentOutline(state.resource_id)
+  const options = sectionOptionsFor(side)
+  if (!options.some(row => row.id === state.section_id)) state.section_id = options[0]?.id
+}
+
+async function refreshComparison() {
+  if (leftPane.value.module !== 'document' || rightPane.value.module !== 'document'
+    || !leftPane.value.resource_id || !rightPane.value.resource_id
+    || leftPane.value.resource_id === rightPane.value.resource_id) {
+    comparison.value = undefined
+    return
+  }
+  comparisonLoading.value = true
+  try {
+    comparison.value = await compareWritingDocuments(props.projectId, {
+      left_document_id: leftPane.value.resource_id,
+      right_document_id: rightPane.value.resource_id,
+      left_revision: leftSource.value?.revision,
+      right_revision: rightSource.value?.revision
+    })
+    differenceIndex.value = 0
+  } catch {
+    comparison.value = undefined
+  } finally {
+    comparisonLoading.value = false
+  }
 }
 
 function paneStatusLabel(side: PaneSide) {
@@ -388,7 +487,13 @@ async function changeResource(side: PaneSide, resourceId: string) {
     ElMessage.error('当前草稿保存失败，不能切换资源')
     return
   }
+  target.value.section_id = undefined
   target.value.resource_id = resourceId
+  await loadDocumentOutline(resourceId)
+  if (target.value.module === 'document') {
+    const options = sectionOptionsFor(side)
+    target.value.section_id = options[0]?.id
+  }
   preset.value = 'custom'
   schedulePersist()
 }
@@ -414,6 +519,18 @@ async function applyPreset(nextPreset: WorkbenchPreset) {
     leftPane.value = defaultPane('ai', 'left')
     rightPane.value = defaultPane('presentation', 'right')
     splitPercent.value = 38
+  } else if (nextPreset === 'document_compare') {
+    const historical = [...sourceOptions.value]
+      .filter(row => row.delivery_role === 'historical_reference')
+      .sort((a, b) => Number(b.lineage?.sequence || 0) - Number(a.lineage?.sequence || 0))[0]
+    const current = sourceOptions.value.find(row => row.edit_policy !== 'read_only' && row.lineage?.sequence === 3)
+      || props.sourceDocument || sourceOptions.value.find(row => row.edit_policy !== 'read_only')
+    leftPane.value = { ...defaultPane('document', 'left'), resource_id: historical?.id || sourceOptions.value[0]?.id, section_id: undefined }
+    rightPane.value = { ...defaultPane('document', 'right'), resource_id: current?.id || sourceOptions.value[sourceOptions.value.length - 1]?.id, section_id: undefined }
+    await Promise.all([loadDocumentOutline(leftPane.value.resource_id), loadDocumentOutline(rightPane.value.resource_id)])
+    leftPane.value.section_id = sectionOptionsFor('left')[0]?.id
+    rightPane.value.section_id = sectionOptionsFor('right')[0]?.id
+    splitPercent.value = 50
   } else {
     leftPane.value = defaultPane('document', 'left')
     rightPane.value = defaultPane('presentation', 'right')
@@ -493,6 +610,18 @@ function setConversation(side: PaneSide, conversationId: string) {
 
 function handleOutlineSelection(side: PaneSide, node: WritingDirectoryNode) {
   pane(side).value.section_id = node.section_id || node.target_id || node.id
+  if (syncComparisonSections.value && comparison.value) {
+    const title = node.title.replace(/\s+/g, '')
+    const mapped = comparison.value.sections.find(row =>
+      row.left_title.replace(/\s+/g, '') === title || row.right_title.replace(/\s+/g, '') === title
+    )
+    if (mapped) {
+      const other: PaneSide = side === 'left' ? 'right' : 'left'
+      const targetTitle = side === 'left' ? mapped.right_title : mapped.left_title
+      const target = sectionOptionsFor(other).find(row => row.title.replace(/\s+/g, '') === targetTitle.replace(/\s+/g, ''))
+      if (target) pane(other).value.section_id = target.id
+    }
+  }
   emit('select-outline', node)
   schedulePersist()
 }
@@ -505,6 +634,7 @@ function handleSlideChanged(side: PaneSide, slide: number) {
 
 function handleChanged(kind: 'document' | 'presentation') {
   emit('changed', kind)
+  if (kind === 'document') void refreshComparison()
 }
 
 function refreshPane(side: PaneSide) {
@@ -520,7 +650,7 @@ function markCustomAndPersist() {
 function preferencePayload() {
   return {
     expected_revision: preferenceRevision.value,
-    schema_version: 1,
+    schema_version: 2,
     preset: preset.value,
     split_percent: splitPercent.value,
     maximized_pane: maximizedPane.value,
@@ -533,7 +663,7 @@ function preferencePayload() {
 
 function applyStoredPreference(value: any) {
   preferenceRevision.value = Number(value.revision || 0)
-  preset.value = value.preset || props.initialPreset || 'writing'
+  preset.value = value.preset === 'comparison' ? 'document_presentation' : value.preset || props.initialPreset || 'writing'
   splitPercent.value = Math.max(28, Math.min(72, Number(value.split_percent || 42)))
   maximizedPane.value = value.maximized_pane || undefined
   leftPane.value = { ...defaultPane('ai', 'left'), ...(value.panes?.left || {}) }
@@ -543,7 +673,11 @@ function applyStoredPreference(value: any) {
 async function loadPreference() {
   try {
     const value = await getWritingWorkbenchPreference(props.projectId)
-    if (Number(value.revision || 0) > 0) applyStoredPreference(value)
+    if (props.initialPresetOverride) {
+      preferenceRevision.value = Number(value.revision || 0)
+      await applyPreset(props.initialPreset || 'writing')
+    }
+    else if (Number(value.revision || 0) > 0) applyStoredPreference(value)
     else await applyPreset(props.initialPreset || 'writing')
   } catch {
     preferenceState.value = 'error'
@@ -572,7 +706,33 @@ async function persistPreference() {
   }
 }
 
-onMounted(loadPreference)
+watch(
+  () => [leftPane.value.module, leftPane.value.resource_id, rightPane.value.module, rightPane.value.resource_id],
+  () => {
+    void ensurePaneOutline('left')
+    void ensurePaneOutline('right')
+    void refreshComparison()
+  }
+)
+
+watch(differences, rows => {
+  if (differenceIndex.value >= rows.length) differenceIndex.value = Math.max(0, rows.length - 1)
+})
+
+watch(activeDifference, value => {
+  if (!value || !syncComparisonSections.value) return
+  const left = sectionOptionsFor('left').find(row => row.title.replace(/\s+/g, '') === value.section.left_title.replace(/\s+/g, ''))
+  const right = sectionOptionsFor('right').find(row => row.title.replace(/\s+/g, '') === value.section.right_title.replace(/\s+/g, ''))
+  if (left) leftPane.value.section_id = left.id
+  if (right) rightPane.value.section_id = right.id
+})
+
+onMounted(async () => {
+  if (props.sourceDocument?.id) documentOutlines.value[props.sourceDocument.id] = props.outline || []
+  await loadPreference()
+  await Promise.all([ensurePaneOutline('left'), ensurePaneOutline('right')])
+  await refreshComparison()
+})
 onBeforeUnmount(() => {
   if (persistTimer) clearTimeout(persistTimer)
 })
@@ -590,6 +750,20 @@ onBeforeUnmount(() => {
 .sync-state { min-width: 62px; color: var(--text-secondary); font-size: 9px; text-align: right; }
 .sync-state.is-error { color: var(--el-color-danger); }
 .mobile-pane-switch { display: none; }
+.comparison-strip { display: grid; gap: 8px; padding: 9px 11px; border: 1px solid var(--line-color); border-radius: 6px; background: var(--card-bg); }
+.comparison-summary { display: flex; align-items: center; gap: 12px; color: var(--text-secondary); font-size: 10px; }
+.comparison-summary strong { color: var(--text-primary); font-size: 11px; }
+.comparison-summary .el-switch { margin-left: auto; }
+.diff-added { color: var(--el-color-success); }
+.diff-deleted { color: var(--el-color-danger); }
+.diff-modified { color: var(--el-color-warning); }
+.difference-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 8px; padding: 8px; border-left: 3px solid var(--el-color-warning); background: var(--panel-bg); }
+.difference-row.is-added { border-left-color: var(--el-color-success); }
+.difference-row.is-deleted { border-left-color: var(--el-color-danger); }
+.difference-row > div:not(.difference-actions) { min-width: 0; padding: 7px 9px; background: var(--content-bg); }
+.difference-row small { color: var(--text-secondary); font-size: 9px; }
+.difference-row p { max-height: 84px; margin: 5px 0 0; overflow: auto; color: var(--text-primary); font-size: 10px; line-height: 1.55; white-space: pre-wrap; }
+.difference-actions { display: grid; align-content: center; justify-items: center; gap: 5px; min-width: 74px; color: var(--text-secondary); font-size: 9px; }
 .linked-panes { display: grid; min-width: 0; align-items: stretch; }
 .linked-pane { display: grid; grid-template-rows: auto auto minmax(0, 1fr); min-width: 0; overflow: hidden; border: 1px solid var(--line-color); border-radius: 7px; background: var(--card-bg); box-shadow: 0 12px 30px rgb(0 0 0 / 18%); }
 .pane-divider { display: flex; align-items: center; justify-content: center; width: 8px; padding: 0; border: 0; background: transparent; cursor: col-resize; touch-action: none; }
@@ -614,6 +788,8 @@ onBeforeUnmount(() => {
   .linked-pane { display: none !important; }
   .linked-panes.mobile-left .pane-left, .linked-panes.mobile-right .pane-right { display: grid !important; }
   .pane-divider { display: none; }
+  .difference-row { grid-template-columns: 1fr 1fr; }
+  .difference-actions { grid-column: 1 / -1; display: flex; justify-content: center; }
 }
 @media (max-width: 720px) {
   .workbench-controls { align-items: stretch; flex-wrap: wrap; }

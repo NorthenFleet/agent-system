@@ -38,7 +38,7 @@ def _response_client_id(client_message_id: str) -> str:
 
 
 DEFAULT_PREFERENCE: dict[str, Any] = {
-    "schema_version": 1,
+    "schema_version": 2,
     "preset": "writing",
     "split_percent": 42,
     "maximized_pane": None,
@@ -69,6 +69,9 @@ class WritingWorkbenchService:
         preference = copy.deepcopy(DEFAULT_PREFERENCE)
         if row:
             preference.update(copy.deepcopy(row.preference_json or {}))
+            if preference.get("preset") == "comparison":
+                preference["preset"] = "document_presentation"
+            preference["schema_version"] = 2
             preference["revision"] = row.revision
             preference["updated_at"] = row.updated_at.isoformat() if row.updated_at else ""
         else:
@@ -93,7 +96,9 @@ class WritingWorkbenchService:
         expected_revision = int(payload.pop("expected_revision", 0) or 0)
         preference = copy.deepcopy(DEFAULT_PREFERENCE)
         preference.update(copy.deepcopy(payload))
-        preference["schema_version"] = 1
+        if preference.get("preset") == "comparison":
+            preference["preset"] = "document_presentation"
+        preference["schema_version"] = 2
         preference.pop("revision", None)
         preference.pop("updated_at", None)
         with self.session_factory() as session:
@@ -112,6 +117,7 @@ class WritingWorkbenchService:
                 )
             if row:
                 row.preference_json = preference
+                row.schema_version = 2
                 row.revision += 1
                 row.updated_at = _now()
             else:
@@ -119,7 +125,7 @@ class WritingWorkbenchService:
                     id=_uuid("wpref"),
                     project_id=project_id,
                     owner_user_id=owner_user_id,
-                    schema_version=1,
+                    schema_version=2,
                     revision=1,
                     preference_json=preference,
                 )
@@ -316,6 +322,7 @@ class WritingWorkbenchService:
             if not document_id:
                 raise DocumentWorkspaceError("AI目标缺少文档资源")
             if target_kind == "document":
+                self.documents_service.assert_writable(project, document_id)
                 job_payload = {
                     "client_request_id": str(payload.get("client_message_id") or request_id),
                     "agent_id": str(payload.get("agent_id") or "ultra-magnus"),

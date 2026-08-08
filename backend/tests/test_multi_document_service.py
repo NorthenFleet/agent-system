@@ -135,6 +135,8 @@ def test_output_metadata_defaults_and_internal_workbook(service, tmp_path):
     assert formal["is_output_product"] is True
     assert formal["output_format"] == "docx"
     assert formal["publication_status"] == "draft"
+    assert formal["edit_policy"] == "editable"
+    assert formal["delivery_role"] == "deliverable"
 
     workbook_source = tmp_path / "10-成果库-Outputs" / "test" / "data.xlsx"
     workbook_source.parent.mkdir(parents=True, exist_ok=True)
@@ -272,6 +274,15 @@ def test_export_package_contains_only_approved_output_docx(service, tmp_path, mo
         publication_status="approved",
         print_profile="wargame_a4",
     )
+    history = multi.create_document(
+        project(source),
+        "历史基线",
+        "rich_text",
+        publication_status="approved",
+        edit_policy="read_only",
+        delivery_role="historical_reference",
+        lineage={"series_id": "test", "edition_label": "第一版", "sequence": 1, "source_type": "markdown", "source_checksum": "a" * 64},
+    )
     workbook_source = tmp_path / "10-成果库-Outputs" / "test" / "internal.xlsx"
     workbook_source.parent.mkdir(parents=True, exist_ok=True)
     workbook = Workbook()
@@ -297,7 +308,21 @@ def test_export_package_contains_only_approved_output_docx(service, tmp_path, mo
     assert all(name.startswith("测试·多文档项目——") for name in names)
     assert any("正文" in name for name in names)
     assert any(adjudication["title"] in name for name in names)
+    assert all(history["title"] not in name for name in names)
     assert all("裁决数据源" not in name for name in names)
+
+
+def test_historical_document_is_read_only_but_metadata_can_change(service):
+    multi, source = service
+    history = multi.create_document(
+        project(source), "第一版", "rich_text", edit_policy="read_only",
+        delivery_role="historical_reference",
+    )
+
+    with pytest.raises(DocumentVersionConflict, match="只读"):
+        multi.assert_writable(project(source), history["id"])
+    renamed = multi.update_document(project(source), history["id"], {"title": "第一版·历史基线"})
+    assert renamed["title"] == "第一版·历史基线"
 
 
 def test_presentation_structure_binding_detects_stale_and_preserves_versions(

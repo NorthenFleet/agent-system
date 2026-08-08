@@ -1,5 +1,5 @@
 <template>
-  <section class="workspace-pane-body" :class="{ 'is-read-only': readOnly }">
+  <section ref="paneRoot" class="workspace-pane-body" :class="{ 'is-read-only': readOnly }" @scroll.capture="handleScroll">
     <WritingAiPane
       v-if="mode === 'ai'"
       :project-id="projectId"
@@ -83,9 +83,12 @@ const emit = defineEmits<{
   'context-changed': [context: WritingPaneContext]
   'ai-lock-changed': [locked: boolean]
   'conversation-changed': [conversationId: string]
+  'content-scroll': [ratio: number]
 }>()
 
 const documentEditor = ref<InstanceType<typeof CollaborativeWritingEditor>>()
+const paneRoot = ref<HTMLElement>()
+let applyingSyncedScroll = false
 const emptyDescription = computed(() => {
   if (props.mode === 'document') return '当前项目没有可编辑的正文文档'
   if (props.mode === 'presentation') return '当前项目没有可用的 PPT'
@@ -97,7 +100,24 @@ async function flush(): Promise<boolean> {
   return (await documentEditor.value?.flushDraft?.()) !== false
 }
 
-defineExpose({ flush })
+function handleScroll(event: Event) {
+  if (applyingSyncedScroll) return
+  const target = event.target
+  if (!(target instanceof HTMLElement) || !target.classList.contains('paper-scroll')) return
+  const range = target.scrollHeight - target.clientHeight
+  emit('content-scroll', range > 0 ? target.scrollTop / range : 0)
+}
+
+function setContentScrollRatio(ratio: number) {
+  const scroller = paneRoot.value?.querySelector<HTMLElement>('.paper-scroll')
+  if (!scroller) return
+  const range = scroller.scrollHeight - scroller.clientHeight
+  applyingSyncedScroll = true
+  scroller.scrollTop = Math.max(0, Math.min(1, ratio)) * Math.max(0, range)
+  requestAnimationFrame(() => { applyingSyncedScroll = false })
+}
+
+defineExpose({ flush, setContentScrollRatio })
 </script>
 
 <style scoped>

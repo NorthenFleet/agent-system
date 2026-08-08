@@ -33,6 +33,9 @@ OUTPUT_FORMATS = {"docx", "pdf", "pptx"}
 PUBLICATION_STATUSES = {"draft", "review", "approved", "published", "internal"}
 STRUCTURE_BINDING_MODES = {"canonical", "derived", "mapped"}
 STRUCTURE_BINDING_STATUSES = {"aligned", "diverged", "stale", "missing"}
+EDIT_POLICIES = {"editable", "read_only"}
+DELIVERY_ROLES = {"deliverable", "historical_reference"}
+LINEAGE_SOURCE_TYPES = {"markdown", "chapter_bundle", "structured_authority"}
 MAX_UPLOAD_BYTES = 100 * 1024 * 1024
 MAX_ASSET_UPLOAD_BYTES = 20 * 1024 * 1024
 IMAGE_ASSET_TYPES = {
@@ -289,6 +292,33 @@ class MultiDocumentService:
         )
         record["rules_version"] = str(record.get("rules_version") or "")
         record["data_version"] = str(record.get("data_version") or "")
+        edit_policy = str(record.get("edit_policy") or "editable").lower()
+        record["edit_policy"] = edit_policy if edit_policy in EDIT_POLICIES else "editable"
+        delivery_role = str(record.get("delivery_role") or "deliverable").lower()
+        record["delivery_role"] = (
+            delivery_role if delivery_role in DELIVERY_ROLES else "deliverable"
+        )
+        lineage = record.get("lineage") if isinstance(record.get("lineage"), dict) else {}
+        if lineage:
+            source_type = str(lineage.get("source_type") or "markdown").lower()
+            try:
+                sequence = max(int(lineage.get("sequence") or 0), 0)
+            except (TypeError, ValueError):
+                sequence = 0
+            record["lineage"] = {
+                "series_id": str(lineage.get("series_id") or "").strip(),
+                "edition_label": str(lineage.get("edition_label") or "").strip(),
+                "sequence": sequence,
+                "source_type": source_type if source_type in LINEAGE_SOURCE_TYPES else "markdown",
+                "parent_document_id": str(lineage.get("parent_document_id") or "").strip(),
+                "source_checksum": str(lineage.get("source_checksum") or "").strip().lower(),
+                "generated_at": str(lineage.get("generated_at") or "").strip(),
+                "source_paths": [
+                    str(value) for value in (lineage.get("source_paths") or []) if str(value).strip()
+                ],
+            }
+        else:
+            record["lineage"] = None
         try:
             record["expected_chapters"] = max(int(record.get("expected_chapters") or 0), 0)
         except (TypeError, ValueError):
@@ -620,6 +650,9 @@ class MultiDocumentService:
         publication_status: str = "",
         rules_version: str = "",
         data_version: str = "",
+        edit_policy: str = "editable",
+        delivery_role: str = "deliverable",
+        lineage: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         title = title.strip()
         if not title:
@@ -648,6 +681,12 @@ class MultiDocumentService:
         )
         if selected_status not in PUBLICATION_STATUSES:
             raise DocumentWorkspaceError("无效发布状态")
+        selected_edit_policy = edit_policy.strip().lower() or "editable"
+        if selected_edit_policy not in EDIT_POLICIES:
+            raise DocumentWorkspaceError("无效编辑策略")
+        selected_delivery_role = delivery_role.strip().lower() or "deliverable"
+        if selected_delivery_role not in DELIVERY_ROLES:
+            raise DocumentWorkspaceError("无效交付角色")
         self.ensure_index(project)
         with self._lock_path(project).open("w", encoding="utf-8") as lock:
             fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
@@ -701,7 +740,11 @@ class MultiDocumentService:
                     if kind == "rich_text" and chapter_outline
                     else 3 if kind == "rich_text" else 0
                 ),
+                "edit_policy": selected_edit_policy,
+                "delivery_role": selected_delivery_role,
+                "lineage": copy.deepcopy(lineage) if lineage else None,
             }
+            self._normalise_record(record)
             if is_primary:
                 for row in index["documents"]:
                     row["is_primary"] = False
@@ -877,6 +920,14 @@ class MultiDocumentService:
             raise DocumentWorkspaceError("该操作仅支持正文文档")
         return self._rich_project(project, record)
 
+    def assert_writable(self, project: dict[str, Any], document_id: str) -> dict[str, Any]:
+        """Reject every content mutation for immutable historical documents."""
+        _, record = self._get_record(project, document_id)
+        self._normalise_record(record)
+        if record.get("edit_policy") != "editable":
+            raise DocumentVersionConflict("历史版本为只读文档，不能修改正文或运行 AI 写入任务")
+        return record
+
     def update_document(self, project: dict[str, Any], document_id: str, patch: dict[str, Any]) -> dict[str, Any]:
         allowed = {
             "title",
@@ -896,6 +947,9 @@ class MultiDocumentService:
             "rules_version",
             "data_version",
             "expected_chapters",
+            "edit_policy",
+            "delivery_role",
+            "lineage",
         }
         changes = {key: value for key, value in patch.items() if key in allowed}
         if "title" in changes:
@@ -923,6 +977,18 @@ class MultiDocumentService:
             changes["publication_status"] = str(changes["publication_status"]).strip().lower()
             if changes["publication_status"] not in PUBLICATION_STATUSES:
                 raise DocumentWorkspaceError("无效发布状态")
+        if "edit_policy" in changes:
+            changes["edit_policy"] = str(changes["edit_policy"]).strip().lower()
+            if changes["edit_policy"] not in EDIT_POLICIES:
+                raise DocumentWorkspaceError("无效编辑策略")
+        if "delivery_role" in changes:
+            changes["delivery_role"] = str(changes["delivery_role"]).strip().lower()
+            if changes["delivery_role"] not in DELIVERY_ROLES:
+                raise DocumentWorkspaceError("无效交付角色")
+        if "lineage" in changes:
+            temporary = {"lineage": changes["lineage"]}
+            self._normalise_record(temporary)
+            changes["lineage"] = temporary["lineage"]
         if "data_source_ids" in changes:
             source_ids = [
                 str(value) for value in (changes["data_source_ids"] or []) if str(value).strip()
@@ -1014,6 +1080,7 @@ class MultiDocumentService:
         actor: str,
         target_version: int | None = None,
     ) -> dict[str, Any]:
+        self.assert_writable(project, document_id)
         index, record = self._get_record(project, document_id)
         if record.get("kind") != "rich_text":
             raise DocumentWorkspaceError("当前文档不是正文文档")
@@ -1194,6 +1261,7 @@ class MultiDocumentService:
             )
             if record.get("status") == "active"
             and bool(record.get("is_output_product", record.get("kind") == "rich_text"))
+            and str(record.get("delivery_role") or "deliverable") == "deliverable"
         ]
         if not records:
             raise DocumentWorkspaceError("项目没有可交付的正式文档")
