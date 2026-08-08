@@ -25,6 +25,25 @@ export interface BudgetVersion {
 export interface ApprovalTask {
   id: string; approval_instance_id: string; step_order: number; assignee_role?: string
   assignee_user_id?: number; status: string; comment?: string; created_at: string
+  reimbursement?: {
+    id: string; reimbursement_no: string; title: string; total_amount: number; status: string
+    applicant_user_id: number; project_id: string; project_name: string
+  }
+}
+
+export interface ApprovalWorkflowStep {
+  id?: string; step_order?: number; name: string; assignee_role?: string | null; assignee_user_id?: number | null
+}
+
+export interface ApprovalWorkflow {
+  id: string; name: string; project_id?: string | null; category?: string | null
+  min_amount: number; max_amount?: number | null; is_active: boolean; priority: number
+  steps: ApprovalWorkflowStep[]
+}
+
+export interface FinanceRoleAssignment {
+  id: string; user_id: number; role: string; username: string; display_name: string; is_active: boolean
+  projects: { project_id: string; role: string; project_name: string }[]
 }
 
 export interface ReimbursementItem {
@@ -52,11 +71,14 @@ export interface Invoice {
 export interface Payment {
   id: string; payment_no: string; reimbursement_id: string; amount: number; payee_name: string
   payee_account_masked?: string; status: string; bank_reference?: string; paid_at?: string; lock_version: number
+  confirmed_by_user_id?: number; confirmation_note?: string
 }
 
 export interface ReconciliationMatch {
   id: string; bank_transaction_id: string; payment_id: string; matched_amount: number
-  confidence: number; status: string; created_at: string
+  confidence: number; status: string; created_at: string; confirmation_note?: string
+  bank_transaction?: { transaction_ref: string; transaction_date: string; amount: number; counterparty?: string; account_masked?: string; memo?: string }
+  payment?: Payment
 }
 
 export interface Dashboard {
@@ -69,12 +91,52 @@ export interface Dashboard {
   recent_reimbursements: Reimbursement[]
 }
 
+export interface FinanceIntakeEvent {
+  id: string; event_type: string; actor_type: 'user' | 'agent' | 'system'; actor_id: string
+  payload: Record<string, unknown>; created_at: string
+}
+
+export interface FinanceIntakeIssue {
+  code: string; field: string; message: string
+}
+
+export interface FinanceIntakeJob {
+  id: string; command_message_id: string; source_channel: string; source_account_id: string
+  requested_by_user_id: number; target_agent_id: string; operation_type: string
+  mode: 'shadow' | 'controlled_write'; status: string; lock_version: number
+  created_at: string; updated_at: string
+}
+
+export interface FinanceIntakeDetail extends FinanceIntakeJob {
+  external_message_id?: string; external_conversation_id: string; request_text: string
+  request_metadata: Record<string, unknown>; normalized_payload: Record<string, unknown>
+  shadow_snapshot: { captured_at?: string; authority?: string; write_capability?: string; record_counts?: Record<string, number> }
+  validation_report: { validator?: string; validated_at?: string; valid?: boolean; errors?: FinanceIntakeIssue[]; warnings?: FinanceIntakeIssue[] }
+  reviewer_report: { decision?: string; summary?: string; findings?: Record<string, unknown>[]; confidence?: number; reviewer_agent_id?: string; reviewed_at?: string }
+  last_error?: string; events: FinanceIntakeEvent[]
+}
+
+export interface FinanceControlReadiness {
+  status: 'blocked' | 'awaiting_authorization'
+  mode: 'shadow'
+  formal_write_enabled: false
+  prerequisites_ready: boolean
+  counts: { active_users: number; active_workflows: number; reviewers: number; cashiers: number }
+  checks: { key: string; label: string; passed: boolean; detail: string }[]
+  blockers: string[]
+  evaluated_at: string
+}
+
 const key = () => crypto.randomUUID()
 const unwrap = async <T>(promise: Promise<{ data: Envelope<T> }>): Promise<T> => (await promise).data.data
 const writeHeaders = () => ({ 'Idempotency-Key': key() })
 
 export const financeApi = {
   dashboard: () => unwrap<Dashboard>(apiClient.get('/api/finance/dashboard')),
+  controlReadiness: () => unwrap<FinanceControlReadiness>(apiClient.get('/api/finance/control-readiness')),
+  intakeJobs: (params?: { status?: string; operation_type?: string; limit?: number }) =>
+    unwrap<FinanceIntakeJob[]>(apiClient.get('/api/finance/intake-jobs', { params })),
+  intakeJob: (id: string) => unwrap<FinanceIntakeDetail>(apiClient.get(`/api/finance/intake-jobs/${id}`)),
   projects: () => unwrap<FinanceProject[]>(apiClient.get('/api/finance/projects')),
   createProject: (payload: { project_key: string; name: string; owner_user_id?: number }) =>
     unwrap<FinanceProject>(apiClient.post('/api/finance/projects', payload, { headers: writeHeaders() })),
@@ -122,13 +184,14 @@ export const financeApi = {
     headers: { ...writeHeaders(), 'Content-Type': file.type || 'text/csv', 'X-Filename': file.name },
   })),
   reconciliations: () => unwrap<ReconciliationMatch[]>(apiClient.get('/api/finance/reconciliations')),
-  confirmReconciliations: (matches: string[]) => unwrap<{ records: ReconciliationMatch[] }>(apiClient.post(
-    '/api/finance/reconciliations/confirm', { matches }, { headers: writeHeaders() },
+  confirmReconciliations: (matches: string[], confirmation_note: string) => unwrap<{ records: ReconciliationMatch[] }>(apiClient.post(
+    '/api/finance/reconciliations/confirm', { matches, human_confirmed: true, confirmation_note }, { headers: writeHeaders() },
   )),
-  workflows: () => unwrap<Record<string, unknown>[]>(apiClient.get('/api/finance/approval-workflows')),
-  createWorkflow: (payload: Record<string, unknown>) => unwrap<Record<string, unknown>>(apiClient.post(
+  workflows: () => unwrap<ApprovalWorkflow[]>(apiClient.get('/api/finance/approval-workflows')),
+  createWorkflow: (payload: Record<string, unknown>) => unwrap<ApprovalWorkflow>(apiClient.post(
     '/api/finance/approval-workflows', payload, { headers: writeHeaders() },
   )),
+  roles: () => unwrap<FinanceRoleAssignment[]>(apiClient.get('/api/finance/roles')),
   grantRole: (payload: Record<string, unknown>) => unwrap<Record<string, unknown>>(apiClient.post(
     '/api/finance/roles', payload, { headers: writeHeaders() },
   )),

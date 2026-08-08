@@ -1,5 +1,5 @@
 <template>
-  <section class="co-writing" :class="[`mobile-${mobilePanel}`, `display-${displayMode}`]">
+  <section class="co-writing" :class="[`mobile-${mobilePanel}`, `display-${displayMode}`, { 'is-read-only': readOnly }]">
     <nav v-if="displayMode === 'full'" class="mobile-panels" aria-label="协同写作面板">
       <el-segmented v-model="mobilePanel" :options="mobilePanels" size="small" />
     </nav>
@@ -317,12 +317,23 @@ const props = defineProps<{
   outline: WritingDirectoryNode[]
   selectedNodeId?: string
   displayMode?: 'full' | 'document' | 'ai'
+  readOnly?: boolean
 }>()
 
 const emit = defineEmits<{
   saved: []
   'proposal-applied': []
   'select-outline': [node: WritingDirectoryNode]
+  'context-changed': [context: {
+    kind: 'document'
+    document_id: string
+    document_title: string
+    section_id: string
+    block_id?: string
+    block_revision?: number
+    selection: { from: number; to: number; text: string }
+    revision: number
+  }]
 }>()
 
 const displayMode = computed(() => props.displayMode || 'full')
@@ -490,9 +501,10 @@ const editor = useEditor({
     StableBlockAttrs
   ],
   content: { type: 'doc', content: [{ type: 'paragraph' }] },
+  editable: !props.readOnly,
   editorProps: { attributes: { 'aria-label': '协同富文本编辑器', spellcheck: 'true' } },
   onUpdate: ({ editor: activeEditor }) => {
-    if (suppressUpdate.value) return
+    if (suppressUpdate.value || props.readOnly) return
     artifactRevision.value += 1
     latestDocument = normaliseDocument(activeEditor.getJSON())
     void refreshAssetPreviews()
@@ -1161,6 +1173,7 @@ async function persistDraftOnce(): Promise<boolean> {
 }
 
 async function flushDraft(): Promise<boolean> {
+  if (props.readOnly) return true
   if ((!editor.value && !isUnmounting) || saveState.value === 'saved') return true
   if (saveDrainPromise) return saveDrainPromise
   saveDrainPromise = (async () => {
@@ -1513,6 +1526,29 @@ function errorMessage(error: unknown, fallback: string) {
 defineExpose({ editor, flushDraft, runAiJob, renumberArtifacts, prepareExportPreflight })
 
 watch(() => [props.projectId, props.documentId, props.sectionId], loadCollaboration)
+watch(() => props.readOnly, value => editor.value?.setEditable(!value), { immediate: true })
+watch(
+  () => [
+    revision.value,
+    activeSectionId.value,
+    currentBlock.value.id,
+    currentBlock.value.revision,
+    currentSelection.value.from,
+    currentSelection.value.to,
+    currentSelection.value.text
+  ],
+  () => emit('context-changed', {
+    kind: 'document',
+    document_id: props.documentId,
+    document_title: props.documentTitle || '正文文档',
+    section_id: activeSectionId.value,
+    block_id: currentBlock.value.id,
+    block_revision: currentBlock.value.revision,
+    selection: currentSelection.value,
+    revision: revision.value
+  }),
+  { immediate: true }
+)
 
 onMounted(() => {
   loadCollaboration()
@@ -1534,6 +1570,8 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .co-writing { display: grid; grid-template-columns: minmax(0, 1fr) clamp(340px, 27vw, 430px); min-height: calc(100vh - 248px); border: 1px solid var(--line-color); border-radius: 7px; overflow: hidden; background: var(--card-bg); }
+.co-writing.is-read-only :deep(.editor-toolbar) { opacity: .52; pointer-events: none; }
+.co-writing.is-read-only :deep(.rich-editor) { cursor: default; }
 .co-writing.display-document, .co-writing.display-ai { grid-template-columns: minmax(0, 1fr); min-height: 100%; }
 .co-writing.display-ai .ai-panel { max-height: none; border-left: 0; }
 .co-writing.display-document .document-workbench { min-height: 100%; }

@@ -278,6 +278,130 @@ class InvoiceAttachment(Base):
     __table_args__ = (CheckConstraint("size_bytes > 0", name="ck_invoice_attachment_size"),)
 
 
+class InvoiceBatch(Base):
+    """A monthly, review-first invoice ingestion batch.
+
+    Batch records are staging data.  They never become formal invoices until a
+    later human approval explicitly commits an item to ``invoices``.
+    """
+
+    __tablename__ = "invoice_batches"
+
+    id = Column(String(36), primary_key=True, default=_uuid)
+    project_id = Column(String(36), ForeignKey("finance_projects.id"), nullable=False, index=True)
+    intake_job_id = Column(String(36), ForeignKey("finance_intake_jobs.id"), nullable=True, index=True)
+    period = Column(String(7), nullable=False, index=True)
+    source_channel = Column(String(24), nullable=False, default="web", index=True)
+    external_ref = Column(String(255), nullable=True, unique=True)
+    note = Column(Text, nullable=True)
+    status = Column(String(32), nullable=False, default="received", index=True)
+    total_count = Column(Integer, nullable=False, default=0)
+    processed_count = Column(Integer, nullable=False, default=0)
+    review_count = Column(Integer, nullable=False, default=0)
+    failed_count = Column(Integer, nullable=False, default=0)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=_now, index=True)
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=_now, onupdate=_now)
+    started_at = Column(DateTime(timezone=True), nullable=True)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        CheckConstraint(
+            "source_channel IN ('web','lark','watch_folder')",
+            name="ck_invoice_batch_source_channel",
+        ),
+        CheckConstraint(
+            "status IN ('received','processing','review_required','completed','failed','cancelled')",
+            name="ck_invoice_batch_status",
+        ),
+        CheckConstraint(
+            "total_count >= 0 AND processed_count >= 0 AND review_count >= 0 AND failed_count >= 0",
+            name="ck_invoice_batch_counts",
+        ),
+        Index("ix_invoice_batch_project_period", "project_id", "period"),
+    )
+
+
+class InvoiceIngestItem(Base):
+    __tablename__ = "invoice_ingest_items"
+
+    id = Column(String(36), primary_key=True, default=_uuid)
+    batch_id = Column(String(36), ForeignKey("invoice_batches.id", ondelete="CASCADE"), nullable=False, index=True)
+    formal_invoice_id = Column(String(36), ForeignKey("invoices.id"), nullable=True, unique=True, index=True)
+    object_key = Column(String(512), nullable=False, unique=True)
+    preprocessed_object_key = Column(String(512), nullable=True, unique=True)
+    original_name = Column(String(255), nullable=False)
+    content_type = Column(String(128), nullable=False)
+    size_bytes = Column(Integer, nullable=False)
+    sha256 = Column(String(64), nullable=False, unique=True, index=True)
+    scan_status = Column(String(24), nullable=False, default="pending")
+    status = Column(String(32), nullable=False, default="received", index=True)
+    attempt_count = Column(Integer, nullable=False, default=0)
+    preprocessing_payload = Column(JSON, nullable=False, default=dict)
+    extraction_payload = Column(JSON, nullable=False, default=dict)
+    last_error = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=_now, index=True)
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=_now, onupdate=_now)
+
+    __table_args__ = (
+        CheckConstraint("size_bytes > 0", name="ck_invoice_ingest_item_size"),
+        CheckConstraint("attempt_count >= 0", name="ck_invoice_ingest_attempt_count"),
+        CheckConstraint(
+            "status IN ('received','scanned','preprocessed','ocr_running','extracted',"
+            "'needs_review','duplicate','failed','approved','committed')",
+            name="ck_invoice_ingest_item_status",
+        ),
+        Index("ix_invoice_ingest_batch_status", "batch_id", "status"),
+    )
+
+
+class InvoiceOcrRun(Base):
+    __tablename__ = "invoice_ocr_runs"
+
+    id = Column(String(36), primary_key=True, default=_uuid)
+    item_id = Column(String(36), ForeignKey("invoice_ingest_items.id", ondelete="CASCADE"), nullable=False, index=True)
+    engine = Column(String(64), nullable=False, index=True)
+    engine_version = Column(String(128), nullable=True)
+    status = Column(String(24), nullable=False, index=True)
+    text_payload = Column(Text, nullable=True)
+    raw_payload = Column(JSON, nullable=False, default=dict)
+    duration_ms = Column(Integer, nullable=False, default=0)
+    error_message = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=_now, index=True)
+
+    __table_args__ = (
+        CheckConstraint("status IN ('success','failed','unavailable')", name="ck_invoice_ocr_run_status"),
+        CheckConstraint("duration_ms >= 0", name="ck_invoice_ocr_run_duration"),
+        UniqueConstraint("item_id", "engine", name="uq_invoice_ocr_item_engine"),
+    )
+
+
+class InvoiceFieldCandidate(Base):
+    __tablename__ = "invoice_field_candidates"
+
+    id = Column(String(36), primary_key=True, default=_uuid)
+    item_id = Column(String(36), ForeignKey("invoice_ingest_items.id", ondelete="CASCADE"), nullable=False, index=True)
+    ocr_run_id = Column(String(36), ForeignKey("invoice_ocr_runs.id", ondelete="CASCADE"), nullable=False, index=True)
+    field_name = Column(String(64), nullable=False, index=True)
+    raw_value = Column(Text, nullable=False)
+    normalized_value = Column(Text, nullable=False)
+    confidence = Column(Numeric(5, 4), nullable=False, default=0)
+    evidence_text = Column(Text, nullable=True)
+    bounding_box = Column(JSON, nullable=True)
+    consensus_status = Column(String(24), nullable=False, default="single_source", index=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=_now)
+
+    __table_args__ = (
+        CheckConstraint("confidence >= 0 AND confidence <= 1", name="ck_invoice_field_confidence"),
+        CheckConstraint(
+            "consensus_status IN ('agreed','single_source','conflict')",
+            name="ck_invoice_field_consensus",
+        ),
+        UniqueConstraint("ocr_run_id", "field_name", name="uq_invoice_ocr_run_field"),
+        Index("ix_invoice_field_item_name", "item_id", "field_name"),
+    )
+
+
 class ExpenseRecord(Base):
     __tablename__ = "expense_records"
 
@@ -386,6 +510,8 @@ class Payment(Base):
     scheduled_at = Column(DateTime(timezone=True), nullable=True)
     paid_at = Column(DateTime(timezone=True), nullable=True)
     cashier_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    confirmed_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    confirmation_note = Column(Text, nullable=True)
     lock_version = Column(Integer, nullable=False, default=1)
     created_at = Column(DateTime(timezone=True), nullable=False, default=_now)
     updated_at = Column(DateTime(timezone=True), nullable=False, default=_now, onupdate=_now)
@@ -441,6 +567,7 @@ class ReconciliationMatch(Base):
     status = Column(String(24), nullable=False, default="suggested", index=True)
     confirmed_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     confirmed_at = Column(DateTime(timezone=True), nullable=True)
+    confirmation_note = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False, default=_now)
 
     __table_args__ = (
@@ -462,6 +589,72 @@ class FinanceAuditEvent(Base):
     request_id = Column(String(128), nullable=True)
     ip_address = Column(String(64), nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False, default=_now, index=True)
+
+
+class FinanceIntakeJob(Base):
+    __tablename__ = "finance_intake_jobs"
+
+    id = Column(String(36), primary_key=True, default=_uuid)
+    command_message_id = Column(String(64), nullable=False, unique=True, index=True)
+    external_message_id = Column(String(200), nullable=True, index=True)
+    source_channel = Column(String(32), nullable=False, index=True)
+    source_account_id = Column(String(64), nullable=False, default="soundwave", index=True)
+    external_conversation_id = Column(String(255), nullable=False)
+    external_user_id = Column(String(200), nullable=False)
+    requested_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    target_agent_id = Column(String(64), nullable=False, default="soundwave", index=True)
+    operation_type = Column(String(32), nullable=False, default="unknown", index=True)
+    request_text = Column(Text, nullable=False)
+    request_hash = Column(String(64), nullable=False)
+    request_metadata = Column(JSON, nullable=False, default=dict)
+    mode = Column(String(24), nullable=False, default="shadow", index=True)
+    status = Column(String(32), nullable=False, default="received", index=True)
+    normalized_payload = Column(JSON, nullable=False, default=dict)
+    shadow_snapshot = Column(JSON, nullable=False, default=dict)
+    validation_report = Column(JSON, nullable=False, default=dict)
+    reviewer_report = Column(JSON, nullable=False, default=dict)
+    last_error = Column(Text, nullable=True)
+    lock_version = Column(Integer, nullable=False, default=1)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=_now, index=True)
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=_now, onupdate=_now)
+
+    __table_args__ = (
+        CheckConstraint("mode IN ('shadow','controlled_write')", name="ck_fin_intake_mode"),
+        CheckConstraint(
+            "status IN ('received','shadow_read','awaiting_extraction','extracted',"
+            "'needs_review','validated','approved','committed','rejected','failed','cancelled')",
+            name="ck_fin_intake_status",
+        ),
+        CheckConstraint(
+            "operation_type IN ('reimbursement','invoice','budget','payment',"
+            "'reconciliation','query','unknown')",
+            name="ck_fin_intake_operation",
+        ),
+    )
+
+
+class FinanceIntakeEvent(Base):
+    __tablename__ = "finance_intake_events"
+
+    id = Column(String(36), primary_key=True, default=_uuid)
+    job_id = Column(
+        String(36),
+        ForeignKey("finance_intake_jobs.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    event_type = Column(String(64), nullable=False, index=True)
+    actor_type = Column(String(24), nullable=False)
+    actor_id = Column(String(128), nullable=False)
+    payload = Column(JSON, nullable=False, default=dict)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=_now, index=True)
+
+    __table_args__ = (
+        CheckConstraint(
+            "actor_type IN ('user','agent','system')",
+            name="ck_fin_intake_event_actor_type",
+        ),
+    )
 
 
 class ImportJob(Base):
@@ -513,3 +706,6 @@ Index("ix_budget_line_version_category", BudgetLine.budget_version_id, BudgetLin
 Index("ix_reimbursement_project_status", Reimbursement.project_id, Reimbursement.status)
 Index("ix_approval_task_assignee_status", ApprovalTask.assignee_user_id, ApprovalTask.status)
 Index("ix_bank_transaction_match", BankTransaction.amount, BankTransaction.transaction_date, BankTransaction.status)
+Index("ix_fin_intake_source_created", FinanceIntakeJob.source_channel, FinanceIntakeJob.created_at)
+Index("ix_fin_intake_status_created", FinanceIntakeJob.status, FinanceIntakeJob.created_at)
+Index("ix_fin_intake_event_job_created", FinanceIntakeEvent.job_id, FinanceIntakeEvent.created_at)

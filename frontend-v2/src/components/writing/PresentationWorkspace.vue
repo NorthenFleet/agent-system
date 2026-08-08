@@ -1,5 +1,5 @@
 <template>
-  <section ref="workspaceElement" class="presentation-workspace" :class="`display-${displayMode}`" v-loading="loading">
+  <section ref="workspaceElement" class="presentation-workspace" :class="[`display-${displayMode}`, { 'is-read-only': readOnly }]" v-loading="loading">
     <header class="presentation-head">
       <div>
         <span class="eyebrow">PPT 演示工作区</span>
@@ -245,11 +245,20 @@ const props = defineProps<{
   document: WritingProjectDocument
   initialSlide?: number
   displayMode?: 'full' | 'slides' | 'ai'
+  readOnly?: boolean
 }>()
 const emit = defineEmits<{
   changed: []
   'navigate-to-thesis': [payload: { sourceDocumentId: string; section: string }]
   'slide-changed': [slide: number]
+  'context-changed': [context: {
+    kind: 'presentation'
+    document_id: string
+    document_title: string
+    slide: number
+    structure_revision: number
+    draft: Record<string, unknown>
+  }]
 }>()
 const displayMode = computed(() => props.displayMode || 'full')
 const loading = ref(false)
@@ -394,6 +403,7 @@ function navigateToThesis(section: string) {
 }
 
 async function handleFile(event: Event) {
+  if (props.readOnly) return
   const target = event.target as HTMLInputElement
   const file = target.files?.[0]
   if (!file) return
@@ -501,6 +511,7 @@ function manifestWithCurrentSlideDraft(patch = slideDraft.value) {
 }
 
 async function saveSlideDraft() {
+  if (props.readOnly) return
   const nextManifest = manifestWithCurrentSlideDraft()
   const currentBinding = binding.value
   if (!nextManifest || !currentBinding?.source_document_id) {
@@ -533,6 +544,7 @@ async function saveSlideDraft() {
 }
 
 async function generateSlideProposal() {
+  if (props.readOnly) return
   if (!manifest.value) {
     ElMessage.warning('PPT 联动清单尚未加载')
     return
@@ -607,7 +619,7 @@ function proposalToDraft(proposal: PresentationSlideProposal) {
 }
 
 function acceptSlideProposal() {
-  if (!slideProposal.value) return
+  if (!slideProposal.value || props.readOnly) return
   slideDraft.value = { ...slideProposal.value.patch }
   slideProposal.value = undefined
 }
@@ -656,6 +668,18 @@ watch(() => props.initialSlide, value => {
   if (value) setSelectedSlide(value)
 })
 watch(currentSlide, syncSlideDraft)
+watch(
+  () => [props.document.id, props.document.revision, selectedSlide.value, JSON.stringify(slideDraft.value)],
+  () => emit('context-changed', {
+    kind: 'presentation',
+    document_id: props.document.id,
+    document_title: props.document.title,
+    slide: selectedSlide.value,
+    structure_revision: Number(props.document.revision || 0),
+    draft: { ...slideDraft.value }
+  }),
+  { immediate: true }
+)
 onMounted(loadAll)
 onBeforeUnmount(() => {
   revokePreview()
@@ -665,6 +689,9 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .presentation-workspace { display: grid; gap: 12px; min-width: 0; min-height: 620px; background: var(--content-bg); }
+.presentation-workspace.is-read-only :deep(.presentation-inspector input),
+.presentation-workspace.is-read-only :deep(.presentation-inspector textarea),
+.presentation-workspace.is-read-only :deep(.presentation-inspector button) { pointer-events: none; opacity: .56; }
 .presentation-workspace.display-slides, .presentation-workspace.display-ai { min-height: 100%; }
 .presentation-workspace.display-slides .presentation-head, .presentation-workspace.display-ai .presentation-head { padding: 10px 12px; border-bottom: 1px solid var(--line-color); background: var(--panel-bg); }
 .presentation-workspace.display-slides .presentation-head h3, .presentation-workspace.display-ai .presentation-head h3 { font-size: 14px; }

@@ -56,6 +56,7 @@ INTENT_TYPES = {
     "discussion",
     "software_project",
     "document_project",
+    "finance_operation",
     "mission_control",
     "clarification_required",
 }
@@ -119,6 +120,20 @@ DOCUMENT_MARKERS = (
     "课程",
     "课件",
     "手册",
+)
+FINANCE_MARKERS = (
+    "财务",
+    "经费",
+    "预算",
+    "报销",
+    "发票",
+    "付款",
+    "收款",
+    "银行流水",
+    "对账",
+    "入账",
+    "支出",
+    "冲销",
 )
 COMMAND_CENTER_AGENT_NAMES = {
     "optimus": "擎天柱",
@@ -240,6 +255,7 @@ class CommandCenterService:
                     intent_reason TEXT NOT NULL DEFAULT '',
                     execution_requested INTEGER NOT NULL DEFAULT 0,
                     routing_status TEXT NOT NULL DEFAULT '',
+                    target_agent_id TEXT NOT NULL DEFAULT 'optimus',
                     resolved_project_id TEXT,
                     reply_to_command_message_id TEXT,
                     metadata TEXT NOT NULL DEFAULT '{}',
@@ -446,6 +462,7 @@ class CommandCenterService:
             self._ensure_column(conn, "command_messages", "intent_reason", "TEXT NOT NULL DEFAULT ''")
             self._ensure_column(conn, "command_messages", "execution_requested", "INTEGER NOT NULL DEFAULT 0")
             self._ensure_column(conn, "command_messages", "routing_status", "TEXT NOT NULL DEFAULT ''")
+            self._ensure_column(conn, "command_messages", "target_agent_id", "TEXT NOT NULL DEFAULT 'optimus'")
             self._ensure_column(conn, "command_messages", "resolved_project_id", "TEXT")
             self._ensure_column(conn, "command_messages", "reply_to_command_message_id", "TEXT")
             self._ensure_column(conn, "mission_steps", "lease_token", "TEXT")
@@ -614,6 +631,9 @@ class CommandCenterService:
             "development": "software_project",
             "document": "document_project",
             "writing": "document_project",
+            "finance": "finance_operation",
+            "financial": "finance_operation",
+            "accounting": "finance_operation",
             "conversation": "discussion",
             "chat": "discussion",
             "clarification": "clarification_required",
@@ -748,6 +768,9 @@ class CommandCenterService:
         execution = confirmed_execution or any(marker in lowered for marker in EXECUTION_MARKERS)
         software = any(marker in lowered for marker in SOFTWARE_MARKERS)
         document = any(marker in lowered for marker in DOCUMENT_MARKERS)
+        finance = any(marker in lowered for marker in FINANCE_MARKERS)
+        if finance and not (execution and software):
+            return "finance_operation", execution, "检测到财务查询或财务作业语义", 0.86
         if discussion and not confirmed_execution:
             suggested = "document_project" if document and not software else "software_project" if software else ""
             return "discussion", False, (
@@ -1038,6 +1061,20 @@ class CommandCenterService:
         confidence = max(0.0, min(confidence, 1.0))
         reason = str(metadata.get("intent_reason") or heuristic_reason).strip()[:1000]
 
+        if intent_type == "finance_operation":
+            return {
+                "intent_type": intent_type,
+                "confidence": confidence,
+                "reason": reason,
+                "execution_requested": execution_requested,
+                "routing_status": "awaiting_finance_processing",
+                "target_agent_id": "soundwave",
+                "project": None,
+                "project_candidates": [],
+                "clarification_question": "",
+                "objective": text,
+            }
+
         if intent_type == "mission_control":
             return {
                 "intent_type": "clarification_required",
@@ -1062,6 +1099,7 @@ class CommandCenterService:
                 "reason": reason,
                 "execution_requested": False,
                 "routing_status": "awaiting_response",
+                "target_agent_id": "optimus",
                 "project": None,
                 "project_candidates": [],
                 "clarification_question": "",
@@ -1077,6 +1115,7 @@ class CommandCenterService:
                 "reason": reason,
                 "execution_requested": execution_requested,
                 "routing_status": "awaiting_clarification",
+                "target_agent_id": "optimus",
                 "project": None,
                 "project_candidates": [],
                 "clarification_question": "这是一般讨论，还是需要执行的程序开发或文档撰写任务？",
@@ -1208,6 +1247,16 @@ class CommandCenterService:
                     """
                 ).fetchall()
             ]
+
+    def get_external_user_binding(self, *, channel: str, external_user_id: str) -> dict[str, Any]:
+        with self.connect() as conn:
+            return dict(
+                self._require_external_user_binding(
+                    conn,
+                    channel=channel,
+                    external_user_id=external_user_id,
+                )
+            )
 
     @staticmethod
     def _require_external_user_binding(
@@ -1383,8 +1432,8 @@ class CommandCenterService:
                 (id, conversation_id, mission_id, direction, external_message_id,
                  reply_to_external_message_id, sender_id, content, intent_type,
                  intent_confidence, intent_reason, execution_requested, routing_status,
-                 resolved_project_id, metadata, created_at)
-                VALUES (?, ?, ?, 'inbound', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 target_agent_id, resolved_project_id, metadata, created_at)
+                VALUES (?, ?, ?, 'inbound', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     message_id,
@@ -1399,6 +1448,7 @@ class CommandCenterService:
                     route["reason"],
                     int(bool(route["execution_requested"])),
                     route["routing_status"],
+                    route.get("target_agent_id") or "optimus",
                     (route.get("project") or {}).get("id") or None,
                     _json(metadata),
                     now,
@@ -1501,10 +1551,12 @@ class CommandCenterService:
                     "mission": self._serialize_mission(conn, related_mission),
                 }
 
-            if route["intent_type"] in {"discussion", "clarification_required"}:
+            if route["intent_type"] in {"discussion", "clarification_required", "finance_operation"}:
                 return {
                     "action": (
-                        "discussion"
+                        "finance_intake"
+                        if route["intent_type"] == "finance_operation"
+                        else "discussion"
                         if route["intent_type"] == "discussion"
                         else "clarification"
                     ),
@@ -1519,6 +1571,7 @@ class CommandCenterService:
                     },
                     "project_candidates": route.get("project_candidates") or [],
                     "clarification_question": route.get("clarification_question") or "",
+                    "target_agent_id": route.get("target_agent_id") or "optimus",
                 }
 
             mission_id = f"mission-{uuid.uuid4().hex[:12]}"
@@ -2794,6 +2847,12 @@ class CommandCenterService:
             ).fetchone()
             if not inbound:
                 raise CommandCenterError(f"inbound message not found: {message_id}")
+            clean_sender = str(sender_id or "optimus").strip()
+            expected_sender = str(inbound["target_agent_id"] or "optimus").strip()
+            if clean_sender != expected_sender:
+                raise CommandCenterError(
+                    f"response agent mismatch: expected {expected_sender}, got {clean_sender}"
+                )
             existing = conn.execute(
                 """
                 SELECT * FROM command_messages
@@ -2818,22 +2877,23 @@ class CommandCenterService:
                 INSERT INTO command_messages
                 (id, conversation_id, mission_id, direction, external_message_id,
                  sender_id, content, intent_type, intent_confidence, intent_reason,
-                 execution_requested, routing_status, resolved_project_id,
+                 execution_requested, routing_status, target_agent_id, resolved_project_id,
                  reply_to_command_message_id, metadata, created_at)
-                VALUES (?, ?, ?, 'outbound', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, 'outbound', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     response_id,
                     inbound["conversation_id"],
                     inbound["mission_id"],
                     external_message_id or None,
-                    sender_id or "optimus",
+                    clean_sender,
                     clean_content,
                     inbound["intent_type"],
                     inbound["intent_confidence"],
                     inbound["intent_reason"],
                     inbound["execution_requested"],
                     routing_status,
+                    clean_sender,
                     inbound["resolved_project_id"],
                     message_id,
                     _json({"in_reply_to_message_id": message_id}),

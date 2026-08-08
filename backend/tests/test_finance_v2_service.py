@@ -121,6 +121,7 @@ def test_complete_budget_reimbursement_payment_and_archive_flow(finance_context)
     assert "62220000" not in payment["payee_account_masked"]
     payment = cashier.confirm_payment(payment["id"], PaymentConfirm(
         version=payment["lock_version"], bank_reference="BANK-001", paid_at=datetime(2026, 7, 18, tzinfo=timezone.utc),
+        human_confirmed=True, confirmation_note="已核对银行回单",
     ))
     assert payment["status"] == "paid"
     session.refresh(budget_line)
@@ -190,6 +191,59 @@ def test_separation_of_duties_blocks_applicant_approval(finance_context):
     assert error.value.code == "separation_of_duties"
 
 
+def test_submission_requires_a_matching_approval_workflow(finance_context):
+    _session, _users, svc = finance_context
+    admin = svc("admin")
+    project = admin.create_project(ProjectCreate(project_key="no-workflow", name="无审批流程项目"))
+    admin.create_allocation(FundAllocationCreate(
+        project_id=project["id"], reference_no="ALLOC-NO-WORKFLOW", amount=Decimal("100.00"),
+        allocated_at=date(2026, 7, 18), source="测试拨付",
+    ))
+    budget = admin.create_budget(BudgetCreate(project_id=project["id"], name="测试预算", approved_amount=Decimal("100.00")))
+    budget = admin.replace_budget_lines(budget["id"], BudgetLinesReplace(
+        version=budget["lock_version"], lines=[BudgetLineInput(category="差旅费", amount=Decimal("100.00"))],
+    ))
+    record = admin.create_reimbursement(ReimbursementCreate(project_id=project["id"], title="缺少流程"))
+    record = admin.add_reimbursement_item(record["id"], ReimbursementItemCreate(
+        budget_line_id=budget["lines"][0]["id"], description="差旅", expense_date=date(2026, 7, 12), amount=Decimal("10.00"),
+    ))
+    with pytest.raises(FinanceConflict) as error:
+        admin.submit_reimbursement(record["id"], record["lock_version"])
+    assert error.value.code == "approval_workflow_required"
+    line = _session.get(BudgetLine, budget["lines"][0]["id"])
+    assert line.reserved_amount == Decimal("0.00")
+
+
+def test_approval_task_contains_reimbursement_context(finance_context):
+    _session, _users, svc = finance_context
+    project, _budget, line = prepare_approved_budget(finance_context)
+    applicant = svc("applicant")
+    reviewer = svc("reviewer")
+    record = applicant.create_reimbursement(ReimbursementCreate(project_id=project["id"], title="待复核差旅"))
+    record = applicant.add_reimbursement_item(record["id"], ReimbursementItemCreate(
+        budget_line_id=line["id"], description="差旅", expense_date=date(2026, 7, 12), amount=Decimal("10.00"),
+    ))
+    applicant.submit_reimbursement(record["id"], record["lock_version"])
+    task = reviewer.list_my_approval_tasks()[0]
+    assert task["reimbursement"]["id"] == record["id"]
+    assert task["reimbursement"]["title"] == "待复核差旅"
+    assert task["reimbursement"]["project_name"] == "项目 A"
+
+
+def test_finance_admin_can_list_role_assignments(finance_context):
+    _session, users, svc = finance_context
+    project, _budget, _line = prepare_approved_budget(finance_context)
+    assignments = svc("admin").list_role_assignments()
+    reviewer = next(item for item in assignments if item["user_id"] == users["reviewer"].id)
+    assert reviewer["role"] == "reviewer"
+    assert reviewer["display_name"] == "reviewer"
+    assert reviewer["projects"] == [{
+        "project_id": project["id"],
+        "role": "reviewer",
+        "project_name": "项目 A",
+    }]
+
+
 def test_idempotency_replays_same_response_and_rejects_changed_payload(finance_context):
     _session, _users, svc = finance_context
     admin = svc("admin")
@@ -217,6 +271,28 @@ def test_dashboard_get_path_does_not_write(finance_context):
     after = session.query(FinanceAuditEvent).count()
     assert dashboard["status"] == "ready"
     assert before == after
+
+
+def test_control_readiness_is_read_only_and_keeps_formal_writes_locked(finance_context):
+    session, _users, svc = finance_context
+    before = session.query(FinanceAuditEvent).count()
+    blocked = svc("admin").control_readiness()
+    assert blocked["status"] == "blocked"
+    assert blocked["mode"] == "shadow"
+    assert blocked["formal_write_enabled"] is False
+    assert blocked["prerequisites_ready"] is False
+    assert blocked["counts"]["active_workflows"] == 0
+    assert session.query(FinanceAuditEvent).count() == before
+
+    prepare_approved_budget(finance_context)
+    ready = svc("admin").control_readiness()
+    assert ready["status"] == "awaiting_authorization"
+    assert ready["prerequisites_ready"] is True
+    assert ready["formal_write_enabled"] is False
+    assert ready["counts"]["active_workflows"] == 1
+    assert ready["counts"]["reviewers"] == 1
+    assert ready["counts"]["cashiers"] == 1
+    assert ready["blockers"] == ["正式写入开关保持关闭，需单独完成业务验收和人工授权"]
 
 
 def test_invoice_attachment_is_private_deduplicated_and_downloadable(finance_context, tmp_path, monkeypatch):
@@ -273,8 +349,21 @@ def test_partial_reconciliation_does_not_close_payment(finance_context):
     session.add(match)
     session.commit()
 
-    svc("cashier").confirm_reconciliations([match.id])
+    svc("cashier").confirm_reconciliations(
+        [match.id], human_confirmed=True, confirmation_note="人工核对部分匹配",
+    )
     session.refresh(transaction)
     session.refresh(payment)
     assert transaction.status == "matched"
     assert payment.status == "paid"
+
+
+def test_bank_statement_raw_payload_masks_account(finance_context):
+    session, _users, svc = finance_context
+    prepare_approved_budget(finance_context)
+    content = "交易流水号,交易日期,金额,对方户名,对方账号,摘要\nTX-MASK,2026-07-18,-10.00,测试收款方,6222000012345678,测试\n".encode()
+    svc("cashier").import_statement("statement.csv", content)
+    transaction = session.query(BankTransaction).filter_by(transaction_ref="TX-MASK").one()
+    assert transaction.account_masked.endswith("5678")
+    assert "6222000012345678" not in str(transaction.raw_payload)
+    assert transaction.raw_payload["对方账号"].endswith("5678")

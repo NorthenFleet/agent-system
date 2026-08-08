@@ -8,7 +8,7 @@ import os
 import uuid
 from typing import Any, Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
 from routers.auth_router import get_current_user, require_role
@@ -18,6 +18,8 @@ from services.command_center_service import (
     MissionNotFound,
     command_center_service,
 )
+from services.finance_intake_service import FinanceIntakeError, finance_intake_coordinator
+from services.finance_review_orchestrator import finance_review_orchestrator
 from services.memory_feedback_service import (
     MemoryFeedbackError,
     memory_feedback_service,
@@ -36,7 +38,7 @@ class InboxRequest(BaseModel):
     reply_to_external_message_id: str = ""
     intent_type: str = Field(
         "",
-        pattern="^(|discussion|software_project|document_project|mission_control|clarification_required)$",
+        pattern="^(|discussion|software_project|document_project|finance_operation|mission_control|clarification_required)$",
     )
     intent_confidence: float = Field(0.0, ge=0.0, le=1.0)
     intent_reason: str = Field("", max_length=1000)
@@ -56,13 +58,31 @@ class MissionCreateRequest(BaseModel):
 class ConversationResponseRequest(BaseModel):
     content: str = Field(..., min_length=1, max_length=20000)
     external_message_id: str = Field("", max_length=200)
+    sender_id: str = Field("optimus", pattern="^(optimus|soundwave)$")
+
+
+class FinanceExtractionRequest(BaseModel):
+    agent_id: str = Field("soundwave", pattern="^soundwave$")
+    payload: dict[str, Any]
+    evidence: list[str] = Field(default_factory=list, max_length=50)
+    confidence: float = Field(..., ge=0.0, le=1.0)
+    expected_version: int = Field(..., ge=1)
+
+
+class FinanceReviewRequest(BaseModel):
+    reviewer_agent_id: str = Field("inspector", pattern="^inspector$")
+    decision: str = Field(..., pattern="^(approve|reject)$")
+    summary: str = Field(..., min_length=1, max_length=4000)
+    findings: list[dict[str, Any]] = Field(default_factory=list, max_length=100)
+    confidence: float = Field(..., ge=0.0, le=1.0)
+    expected_version: int = Field(..., ge=1)
 
 
 class DashboardMessageRequest(BaseModel):
     content: str = Field(..., min_length=1, max_length=20000)
     intent_type: str = Field(
         "",
-        pattern="^(|discussion|software_project|document_project|mission_control|clarification_required)$",
+        pattern="^(|discussion|software_project|document_project|finance_operation|mission_control|clarification_required)$",
     )
     intent_confidence: float = Field(0.0, ge=0.0, le=1.0)
     intent_reason: str = Field("", max_length=1000)
@@ -160,7 +180,7 @@ def ingest_command(
             )
         if body.project_id:
             metadata["project_id"] = body.project_id
-        return command_center_service.process_inbound(
+        result = command_center_service.process_inbound(
             channel=body.channel,
             external_conversation_id=body.external_conversation_id,
             user_external_id=body.user_external_id,
@@ -169,8 +189,31 @@ def ingest_command(
             reply_to_external_message_id=body.reply_to_external_message_id,
             metadata=metadata,
         )
+        message = result.get("message") or {}
+        if message.get("intent_type") == "finance_operation":
+            binding = command_center_service.get_external_user_binding(
+                channel=body.channel,
+                external_user_id=body.user_external_id,
+            )
+            staged = finance_intake_coordinator.stage_command(
+                command_message_id=message["id"],
+                external_message_id=message.get("external_message_id") or body.external_message_id,
+                source_channel=body.channel,
+                source_account_id=str(body.metadata.get("account_id") or "soundwave"),
+                external_conversation_id=body.external_conversation_id,
+                external_user_id=body.user_external_id,
+                requested_by_user_id=int(binding["internal_user_id"]),
+                target_agent_id=message.get("target_agent_id") or "soundwave",
+                request_text=body.content,
+                request_metadata=metadata,
+            )
+            result["finance_job"] = staged["job"]
+            result["finance_job_replayed"] = staged["replayed"]
+        return result
     except CommandCenterError as exc:
         raise _translate_error(exc) from exc
+    except FinanceIntakeError as exc:
+        raise HTTPException(exc.status_code, str(exc)) from exc
 
 
 @router.post("/api/v3/command-center/agent/messages/{message_id}/response")
@@ -185,11 +228,93 @@ def record_agent_response(
         return command_center_service.record_conversation_response(
             message_id,
             content=body.content,
-            sender_id="optimus",
+            sender_id=body.sender_id,
             external_message_id=body.external_message_id,
         )
     except CommandCenterError as exc:
         raise _translate_error(exc) from exc
+
+
+@router.get("/api/v3/command-center/agent/finance-jobs")
+def agent_list_finance_jobs(
+    request: Request,
+    agent_id: str = Query(..., pattern="^(soundwave|inspector)$"),
+    status: str = Query("", pattern="^(|shadow_read|needs_review|validated|rejected|failed|cancelled)$"),
+    limit: int = Query(100, ge=1, le=500),
+    x_command_center_token: str = Header("", alias="X-Command-Center-Token"),
+):
+    _verify_ingress(request, x_command_center_token)
+    try:
+        jobs = finance_intake_coordinator.list_agent_jobs(
+            agent_id=agent_id,
+            status=status,
+            limit=limit,
+        )
+        return {"jobs": jobs, "total": len(jobs)}
+    except FinanceIntakeError as exc:
+        raise HTTPException(exc.status_code, str(exc)) from exc
+
+
+@router.get("/api/v3/command-center/agent/finance-jobs/{job_id}")
+def agent_get_finance_job(
+    job_id: str,
+    request: Request,
+    agent_id: str = Query(..., pattern="^(soundwave|inspector)$"),
+    x_command_center_token: str = Header("", alias="X-Command-Center-Token"),
+):
+    _verify_ingress(request, x_command_center_token)
+    try:
+        return finance_intake_coordinator.get_agent_job(job_id, agent_id=agent_id)
+    except FinanceIntakeError as exc:
+        raise HTTPException(exc.status_code, str(exc)) from exc
+
+
+@router.post("/api/v3/command-center/agent/finance-jobs/{job_id}/extraction")
+def agent_submit_finance_extraction(
+    job_id: str,
+    body: FinanceExtractionRequest,
+    request: Request,
+    background_tasks: BackgroundTasks,
+    x_command_center_token: str = Header("", alias="X-Command-Center-Token"),
+):
+    _verify_ingress(request, x_command_center_token)
+    try:
+        result = finance_intake_coordinator.submit_extraction(
+            job_id,
+            agent_id=body.agent_id,
+            payload=body.payload,
+            evidence=body.evidence,
+            confidence=body.confidence,
+            expected_version=body.expected_version,
+        )
+        if result["job"]["status"] == "needs_review":
+            background_tasks.add_task(finance_review_orchestrator.review_job, job_id)
+            result["review_scheduled"] = True
+        return result
+    except FinanceIntakeError as exc:
+        raise HTTPException(exc.status_code, str(exc)) from exc
+
+
+@router.post("/api/v3/command-center/agent/finance-jobs/{job_id}/review")
+def agent_submit_finance_review(
+    job_id: str,
+    body: FinanceReviewRequest,
+    request: Request,
+    x_command_center_token: str = Header("", alias="X-Command-Center-Token"),
+):
+    _verify_ingress(request, x_command_center_token)
+    try:
+        return finance_intake_coordinator.submit_review(
+            job_id,
+            reviewer_agent_id=body.reviewer_agent_id,
+            decision=body.decision,
+            summary=body.summary,
+            findings=body.findings,
+            confidence=body.confidence,
+            expected_version=body.expected_version,
+        )
+    except FinanceIntakeError as exc:
+        raise HTTPException(exc.status_code, str(exc)) from exc
 
 
 @router.get("/api/v3/command-center/agent/missions")

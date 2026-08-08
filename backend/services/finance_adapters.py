@@ -22,6 +22,7 @@ MAX_ATTACHMENT_BYTES = int(os.getenv("FINANCE_ATTACHMENT_MAX_BYTES", str(20 * 10
 
 class ObjectStorage(Protocol):
     def put(self, object_key: str, content: bytes, content_type: str) -> None: ...
+    def read(self, object_key: str) -> bytes: ...
     def signed_url(self, object_key: str, expires_seconds: int = 300) -> str: ...
     def health(self) -> None: ...
 
@@ -76,6 +77,10 @@ class S3ObjectStorage:
             Params={"Bucket": self.bucket, "Key": object_key},
             ExpiresIn=expires_seconds,
         )
+
+    def read(self, object_key: str) -> bytes:
+        response = self.client.get_object(Bucket=self.bucket, Key=object_key)
+        return response["Body"].read()
 
     def health(self) -> None:
         self.client.head_bucket(Bucket=self.bucket)
@@ -197,6 +202,14 @@ def parse_statement(filename: str, content: bytes) -> list[StatementRow]:
     for index, row in enumerate(records, start=2):
         ref = pick(row, "transaction_ref") or f"ROW-{index}"
         account = pick(row, "account")
+        safe_payload = {}
+        for key, value in row.items():
+            name = str(key)
+            text_value = str(value or "")
+            if any(marker in name.lower() for marker in ("account", "账号", "卡号")):
+                digits = "".join(char for char in text_value if char.isdigit())
+                text_value = ("*" * max(0, len(digits) - 4) + digits[-4:]) if digits else ""
+            safe_payload[name] = text_value
         parsed.append(StatementRow(
             transaction_ref=ref,
             transaction_date=_parse_date(pick(row, "transaction_date")),
@@ -204,6 +217,6 @@ def parse_statement(filename: str, content: bytes) -> list[StatementRow]:
             counterparty=pick(row, "counterparty"),
             account_masked=("*" * max(0, len(account) - 4) + account[-4:]) if account else "",
             memo=pick(row, "memo"),
-            raw_payload={str(k): str(v or "") for k, v in row.items()},
+            raw_payload=safe_payload,
         ))
     return parsed

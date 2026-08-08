@@ -263,6 +263,34 @@ class FinanceServiceV2:
         self.commit()
         return row_dict(role)
 
+    def list_role_assignments(self) -> list[dict[str, Any]]:
+        self.require("finance_admin", "auditor")
+        rows = self.db.query(FinanceUserRole, User).join(
+            User, User.id == FinanceUserRole.user_id,
+        ).order_by(User.display_name, FinanceUserRole.role).all()
+        return [
+            {
+                **row_dict(role),
+                "username": user.username,
+                "display_name": user.display_name,
+                "is_active": user.is_active,
+                "projects": [
+                    {
+                        "project_id": membership.project_id,
+                        "role": membership.role,
+                        "project_name": project.name if project else "",
+                    }
+                    for membership, project in self.db.query(FinanceProjectMembership, FinanceProject).outerjoin(
+                        FinanceProject, FinanceProject.id == FinanceProjectMembership.project_id,
+                    ).filter(
+                        FinanceProjectMembership.user_id == role.user_id,
+                        FinanceProjectMembership.role == role.role,
+                    ).all()
+                ],
+            }
+            for role, user in rows
+        ]
+
     def list_projects(self) -> list[dict[str, Any]]:
         query = self.db.query(FinanceProject).filter(FinanceProject.deleted_at.is_(None))
         if "finance_admin" not in self.roles and "auditor" not in self.roles:
@@ -639,6 +667,39 @@ class FinanceServiceV2:
         items = self.db.query(ReimbursementItem).filter_by(reimbursement_id=record.id).all()
         if not items or money(record.total_amount) <= 0:
             raise FinanceConflict("报销单至少需要一条有效明细")
+        workflow = self._match_workflow(record)
+        if not workflow:
+            raise FinanceConflict(
+                "当前项目和金额未配置审批工作流，不能提交正式报销",
+                code="approval_workflow_required",
+            )
+        steps = self.db.query(ApprovalWorkflowStep).filter_by(
+            workflow_definition_id=workflow.id,
+        ).order_by(ApprovalWorkflowStep.step_order).all()
+        if not steps:
+            raise FinanceConflict("审批工作流没有有效步骤", code="approval_workflow_empty")
+        for step in steps:
+            if step.assignee_user_id == record.applicant_user_id:
+                raise FinanceConflict(
+                    "申请人不能成为自己的审批人",
+                    code="separation_of_duties",
+                    details={"step_order": step.step_order},
+                )
+            if step.assignee_role == "applicant":
+                raise FinanceConflict(
+                    "审批步骤不能分配给申请人角色",
+                    code="separation_of_duties",
+                    details={"step_order": step.step_order},
+                )
+        workflow_snapshot = [
+            {
+                "order": step.step_order,
+                "name": step.name,
+                "assignee_role": step.assignee_role,
+                "assignee_user_id": step.assignee_user_id,
+            }
+            for step in steps
+        ]
         # Lock lines where supported; SQLite serializes writers and ignores FOR UPDATE.
         line_ids = sorted({item.budget_line_id for item in items})
         lines = {
@@ -673,11 +734,38 @@ class FinanceServiceV2:
                     budget_line_id=line.id,
                     amount=item.amount,
                 ))
-        # Personal-use mode has no approval workflow. Submission reserves budget
-        # and makes the reimbursement immediately eligible for payment.
-        record.status = "payment_pending"
+        submission_no = int(self.db.query(func.coalesce(func.max(ApprovalInstance.submission_no), 0)).filter(
+            ApprovalInstance.reimbursement_id == record.id,
+        ).scalar()) + 1
+        instance = ApprovalInstance(
+            reimbursement_id=record.id,
+            submission_no=submission_no,
+            workflow_definition_id=workflow.id,
+            workflow_snapshot=workflow_snapshot,
+            status="active",
+            current_step=1,
+        )
+        self.db.add(instance)
+        self.db.flush()
+        first_step = workflow_snapshot[0]
+        self.db.add(ApprovalTask(
+            approval_instance_id=instance.id,
+            step_order=1,
+            assignee_role=first_step.get("assignee_role"),
+            assignee_user_id=first_step.get("assignee_user_id"),
+        ))
+        record.status = "submitted"
         record.submitted_at = now()
         record.lock_version += 1
+        self.db.add(ApprovalEvent(
+            approval_instance_id=instance.id,
+            task_id=None,
+            action="submit",
+            from_status="draft",
+            to_status="submitted",
+            actor_user_id=self.user_id,
+            comment=f"使用审批工作流：{workflow.name}",
+        ))
         self.audit("reimbursement.submitted", record)
         self.commit()
         return self.reimbursement_detail(record)
@@ -702,7 +790,25 @@ class FinanceServiceV2:
                 and_(ApprovalTask.assignee_user_id.is_(None), ApprovalTask.assignee_role.in_(roles or {"__none__"})),
             )
         )
-        return [row_dict(task) for task in query.order_by(ApprovalTask.created_at).all()]
+        result = []
+        for task in query.order_by(ApprovalTask.created_at).all():
+            data = row_dict(task)
+            instance = self.db.get(ApprovalInstance, task.approval_instance_id)
+            record = self.db.get(Reimbursement, instance.reimbursement_id) if instance else None
+            if record:
+                project = self.db.get(FinanceProject, record.project_id)
+                data["reimbursement"] = {
+                    "id": record.id,
+                    "reimbursement_no": record.reimbursement_no,
+                    "title": record.title,
+                    "total_amount": serial(record.total_amount),
+                    "status": record.status,
+                    "applicant_user_id": record.applicant_user_id,
+                    "project_id": record.project_id,
+                    "project_name": project.name if project else "",
+                }
+            result.append(data)
+        return result
 
     def act_approval(self, task_id: str, action: str, comment: str = "") -> dict[str, Any]:
         if action not in {"approve", "return", "reject"}:
@@ -932,8 +1038,8 @@ class FinanceServiceV2:
     def create_payment(self, request: PaymentCreate) -> dict[str, Any]:
         self.require("finance_admin", "cashier")
         record = self.db.get(Reimbursement, request.reimbursement_id)
-        if not record or record.status != "payment_pending":
-            raise FinanceConflict("只有待付款的报销单可以登记付款")
+        if not record or record.status not in {"approved", "payment_pending"}:
+            raise FinanceConflict("只有审批通过的报销单可以登记付款")
         self.require_project(record.project_id, write=True)
         payment = Payment(
             payment_no=f"PAY-{now():%Y%m%d}-{uuid.uuid4().hex[:8].upper()}",
@@ -984,6 +1090,8 @@ class FinanceServiceV2:
         payment.status = "paid"
         payment.bank_reference = request.bank_reference
         payment.paid_at = request.paid_at
+        payment.confirmed_by_user_id = self.user_id
+        payment.confirmation_note = request.confirmation_note
         payment.lock_version += 1
         record.status = "paid"
         record.paid_at = request.paid_at
@@ -1044,10 +1152,27 @@ class FinanceServiceV2:
             ))
 
     def list_reconciliations(self) -> list[dict[str, Any]]:
-        return [row_dict(row) for row in self.db.query(ReconciliationMatch).order_by(ReconciliationMatch.created_at.desc()).all()]
+        self.require("finance_admin", "cashier", "auditor")
+        result = []
+        for match in self.db.query(ReconciliationMatch).order_by(ReconciliationMatch.created_at.desc()).all():
+            data = row_dict(match)
+            transaction = self.db.get(BankTransaction, match.bank_transaction_id)
+            payment = self.db.get(Payment, match.payment_id)
+            data["bank_transaction"] = row_dict(transaction) if transaction else None
+            data["payment"] = row_dict(payment) if payment else None
+            result.append(data)
+        return result
 
-    def confirm_reconciliations(self, match_ids: list[str]) -> list[dict[str, Any]]:
+    def confirm_reconciliations(
+        self,
+        match_ids: list[str],
+        *,
+        human_confirmed: bool,
+        confirmation_note: str,
+    ) -> list[dict[str, Any]]:
         self.require("finance_admin", "cashier")
+        if not human_confirmed:
+            raise FinanceConflict("对账确认必须由人工明确执行", code="human_confirmation_required")
         matches = self.db.query(ReconciliationMatch).filter(ReconciliationMatch.id.in_(match_ids)).with_for_update().all()
         if len(matches) != len(set(match_ids)):
             raise FinanceNotFound("部分对账匹配不存在")
@@ -1078,6 +1203,7 @@ class FinanceServiceV2:
             match.status = "confirmed"
             match.confirmed_by = self.user_id
             match.confirmed_at = now()
+            match.confirmation_note = confirmation_note
             self.audit("reconciliation.confirmed", match)
         self.db.flush()
         for transaction_id in transaction_totals:
@@ -1098,6 +1224,75 @@ class FinanceServiceV2:
         return [row_dict(row) for row in matches]
 
     # ---------- reports, compatibility, health, imports ----------
+    def control_readiness(self) -> dict[str, Any]:
+        self.require("finance_admin", "auditor")
+        active_workflows = self.db.query(ApprovalWorkflowDefinition.id).join(
+            ApprovalWorkflowStep,
+            ApprovalWorkflowStep.workflow_definition_id == ApprovalWorkflowDefinition.id,
+        ).filter(ApprovalWorkflowDefinition.is_active.is_(True)).distinct().count()
+
+        role_counts = {
+            role: self.db.query(func.count(func.distinct(FinanceUserRole.user_id))).join(
+                User,
+                User.id == FinanceUserRole.user_id,
+            ).filter(
+                FinanceUserRole.role == role,
+                User.is_active.is_(True),
+            ).scalar() or 0
+            for role in ("reviewer", "cashier")
+        }
+        counts = {
+            "active_users": self.db.query(User).filter(User.is_active.is_(True)).count(),
+            "active_workflows": active_workflows,
+            "reviewers": role_counts["reviewer"],
+            "cashiers": role_counts["cashier"],
+        }
+        checks = [
+            {
+                "key": "shadow_mode_locked",
+                "label": "影子模式锁定",
+                "passed": True,
+                "detail": "智能体请求只写入暂存区，不写正式财务表",
+            },
+            {
+                "key": "approval_workflow",
+                "label": "有效审批流程",
+                "passed": active_workflows > 0,
+                "detail": f"已配置 {active_workflows} 条含审批步骤的有效流程",
+            },
+            {
+                "key": "reviewer_assignment",
+                "label": "独立复核员",
+                "passed": role_counts["reviewer"] > 0,
+                "detail": f"已配置 {role_counts['reviewer']} 名在职复核员",
+            },
+            {
+                "key": "cashier_assignment",
+                "label": "出纳角色",
+                "passed": role_counts["cashier"] > 0,
+                "detail": f"已配置 {role_counts['cashier']} 名在职出纳",
+            },
+            {
+                "key": "human_confirmation",
+                "label": "付款与对账人工确认",
+                "passed": True,
+                "detail": "付款和对账确认均要求人工勾选并填写核对说明",
+            },
+        ]
+        prerequisites_ready = all(item["passed"] for item in checks)
+        blockers = [item["detail"] for item in checks if not item["passed"]]
+        blockers.append("正式写入开关保持关闭，需单独完成业务验收和人工授权")
+        return {
+            "status": "awaiting_authorization" if prerequisites_ready else "blocked",
+            "mode": "shadow",
+            "formal_write_enabled": False,
+            "prerequisites_ready": prerequisites_ready,
+            "counts": counts,
+            "checks": checks,
+            "blockers": blockers,
+            "evaluated_at": now().isoformat(),
+        }
+
     def dashboard(self) -> dict[str, Any]:
         budget = self.budget_execution_report()
         reimbursements = self.db.query(Reimbursement).filter(Reimbursement.deleted_at.is_(None)).all()
@@ -1113,7 +1308,9 @@ class FinanceServiceV2:
                 "spent_amount": budget["totals"]["spent_amount"],
                 "available_amount": budget["totals"]["available_amount"],
                 "reimbursements": len(reimbursements),
-                "pending_approvals": 0,
+                "pending_approvals": self.db.query(ApprovalTask).filter(ApprovalTask.status == "pending").count()
+                if "finance_admin" in self.roles or "auditor" in self.roles
+                else len(self.list_my_approval_tasks()),
                 "invoices": len(invoices),
                 "pending_payments": sum(1 for item in payments if item.status == "pending"),
                 "unmatched_transactions": self.db.query(BankTransaction).filter_by(status="unmatched").count(),
@@ -1499,7 +1696,14 @@ class FinanceServiceV2:
         dialect = db.bind.dialect.name
         db.execute(select(1))
         tables = set(inspect(db.bind).get_table_names())
-        required = {"finance_projects", "reimbursements", "finance_audit_events", "alembic_version"}
+        required = {
+            "finance_projects",
+            "reimbursements",
+            "finance_audit_events",
+            "finance_intake_jobs",
+            "finance_intake_events",
+            "alembic_version",
+        }
         missing = sorted(required - tables)
         storage_status = "ready"
         try:
@@ -1510,7 +1714,7 @@ class FinanceServiceV2:
         migration_versions: list[str] = []
         if "alembic_version" in tables:
             migration_versions = list(db.execute(text("SELECT version_num FROM alembic_version")).scalars())
-        migration_ready = any(version.startswith("20260718_") for version in migration_versions)
+        migration_ready = bool(migration_versions)
         return {
             "status": "ready" if not missing and migration_ready and storage_status == "ready" else "not_ready",
             "database": {"dialect": dialect, "missing_tables": missing, "migration_versions": migration_versions},

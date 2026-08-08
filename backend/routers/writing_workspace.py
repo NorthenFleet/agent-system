@@ -34,6 +34,10 @@ from services.writing_collaboration_service import (
     WritingCollaborationDisabled,
     writing_collaboration_service,
 )
+from services.writing_workbench_service import (
+    WritingWorkbenchConflict,
+    writing_workbench_service,
+)
 from services.writing_research_service import writing_research_service
 
 
@@ -174,6 +178,57 @@ class PresentationSlideProposalCreate(BaseModel):
     agent_id: str = Field(default="presentation-editor", min_length=1, max_length=64)
     draft: dict[str, Any] = Field(default_factory=dict)
     client_request_id: str = Field(default="", max_length=96)
+
+
+class WorkbenchPaneState(BaseModel):
+    module: str = Field(pattern="^(document|presentation|ai)$")
+    resource_id: str | None = Field(default=None, max_length=64)
+    section_id: str | None = Field(default=None, max_length=128)
+    slide: int | None = Field(default=None, ge=1)
+    ai_conversation_id: str | None = Field(default=None, max_length=64)
+    ai_target_locked: bool = False
+
+
+class WorkbenchPanePair(BaseModel):
+    left: WorkbenchPaneState
+    right: WorkbenchPaneState
+
+
+class WorkbenchPreferenceUpdate(BaseModel):
+    expected_revision: int = Field(ge=0)
+    schema_version: int = Field(default=1, ge=1, le=1)
+    preset: str = Field(pattern="^(writing|presentation|comparison|custom)$")
+    split_percent: int = Field(ge=25, le=75)
+    maximized_pane: str | None = Field(default=None, pattern="^(left|right)$")
+    panes: WorkbenchPanePair
+
+
+class WritingAiConversationCreate(BaseModel):
+    title: str = Field(default="协作会话", min_length=1, max_length=200)
+    agent_id: str = Field(default="ultra-magnus", min_length=1, max_length=64)
+
+
+class WritingAiTarget(BaseModel):
+    kind: str = Field(pattern="^(document|presentation)$")
+    document_id: str = Field(min_length=1, max_length=64)
+    document_title: str = Field(default="", max_length=200)
+    scope: str = Field(default="section", pattern="^(selection|block|section|document)$")
+    section_id: str = Field(default="", max_length=128)
+    section_title: str = Field(default="", max_length=300)
+    block_id: str | None = Field(default=None, max_length=96)
+    block_revision: int | None = Field(default=None, ge=1)
+    revision: int | None = Field(default=None, ge=1)
+    selection: dict[str, Any] | None = None
+    slide: int | None = Field(default=None, ge=1)
+    structure_revision: int | None = Field(default=None, ge=1)
+    draft: dict[str, Any] = Field(default_factory=dict)
+
+
+class WritingAiConversationMessageCreate(BaseModel):
+    client_message_id: str = Field(default="", max_length=80)
+    agent_id: str = Field(default="ultra-magnus", min_length=1, max_length=64)
+    content: str = Field(min_length=1, max_length=12000)
+    target: WritingAiTarget
 
 
 class DocumentLayoutUpdate(BaseModel):
@@ -346,7 +401,16 @@ def _actor(user: dict[str, Any]) -> str:
     )
 
 
+def _owner_id(user: dict[str, Any]) -> str:
+    return str(user.get("sub") or _actor(user))
+
+
 def _handle(error: DocumentWorkspaceError) -> HTTPException:
+    if isinstance(error, WritingWorkbenchConflict):
+        return HTTPException(
+            status_code=409,
+            detail={"code": "workbench_revision_conflict", "message": str(error)},
+        )
     if isinstance(error, WritingCollaborationDisabled):
         return HTTPException(status_code=503, detail=str(error))
     if isinstance(error, DocumentProductionBlocked):
@@ -374,6 +438,108 @@ def _refresh_technical_evaluation(project: dict[str, Any], document_id: str) -> 
         # Saving document content must not fail only because an auxiliary
         # evaluation profile or report store is temporarily unavailable.
         return
+
+
+@router.get("/projects/{project_id}/workbench-preference")
+def get_writing_workbench_preference(
+    project_id: str,
+    user: dict = Depends(get_current_user),
+):
+    _project(project_id)
+    return writing_workbench_service.get_preference(project_id, _owner_id(user))
+
+
+@router.patch("/projects/{project_id}/workbench-preference")
+def update_writing_workbench_preference(
+    project_id: str,
+    req: WorkbenchPreferenceUpdate,
+    user: dict = Depends(get_current_user),
+):
+    try:
+        _project(project_id)
+        return writing_workbench_service.update_preference(
+            project_id,
+            _owner_id(user),
+            req.model_dump(),
+        )
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.get("/projects/{project_id}/ai-conversations")
+def list_writing_ai_conversations(
+    project_id: str,
+    user: dict = Depends(get_current_user),
+):
+    _project(project_id)
+    return writing_workbench_service.list_conversations(project_id, _owner_id(user))
+
+
+@router.post("/projects/{project_id}/ai-conversations", status_code=201)
+def create_writing_ai_conversation(
+    project_id: str,
+    req: WritingAiConversationCreate,
+    user: dict = Depends(get_current_user),
+):
+    _project(project_id)
+    return writing_workbench_service.create_conversation(
+        project_id,
+        _owner_id(user),
+        req.model_dump(),
+    )
+
+
+@router.get("/projects/{project_id}/ai-conversations/{conversation_id}/messages")
+def list_writing_ai_messages(
+    project_id: str,
+    conversation_id: str,
+    user: dict = Depends(get_current_user),
+):
+    try:
+        _project(project_id)
+        return writing_workbench_service.list_messages(
+            project_id, _owner_id(user), conversation_id
+        )
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.post(
+    "/projects/{project_id}/ai-conversations/{conversation_id}/messages",
+    status_code=202,
+)
+def create_writing_ai_message(
+    project_id: str,
+    conversation_id: str,
+    req: WritingAiConversationMessageCreate,
+    user: dict = Depends(require_role("admin")),
+):
+    try:
+        return writing_workbench_service.submit_message(
+            _project(project_id),
+            _owner_id(user),
+            conversation_id,
+            req.model_dump(exclude_none=True),
+        )
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.post(
+    "/projects/{project_id}/ai-conversations/{conversation_id}/messages/{message_id}/cancel"
+)
+def cancel_writing_ai_message(
+    project_id: str,
+    conversation_id: str,
+    message_id: str,
+    user: dict = Depends(require_role("admin")),
+):
+    try:
+        return writing_workbench_service.cancel_message(
+            _project(project_id), _owner_id(user), conversation_id, message_id
+        )
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
 
 
 @router.post("/projects", status_code=201)
@@ -1852,17 +2018,14 @@ def create_presentation_slide_job(
     project_id: str,
     document_id: str,
     req: PresentationSlideProposalCreate,
-    _user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_user),
 ):
     try:
-        return multi_document_service.submit_presentation_slide_job(
+        return writing_workbench_service.submit_presentation_job(
             _project(project_id),
             document_id,
-            req.slide,
-            req.draft,
-            req.instruction,
-            req.agent_id,
-            req.client_request_id,
+            req.model_dump(),
+            _actor(user),
         )
     except DocumentWorkspaceError as exc:
         raise _handle(exc) from exc
@@ -1876,8 +2039,9 @@ def get_presentation_slide_job(
     _user: dict = Depends(get_current_user),
 ):
     try:
-        return multi_document_service.get_presentation_slide_job(
-            _project(project_id), document_id, job_id
+        _project(project_id)
+        return writing_workbench_service.get_presentation_job(
+            project_id, document_id, job_id
         )
     except DocumentWorkspaceError as exc:
         raise _handle(exc) from exc

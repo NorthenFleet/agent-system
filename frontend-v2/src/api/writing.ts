@@ -130,6 +130,114 @@ export interface WritingAiJob {
   updated_at?: string
 }
 
+export type WritingPaneModule = 'document' | 'presentation' | 'ai'
+export type WritingWorkbenchPreset = 'writing' | 'presentation' | 'comparison' | 'custom'
+
+export interface WritingWorkbenchPaneState {
+  module: WritingPaneModule
+  resource_id?: string
+  section_id?: string
+  slide?: number
+  ai_conversation_id?: string
+  ai_target_locked?: boolean
+}
+
+// Short alias retained for workbench components; the prefixed name remains the public API form.
+export type WorkbenchPaneState = WritingWorkbenchPaneState
+
+export interface WritingWorkbenchPreference {
+  schema_version: 1
+  revision: number
+  preset: WritingWorkbenchPreset
+  split_percent: number
+  maximized_pane?: 'left' | 'right' | null
+  panes: {
+    left: WritingWorkbenchPaneState
+    right: WritingWorkbenchPaneState
+  }
+  updated_at?: string
+}
+
+export interface WritingWorkbenchPreferenceUpdate {
+  expected_revision: number
+  preset: WritingWorkbenchPreset
+  split_percent: number
+  maximized_pane?: 'left' | 'right' | null
+  panes: WritingWorkbenchPreference['panes']
+}
+
+export interface WritingAiSelectionSnapshot {
+  from: number
+  to: number
+  text: string
+  block_id?: string
+  block_revision?: number
+}
+
+export interface WritingAiTarget {
+  kind: 'document' | 'presentation'
+  document_id: string
+  document_title?: string
+  scope?: 'selection' | 'block' | 'section' | 'document'
+  section_id?: string
+  section_title?: string
+  block_id?: string
+  block_revision?: number
+  revision?: number
+  selection?: WritingAiSelectionSnapshot
+  slide?: number
+  draft?: Record<string, any>
+}
+
+export interface WritingAiConversation {
+  id: string
+  project_id: string
+  agent_id: string
+  title: string
+  status: 'active' | 'archived' | string
+  created_at?: string
+  updated_at?: string
+}
+
+export interface WritingAiMessage {
+  id: string
+  conversation_id: string
+  role: 'user' | 'assistant' | string
+  content: string
+  target_context: WritingAiTarget | Record<string, never>
+  job_kind?: 'document' | 'presentation' | string
+  job_id?: string
+  proposal_ids: string[]
+  status:
+    | 'queued'
+    | 'running'
+    | 'partially_applied'
+    | 'applied'
+    | 'conflicted'
+    | 'succeeded'
+    | 'completed'
+    | 'failed'
+    | 'cancelled'
+    | string
+  error?: string
+  created_at?: string
+  updated_at?: string
+}
+
+export interface WritingAiConversationMessageCreate {
+  client_message_id: string
+  agent_id: string
+  content: string
+  target: WritingAiTarget
+}
+
+export interface WritingAiConversationMessageResult {
+  request_message_id?: string
+  response_message_id?: string
+  idempotent_replay?: boolean
+  job?: WritingAiJob | PresentationSlideJob
+}
+
 export interface WritingAssetUploadResult {
   path: string
   filename: string
@@ -936,6 +1044,70 @@ function documentBase(projectId: string, documentId: string) {
 
 function collaborationBase(projectId: string, documentId: string) {
   return `${documentBase(projectId, documentId)}/collaboration`
+}
+
+function writingProjectBase(projectId: string) {
+  return `/api/v3/writing/projects/${encodeURIComponent(projectId)}`
+}
+
+function aiConversationBase(projectId: string, conversationId = '') {
+  const base = `${writingProjectBase(projectId)}/ai-conversations`
+  return conversationId ? `${base}/${encodeURIComponent(conversationId)}` : base
+}
+
+export function getWritingWorkbenchPreference(projectId: string) {
+  return apiClient.get<WritingWorkbenchPreference>(
+    `${writingProjectBase(projectId)}/workbench-preference`
+  ).then(r => r.data)
+}
+
+export function updateWritingWorkbenchPreference(
+  projectId: string,
+  payload: WritingWorkbenchPreferenceUpdate
+) {
+  return apiClient.patch<WritingWorkbenchPreference>(
+    `${writingProjectBase(projectId)}/workbench-preference`,
+    payload
+  ).then(r => r.data)
+}
+
+export function getWritingAiConversations(projectId: string) {
+  return apiClient.get<WritingAiConversation[]>(aiConversationBase(projectId)).then(r => r.data)
+}
+
+export function createWritingAiConversation(
+  projectId: string,
+  payload: { title?: string; agent_id?: string } = {}
+) {
+  return apiClient.post<WritingAiConversation>(aiConversationBase(projectId), payload).then(r => r.data)
+}
+
+export function getWritingAiConversationMessages(projectId: string, conversationId: string) {
+  return apiClient.get<WritingAiMessage[]>(
+    `${aiConversationBase(projectId, conversationId)}/messages`
+  ).then(r => r.data)
+}
+
+export function createWritingAiConversationMessage(
+  projectId: string,
+  conversationId: string,
+  payload: WritingAiConversationMessageCreate
+) {
+  return apiClient.post<WritingAiConversationMessageResult>(
+    `${aiConversationBase(projectId, conversationId)}/messages`,
+    payload,
+    { timeout: 120000 }
+  ).then(r => r.data)
+}
+
+export function cancelWritingAiConversationMessage(
+  projectId: string,
+  conversationId: string,
+  messageId: string
+) {
+  return apiClient.post<WritingAiMessage>(
+    `${aiConversationBase(projectId, conversationId)}/messages/${encodeURIComponent(messageId)}/cancel`
+  ).then(r => r.data)
 }
 
 export function getWritingCollaboration(projectId: string, documentId: string, sectionId = '') {

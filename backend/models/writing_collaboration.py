@@ -131,6 +131,9 @@ class WritingAiJob(Base):
     created_at = Column(DateTime(timezone=True), nullable=False, default=_now)
     started_at = Column(DateTime(timezone=True), nullable=True)
     finished_at = Column(DateTime(timezone=True), nullable=True)
+    conversation_id = Column(String(64), nullable=False, default="", index=True)
+    request_message_id = Column(String(64), nullable=False, default="")
+    response_message_id = Column(String(64), nullable=False, default="")
 
     proposals = relationship(
         "WritingAiProposal",
@@ -148,6 +151,113 @@ class WritingAiJob(Base):
         ),
     )
 
+
+class WritingWorkspacePreference(Base):
+    __tablename__ = "writing_workspace_preferences"
+
+    id = Column(String(64), primary_key=True)
+    project_id = Column(String(64), nullable=False, index=True)
+    owner_user_id = Column(String(64), nullable=False, index=True)
+    schema_version = Column(Integer, nullable=False, default=1)
+    revision = Column(Integer, nullable=False, default=1)
+    preference_json = Column(JSON, nullable=False, default=dict)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=_now)
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=_now, onupdate=_now)
+
+    __table_args__ = (
+        UniqueConstraint(
+            "project_id",
+            "owner_user_id",
+            name="uq_writing_workspace_preference_owner",
+        ),
+    )
+
+
+class WritingAiConversation(Base):
+    __tablename__ = "writing_ai_conversations"
+
+    id = Column(String(64), primary_key=True)
+    project_id = Column(String(64), nullable=False, index=True)
+    owner_user_id = Column(String(64), nullable=False, index=True)
+    agent_id = Column(String(64), nullable=False, default="ultra-magnus")
+    title = Column(String(200), nullable=False, default="协作会话")
+    status = Column(String(20), nullable=False, default="active", index=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=_now)
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=_now, onupdate=_now)
+
+    messages = relationship(
+        "WritingAiMessage",
+        back_populates="conversation",
+        cascade="all, delete-orphan",
+        order_by="WritingAiMessage.created_at.asc()",
+    )
+
+
+class WritingAiMessage(Base):
+    __tablename__ = "writing_ai_messages"
+
+    id = Column(String(64), primary_key=True)
+    conversation_id = Column(
+        String(64),
+        ForeignKey("writing_ai_conversations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    project_id = Column(String(64), nullable=False, index=True)
+    role = Column(String(16), nullable=False)
+    content = Column(Text, nullable=False, default="")
+    target_context = Column(JSON, nullable=False, default=dict)
+    job_kind = Column(String(24), nullable=False, default="")
+    job_id = Column(String(64), nullable=False, default="", index=True)
+    proposal_ids = Column(JSON, nullable=False, default=list)
+    status = Column(String(24), nullable=False, default="completed", index=True)
+    error = Column(Text, nullable=False, default="")
+    client_message_id = Column(String(96), nullable=False, default="")
+    created_at = Column(DateTime(timezone=True), nullable=False, default=_now)
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=_now, onupdate=_now)
+
+    conversation = relationship("WritingAiConversation", back_populates="messages")
+
+    __table_args__ = (
+        UniqueConstraint(
+            "conversation_id",
+            "client_message_id",
+            name="uq_writing_ai_message_client_id",
+        ),
+    )
+
+
+class PresentationAiJob(Base):
+    __tablename__ = "presentation_ai_jobs"
+
+    id = Column(String(64), primary_key=True)
+    project_id = Column(String(64), nullable=False, index=True)
+    document_id = Column(String(64), nullable=False, index=True)
+    slide = Column(Integer, nullable=False)
+    client_request_id = Column(String(96), nullable=False)
+    agent_id = Column(String(64), nullable=False, default="presentation-editor")
+    instruction = Column(Text, nullable=False)
+    draft = Column(JSON, nullable=False, default=dict)
+    status = Column(String(24), nullable=False, default="queued", index=True)
+    proposal = Column(JSON, nullable=False, default=dict)
+    error = Column(Text, nullable=False, default="")
+    requested_by = Column(String(64), nullable=False, default="")
+    conversation_id = Column(String(64), nullable=False, default="", index=True)
+    request_message_id = Column(String(64), nullable=False, default="")
+    response_message_id = Column(String(64), nullable=False, default="")
+    created_at = Column(DateTime(timezone=True), nullable=False, default=_now)
+    started_at = Column(DateTime(timezone=True), nullable=True)
+    finished_at = Column(DateTime(timezone=True), nullable=True)
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=_now, onupdate=_now)
+
+    __table_args__ = (
+        UniqueConstraint(
+            "project_id",
+            "document_id",
+            "client_request_id",
+            name="uq_presentation_ai_job_client_request",
+        ),
+    )
 
 class WritingAiProposal(Base):
     __tablename__ = "writing_ai_proposals"

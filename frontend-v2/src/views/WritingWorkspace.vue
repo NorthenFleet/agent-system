@@ -334,24 +334,29 @@
 
     <el-tabs
       v-if="documentCollection?.documents.length"
-      v-model="studioMode"
-      class="content-studio-tabs"
-      @tab-change="handleStudioModeChange"
+      :model-value="unifiedNavigationTab"
+      class="workspace-navigation-tabs"
+      @tab-change="handleUnifiedNavigationChange"
     >
-      <el-tab-pane label="文档撰写" name="document" :disabled="!richTextDocuments.length" />
-      <el-tab-pane label="PPT 制作" name="presentation" :disabled="!presentationDocuments.length" />
-      <el-tab-pane label="联动工作台" name="linked" :disabled="!richTextDocuments.length || !presentationDocuments.length" />
+      <el-tab-pane label="研究总览" name="overview" :disabled="!richTextDocuments.length" />
+      <el-tab-pane label="协同工作台" name="workbench" :disabled="!richTextDocuments.length" />
+      <el-tab-pane label="概念与论证" name="graph" :disabled="!richTextDocuments.length" />
+      <el-tab-pane label="参考文献" name="references" :disabled="!richTextDocuments.length" />
+      <el-tab-pane label="排版与交付" name="delivery" :disabled="!richTextDocuments.length" />
     </el-tabs>
 
     <WritingLinkedWorkspace
-      v-if="studioMode === 'linked' && currentDocument?.kind === 'rich_text' && workspace"
+      v-if="activeView === 'workbench' && workbenchSourceDocument && workspace"
       :project-id="selectedProjectId"
-      :source-document="currentDocument"
+      :source-document="workbenchSourceDocument"
       :presentation-document="linkedPresentationDocument"
+      :source-documents="richTextDocuments"
+      :presentation-documents="presentationDocuments"
       :section-id="selectedSectionId"
       :outline="workspace.directory"
       :selected-node-id="selectedDirectoryNodeId"
       :presentation-slide="presentationInitialSlide"
+      :initial-preset="workbenchInitialPreset"
       @select-outline="selectDirectoryNode"
       @navigate-to-thesis="navigateFromLinkedPresentation"
       @slide-changed="presentationInitialSlide = $event"
@@ -367,14 +372,6 @@
       <div><span>正式文献</span><strong>{{ workspace.reference_summary.formal }}</strong></div>
       <div><span>技术完整度</span><strong :class="qualityClass">{{ workspace.quality.score }}</strong></div>
     </section>
-
-    <el-tabs v-model="activeView" class="workspace-tabs" @tab-change="handleViewChange">
-      <el-tab-pane label="研究总览" name="overview" />
-      <el-tab-pane label="文档撰写" name="reader" />
-      <el-tab-pane label="概念与论证" name="graph" />
-      <el-tab-pane label="参考文献" name="references" />
-      <el-tab-pane label="排版与交付" name="delivery" />
-    </el-tabs>
 
     <template v-if="workspace">
       <main v-if="activeView === 'overview'" class="overview-view">
@@ -938,6 +935,7 @@ const presentationManifests = ref<Record<string, PresentationManifest>>({})
 const presentationInitialSlide = ref(1)
 const studioMode = ref<'document' | 'presentation' | 'linked' | 'workbook'>('document')
 const linkedPresentationDocumentId = ref('')
+const workbenchInitialPreset = ref<'writing' | 'presentation' | 'comparison' | 'custom'>('writing')
 const formalDocuments = computed(() => (
   documentCollection.value?.documents.filter(row => row.is_output_product) || []
 ))
@@ -1015,6 +1013,11 @@ const evaluationProfiles = ref<Array<{
 const evaluationBusy = ref(false)
 let evaluationPollTimer: ReturnType<typeof setTimeout> | undefined
 const currentDocument = computed(() => documentCollection.value?.documents.find(row => row.id === selectedDocumentId.value))
+const workbenchSourceDocument = computed(() => (
+  currentDocument.value?.kind === 'rich_text'
+    ? currentDocument.value
+    : richTextDocuments.value.find(row => row.is_primary) || richTextDocuments.value[0]
+))
 const linkedPresentationDocument = computed(() => (
   presentationDocuments.value.find(row => row.id === linkedPresentationDocumentId.value)
   || presentationDocuments.value.find(row => row.structure_binding?.source_document_id === currentDocument.value?.id)
@@ -1086,7 +1089,9 @@ const versionStages = computed(() => [
     state: 'target'
   }
 ])
-const activeView = ref('overview')
+const activeView = ref('workbench')
+const documentNavigationViews = new Set(['overview', 'workbench', 'graph', 'references', 'delivery'])
+const unifiedNavigationTab = computed(() => activeView.value)
 const loading = ref(false)
 const sectionLoading = ref(false)
 const selectedSectionId = ref('')
@@ -1220,7 +1225,14 @@ async function loadDocuments() {
         || rows[0]?.id
         || ''
   const selectedKind = rows.find(row => row.id === selectedDocumentId.value)?.kind
-  if (selectedKind === 'presentation') studioMode.value = 'presentation'
+  if (selectedKind === 'presentation') {
+    linkedPresentationDocumentId.value = selectedDocumentId.value
+    workbenchInitialPreset.value = 'presentation'
+    selectedDocumentId.value = rows.find(row => row.kind === 'rich_text' && row.is_primary && row.status === 'active')?.id
+      || rows.find(row => row.kind === 'rich_text' && row.status === 'active')?.id
+      || selectedDocumentId.value
+    studioMode.value = 'document'
+  }
   else if (selectedKind === 'workbook') studioMode.value = 'workbook'
   else studioMode.value = 'document'
 }
@@ -1418,7 +1430,7 @@ async function changeProject() {
 
 async function handleStudioModeChange(value: string | number) {
   const nextMode = String(value) as typeof studioMode.value
-  if (nextMode === 'linked') {
+  if (nextMode === 'linked' || nextMode === 'document') {
     const sourceDocument = currentDocument.value?.kind === 'rich_text'
       ? currentDocument.value
       : richTextDocuments.value.find(row => row.is_primary) || richTextDocuments.value[0]
@@ -1427,24 +1439,44 @@ async function handleStudioModeChange(value: string | number) {
       row.structure_binding?.source_document_id === sourceDocument.id
     )) || presentationDocuments.value[0]
     linkedPresentationDocumentId.value = linkedPresentation?.id || ''
-    studioMode.value = 'linked'
+    studioMode.value = 'document'
+    workbenchInitialPreset.value = nextMode === 'document' ? 'writing' : 'comparison'
     await selectDocument(sourceDocument.id, undefined, true)
-    studioMode.value = 'linked'
+    studioMode.value = 'document'
+    activeView.value = 'workbench'
     return
   }
   if (nextMode === 'presentation') {
     const presentation = currentDocument.value?.kind === 'presentation'
       ? currentDocument.value
       : linkedPresentationDocument.value || presentationDocuments.value[0]
-    if (presentation) await selectDocument(presentation.id)
+    if (presentation) {
+      linkedPresentationDocumentId.value = presentation.id
+      workbenchInitialPreset.value = 'presentation'
+      const sourceDocument = workbenchSourceDocument.value
+      if (sourceDocument) await selectDocument(sourceDocument.id, undefined, true)
+      studioMode.value = 'document'
+      activeView.value = 'workbench'
+    }
+  }
+}
+
+async function handleUnifiedNavigationChange(value: string | number) {
+  const nextTab = String(value)
+  if (nextTab === 'workbench') {
+    const sourceDocument = workbenchSourceDocument.value
+    if (sourceDocument && currentDocument.value?.id !== sourceDocument.id) {
+      await selectDocument(sourceDocument.id, undefined, true)
+    }
+    studioMode.value = 'document'
+    activeView.value = 'workbench'
     return
   }
-  if (nextMode === 'document') {
-    const sourceDocument = currentDocument.value?.kind === 'rich_text'
-      ? currentDocument.value
-      : richTextDocuments.value.find(row => row.is_primary) || richTextDocuments.value[0]
-    if (sourceDocument) await selectDocument(sourceDocument.id)
-  }
+  if (!documentNavigationViews.has(nextTab)) return
+  studioMode.value = 'document'
+  await handleStudioModeChange('document')
+  activeView.value = nextTab
+  await handleViewChange(nextTab)
 }
 
 async function selectDocument(documentId: string, initialSlide?: number, preserveStudioMode = false) {
@@ -1461,11 +1493,18 @@ async function selectDocument(documentId: string, initialSlide?: number, preserv
     linkedPresentationDocumentId.value = nextDocument.id
   }
   if (!preserveStudioMode) {
-    studioMode.value = nextDocument?.kind === 'presentation'
-      ? 'presentation'
-      : nextDocument?.kind === 'workbook'
+    studioMode.value = nextDocument?.kind === 'workbook'
         ? 'workbook'
         : 'document'
+  }
+  if (nextDocument?.kind === 'presentation') {
+    linkedPresentationDocumentId.value = nextDocument.id
+    workbenchInitialPreset.value = 'presentation'
+    const sourceDocument = richTextDocuments.value.find(row => row.is_primary) || richTextDocuments.value[0]
+    if (sourceDocument) {
+      selectedDocumentId.value = sourceDocument.id
+      studioMode.value = 'document'
+    }
   }
   workspace.value = undefined
   references.value = undefined
@@ -1475,10 +1514,10 @@ async function selectDocument(documentId: string, initialSlide?: number, preserv
   evaluationProfile.value = undefined
   evaluationReport.value = undefined
   linkedEvaluationSummary.value = undefined
-  activeView.value = 'overview'
+  activeView.value = nextDocument?.kind === 'workbook' ? 'overview' : 'workbench'
   await router.replace({
     path: '/writing',
-    query: { project_id: selectedProjectId.value, document_id: documentId }
+    query: { project_id: selectedProjectId.value, document_id: selectedDocumentId.value }
   })
   if (currentDocument.value?.kind === 'rich_text') await loadWorkspace()
 }
@@ -2038,7 +2077,7 @@ async function navigateFromPresentation(
   preserveStudioMode = false
 ) {
   await selectDocument(payload.sourceDocumentId, undefined, preserveStudioMode)
-  activeView.value = 'reader'
+  activeView.value = 'workbench'
   readerMode.value = 'section'
   const candidates = flattenDirectory(workspace.value?.directory || [])
   const sectionTokens = payload.section
@@ -2064,9 +2103,10 @@ async function navigateFromPresentation(
 }
 
 async function navigateFromLinkedPresentation(payload: { sourceDocumentId: string; section: string }) {
-  studioMode.value = 'linked'
+  studioMode.value = 'document'
   await navigateFromPresentation(payload, true)
-  studioMode.value = 'linked'
+  studioMode.value = 'document'
+  activeView.value = 'workbench'
 }
 
 async function openPresentationSlide(documentId: string, slide: number) {
@@ -2074,7 +2114,7 @@ async function openPresentationSlide(documentId: string, slide: number) {
 }
 
 async function openSection(section: WritingSection) {
-  activeView.value = 'reader'
+  activeView.value = 'workbench'
   selectedSectionId.value = section.id
   selectedDirectoryNodeId.value = section.id
   await loadSection(section.id)
@@ -2371,6 +2411,12 @@ function handleResize() {
 
 onMounted(() => {
   window.addEventListener('resize', handleResize)
+  const legacyMode = String(route.query.mode || '')
+  workbenchInitialPreset.value = legacyMode === 'presentation'
+    ? 'presentation'
+    : legacyMode === 'linked'
+      ? 'comparison'
+      : 'writing'
   loadWorkspace()
 })
 onBeforeUnmount(() => {
@@ -2476,13 +2522,11 @@ onBeforeUnmount(() => {
 .status-strip span, .brief-grid span, .quality-facts span, .graph-metrics span, .source-grid span { color: var(--text-secondary); font-size: 11px; }
 .status-strip strong { color: var(--text-primary); font-size: 17px; }
 .status-strip .edition-value { font-size: 14px; }
-.content-studio-tabs { min-width: 0; max-width: 100%; padding: 0 12px; border: 1px solid var(--line-color); border-radius: 6px; background: var(--card-bg); }
-.content-studio-tabs :deep(.el-tabs__header) { margin: 0; }
-.content-studio-tabs :deep(.el-tabs__nav-wrap::after) { height: 1px; background: var(--line-color); }
-.content-studio-tabs :deep(.el-tabs__item) { height: 42px; font-size: 12px; }
-.content-studio-tabs :deep(.el-tabs__content) { display: none; }
-.workspace-tabs { min-width: 0; max-width: 100%; margin-top: -4px; }
-.workspace-tabs :deep(.el-tabs__header) { margin: 0; }
+.workspace-navigation-tabs { min-width: 0; max-width: 100%; padding: 0 12px; overflow: hidden; border: 1px solid var(--line-color); border-radius: 6px; background: var(--card-bg); }
+.workspace-navigation-tabs :deep(.el-tabs__header) { margin: 0; }
+.workspace-navigation-tabs :deep(.el-tabs__nav-wrap::after) { height: 1px; background: var(--line-color); }
+.workspace-navigation-tabs :deep(.el-tabs__item) { height: 42px; padding: 0 16px; white-space: nowrap; font-size: 12px; }
+.workspace-navigation-tabs :deep(.el-tabs__content) { display: none; }
 .section-title, .graph-toolbar, .reference-toolbar, .reference-columns > section > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .section-title h3, .graph-toolbar h3, .reference-toolbar h3, .reference-columns h3 { margin-top: 3px; color: var(--text-primary); font-size: 14px; }
 .research-brief, .version-evolution, .target-structure, .chapter-progress, .quality-panel, .document-pane, .inspector-pane, .graph-view, .references-view, .delivery-main, .delivery-side > section { border: 1px solid var(--line-color); border-radius: 6px; background: var(--card-bg); }

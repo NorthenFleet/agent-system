@@ -25,6 +25,73 @@ def _projects():
     ]
 
 
+class _FinanceIntakeStub:
+    def __init__(self):
+        self.calls = []
+
+    def stage_command(self, **payload):
+        replayed = any(
+            item["command_message_id"] == payload["command_message_id"]
+            for item in self.calls
+        )
+        self.calls.append(payload)
+        return {
+            "job": {
+                "id": f"finance-job-{payload['command_message_id']}",
+                "command_message_id": payload["command_message_id"],
+                "target_agent_id": payload["target_agent_id"],
+                "operation_type": "reimbursement",
+                "mode": "shadow",
+                "status": "shadow_read",
+            },
+            "replayed": replayed,
+        }
+
+    def submit_extraction(self, job_id, **payload):
+        return {
+            "job": {
+                "id": job_id,
+                "target_agent_id": payload["agent_id"],
+                "mode": "shadow",
+                "status": "needs_review",
+                "lock_version": 2,
+            },
+            "validation": {"valid": True, "errors": [], "warnings": []},
+            "replayed": False,
+        }
+
+    def submit_review(self, job_id, **payload):
+        return {
+            "job": {
+                "id": job_id,
+                "target_agent_id": "soundwave",
+                "mode": "shadow",
+                "status": "validated" if payload["decision"] == "approve" else "rejected",
+                "lock_version": 3,
+            },
+            "review": {
+                "reviewer_agent_id": payload["reviewer_agent_id"],
+                "decision": payload["decision"],
+            },
+            "replayed": False,
+        }
+
+    def list_agent_jobs(self, **_filters):
+        return []
+
+    def get_agent_job(self, job_id, *, agent_id):
+        return {"id": job_id, "reader_agent_id": agent_id, "status": "needs_review"}
+
+
+class _FinanceReviewOrchestratorStub:
+    def __init__(self):
+        self.calls = []
+
+    async def review_job(self, job_id):
+        self.calls.append(job_id)
+        return {"status": "completed", "job_id": job_id}
+
+
 def _client(tmp_path, monkeypatch):
     service = CommandCenterService(
         str(tmp_path / "router.db"),
@@ -40,6 +107,8 @@ def _client(tmp_path, monkeypatch):
     context_service.upsert_profile(user_id="1", display_name="管理员")
     monkeypatch.setattr(router_module, "command_center_service", service)
     monkeypatch.setattr(router_module, "memory_feedback_service", memory_service)
+    monkeypatch.setattr(router_module, "finance_intake_coordinator", _FinanceIntakeStub())
+    monkeypatch.setattr(router_module, "finance_review_orchestrator", _FinanceReviewOrchestratorStub())
     monkeypatch.setenv("COMMAND_CENTER_INGRESS_TOKEN", "test-secret")
     app = FastAPI()
     app.include_router(router_module.router)
@@ -235,6 +304,98 @@ def test_lark_challenge_and_text_event_are_normalized(tmp_path, monkeypatch):
     assert event.status_code == 200
     assert event.json()["action"] == "mission_created"
     assert event.json()["mission"]["conversation"]["external_conversation_id"] == "oc-1"
+
+
+def test_finance_message_routes_to_soundwave_without_creating_mission(tmp_path, monkeypatch):
+    client, service, _context_service, _memory_service = _client(tmp_path, monkeypatch)
+    service.upsert_external_user_binding(
+        channel="feishu",
+        external_user_id="ou-finance",
+        internal_user_id="1",
+        profile_user_id="1",
+    )
+    headers = {"X-Command-Center-Token": "test-secret"}
+    payload = {
+        "channel": "feishu",
+        "external_conversation_id": "oc-finance",
+        "user_external_id": "ou-finance",
+        "content": "请登记这张项目报销发票，金额428.60元",
+        "external_message_id": "om-finance-1",
+        "intent_type": "finance_operation",
+        "intent_confidence": 0.99,
+        "intent_reason": "明确的财务作业",
+        "execution_requested": True,
+        "metadata": {"account_id": "soundwave", "target": "oc-finance"},
+    }
+
+    routed = client.post("/api/v3/command-center/inbox", json=payload, headers=headers)
+    duplicate = client.post("/api/v3/command-center/inbox", json=payload, headers=headers)
+
+    assert routed.status_code == 200
+    assert routed.json()["action"] == "finance_intake"
+    assert routed.json()["target_agent_id"] == "soundwave"
+    assert routed.json()["mission"] is None
+    assert routed.json()["message"]["target_agent_id"] == "soundwave"
+    assert routed.json()["finance_job"]["mode"] == "shadow"
+    assert routed.json()["finance_job"]["status"] == "shadow_read"
+    assert routed.json()["finance_job_replayed"] is False
+    assert duplicate.json()["action"] == "duplicate"
+    assert duplicate.json()["finance_job"]["id"] == routed.json()["finance_job"]["id"]
+    assert duplicate.json()["finance_job_replayed"] is True
+    assert service.list_missions() == []
+
+    wrong_agent = client.post(
+        f"/api/v3/command-center/agent/messages/{routed.json()['message']['id']}/response",
+        json={"content": "错误代理响应", "sender_id": "optimus"},
+        headers=headers,
+    )
+    assert wrong_agent.status_code == 400
+
+    response = client.post(
+        f"/api/v3/command-center/agent/messages/{routed.json()['message']['id']}/response",
+        json={"content": "已生成财务录入草稿，尚未写入正式财务表。", "sender_id": "soundwave"},
+        headers=headers,
+    )
+    assert response.status_code == 200
+    assert response.json()["message"]["sender_id"] == "soundwave"
+    assert response.json()["message"]["target_agent_id"] == "soundwave"
+
+
+def test_finance_agent_extraction_and_independent_review_endpoints(tmp_path, monkeypatch):
+    client, _service, _context_service, _memory_service = _client(tmp_path, monkeypatch)
+    headers = {"X-Command-Center-Token": "test-secret"}
+
+    extracted = client.post(
+        "/api/v3/command-center/agent/finance-jobs/job-1/extraction",
+        json={
+            "agent_id": "soundwave",
+            "payload": {"project_id": "project-1", "total_amount": 100},
+            "evidence": ["用户消息"],
+            "confidence": 0.9,
+            "expected_version": 1,
+        },
+        headers=headers,
+    )
+    reviewed = client.post(
+        "/api/v3/command-center/agent/finance-jobs/job-1/review",
+        json={
+            "reviewer_agent_id": "inspector",
+            "decision": "approve",
+            "summary": "结构和金额一致",
+            "findings": [],
+            "confidence": 0.95,
+            "expected_version": 2,
+        },
+        headers=headers,
+    )
+
+    assert extracted.status_code == 200
+    assert extracted.json()["job"]["status"] == "needs_review"
+    assert extracted.json()["validation"]["valid"] is True
+    assert extracted.json()["review_scheduled"] is True
+    assert reviewed.status_code == 200
+    assert reviewed.json()["job"]["status"] == "validated"
+    assert reviewed.json()["review"]["reviewer_agent_id"] == "inspector"
 
 
 def test_memory_candidate_review_requires_admin_and_publishes_fact(tmp_path, monkeypatch):

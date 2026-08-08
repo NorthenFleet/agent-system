@@ -23,6 +23,7 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import FinanceBudget from './finance/FinanceBudget.vue'
 import FinanceInvoices from './finance/FinanceInvoices.vue'
+import FinanceIntake from './finance/FinanceIntake.vue'
 import FinanceOverview from './finance/FinanceOverview.vue'
 import FinancePayments from './finance/FinancePayments.vue'
 import FinanceReconciliation from './finance/FinanceReconciliation.vue'
@@ -34,6 +35,7 @@ const route = useRoute()
 const router = useRouter()
 const sections = [
   { key: 'overview', label: '财务总览', component: FinanceOverview },
+  { key: 'intake', label: '智能录入', component: FinanceIntake },
   { key: 'budget', label: '经费与预算', component: FinanceBudget },
   { key: 'reimbursements', label: '报销申请', component: FinanceReimbursements },
   { key: 'invoices', label: '发票中心', component: FinanceInvoices },

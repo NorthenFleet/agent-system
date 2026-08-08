@@ -156,6 +156,15 @@ class InvoiceCreate(ApiModel):
     buyer_name: str = Field(default="", max_length=255)
 
 
+class InvoiceBatchCreate(ApiModel):
+    project_id: str
+    period: str = Field(pattern=r"^\d{4}-(0[1-9]|1[0-2])$")
+    source_channel: Literal["web", "lark", "watch_folder"] = "web"
+    intake_job_id: str | None = None
+    external_ref: str | None = Field(default=None, max_length=255)
+    note: str = Field(default="", max_length=2000)
+
+
 class PaymentCreate(ApiModel):
     reimbursement_id: str
     payee_name: str = Field(min_length=1, max_length=255)
@@ -166,10 +175,14 @@ class PaymentCreate(ApiModel):
 class PaymentConfirm(VersionedRequest):
     bank_reference: str = Field(min_length=1, max_length=128)
     paid_at: datetime
+    human_confirmed: Literal[True]
+    confirmation_note: str = Field(min_length=2, max_length=500)
 
 
 class ReconciliationConfirm(ApiModel):
     matches: list[str] = Field(min_length=1, max_length=100)
+    human_confirmed: Literal[True]
+    confirmation_note: str = Field(min_length=2, max_length=500)
 
 
 class ImportRequest(ApiModel):

@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Any, Callable
 from urllib.parse import quote
 
-from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query, Request, Response
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, Header, HTTPException, Query, Request, Response
 from pydantic import BaseModel, Field
 from sqlalchemy import inspect
 from sqlalchemy.orm import Session
@@ -20,6 +20,7 @@ from schemas.finance import (
     BudgetLinesReplace,
     FundAllocationCreate,
     ImportRequest,
+    InvoiceBatchCreate,
     InvoiceCreate,
     PaymentConfirm,
     PaymentCreate,
@@ -35,6 +36,8 @@ from schemas.finance import (
     WorkflowCreate,
 )
 from services.finance_v2_service import FinanceError, FinanceNotFound, FinanceServiceV2, row_dict
+from services.finance_intake_service import FinanceIntakeError, FinanceIntakeService
+from services.finance_invoice_batch_service import FinanceInvoiceBatchService, process_invoice_batch_job
 
 
 router = APIRouter(prefix="/api/finance", tags=["finance"])
@@ -64,6 +67,13 @@ def call(callback: Callable[[], Any]) -> Any:
             status_code=exc.status_code,
             detail={"code": exc.code, "message": exc.message, "details": exc.details},
         ) from exc
+
+
+def call_intake(callback: Callable[[], Any]) -> Any:
+    try:
+        return callback()
+    except FinanceIntakeError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=str(exc)) from exc
 
 
 def envelope(data: Any, **meta: Any) -> dict[str, Any]:
@@ -105,7 +115,56 @@ def dashboard(svc: FinanceServiceV2 = Depends(service)):
     return envelope(call(svc.dashboard))
 
 
+@router.get("/control-readiness", response_model=FinanceEnvelope)
+def control_readiness(svc: FinanceServiceV2 = Depends(service)):
+    return envelope(call(svc.control_readiness))
+
+
+@router.get("/intake-jobs", response_model=FinanceEnvelope)
+def intake_jobs(
+    status: str = Query("", pattern="^(|received|shadow_read|awaiting_extraction|extracted|needs_review|validated|approved|committed|rejected|failed|cancelled)$"),
+    operation_type: str = Query("", pattern="^(|reimbursement|invoice|budget|payment|reconciliation|query|unknown)$"),
+    limit: int = Query(100, ge=1, le=500),
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    service = FinanceIntakeService(db)
+    jobs = call_intake(
+        lambda: service.list_jobs(
+            user_id=int(user["sub"]),
+            system_role=str(user.get("role") or ""),
+            status=status,
+            operation_type=operation_type,
+            limit=limit,
+        )
+    )
+    return envelope(jobs, total=len(jobs), mode="shadow")
+
+
+@router.get("/intake-jobs/{job_id}", response_model=FinanceEnvelope)
+def intake_job_detail(
+    job_id: str,
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    service = FinanceIntakeService(db)
+    return envelope(
+        call_intake(
+            lambda: service.get_job(
+                job_id,
+                user_id=int(user["sub"]),
+                system_role=str(user.get("role") or ""),
+            )
+        )
+    )
+
+
 # ---------- roles and projects ----------
+@router.get("/roles", response_model=FinanceEnvelope)
+def roles(svc: FinanceServiceV2 = Depends(service)):
+    return envelope(call(svc.list_role_assignments))
+
+
 @router.post("/roles", response_model=FinanceEnvelope)
 def grant_role(payload: RoleGrant, response: Response, idempotency_key: str | None = Header(None, alias="Idempotency-Key"), svc: FinanceServiceV2 = Depends(service)):
     return idempotent(svc, "POST:/roles", idempotency_key, payload.model_dump(mode="json"), lambda: svc.grant_role(payload), response)
@@ -253,6 +312,110 @@ def reject_task(task_id: str, payload: ApprovalAction, response: Response, idemp
 
 
 # ---------- invoices ----------
+@router.get("/invoice-batches", response_model=FinanceEnvelope)
+def invoice_batches(
+    project_id: str = Query(""),
+    status: str = Query("", pattern="^(|received|processing|review_required|completed|failed|cancelled)$"),
+    limit: int = Query(100, ge=1, le=500),
+    svc: FinanceServiceV2 = Depends(service),
+):
+    records = call(
+        lambda: FinanceInvoiceBatchService(svc).list_batches(
+            project_id=project_id,
+            status=status,
+            limit=limit,
+        )
+    )
+    return envelope(records, total=len(records))
+
+
+@router.post("/invoice-batches", response_model=FinanceEnvelope)
+def create_invoice_batch(
+    payload: InvoiceBatchCreate,
+    response: Response,
+    idempotency_key: str | None = Header(None, alias="Idempotency-Key"),
+    svc: FinanceServiceV2 = Depends(service),
+):
+    return idempotent(
+        svc,
+        "POST:/invoice-batches",
+        idempotency_key,
+        payload.model_dump(mode="json"),
+        lambda: FinanceInvoiceBatchService(svc).create_batch(payload),
+        response,
+    )
+
+
+@router.get("/invoice-batches/{batch_id}", response_model=FinanceEnvelope)
+def invoice_batch_detail(batch_id: str, svc: FinanceServiceV2 = Depends(service)):
+    return envelope(call(lambda: FinanceInvoiceBatchService(svc).get_batch(batch_id)))
+
+
+@router.post("/invoice-batches/{batch_id}/files", response_model=FinanceEnvelope)
+async def upload_invoice_batch_file(
+    batch_id: str,
+    response: Response,
+    request: Request,
+    filename: str = Header(..., alias="X-Filename"),
+    idempotency_key: str | None = Header(None, alias="Idempotency-Key"),
+    svc: FinanceServiceV2 = Depends(service),
+):
+    content = await request.body()
+    content_type = request.headers.get("content-type", "application/octet-stream").split(";", 1)[0]
+    payload = {
+        "batch_id": batch_id,
+        "filename": filename,
+        "content_type": content_type,
+        "sha256": __import__("hashlib").sha256(content).hexdigest(),
+    }
+    return idempotent(
+        svc,
+        f"POST:/invoice-batches/{batch_id}/files",
+        idempotency_key,
+        payload,
+        lambda: FinanceInvoiceBatchService(svc).add_file(batch_id, filename, content_type, content),
+        response,
+    )
+
+
+@router.post("/invoice-batches/{batch_id}/start", response_model=FinanceEnvelope)
+def start_invoice_batch(
+    batch_id: str,
+    background_tasks: BackgroundTasks,
+    response: Response,
+    idempotency_key: str | None = Header(None, alias="Idempotency-Key"),
+    svc: FinanceServiceV2 = Depends(service),
+):
+    result = idempotent(
+        svc,
+        f"POST:/invoice-batches/{batch_id}/start",
+        idempotency_key,
+        {},
+        lambda: FinanceInvoiceBatchService(svc).start_batch(batch_id),
+        response,
+    )
+    if response.headers.get("Idempotency-Replayed") == "false" and result["data"].get("queued"):
+        background_tasks.add_task(process_invoice_batch_job, batch_id)
+    return result
+
+
+@router.post("/invoice-batches/{batch_id}/retry", response_model=FinanceEnvelope)
+def retry_invoice_batch(
+    batch_id: str,
+    response: Response,
+    idempotency_key: str | None = Header(None, alias="Idempotency-Key"),
+    svc: FinanceServiceV2 = Depends(service),
+):
+    return idempotent(
+        svc,
+        f"POST:/invoice-batches/{batch_id}/retry",
+        idempotency_key,
+        {},
+        lambda: FinanceInvoiceBatchService(svc).retry_failed(batch_id),
+        response,
+    )
+
+
 @router.get("/invoices", response_model=FinanceEnvelope)
 def invoices(svc: FinanceServiceV2 = Depends(service)):
     return envelope(call(svc.list_invoices))
@@ -340,7 +503,20 @@ def reconciliations(svc: FinanceServiceV2 = Depends(service)):
 
 @router.post("/reconciliations/confirm", response_model=FinanceEnvelope)
 def confirm_reconciliations(payload: ReconciliationConfirm, response: Response, idempotency_key: str | None = Header(None, alias="Idempotency-Key"), svc: FinanceServiceV2 = Depends(service)):
-    return idempotent(svc, "POST:/reconciliations/confirm", idempotency_key, payload.model_dump(), lambda: {"records": svc.confirm_reconciliations(payload.matches)}, response)
+    return idempotent(
+        svc,
+        "POST:/reconciliations/confirm",
+        idempotency_key,
+        payload.model_dump(),
+        lambda: {
+            "records": svc.confirm_reconciliations(
+                payload.matches,
+                human_confirmed=payload.human_confirmed,
+                confirmation_note=payload.confirmation_note,
+            )
+        },
+        response,
+    )
 
 
 # ---------- reports and explicit imports ----------

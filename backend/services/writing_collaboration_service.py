@@ -20,6 +20,7 @@ from agent_messenger import agent_messenger
 from database import SessionLocal
 from models.writing_collaboration import (
     WritingAiJob,
+    WritingAiMessage,
     WritingAiProposal,
     WritingChangeSet,
     WritingChangeEvent,
@@ -106,6 +107,23 @@ class WritingCollaborationService:
             if allow_non_postgres_writes is None
             else allow_non_postgres_writes
         )
+
+    def _sync_job_message(self, session: Session, job: WritingAiJob) -> None:
+        if not job.response_message_id:
+            return
+        message = session.get(WritingAiMessage, job.response_message_id)
+        if not message:
+            return
+        message.job_kind = "document"
+        message.job_id = job.id
+        message.status = job.status
+        message.error = job.error or ""
+        message.content = job.summary or job.error or {
+            "queued": "任务已排队",
+            "running": "正在生成修改建议……",
+            "cancelled": "任务已取消",
+        }.get(job.status, "AI写作任务已更新")
+        message.proposal_ids = [proposal.id for proposal in job.proposals or []]
 
     def _require_enabled(self) -> None:
         if not _feature_enabled():
@@ -1172,6 +1190,9 @@ class WritingCollaborationService:
                 risk_policy=copy.deepcopy(payload.get("risk_policy") or {}),
                 status="queued",
                 requested_by=actor,
+                conversation_id=str(payload.get("conversation_id") or "")[:64],
+                request_message_id=str(payload.get("request_message_id") or "")[:64],
+                response_message_id=str(payload.get("response_message_id") or "")[:64],
             )
             session.add(job)
             try:
@@ -1361,10 +1382,12 @@ class WritingCollaborationService:
                 if claim.rowcount != 1:
                     session.rollback()
                     return
-                session.commit()
                 job = session.get(WritingAiJob, job_id)
                 if not job:
+                    session.rollback()
                     return
+                self._sync_job_message(session, job)
+                session.commit()
                 prompt = self._ai_prompt(job)
                 agent_id = job.agent_id
             response = await self.ai_requester(agent_id, prompt)
@@ -1564,6 +1587,7 @@ class WritingCollaborationService:
                 else:
                     job.status = "failed"
                     job.error = "AI 未返回可执行操作"
+                self._sync_job_message(session, job)
                 session.commit()
             if applied_count:
                 self._refresh_projection(
@@ -1580,6 +1604,7 @@ class WritingCollaborationService:
                     job.finished_at = _now()
                     job.lease_expires_at = None
                     job.worker_id = ""
+                    self._sync_job_message(session, job)
                     session.commit()
 
     def next_runnable_ai_job(self) -> dict[str, str] | None:
@@ -1641,20 +1666,14 @@ class WritingCollaborationService:
 
     def fail_ai_job(self, job_id: str, error: str) -> None:
         with self.session_factory() as session:
-            session.execute(
-                update(WritingAiJob)
-                .where(
-                    WritingAiJob.id == job_id,
-                    WritingAiJob.status.in_({"queued", "running"}),
-                )
-                .values(
-                    status="failed",
-                    error=error[:4000],
-                    finished_at=_now(),
-                    lease_expires_at=None,
-                    worker_id="",
-                )
-            )
+            job = session.get(WritingAiJob, job_id)
+            if job and job.status in {"queued", "running"}:
+                job.status = "failed"
+                job.error = error[:4000]
+                job.finished_at = _now()
+                job.lease_expires_at = None
+                job.worker_id = ""
+                self._sync_job_message(session, job)
             session.commit()
 
     def _job_dict(self, job: WritingAiJob) -> dict[str, Any]:
@@ -1700,6 +1719,7 @@ class WritingCollaborationService:
                     job.status = "failed"
                     job.error = "AI 写作任务超时或服务已重启，请重新提交"
                     job.finished_at = _now()
+                    self._sync_job_message(session, job)
                     session.commit()
             return self._job_dict(job)
 
@@ -1722,6 +1742,7 @@ class WritingCollaborationService:
                 job.finished_at = _now()
                 job.lease_expires_at = None
                 job.worker_id = ""
+                self._sync_job_message(session, job)
                 session.commit()
             return self._job_dict(job)
 
