@@ -449,7 +449,7 @@ function decisionType(value: string) {
 }
 
 function kindLabel(kind: WritingDocumentKind) {
-  return { rich_text: '正文', presentation: 'PPT', workbook: '工作簿' }[kind]
+  return { rich_text: '正文', presentation: 'PPT', workbook: '工作簿', diagram: '图表' }[kind]
 }
 
 function auditLabel(action: string) {

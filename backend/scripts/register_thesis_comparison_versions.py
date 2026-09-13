@@ -16,24 +16,15 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from project_manager import project_manager  # noqa: E402
-from services.multi_document_service import multi_document_service  # noqa: E402
+from services.document_workspace_service import document_workspace_service  # noqa: E402
+from services.multi_document_service import _convert_docx, multi_document_service  # noqa: E402
 from services.writing_collaboration_service import writing_collaboration_service  # noqa: E402
 
 PROJECT_ID = "proj-10fbeefae5"
 CURRENT_ID = "doc-15def56e2401"
 THESIS = Path("/Users/apple/工作桌面/knowledge/10-成果库-Outputs/毕业论文/博士论文")
 FIRST = THESIS / "博士论文 - 面向海上无人集群作战的智能协同任务规划理论与方法研究.md"
-SECOND_NAMES = [
-    "第0章：面向海上无人集群智能协同任务规划的理论与方法研究.md",
-    "第1章-绪论.md",
-    "第2章-无人集群任务规划的理论基础.md",
-    "第3章-基于作战意图与杀伤链逻辑的任务分解.md",
-    "第4章 基于优势驱动的任务分配与集群编成.md",
-    "第5章-面向优势场的多智能体协同路径规划.md",
-    "第6章-仿真与评估.md",
-    "第7章-总结与展望.md",
-    "参考文献.md",
-]
+SECOND_WORD = THESIS / "排版权威源" / "博士论文-第二版正式排版母稿-20260324.docx"
 IMAGE_RE = re.compile(r"!\[([^\]]*)\]\(([^)]+)\)")
 OBSIDIAN_RE = re.compile(r"!\[\[([^\]|]+)(?:\|[^\]]+)?\]\]")
 
@@ -65,29 +56,6 @@ def localize_assets(markdown, base, target):
     return OBSIDIAN_RE.sub(lambda match: copy(match.group(1), Path(match.group(1)).stem), markdown)
 
 
-def normalize_second_frontmatter(markdown):
-    return markdown.replace("# 第0章 摘要", "# 文档说明", 1).replace("# 三、英文摘要（直接可用 SCI风格）", "# 英文摘要", 1)
-
-
-def repair_second_structure(project, document_id):
-    state = writing_collaboration_service.get_state(project, document_id)
-    document = state.get("document") or state.get("content") or {}
-    changed = False
-    for block in document.get("content") or []:
-        if block.get("type") != "heading":
-            continue
-        text = "".join(node.get("text", "") for node in block.get("content") or [] if node.get("type") == "text")
-        replacement = "文档说明" if text == "第0章 摘要" else "英文摘要" if text.startswith("三、英文摘要") else ""
-        if replacement and block.get("content"):
-            block["content"] = [{"type": "text", "text": replacement}]
-            changed = True
-    if changed:
-        writing_collaboration_service.patch_draft(project, document_id, {
-            "content": document, "expected_revision": state["revision"],
-            "client_change_id": "thesis-edition-2-frontmatter-v1",
-        }, "thesis-version-migration")
-
-
 def backup(project, current):
     workspace = multi_document_service._project_root(project)  # noqa: SLF001
     target = workspace / "backups" / f"thesis-comparison-{datetime.now(timezone.utc):%Y%m%dT%H%M%SZ}"
@@ -99,8 +67,18 @@ def backup(project, current):
     (target / "workspace-manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
     body = multi_document_service.rich_call(project, current["id"], "fulltext")
     (target / "current-body.md").write_text(str(body.get("content") or ""), encoding="utf-8")
-    state = writing_collaboration_service.get_state(project, current["id"])
-    (target / "structured-body.json").write_text(json.dumps(state.get("document") or state.get("content") or {}, ensure_ascii=False), encoding="utf-8")
+    try:
+        state = writing_collaboration_service.get_state(project, current["id"])
+    except Exception as exc:  # Third edition can legitimately still be Markdown-only.
+        (target / "structured-body.json").write_text(
+            json.dumps({"status": "not_enabled", "reason": str(exc)}, ensure_ascii=False),
+            encoding="utf-8",
+        )
+    else:
+        (target / "structured-body.json").write_text(
+            json.dumps(state.get("document") or state.get("content") or {}, ensure_ascii=False),
+            encoding="utf-8",
+        )
     return target
 
 
@@ -108,8 +86,6 @@ def register(project, rows, *, sequence, title, source, asset_base, checksum, ex
     found = edition(rows, sequence)
     if found:
         writing_collaboration_service.ensure_state(project, found["id"])
-        if sequence == 2:
-            repair_second_structure(project, found["id"])
         return multi_document_service.update_document(project, found["id"], {
             "edit_policy": "read_only", "delivery_role": "historical_reference", "expected_chapters": expected,
         })
@@ -127,11 +103,99 @@ def register(project, rows, *, sequence, title, source, asset_base, checksum, ex
     markdown = localize_assets(source.read_text(encoding="utf-8"), asset_base, document_root / "source" / "assets")
     multi_document_service.replace_rich_text_markdown(project, created["id"], markdown, "thesis-version-migration")
     writing_collaboration_service.ensure_state(project, created["id"])
-    if sequence == 2:
-        repair_second_structure(project, created["id"])
     return multi_document_service.update_document(project, created["id"], {
         "edit_policy": "read_only", "delivery_role": "historical_reference", "expected_chapters": expected,
     })
+
+
+def register_second_word_authority(project, rows, first_id, backup_root):
+    """Install the frozen second-edition Word master as the read-only baseline."""
+    data = SECOND_WORD.read_bytes()
+    checksum = sha(data)
+    converted = _convert_docx(data, "博士论文·第二版（Word正式母稿）")
+    found = edition(rows, 2)
+    if not found:
+        created = multi_document_service.import_docx(
+            project,
+            "博士论文·第二版（Word正式母稿）",
+            data,
+            SECOND_WORD.name,
+            is_primary=False,
+            actor="thesis-word-authority-migration",
+        )
+        document_id = created["id"]
+        writing_collaboration_service.ensure_state(project, document_id)
+        migration_snapshot = ""
+    else:
+        document_id = found["id"]
+        writing_collaboration_service.ensure_state(project, document_id)
+        root = multi_document_service._document_root(project, document_id)  # noqa: SLF001
+        migration_snapshot = backup_root / f"{document_id}-before-word-authority"
+        shutil.copytree(root, migration_snapshot)
+        source = root / "source" / "document.md"
+        original = root / "source" / "original.docx"
+        assets = root / "source" / "assets"
+        staging = root / "source" / ".word-authority-assets"
+        if staging.exists():
+            shutil.rmtree(staging)
+        staging.mkdir(parents=True)
+        for asset_name, asset_data in converted["assets"].items():
+            (staging / asset_name).write_bytes(asset_data)
+        original.write_bytes(data)
+        source.write_text(converted["markdown"], encoding="utf-8")
+        if assets.exists():
+            shutil.rmtree(assets)
+        staging.rename(assets)
+        context = multi_document_service.rich_project_context(project, document_id)
+        manifest = document_workspace_service.ensure_workspace(context)
+        manifest.update({
+            "source_markdown": str(source),
+            "source_base_dir": str(source.parent),
+            "source_word": str(original),
+        })
+        document_workspace_service._write_manifest(context, manifest)  # noqa: SLF001
+        writing_collaboration_service.replace_authority_from_markdown(
+            project,
+            document_id,
+            converted["markdown"],
+            label="第二版 Word 正式母稿导入",
+            actor="thesis-word-authority-migration",
+        )
+
+    lineage = {
+        "series_id": "doctoral-thesis",
+        "edition_label": "第二版·Word正式母稿",
+        "sequence": 2,
+        "source_type": "docx",
+        "parent_document_id": first_id,
+        "source_checksum": checksum,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "source_paths": [str(SECOND_WORD)],
+    }
+    updated = multi_document_service.update_document(project, document_id, {
+        "title": "博士论文·第二版（Word正式母稿）",
+        "edit_policy": "read_only",
+        "delivery_role": "historical_reference",
+        "expected_chapters": 10,
+        "lineage": lineage,
+    })
+    multi_document_service._update_record(project, document_id, {  # noqa: SLF001
+        "source_path": str(SECOND_WORD),
+        "source_checksum": checksum,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "metadata": {
+            **(updated.get("metadata") or {}),
+            "word_authority": {
+                "source_path": str(SECOND_WORD),
+                "source_checksum": checksum,
+                "imported_at": datetime.now(timezone.utc).isoformat(),
+                "import_summary": converted["stats"],
+                "warnings": converted["warnings"],
+                "previous_obsidian_snapshot": str(migration_snapshot) if migration_snapshot else "",
+            },
+        },
+    })
+    return multi_document_service.get_document(project, document_id)
 
 
 def run(apply=False):
@@ -140,32 +204,26 @@ def run(apply=False):
         raise RuntimeError(f"论文项目不存在：{PROJECT_ID}")
     if not FIRST.is_file():
         raise RuntimeError(f"第一版源文件不存在：{FIRST}")
-    second_root = THESIS / "论文章节" / "正式稿"
-    second_paths = [second_root / name for name in SECOND_NAMES]
-    missing = [str(path) for path in second_paths if not path.is_file()]
-    if missing:
-        raise RuntimeError("第二版章节缺失：" + "、".join(missing))
+    if not SECOND_WORD.is_file():
+        raise RuntimeError(f"第二版 Word 权威源不存在：{SECOND_WORD}")
     listing = multi_document_service.list_documents(project)
     current = next((row for row in listing["documents"] if row["id"] == CURRENT_ID), None)
     if not current:
         raise RuntimeError(f"第三版权威文档不存在：{CURRENT_ID}")
     first_checksum = sha(FIRST.read_bytes())
-    bundle_checksum = sha("\n".join(f"{path}:{sha(path.read_bytes())}" for path in second_paths).encode())
+    second_checksum = sha(SECOND_WORD.read_bytes())
     result = {
         "project_id": PROJECT_ID,
         "first": {"path": str(FIRST), "checksum": first_checksum},
-        "second": {"paths": [str(path) for path in second_paths], "checksum": bundle_checksum},
+        "second": {"path": str(SECOND_WORD), "checksum": second_checksum},
         "third": {"document_id": CURRENT_ID, "revision": current.get("revision"), "checksum": current.get("source_checksum")},
     }
     if not apply:
         return {"status": "dry_run", **result}
-    target = multi_document_service._project_root(project) / "imports" / "博士论文-第二版-Obsidian正式稿.md"  # noqa: SLF001
-    target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(normalize_second_frontmatter("\n\n".join(path.read_text(encoding="utf-8").strip() for path in second_paths) + "\n"), encoding="utf-8")
     saved = backup(project, current)
     first = register(project, listing["documents"], sequence=1, title="博士论文·第一版（十章初稿）", source=FIRST, asset_base=FIRST.parent, checksum=first_checksum, expected=10, source_type="markdown", paths=[FIRST])
     rows = multi_document_service.list_documents(project)["documents"]
-    second = register(project, rows, sequence=2, title="博士论文·第二版（Obsidian正式稿）", source=target, asset_base=second_root, checksum=bundle_checksum, expected=7, source_type="chapter_bundle", paths=second_paths, parent=first["id"])
+    second = register_second_word_authority(project, rows, first["id"], saved)
     third = multi_document_service.update_document(project, CURRENT_ID, {
         "edit_policy": "editable", "delivery_role": "deliverable", "sort_order": 2,
         "lineage": {"series_id": "doctoral-thesis", "edition_label": "第三版", "sequence": 3, "source_type": "structured_authority", "parent_document_id": second["id"], "source_checksum": current.get("source_checksum") or "", "generated_at": datetime.now(timezone.utc).isoformat(), "source_paths": [current.get("source_path") or ""]},

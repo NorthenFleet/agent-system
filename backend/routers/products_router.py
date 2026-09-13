@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import asyncio
+from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
+from path_config import backend_data_path
 from project_manager import project_manager
 from services.auth_service import get_current_user, require_role
 from services.mission_planning_adapter import MissionPlanningError, mission_planning_adapter
@@ -29,6 +32,18 @@ class ProductUpdate(BaseModel):
     kind: str | None = None
     category: str | None = None
     description: str | None = None
+    short_name: str | None = None
+    positioning: str | None = None
+    cover_image: str | None = None
+    portfolio_group: str | None = None
+    display_order: int | None = None
+    featured: bool | None = None
+    target_users: list[str] | None = None
+    scenarios: list[str] | None = None
+    value_props: list[str] | None = None
+    system_links: list[dict[str, Any]] | None = None
+    document_links: list[dict[str, Any]] | None = None
+    media_assets: list[dict[str, Any]] | None = None
     version: str | None = None
     status: str | None = None
     owner: str | None = None
@@ -503,6 +518,21 @@ def product_timeline(product_id: str, limit: int = 100, _user: dict = Depends(ge
     if not product_registry_service.get_product(product_id):
         raise HTTPException(status_code=404, detail="Product not found")
     return {"events": product_registry_service.timeline(product_id, limit=limit)}
+
+
+@router.get("/{product_id}/assets/{asset_path:path}")
+def get_product_asset(
+    product_id: str,
+    asset_path: str,
+    _user: dict = Depends(get_current_user),
+):
+    root = Path(backend_data_path("product_assets", "products", product_id)).resolve()
+    target = (root / asset_path).resolve()
+    if root not in target.parents and target != root:
+        raise HTTPException(status_code=400, detail="Invalid asset path")
+    if not target.is_file():
+        raise HTTPException(status_code=404, detail="Product asset not found")
+    return FileResponse(target, filename=target.name)
 
 
 @router.get("/{product_id}")

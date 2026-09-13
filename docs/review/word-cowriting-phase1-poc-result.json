@@ -1,0 +1,75 @@
+{
+  "schema": "openclaw.word-cowriting-phase1-result.v1",
+  "recorded_at": "2026-08-24T15:35:00+08:00",
+  "phase": 1,
+  "status": "package_ready_word_interactive_gate_pending",
+  "scope": "candidate-only Microsoft Word Add-in PoC",
+  "authority_contract": {
+    "structured_document_mutated": false,
+    "production_backend_restarted": false,
+    "word_source_document_mutated": false,
+    "word_candidate_requires_import": true,
+    "allowed_operation": "replace_exact_unique_plain_paragraph"
+  },
+  "implemented": {
+    "backend_routes": [
+      "/api/v3/writing/projects/{project_id}/documents/{document_id}/word-addin/context",
+      "/api/v3/writing/projects/{project_id}/documents/{document_id}/word-addin/resolve-paragraph",
+      "/api/v3/writing/projects/{project_id}/documents/{document_id}/word-addin/change-sets/{change_set_id}/validate-apply",
+      "/api/v3/writing/projects/{project_id}/documents/{document_id}/word-addin/change-sets/{change_set_id}/receipts"
+    ],
+    "guards": [
+      "exact unique paragraph-to-block resolution",
+      "base document revision equality",
+      "proposal and ChangeSet ownership equality",
+      "Word paragraph SHA-256 equality",
+      "saved Word candidate fingerprint equality",
+      "short-lived signed apply token",
+      "idempotent candidate receipt",
+      "plain unmarked single-paragraph replacement only"
+    ]
+  },
+  "verification": {
+    "backend_tests": {
+      "command": "backend/venv/bin/pytest -q backend/tests/test_word_addin_bridge_service.py backend/tests/test_writing_collaboration_service.py backend/tests/test_writing_research_service.py",
+      "result": "59 passed"
+    },
+    "frontend_tests": {
+      "command": "npm run test:run -- src/test/WordAddinCore.spec.ts",
+      "result": "4 passed"
+    },
+    "frontend_build": {
+      "command": "npm run build",
+      "result": "passed",
+      "taskpane_sha256": "1a8bb9e49c9d78dab03d7dc30c4df3caf9ebd4b159fafd6b17e39406b5580bd8"
+    },
+    "visual_smoke": {
+      "viewport": "360x900",
+      "console_errors": 0,
+      "console_warnings": 0,
+      "overlap_observed": false
+    },
+    "https_smoke": {
+      "taskpane_status": 200,
+      "bundle_status": 200,
+      "unauthenticated_api_status": 401
+    }
+  },
+  "artifacts": {
+    "manifest_path": "/Users/apple/工作桌面/Workspace/agent-system/frontend-v2/artifacts/word-addin/3021-word-addin-manifest.xml",
+    "manifest_sha256": "8f8600ebe6ea65d22d5e60d69ad3b872485b71d42935a2956964d8f1680faebe",
+    "sideload_path": "/Users/apple/Library/Containers/com.microsoft.Word/Data/Documents/wef/3021-word-addin-manifest.xml",
+    "https_url": "https://192.168.31.41:3443/word-addin/taskpane.html",
+    "candidate_path": "/private/tmp/3021-word-addin-candidates/course-plan-original-20h-candidate.docx",
+    "candidate_sha256": "625c5adc0d113828d4fa64b3bd7f6ee477cbc1f3335a67af6e9190c9b1347bc4",
+    "source_sha256": "625c5adc0d113828d4fa64b3bd7f6ee477cbc1f3335a67af6e9190c9b1347bc4"
+  },
+  "pending_gate": {
+    "reason": "The development TLS certificate is imported into the login keychain but security verify-cert returns CSSMERR_TP_NOT_TRUSTED. Microsoft Word is now closed. A standard macOS administrator authorization attempt returned error -60007 (administrator username or password incorrect). No credential bypass, forced trust, or production restart was performed.",
+    "requires_explicit_authorization": [
+      "trust the seven-day development certificate",
+      "restart Microsoft Word after confirming no unsaved work",
+      "run the first native paragraph replacement on the disposable candidate"
+    ]
+  }
+}

@@ -72,3 +72,30 @@ def test_layout_binding_is_generic_and_becomes_stale_after_content_change(layout
     state = service.state(project)
     assert state["binding"]["status"] == "stale"
     assert "正文哈希变化" in state["binding"]["changed_reasons"]
+
+
+def test_current_word_reference_becomes_an_immutable_shared_template(layout_context, monkeypatch):
+    project, _source, template = layout_context
+    project["_course_document_record"]["product_type"] = "lesson_plan"
+    service = DocumentLayoutService()
+    monkeypatch.setattr(
+        service,
+        "_render_template_preview",
+        lambda root, path: {"pdf_path": str(root / "preview.pdf"), "page_count": 3, "showcase_pages": [{"page": 1, "label": "封面/首页", "kind": "cover"}]},
+    )
+
+    profile = service.register_reference_template(
+        project,
+        data=template.read_bytes(),
+        filename="第1讲-当前教案.docx",
+    )
+    binding = service.binding_patch(project, profile_id=profile["id"])
+    project["_course_document_record"]["metadata"] = {"layout_binding": binding}
+    state = service.state(project)
+
+    assert profile["rules"]["template_mode"] == "reference_docx"
+    assert profile["authority_source"]["role"] == "current_word_reference"
+    assert Path(profile["template_path"]).is_file()
+    assert state["binding"]["postprocess"] == "preserve_reference"
+    assert state["profile"]["id"].startswith("lesson-plan-word-")
+    assert state["template_catalog"]["same_type_count"] == 1

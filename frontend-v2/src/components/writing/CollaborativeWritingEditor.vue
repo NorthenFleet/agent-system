@@ -101,8 +101,8 @@
         </details>
         <div v-if="workflow?.gaps.length" class="workflow-list">
           <article v-for="gap in workflow.gaps" :key="gap.id">
-            <div><strong>缺口 · {{ gap.required_level }}</strong><small>{{ gap.reason }}</small></div>
-            <el-button size="small" text :disabled="!Object.keys(gap.research_matrix || {}).length || workflowBusy" @click="dispatchGap(gap)">{{ gap.dispatched_run_id ? '重试 One-Sim' : '提交 One-Sim' }}</el-button>
+            <div><strong>{{ gapTypeLabel(gap.gap_type) }}缺口 · {{ gap.required_level }}</strong><small>{{ gap.reason }}</small></div>
+            <el-button size="small" text :disabled="!Object.keys(gap.research_matrix || {}).length || workflowBusy" @click="dispatchGap(gap)">{{ gapDispatchLabel(gap) }}</el-button>
           </article>
         </div>
         <div v-if="activeRuns.length" class="workflow-list">
@@ -269,7 +269,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Extension, Node, type JSONContent } from '@tiptap/core'
-import Image from '@tiptap/extension-image'
 import Placeholder from '@tiptap/extension-placeholder'
 import { TableKit } from '@tiptap/extension-table'
 import TextAlign from '@tiptap/extension-text-align'
@@ -281,6 +280,15 @@ import {
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import DocumentOutlineTree from '@/components/writing/DocumentOutlineTree.vue'
+import {
+  AssetImage, Citation,
+  MathBlock,
+  MathInline,
+  Subscript,
+  Superscript,
+  isProjectAssetPath,
+  renderMathNodes
+} from '@/components/writing/documentRichExtensions'
 import {
   acceptWritingProposal,
   approveWritingRevision,
@@ -344,7 +352,7 @@ const StableBlockAttrs = Extension.create({
     return [{
       types: [
         'paragraph', 'heading', 'blockquote', 'bulletList', 'orderedList',
-        'codeBlock', 'horizontalRule', 'image', 'table', 'rawMarkdown'
+        'codeBlock', 'horizontalRule', 'image', 'mathBlock', 'table', 'rawMarkdown'
       ],
       attributes: {
         blockId: {
@@ -426,24 +434,6 @@ const RawMarkdown = Node.create({
   }
 })
 
-function isProjectAssetPath(src: string) {
-  const value = src.trim()
-  return Boolean(value && !/^https?:\/\//i.test(value) && !/^blob:|^data:/i.test(value) && !value.startsWith('/'))
-}
-
-const AssetImage = Image.extend({
-  renderHTML({ HTMLAttributes }) {
-    const src = String(HTMLAttributes.src || '')
-    return [
-      'img',
-      {
-        ...HTMLAttributes,
-        ...(isProjectAssetPath(src) ? { 'data-asset-src': src } : {})
-      }
-    ]
-  }
-})
-
 const loading = ref(true)
 const revision = ref(0)
 const canonicalSectionId = ref('')
@@ -477,7 +467,9 @@ const evidenceForm = ref({
 })
 const assetPreviewMissing = ref(new Set<string>())
 const assetPreviewUrls = new Map<string, string>()
+const assetPreviewRequests = new Map<string, Promise<string | undefined>>()
 let assetPreviewRefresh: Promise<void> | undefined
+let assetPreviewGeneration = 0
 let lastSavedJson = ''
 let saveTimer: ReturnType<typeof setTimeout> | undefined
 let hardFlushTimer: ReturnType<typeof setInterval> | undefined
@@ -489,11 +481,120 @@ const evidenceRetryTokens = new Map<string, string>()
 let lastSavedDocument: JSONContent = { type: 'doc', content: [] }
 let latestDocument: JSONContent = { type: 'doc', content: [{ type: 'paragraph' }] }
 let isUnmounting = false
+let collaborationLoadGeneration = 0
+
+function markAssetMissing(path: string) {
+  if (assetPreviewMissing.value.has(path)) return
+  assetPreviewMissing.value = new Set([...assetPreviewMissing.value, path])
+}
+
+function loadAssetPreview(path: string) {
+  const cached = assetPreviewUrls.get(path)
+  if (cached) return Promise.resolve(cached)
+  const pending = assetPreviewRequests.get(path)
+  if (pending) return pending
+
+  const generation = assetPreviewGeneration
+  let request: Promise<string | undefined>
+  request = getDocumentWritingAsset(props.projectId, props.documentId, path)
+    .then(blob => {
+      const url = URL.createObjectURL(blob)
+      if (generation !== assetPreviewGeneration) {
+        URL.revokeObjectURL(url)
+        return undefined
+      }
+      const existing = assetPreviewUrls.get(path)
+      if (existing) {
+        URL.revokeObjectURL(url)
+        return existing
+      }
+      assetPreviewUrls.set(path, url)
+      return url
+    })
+    .catch(() => {
+      if (generation === assetPreviewGeneration) markAssetMissing(path)
+      return undefined
+    })
+    .finally(() => {
+      if (assetPreviewRequests.get(path) === request) assetPreviewRequests.delete(path)
+    })
+  assetPreviewRequests.set(path, request)
+  return request
+}
+
+const CollaborativeAssetImage = AssetImage.extend({
+  addNodeView() {
+    return ({ node }) => {
+      const image = document.createElement('img')
+      let nodeGeneration = 0
+
+      const apply = (currentNode: typeof node) => {
+        nodeGeneration += 1
+        const currentGeneration = nodeGeneration
+        const attrs = currentNode.attrs || {}
+        const source = String(attrs.src || '').trim()
+        image.alt = String(attrs.alt || '')
+        image.title = String(attrs.title || '')
+        image.style.width = String(attrs.width || '')
+        image.style.height = String(attrs.height || '')
+        image.style.maxWidth = '100%'
+        image.classList.remove('asset-missing')
+        delete image.dataset.assetLoaded
+        delete image.dataset.assetSrc
+        image.removeAttribute('src')
+
+        if (!isProjectAssetPath(source)) {
+          if (source) image.src = source
+          return
+        }
+
+        image.dataset.assetSrc = source
+        const cached = assetPreviewUrls.get(source)
+        if (cached) {
+          image.src = cached
+          image.dataset.assetLoaded = '1'
+          return
+        }
+
+        void loadAssetPreview(source).then(url => {
+          if (currentGeneration !== nodeGeneration || image.dataset.assetSrc !== source) return
+          if (url) {
+            image.src = url
+            image.dataset.assetLoaded = '1'
+            image.classList.remove('asset-missing')
+          } else if (assetPreviewMissing.value.has(source)) {
+            image.classList.add('asset-missing')
+            image.alt ||= `缺失图片：${source}`
+          }
+        })
+      }
+
+      apply(node)
+      return {
+        dom: image,
+        update(updatedNode) {
+          if (updatedNode.type !== node.type) return false
+          node = updatedNode
+          apply(updatedNode)
+          return true
+        },
+        destroy() {
+          nodeGeneration += 1
+        }
+      }
+    }
+  }
+})
 
 const editor = useEditor({
   extensions: [
     StarterKit,
-    AssetImage.configure({ inline: false, allowBase64: false }),
+    CollaborativeAssetImage.configure({ inline: false, allowBase64: false }),
+    MathInline,
+    MathBlock,
+    Citation,
+    Superscript,
+    Subscript,
     TableKit,
     RawMarkdown,
     TextAlign.configure({ types: ['heading', 'paragraph'] }),
@@ -682,37 +783,41 @@ function collectProjectAssetPaths(document: JSONContent) {
     .filter(isProjectAssetPath)))
 }
 
+async function hydrateAssetPreviewDom(missing = assetPreviewMissing.value) {
+  await nextTick()
+  const root = editor.value?.view.dom
+  if (!root) return
+  root.querySelectorAll<HTMLImageElement>('img[data-asset-src]').forEach(image => {
+    const path = image.dataset.assetSrc || ''
+    const preview = assetPreviewUrls.get(path)
+    if (preview && image.src !== preview) image.src = preview
+    if (missing.has(path)) image.classList.add('asset-missing')
+    else image.classList.remove('asset-missing')
+  })
+  renderMathNodes(root)
+}
+
 async function refreshAssetPreviews() {
   if (assetPreviewRefresh) return assetPreviewRefresh
-  assetPreviewRefresh = (async () => {
+  const generation = assetPreviewGeneration
+  let currentRefresh: Promise<void>
+  currentRefresh = (async () => {
     const paths = collectProjectAssetPaths(latestDocument)
-    const missing = new Set(assetPreviewMissing.value)
-    await Promise.all(paths.map(async path => {
-      if (assetPreviewUrls.has(path) || missing.has(path)) return
-      try {
-        const blob = await getDocumentWritingAsset(props.projectId, props.documentId, path)
-        assetPreviewUrls.set(path, URL.createObjectURL(blob))
-      } catch {
-        missing.add(path)
-      }
-    }))
-    assetPreviewMissing.value = missing
-    await nextTick()
-    const root = editor.value?.view.dom
-    if (!root) return
-    root.querySelectorAll<HTMLImageElement>('img[data-asset-src]').forEach(image => {
-      const path = image.dataset.assetSrc || ''
-      const preview = assetPreviewUrls.get(path)
-      if (preview && image.src !== preview) image.src = preview
-      if (missing.has(path)) image.classList.add('asset-missing')
-      else image.classList.remove('asset-missing')
-    })
+    await Promise.all(paths.map(path => loadAssetPreview(path)))
+    if (generation !== assetPreviewGeneration) return
+    await hydrateAssetPreviewDom()
     artifactRevision.value += 1
-  })().finally(() => { assetPreviewRefresh = undefined })
-  return assetPreviewRefresh
+  })().finally(() => {
+    if (assetPreviewRefresh === currentRefresh) assetPreviewRefresh = undefined
+  })
+  assetPreviewRefresh = currentRefresh
+  return currentRefresh
 }
 
 function resetAssetPreviews() {
+  assetPreviewGeneration += 1
+  assetPreviewRefresh = undefined
+  assetPreviewRequests.clear()
   assetPreviewUrls.forEach(url => URL.revokeObjectURL(url))
   assetPreviewUrls.clear()
   assetPreviewMissing.value = new Set()
@@ -887,7 +992,7 @@ function applyState(state: WritingCollaborationState, replaceContent = true) {
   if (!agentId.value || !agents.value.some(agent => agent.id === agentId.value)) {
     agentId.value = agents.value.find(agent => agent.available !== false)?.id || ''
   }
-  if (replaceContent && editor.value) {
+  if (replaceContent && editor.value && !editor.value.isDestroyed && !isUnmounting) {
     const content = normaliseDocument(stateContent(state))
     try {
       editor.value.schema.nodeFromJSON(content)
@@ -945,30 +1050,53 @@ function mergeRemoteState(state: WritingCollaborationState, sent = lastSavedDocu
 }
 
 async function loadCollaboration() {
+  const generation = ++collaborationLoadGeneration
+  const projectId = props.projectId
+  const documentId = props.documentId
+  const sectionId = props.sectionId
+  const isCurrent = () => (
+    generation === collaborationLoadGeneration
+    && !isUnmounting
+    && projectId === props.projectId
+    && documentId === props.documentId
+    && sectionId === props.sectionId
+  )
   loading.value = true
   canonicalSectionId.value = ''
   resetAssetPreviews()
   try {
-    const state = await getWritingCollaboration(props.projectId, props.documentId, props.sectionId)
+    const state = await getWritingCollaboration(projectId, documentId, sectionId)
+    if (!isCurrent()) return
     applyState(state)
-    await loadResearchWorkflow()
+    await loadResearchWorkflow(projectId, documentId, isCurrent)
+    if (isCurrent()) {
+      await refreshAssetPreviews()
+      await hydrateAssetPreviewDom()
+    }
   } catch (error) {
+    if (!isCurrent()) return
     const message = errorMessage(error, '协同写作内容加载失败')
     initializationRequired.value = message.includes('尚未启用人机双写')
     if (!initializationRequired.value) ElMessage.error(message)
   } finally {
-    loading.value = false
+    if (isCurrent()) loading.value = false
   }
 }
 
-async function loadResearchWorkflow() {
+async function loadResearchWorkflow(
+  projectId = props.projectId,
+  documentId = props.documentId,
+  isCurrent: () => boolean = () => !isUnmounting
+) {
   try {
-    workflow.value = await getWritingResearchWorkflow(props.projectId, props.documentId)
+    const nextWorkflow = await getWritingResearchWorkflow(projectId, documentId)
+    if (!isCurrent()) return
+    workflow.value = nextWorkflow
     selectedEvidenceIds.value = selectedEvidenceIds.value.filter(id =>
       workflow.value?.evidence_refs.some(item => item.id === id)
     )
   } catch (error) {
-    if (!initializationRequired.value) ElMessage.error(errorMessage(error, '研究工作流加载失败'))
+    if (isCurrent() && !initializationRequired.value) ElMessage.error(errorMessage(error, '研究工作流加载失败'))
   }
 }
 
@@ -1062,6 +1190,19 @@ async function dispatchGap(gap: WritingEvidenceGap) {
   } finally {
     workflowBusy.value = false
   }
+}
+
+function gapTypeLabel(gapType: WritingEvidenceGap['gap_type'] | undefined) {
+  if (gapType === 'literature') return '文献'
+  if (gapType === 'mixed') return '混合'
+  return '实验'
+}
+
+function gapDispatchLabel(gap: WritingEvidenceGap) {
+  const action = gap.dispatched_run_id ? '重试' : '提交'
+  if (gap.gap_type === 'literature') return `${action}文献研究`
+  if (gap.gap_type === 'mixed') return `${action}文献与 One-Sim`
+  return `${action} One-Sim`
 }
 
 async function decideChangeSet(changeSetId: string, decision: 'approve' | 'reject') {
@@ -1418,8 +1559,15 @@ async function insertFormula() {
     const formula = result.value.trim()
     const label = artifactLabel('equation')
     editor.value?.chain().focus().insertContent({
-      type: 'rawMarkdown',
-      attrs: { markdown: `$$\n${formula}\n$$`, artifactKind: 'equation', artifactLabel: label, artifactTitle: formula }
+      type: 'mathBlock',
+      attrs: {
+        latex: formula,
+        suffix: '',
+        sourceMarkdown: '',
+        artifactKind: 'equation',
+        artifactLabel: label,
+        artifactTitle: formula
+      }
     }).run()
   } catch {
     // Cancelling the prompt is not an editing error.
@@ -1558,8 +1706,9 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  if (editor.value) latestDocument = normaliseDocument(editor.value.getJSON())
   isUnmounting = true
+  collaborationLoadGeneration += 1
+  if (editor.value && !editor.value.isDestroyed) latestDocument = normaliseDocument(editor.value.getJSON())
   resetAssetPreviews()
   if (saveTimer) clearTimeout(saveTimer)
   if (hardFlushTimer) clearInterval(hardFlushTimer)
@@ -1646,25 +1795,34 @@ onBeforeUnmount(() => {
 .paper-page { width: min(850px, 100%); min-height: 1120px; margin: 0 auto; color: #23272d; background: #fff; box-shadow: 0 10px 35px rgb(0 0 0 / 32%); }
 .paper-header { display: flex; justify-content: space-between; gap: 12px; margin: 0 64px; padding: 24px 0 12px; border-bottom: 1px solid #e4e7ec; color: #8b929d; font-size: 10px; }
 .rich-editor { min-height: 1030px; }
-.rich-editor :deep(.tiptap) { min-height: 1000px; padding: 48px clamp(42px, 8vw, 90px) 96px; outline: none; font-family: "Noto Serif SC", "Songti SC", SimSun, serif; font-size: 15px; line-height: 1.95; }
+.rich-editor :deep(.tiptap) { min-height: 1000px; padding: 48px clamp(42px, 8vw, 90px) 96px; outline: none; font-family: "Times New Roman", "Noto Serif SC", "Songti SC", SimSun, "STIX Two Math", "Apple Symbols", serif; font-size: 15px; line-height: 1.95; }
 .rich-editor :deep(.tiptap h1) { margin: 1.8em 0 .9em; font-size: 28px; text-align: center; }
 .rich-editor :deep(.tiptap h2) { margin: 1.6em 0 .8em; font-size: 22px; }
 .rich-editor :deep(.tiptap h3) { margin: 1.4em 0 .65em; font-size: 18px; }
 .rich-editor :deep(.tiptap p) { margin: .8em 0; }
+.rich-editor :deep(.tiptap > p) { text-indent: 2em; }
 .rich-editor :deep(.tiptap blockquote) { margin: 1.2em 0; padding-left: 1.2em; border-left: 3px solid #9aa6b5; color: #4f5865; }
-.rich-editor :deep(.tiptap table) { width: 100%; margin: 1.25em 0; border-collapse: collapse; table-layout: fixed; }
-.rich-editor :deep(.tiptap th), .rich-editor :deep(.tiptap td) { min-width: 70px; padding: 7px 9px; border: 1px solid #aeb5bf; vertical-align: top; }
+.rich-editor :deep(.tiptap .document-citation) { font-size: .72em; line-height: 0; vertical-align: super; white-space: nowrap; }
+.rich-editor :deep(.tiptap table) { width: 100%; margin: 1.25em auto; border-collapse: collapse; table-layout: fixed; }
+.rich-editor :deep(.tiptap th), .rich-editor :deep(.tiptap td) { min-width: 70px; padding: 7px 9px; border: 1px solid #aeb5bf; vertical-align: middle; text-align: center !important; }
+.rich-editor :deep(.tiptap th p), .rich-editor :deep(.tiptap td p) { text-align: center !important; text-indent: 0; }
 .rich-editor :deep(.tiptap th) { background: #f2f4f7; font-weight: 600; }
 .rich-editor :deep(.tiptap img) { display: block; max-width: 100%; height: auto; margin: 1.4em auto; }
 .rich-editor :deep(.tiptap img.asset-missing) { min-height: 120px; border: 1px dashed #ef4444; background: repeating-linear-gradient(45deg, #fff, #fff 10px, #fee2e2 10px, #fee2e2 20px); }
 .rich-editor :deep(.tiptap p.artifact-figure-caption),
-.rich-editor :deep(.tiptap p.artifact-table-caption) { margin: .35em 0 1.1em; color: #4f5865; font-size: 13px; line-height: 1.6; text-align: center; }
+.rich-editor :deep(.tiptap p.artifact-table-caption) { margin: .35em 0 1.1em; color: #4f5865; font-size: 13px; line-height: 1.6; text-align: center; text-indent: 0; }
 .rich-editor :deep(.tiptap p.artifact-table-caption) { margin: 1.1em 0 .45em; font-weight: 600; }
 .rich-editor :deep(.tiptap img.artifact-figure) { margin-bottom: .35em; }
+.rich-editor :deep(.tiptap .math-node) { color: #1f2937; }
+.rich-editor :deep(.tiptap .math-inline) { display: inline-block; min-width: .5em; padding: 0 .12em; vertical-align: middle; }
+.rich-editor :deep(.tiptap .math-block) { position: relative; min-height: 48px; margin: 1.25em 0; padding: 10px 64px 10px 12px; overflow-x: auto; border: 1px solid #cfd6df; border-left: 3px solid #3b82f6; border-radius: 5px; background: #f8fafc; text-align: center; }
+.rich-editor :deep(.tiptap .math-block[data-math-suffix]:not([data-math-suffix=""])::after) { position: absolute; right: 12px; top: 50%; color: #64748b; content: attr(data-math-suffix); transform: translateY(-50%); }
+.rich-editor :deep(.tiptap .math-invalid) { color: #b42318; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; }
 .rich-editor :deep(.tiptap pre[data-raw-markdown]) { overflow-x: auto; padding: 10px 12px; border-left: 3px solid #9aa6b5; color: #4f5865; background: #f5f6f8; white-space: pre-wrap; }
 .rich-editor :deep(.tiptap pre.math-block) { position: relative; border: 1px solid #cfd6df; border-left: 3px solid #3b82f6; border-radius: 5px; color: #1f2937; background: #f8fafc; text-align: center; }
 .rich-editor :deep(.tiptap pre.math-block[data-artifact-label]::after) { position: absolute; right: 12px; bottom: 8px; color: #64748b; content: "(" attr(data-artifact-label) ")"; font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; font-size: 12px; }
 .rich-editor :deep(.tiptap pre.math-block code) { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; font-size: 13px; line-height: 1.7; }
+.rich-editor :deep(.tiptap p.is-editor-empty:first-child) { text-indent: 0; }
 .rich-editor :deep(.tiptap p.is-editor-empty:first-child::before) { height: 0; float: left; color: #9ba3ae; content: attr(data-placeholder); pointer-events: none; }
 .rich-editor :deep(.tiptap [data-block-id]:hover) { outline: 1px solid rgb(64 158 255 / 22%); outline-offset: 4px; }
 @keyframes pulse { 50% { opacity: .35; } }

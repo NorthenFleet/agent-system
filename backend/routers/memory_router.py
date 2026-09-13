@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
+
+from services.auth_service import require_role
 
 from services.memory_service import (
     list_agents,
@@ -12,7 +14,11 @@ from services.memory_service import (
     get_stats,
 )
 
-router = APIRouter(prefix="/api/v2/memory", tags=["memory-library"])
+router = APIRouter(
+    prefix="/api/v2/memory",
+    tags=["memory-library"],
+    dependencies=[Depends(require_role("admin"))],
+)
 
 
 @router.get("/agents")

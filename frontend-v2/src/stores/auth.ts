@@ -1,6 +1,13 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { login as apiLogin, logout as apiLogout, getMe, refreshToken as apiRefreshToken } from '@/api/auth'
+import {
+  createDevelopmentSession,
+  getAuthSettings,
+  getMe,
+  login as apiLogin,
+  logout as apiLogout,
+  refreshToken as apiRefreshToken
+} from '@/api/auth'
 import type { User } from '@/api/auth'
 
 export type { User } from '@/api/auth'
@@ -9,6 +16,11 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
   const token = ref<string | null>(localStorage.getItem('jwt_token'))
   const refreshToken = ref<string | null>(localStorage.getItem('jwt_refresh_token'))
+  const authMode = ref<'authenticated' | 'development'>(
+    localStorage.getItem('jwt_auth_mode') === 'development' ? 'development' : 'authenticated'
+  )
+  const loginEnabled = ref(localStorage.getItem('auth_login_enabled') !== 'false')
+  const authSettingsLoaded = ref(false)
   const loading = ref(false)
 
   const isAuthenticated = computed(() => !!token.value)
@@ -24,17 +36,61 @@ export const useAuthStore = defineStore('auth', () => {
     return moduleKeys.value.includes(moduleKey)
   }
 
+  function clearSession() {
+    token.value = null
+    refreshToken.value = null
+    user.value = null
+    authMode.value = 'authenticated'
+    localStorage.removeItem('jwt_token')
+    localStorage.removeItem('jwt_refresh_token')
+    localStorage.removeItem('jwt_auth_mode')
+  }
+
+  function persistSession(data: any, mode: 'authenticated' | 'development') {
+    token.value = data.access_token
+    refreshToken.value = data.refresh_token || null
+    user.value = data.user
+    authMode.value = mode
+    localStorage.setItem('jwt_token', data.access_token)
+    localStorage.setItem('jwt_auth_mode', mode)
+    if (refreshToken.value) localStorage.setItem('jwt_refresh_token', refreshToken.value)
+    else localStorage.removeItem('jwt_refresh_token')
+  }
+
+  async function loadAuthSettings(force = false) {
+    if (authSettingsLoaded.value && !force) return loginEnabled.value
+    try {
+      const data = await getAuthSettings()
+      loginEnabled.value = data.login_enabled
+      authSettingsLoaded.value = true
+      localStorage.setItem('auth_login_enabled', String(data.login_enabled))
+      if (data.login_enabled && authMode.value === 'development') clearSession()
+    } catch {
+      loginEnabled.value = true
+      authSettingsLoaded.value = true
+      localStorage.setItem('auth_login_enabled', 'true')
+    }
+    return loginEnabled.value
+  }
+
+  async function ensureDevelopmentSession() {
+    if (loginEnabled.value) return false
+    if (token.value && await fetchMe()) return true
+    try {
+      const data = await createDevelopmentSession()
+      persistSession(data, 'development')
+      return true
+    } catch {
+      clearSession()
+      return false
+    }
+  }
+
   async function login(username: string, password: string) {
     loading.value = true
     try {
       const data = await apiLogin(username, password)
-      token.value = data.access_token
-      refreshToken.value = (data as any).refresh_token || null
-      user.value = data.user
-      localStorage.setItem('jwt_token', data.access_token)
-      if (refreshToken.value) {
-        localStorage.setItem('jwt_refresh_token', refreshToken.value)
-      }
+      persistSession(data, 'authenticated')
     } finally {
       loading.value = false
     }
@@ -48,20 +104,17 @@ export const useAuthStore = defineStore('auth', () => {
         // 忽略登出失败
       }
     }
-    token.value = null
-    refreshToken.value = null
-    user.value = null
-    localStorage.removeItem('jwt_token')
-    localStorage.removeItem('jwt_refresh_token')
+    clearSession()
   }
 
   async function fetchMe() {
-    if (!token.value) return
+    if (!token.value) return false
     try {
       user.value = await getMe()
+      return true
     } catch {
-      token.value = null
-      localStorage.removeItem('jwt_token')
+      clearSession()
+      return false
     }
   }
 
@@ -77,11 +130,7 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.setItem('jwt_refresh_token', nextRefreshToken)
       return true
     } catch {
-      token.value = null
-      refreshToken.value = null
-      user.value = null
-      localStorage.removeItem('jwt_token')
-      localStorage.removeItem('jwt_refresh_token')
+      clearSession()
       return false
     }
   }
@@ -90,6 +139,9 @@ export const useAuthStore = defineStore('auth', () => {
     user,
     token,
     refreshToken,
+    authMode,
+    loginEnabled,
+    authSettingsLoaded,
     loading,
     isAuthenticated,
     isAdmin,
@@ -98,6 +150,8 @@ export const useAuthStore = defineStore('auth', () => {
     moduleKeys,
     firstAllowedPath,
     canAccessModule,
+    loadAuthSettings,
+    ensureDevelopmentSession,
     login,
     logout,
     fetchMe,

@@ -207,7 +207,11 @@
       <header class="document-library-head">
         <div>
           <span class="eyebrow">项目内文档</span>
-          <h3>{{ formalDocuments.length }} 册正式文档 · {{ internalDataSources.length }} 项内部数据源</h3>
+          <h3>
+            {{ formalDocuments.length }} 个正文版本 ·
+            {{ deliveryAssets.length }} 项交付材料 ·
+            {{ internalDataSources.length }} 项内部数据源
+          </h3>
         </div>
         <div class="document-library-actions">
           <el-switch v-model="showArchivedDocuments" active-text="显示归档" @change="loadDocuments" />
@@ -243,7 +247,7 @@
       <div v-if="documentCollection?.documents.length" class="document-groups">
         <section class="document-group formal-documents">
           <header>
-            <div><strong>正式文档</strong><small>历史基线、当前权威与PPT统一管理</small></div>
+            <div><strong>正文版本</strong><small>第一版、第二版、第三版分别管理，内部修订不重复占位</small></div>
             <el-tag type="success" effect="plain">{{ formalDocuments.length }} 册</el-tag>
           </header>
           <div class="project-document-list">
@@ -255,15 +259,18 @@
             >
               <span class="document-type-icon"><el-icon><component :is="documentKindIcon(documentItem.kind)" /></el-icon></span>
               <div class="document-card-body">
-                <div>
-                  <strong>{{ documentItem.title }}</strong>
+                <strong class="document-card-title" :title="documentItem.title">{{ documentItem.title }}</strong>
+                <div class="document-card-tags">
                   <el-tag v-if="documentItem.lineage?.edition_label" size="small" effect="plain">
                     {{ documentItem.lineage.edition_label }}
                   </el-tag>
                   <el-tag v-if="documentItem.delivery_role === 'historical_reference'" size="small" type="info" effect="plain">历史基线</el-tag>
-                  <el-tag v-if="documentItem.lineage?.sequence === 3" size="small" type="success" effect="plain">当前权威</el-tag>
+                  <el-tag v-if="documentItem.delivery_role === 'candidate' && !documentItem.is_primary" size="small" type="warning" effect="plain">候选工作稿</el-tag>
+                  <el-tag v-if="documentItem.delivery_role === 'candidate' && documentItem.is_primary" size="small" type="success" effect="plain">当前写作稿</el-tag>
+                  <el-tag v-if="documentItem.delivery_role === 'candidate'" size="small" type="info" effect="plain">不进入交付包</el-tag>
+                  <el-tag v-if="documentItem.is_primary" size="small" type="success" effect="plain">当前正文权威</el-tag>
+                  <el-tag v-if="!documentItem.is_primary && documentItem.delivery_role === 'deliverable' && documentItem.edit_policy === 'read_only'" size="small" type="info" effect="plain">冻结交付基线</el-tag>
                   <el-tag v-if="documentItem.edit_policy === 'read_only'" size="small" type="warning" effect="plain">只读</el-tag>
-                  <el-tag v-if="documentItem.is_primary" size="small" type="success" effect="plain">主文档</el-tag>
                   <el-tag v-if="documentItem.status === 'archived'" size="small" type="info" effect="plain">已归档</el-tag>
                   <el-tag v-if="documentItem.product_type" size="small" effect="plain">
                     {{ courseProductLabel(documentItem.product_type) }}
@@ -274,10 +281,10 @@
                   <el-tag
                     v-if="documentItem.structure_binding"
                     size="small"
-                    :type="structureBindingTagType(documentItem.structure_binding.status)"
+                    :type="structureBindingTagType(documentItem.structure_binding)"
                     effect="plain"
                   >
-                    {{ structureBindingLabel(documentItem.structure_binding.status) }}
+                    {{ structureBindingLabel(documentItem.structure_binding) }}
                   </el-tag>
                   <el-tag
                     v-if="richTextDeliveryState(documentItem) === 'stale'"
@@ -288,7 +295,7 @@
                     交付待同步
                   </el-tag>
                 </div>
-                <small>{{ documentOutputSummary(documentItem) }}</small>
+                <small :title="documentOutputSummary(documentItem)">{{ documentOutputSummary(documentItem) }}</small>
               </div>
               <div class="document-card-actions">
                 <el-button circle text :icon="ArrowUp" :disabled="documentOrderIndex(documentItem) === 0" @click.stop="moveDocument(documentItem, -1)" />
@@ -302,7 +309,50 @@
           </div>
         </section>
 
-        <section class="document-group internal-documents">
+        <section v-if="deliveryAssets.length" class="document-group delivery-documents">
+          <header>
+            <div><strong>交付材料</strong><small>PPT等发布件独立管理，不计入论文正文版本</small></div>
+            <el-tag type="warning" effect="plain">{{ deliveryAssets.length }} 项</el-tag>
+          </header>
+          <div class="project-document-list">
+            <article
+              v-for="documentItem in deliveryAssets"
+              :key="documentItem.id"
+              :class="['project-document-card', { active: selectedDocumentId === documentItem.id, archived: documentItem.status === 'archived' }]"
+              @click="selectDocument(documentItem.id)"
+            >
+              <span class="document-type-icon"><el-icon><component :is="documentKindIcon(documentItem.kind)" /></el-icon></span>
+              <div class="document-card-body">
+                <strong class="document-card-title" :title="documentItem.title">{{ documentItem.title }}</strong>
+                <div class="document-card-tags">
+                  <el-tag size="small" type="warning" effect="plain">交付材料</el-tag>
+                  <el-tag v-if="documentItem.status === 'archived'" size="small" type="info" effect="plain">已归档</el-tag>
+                  <el-tag size="small" :type="publicationTagType(documentItem.publication_status)" effect="plain">
+                    {{ publicationLabel(documentItem.publication_status) }}
+                  </el-tag>
+                  <el-tag
+                    v-if="documentItem.structure_binding"
+                    size="small"
+                    :type="structureBindingTagType(documentItem.structure_binding)"
+                    effect="plain"
+                  >
+                    {{ structureBindingLabel(documentItem.structure_binding) }}
+                  </el-tag>
+                </div>
+                <small :title="documentOutputSummary(documentItem)">{{ documentOutputSummary(documentItem) }}</small>
+              </div>
+              <div class="document-card-actions">
+                <el-button circle text :icon="ArrowUp" :disabled="documentOrderIndex(documentItem) === 0" @click.stop="moveDocument(documentItem, -1)" />
+                <el-button circle text :icon="ArrowDown" :disabled="documentOrderIndex(documentItem) === documentOrderCount - 1" @click.stop="moveDocument(documentItem, 1)" />
+                <el-button circle text :icon="EditPen" @click.stop="openDocumentDialog(documentItem)" />
+                <el-button circle text :icon="FolderOpened" @click.stop="toggleDocumentArchive(documentItem)" />
+                <el-button v-if="documentItem.status === 'archived'" circle text type="danger" :icon="Delete" @click.stop="removeDocument(documentItem)" />
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section v-if="internalDataSources.length" class="document-group internal-documents">
           <header>
             <div><strong>内部数据源</strong><small>仅供数据管理与计算，不进入交付包</small></div>
             <el-tag type="info" effect="plain">{{ internalDataSources.length }} 项</el-tag>
@@ -316,12 +366,14 @@
             >
               <span class="document-type-icon"><el-icon><component :is="documentKindIcon(documentItem.kind)" /></el-icon></span>
               <div class="document-card-body">
-                <div>
-                  <strong>{{ documentItem.title }}</strong>
+                <strong class="document-card-title" :title="documentItem.title">{{ documentItem.title }}</strong>
+                <div class="document-card-tags">
                   <el-tag size="small" type="info" effect="plain">内部</el-tag>
                   <el-tag v-if="documentItem.status === 'archived'" size="small" type="info" effect="plain">已归档</el-tag>
                 </div>
-                <small>{{ documentKindLabel(documentItem.kind) }} · {{ documentVersionLabel(documentItem) }} · {{ documentStatLabel(documentItem) }}</small>
+                <small :title="`${documentKindLabel(documentItem.kind)} · ${documentVersionLabel(documentItem)} · ${documentStatLabel(documentItem)}`">
+                  {{ documentKindLabel(documentItem.kind) }} · {{ documentVersionLabel(documentItem) }} · {{ documentStatLabel(documentItem) }}
+                </small>
               </div>
               <div class="document-card-actions">
                 <el-button circle text :icon="ArrowUp" :disabled="documentOrderIndex(documentItem) === 0" @click.stop="moveDocument(documentItem, -1)" />
@@ -331,7 +383,6 @@
                 <el-button v-if="documentItem.status === 'archived'" circle text type="danger" :icon="Delete" @click.stop="removeDocument(documentItem)" />
               </div>
             </article>
-            <el-empty v-if="!internalDataSources.length" description="暂无内部数据源" :image-size="52" />
           </div>
         </section>
       </div>
@@ -347,12 +398,14 @@
       <el-tab-pane label="研究总览" name="overview" :disabled="!richTextDocuments.length" />
       <el-tab-pane label="协同工作台" name="workbench" :disabled="!richTextDocuments.length" />
       <el-tab-pane label="概念与论证" name="graph" :disabled="!richTextDocuments.length" />
+      <el-tab-pane label="研究迭代" name="research" :disabled="!richTextDocuments.length" />
       <el-tab-pane label="参考文献" name="references" :disabled="!richTextDocuments.length" />
       <el-tab-pane label="排版与交付" name="delivery" :disabled="!richTextDocuments.length" />
     </el-tabs>
 
     <WritingLinkedWorkspace
       v-if="activeView === 'workbench' && workbenchSourceDocument && workspace"
+      :key="`${selectedProjectId}-${linkedPresentationDocumentId}`"
       :project-id="selectedProjectId"
       :source-document="workbenchSourceDocument"
       :presentation-document="linkedPresentationDocument"
@@ -554,7 +607,15 @@
             <el-segmented v-model="readerMode" :options="readerModes" size="small" @change="changeReaderMode" />
           </header>
           <el-skeleton v-if="sectionLoading" :rows="12" animated />
-          <article ref="documentBody" v-else class="markdown-body" v-html="renderedDocument" />
+          <article ref="documentBody" v-else class="markdown-body">
+            <DocumentRichRenderer
+              v-if="structuredFullDocument"
+              :project-id="selectedProjectId"
+              :document-id="selectedDocumentId"
+              :content="structuredFullDocument"
+            />
+            <div v-else v-html="renderedDocument" />
+          </article>
         </section>
 
         <aside v-if="readerMode === 'full'" class="inspector-pane">
@@ -582,6 +643,15 @@
           <p v-if="selectedGraphNode.detail">{{ selectedGraphNode.detail }}</p>
         </aside>
       </main>
+
+      <LiteratureResearchWorkbench
+        v-else-if="activeView === 'research'"
+        :key="`${selectedProjectId}-${selectedDocumentId}`"
+        :project-id="selectedProjectId"
+        :document-id="selectedDocumentId"
+        :revision="workspace.manifest.version"
+        :section-id="selectedSectionId"
+      />
 
       <main v-else-if="activeView === 'references'" class="references-view">
         <header class="reference-toolbar">
@@ -668,10 +738,12 @@
             :layout="layoutState"
             :busy="exporting"
             :saving="layoutSaving"
+            :template-preview-urls="templatePreviewUrls"
             @save="saveLayout"
             @export="exportDocument"
-            @preview-sample="previewLayoutSample"
+            @preview-template="previewTemplate"
             @download-delivery="downloadLayoutDelivery"
+            @upload-reference="uploadLayoutReference"
           />
           <el-alert :title="deliveryGuidance" type="info" :closable="false" show-icon />
         </section>
@@ -830,6 +902,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import type { JSONContent } from '@tiptap/core'
 import { useRoute, useRouter } from 'vue-router'
 import MarkdownIt from 'markdown-it'
 import * as echarts from 'echarts/core'
@@ -846,8 +919,11 @@ import DocumentLayoutPanel from '@/components/writing/DocumentLayoutPanel.vue'
 import DocumentOutlineTree from '@/components/writing/DocumentOutlineTree.vue'
 import DocumentStructureStatus from '@/components/writing/DocumentStructureStatus.vue'
 import CollaborativeWritingEditor from '@/components/writing/CollaborativeWritingEditor.vue'
+import DocumentRichRenderer from '@/components/writing/DocumentRichRenderer.vue'
 import WritingLinkedWorkspace from '@/components/writing/WritingLinkedWorkspace.vue'
+import LiteratureResearchWorkbench from '@/components/writing/LiteratureResearchWorkbench.vue'
 import { documentVersionLabel, richTextDeliveryState, richTextOutputSummary } from '@/utils/documentDelivery'
+import { groupWritingDocuments } from '@/utils/writingDocumentGroups'
 import {
   createWritingDocument,
   createWritingProject,
@@ -873,7 +949,7 @@ import {
   getDocumentWritingWorkspace,
   getDocumentLayout,
   getDocumentLayoutDelivery,
-  getDocumentLayoutSample,
+  getDocumentLayoutTemplatePreview,
   getWritingCollaboration,
   getPresentationManifest,
   getEvaluationProfiles,
@@ -886,13 +962,14 @@ import {
   runDocumentEvaluation,
   updateDocumentEvaluationProfile,
   updateDocumentLayout,
+  uploadDocumentLayoutReference,
   updateWritingDocument,
   type WritingDirectoryNode,
   type DocumentEvaluationProfile,
   type DocumentEvaluationReport,
   type DocumentLayoutState,
   type LinkedDocumentEvaluationSummary,
-  type DocumentStructureBindingStatus,
+  type DocumentStructureBinding,
   type PresentationManifest,
   type CourseProductionStatus,
   type CourseWorkPoint,
@@ -912,6 +989,9 @@ echarts.use([GraphChart, LegendComponent, TooltipComponent, CanvasRenderer])
 const route = useRoute()
 const router = useRouter()
 const md = new MarkdownIt({ html: false, linkify: true, breaks: false })
+const citationPattern = /\[(?:\d+(?:\s*[-–—]\s*\d+)?)(?:\s*[,，;；]\s*\d+(?:\s*[-–—]\s*\d+)?)*\]/g
+md.renderer.rules.text = (tokens: any[], index: number) => md.utils.escapeHtml(tokens[index].content)
+  .replace(citationPattern, (value: string) => `<sup class="document-citation" data-document-citation>${value}</sup>`)
 md.renderer.rules.heading_open = (
   tokens: Array<{ map?: [number, number]; attrSet: (name: string, value: string) => void }>,
   index: number,
@@ -953,12 +1033,10 @@ const workbenchInitialPreset = ref<'writing' | 'presentation' | 'document_compar
 const workbenchInitialPresetOverride = ref(
   ['document', 'presentation', 'linked'].includes(initialLegacyMode)
 )
-const formalDocuments = computed(() => (
-  documentCollection.value?.documents.filter(row => row.is_output_product) || []
-))
-const internalDataSources = computed(() => (
-  documentCollection.value?.documents.filter(row => !row.is_output_product) || []
-))
+const documentGroups = computed(() => groupWritingDocuments(documentCollection.value?.documents || []))
+const formalDocuments = computed(() => documentGroups.value.formalDocuments)
+const deliveryAssets = computed(() => documentGroups.value.deliveryAssets)
+const internalDataSources = computed(() => documentGroups.value.internalDataSources)
 const richTextDocuments = computed(() => (
   documentCollection.value?.documents.filter(row => row.kind === 'rich_text' && row.status === 'active') || []
 ))
@@ -1036,9 +1114,13 @@ const workbenchSourceDocument = computed(() => (
     : richTextDocuments.value.find(row => row.is_primary) || richTextDocuments.value[0]
 ))
 const linkedPresentationDocument = computed(() => (
-  presentationDocuments.value.find(row => row.id === linkedPresentationDocumentId.value)
-  || presentationDocuments.value.find(row => row.structure_binding?.source_document_id === currentDocument.value?.id)
-  || presentationDocuments.value[0]
+  presentationDocuments.value.find(row => (
+    row.id === linkedPresentationDocumentId.value
+    && row.structure_binding?.source_document_id === currentDocument.value?.id
+  ))
+  || presentationDocuments.value.find(row => (
+    row.structure_binding?.source_document_id === currentDocument.value?.id
+  ))
 ))
 const currentContentVersionLabel = computed(() => currentDocument.value
   ? documentVersionLabel(currentDocument.value)
@@ -1060,7 +1142,7 @@ const isThesisDocument = computed(() => {
 })
 const overviewProfileTitle = computed(() => isThesisDocument.value ? '论文研究画像' : `${currentDocument.value?.title || '文档'}撰写画像`)
 const deliveryGuidance = computed(() => isThesisDocument.value
-  ? '第三版 Markdown 是当前内容权威，出版版 Word/PDF 是交付权威；Obsidian 正式版作为第二版历史基线保留，用于版本追溯和结构对比。'
+  ? 'v34 是当前可编辑正文权威；v33 与 v25 Word/PDF 作为冻结交付基线继续保留。v34 在人工确认定稿前不进入正式交付包，定稿后再统一生成 Word、PDF 与 PPT。'
   : 'Markdown 工作稿是当前内容权威，Word/PDF 是排版与交付权威；每次章节保存都会生成可追溯版本。')
 const currentEditionLabel = computed(() => documentSpec.value.current_edition_label || workspace.value?.manifest.edition || '第三版')
 const obsidianEditionLabel = computed(() => documentSpec.value.obsidian_edition_label || '第二版')
@@ -1107,7 +1189,7 @@ const versionStages = computed(() => [
   }
 ])
 const activeView = ref('workbench')
-const documentNavigationViews = new Set(['overview', 'workbench', 'graph', 'references', 'delivery'])
+const documentNavigationViews = new Set(['overview', 'workbench', 'graph', 'research', 'references', 'delivery'])
 const unifiedNavigationTab = computed(() => activeView.value)
 const loading = ref(false)
 const sectionLoading = ref(false)
@@ -1116,6 +1198,7 @@ const selectedDirectoryNodeId = ref('')
 const currentSection = ref<WritingSection>()
 const readerMode = ref<'section' | 'full'>('section')
 const displayMarkdown = ref('')
+const structuredFullDocument = ref<JSONContent>()
 const documentBody = ref<HTMLElement>()
 const collaborationEditor = ref<InstanceType<typeof CollaborativeWritingEditor>>()
 const references = ref<Awaited<ReturnType<typeof getDocumentWritingReferences>>>()
@@ -1128,6 +1211,7 @@ const selectedGraphNode = ref<WritingGraphNode>()
 const qualityReport = ref<Awaited<ReturnType<typeof getDocumentWritingQuality>>>()
 const versions = ref<Array<{ name: string; size_bytes: number; created_at: string; current?: boolean }>>([])
 const layoutState = ref<DocumentLayoutState>()
+const templatePreviewUrls = ref<Record<string, string>>({})
 const layoutSaving = ref(false)
 const exporting = ref('')
 const exportingPackage = ref(false)
@@ -1229,7 +1313,7 @@ async function loadDocuments() {
     }))
   presentationManifests.value = manifests
   if (!presentationDocuments.value.some(row => row.id === linkedPresentationDocumentId.value)) {
-    linkedPresentationDocumentId.value = presentationDocuments.value[0]?.id || ''
+    linkedPresentationDocumentId.value = ''
   }
   const routeDocumentId = String(route.query.document_id || '')
   const rows = documentCollection.value.documents
@@ -1243,6 +1327,7 @@ async function loadDocuments() {
         || ''
   const selectedKind = rows.find(row => row.id === selectedDocumentId.value)?.kind
   if (selectedKind === 'presentation') {
+    workbenchInitialPresetOverride.value = true
     linkedPresentationDocumentId.value = selectedDocumentId.value
     workbenchInitialPreset.value = 'presentation'
     selectedDocumentId.value = rows.find(row => row.kind === 'rich_text' && row.is_primary && row.status === 'active')?.id
@@ -1454,7 +1539,7 @@ async function handleStudioModeChange(value: string | number) {
     if (!sourceDocument) return
     const linkedPresentation = presentationDocuments.value.find(row => (
       row.structure_binding?.source_document_id === sourceDocument.id
-    )) || presentationDocuments.value[0]
+    ))
     linkedPresentationDocumentId.value = linkedPresentation?.id || ''
     studioMode.value = 'document'
     workbenchInitialPreset.value = nextMode === 'document' ? 'writing' : 'document_presentation'
@@ -1506,8 +1591,11 @@ async function selectDocument(documentId: string, initialSlide?: number, preserv
   selectedDocumentId.value = documentId
   const nextDocument = documentCollection.value?.documents.find(row => row.id === documentId)
   if (nextDocument?.kind === 'presentation') {
+    workbenchInitialPresetOverride.value = true
     presentationInitialSlide.value = Math.max(1, Number(initialSlide || 1))
     linkedPresentationDocumentId.value = nextDocument.id
+  } else if (!preserveStudioMode) {
+    workbenchInitialPresetOverride.value = false
   }
   if (!preserveStudioMode) {
     studioMode.value = nextDocument?.kind === 'workbook'
@@ -1517,11 +1605,17 @@ async function selectDocument(documentId: string, initialSlide?: number, preserv
   if (nextDocument?.kind === 'presentation') {
     linkedPresentationDocumentId.value = nextDocument.id
     workbenchInitialPreset.value = 'presentation'
-    const sourceDocument = richTextDocuments.value.find(row => row.is_primary) || richTextDocuments.value[0]
+    const sourceDocument = richTextDocuments.value.find(row => (
+      row.id === nextDocument.structure_binding?.source_document_id
+    ))
     if (sourceDocument) {
       selectedDocumentId.value = sourceDocument.id
       studioMode.value = 'document'
     }
+  } else if (nextDocument?.kind === 'rich_text') {
+    linkedPresentationDocumentId.value = presentationDocuments.value.find(row => (
+      row.structure_binding?.source_document_id === nextDocument.id
+    ))?.id || ''
   }
   workspace.value = undefined
   references.value = undefined
@@ -1539,8 +1633,21 @@ async function selectDocument(documentId: string, initialSlide?: number, preserv
   if (currentDocument.value?.kind === 'rich_text') await loadWorkspace()
 }
 
-async function handleLinkedWorkspaceChanged(kind: 'document' | 'presentation') {
-  if (kind === 'presentation') {
+async function handleLinkedWorkspaceChanged(kind: 'document' | 'presentation' | 'diagram') {
+  if (kind === 'document') {
+    const previousSectionId = selectedSectionId.value
+    await loadDocuments()
+    if (selectedProjectId.value && selectedDocumentId.value && currentDocument.value?.kind === 'rich_text') {
+      workspace.value = await getDocumentWritingWorkspace(selectedProjectId.value, selectedDocumentId.value)
+      const sections = workspace.value.sections || []
+      selectedSectionId.value = sections.some(row => row.id === previousSectionId)
+        ? previousSectionId
+        : sections.find(row => row.kind === 'chapter')?.id || sections[0]?.id || ''
+      selectedDirectoryNodeId.value = selectedSectionId.value
+    }
+    return
+  }
+  if (kind === 'presentation' || kind === 'diagram') {
     const previousMode = studioMode.value
     await loadDocuments()
     studioMode.value = previousMode
@@ -1981,7 +2088,9 @@ function documentOutputSummary(documentItem: WritingProjectDocument) {
   return `${documentKindLabel(documentItem.kind)} · v${documentItem.revision} · ${documentStatLabel(documentItem)}`
 }
 
-function structureBindingLabel(status: DocumentStructureBindingStatus) {
+function structureBindingLabel(binding: DocumentStructureBinding) {
+  if (binding.reference_status === 'document_updated') return '正文更新待优化'
+  const status = binding.integrity_status || binding.status
   return ({
     aligned: '结构一致',
     diverged: '存在差异',
@@ -1990,7 +2099,9 @@ function structureBindingLabel(status: DocumentStructureBindingStatus) {
   } as Record<string, string>)[status] || status
 }
 
-function structureBindingTagType(status: DocumentStructureBindingStatus) {
+function structureBindingTagType(binding: DocumentStructureBinding) {
+  if (binding.reference_status === 'document_updated') return 'warning'
+  const status = binding.integrity_status || binding.status
   if (status === 'aligned') return 'success'
   if (status === 'missing') return 'info'
   return 'warning'
@@ -2070,10 +2181,11 @@ function flattenDirectory(nodes: WritingDirectoryNode[]): WritingDirectoryNode[]
   return nodes.flatMap(node => [node, ...flattenDirectory(node.children || [])])
 }
 
-function outlineNumber(value: string) {
-  const numbered = value.match(/(?:第\s*)?(\d+)(?:\s*章|(?:\.\d+){0,2})/)
+function outlineNumber(value: string | null | undefined) {
+  const normalizedValue = String(value || '')
+  const numbered = normalizedValue.match(/(?:第\s*)?(\d+)(?:\s*章|(?:\.\d+){0,2})/)
   return numbered?.[1]
-    ? (value.match(/\d+(?:\.\d+){0,2}/)?.[0] || numbered[1])
+    ? (normalizedValue.match(/\d+(?:\.\d+){0,2}/)?.[0] || numbered[1])
     : ''
 }
 
@@ -2104,17 +2216,19 @@ async function navigateFromPresentation(
   let node = candidates.find(item => (
     sectionTokens.some(token => {
       const tokenNumber = outlineNumber(token) || token
-      return outlineNumber(item.title) === tokenNumber
+      const itemTitle = String(item.title || '')
+      return outlineNumber(itemTitle) === tokenNumber
         || item.target_id === token
-        || item.title.trim().startsWith(`${tokenNumber} `)
+        || itemTitle.trim().startsWith(`${tokenNumber} `)
     })
   ))
   if (!node) {
     const chapter = sectionTokens[0]?.split('.')[0] || ''
-    node = candidates.find(item => (
-      outlineNumber(item.title) === chapter
-      || item.title.includes(`第${chapter}章`)
-    ))
+    node = candidates.find(item => {
+      const itemTitle = String(item.title || '')
+      return outlineNumber(itemTitle) === chapter
+        || itemTitle.includes(`第${chapter}章`)
+    })
   }
   if (node) await selectDirectoryNode(node)
 }
@@ -2144,12 +2258,19 @@ async function changeReaderMode() {
       revokeObjectUrls()
       const fulltext = await getDocumentWritingFulltext(selectedProjectId.value, selectedDocumentId.value)
       displayMarkdown.value = await hydrateAssets(fulltext.content, fulltext.asset_paths)
+      try {
+        const collaboration = await getWritingCollaboration(selectedProjectId.value, selectedDocumentId.value, '')
+        structuredFullDocument.value = collaboration.document as JSONContent
+      } catch {
+        structuredFullDocument.value = undefined
+      }
     } catch (error) {
       ElMessage.error(errorMessage(error, '全文加载失败'))
     } finally {
       sectionLoading.value = false
     }
   } else if (selectedSectionId.value) {
+    structuredFullDocument.value = undefined
     selectedDirectoryNodeId.value = selectedSectionId.value
     await loadSection(selectedSectionId.value)
   }
@@ -2238,12 +2359,29 @@ async function loadDelivery() {
   qualityReport.value = quality
   versions.value = history.versions
   layoutState.value = layout
+  await loadTemplatePreviews(layout)
+}
+
+async function loadTemplatePreviews(layout: DocumentLayoutState) {
+  const previews = (layout.profiles || []).flatMap(profile => (profile.preview?.showcase_pages || []).map(page => ({ profileId: profile.id, page: page.page })))
+  const loaded = await Promise.all(previews.map(async ({ profileId, page }) => {
+    try {
+      const blob = await getDocumentLayoutTemplatePreview(selectedProjectId.value, selectedDocumentId.value, profileId, 'png', page)
+      const url = URL.createObjectURL(blob)
+      objectUrls.value.push(url)
+      return [`${profileId}:${page}`, url] as const
+    } catch { return undefined }
+  }))
+  const resolved: Record<string, string> = {}
+  for (const item of loaded) if (item) resolved[item[0]] = item[1]
+  templatePreviewUrls.value = resolved
 }
 
 async function saveLayout(payload: { profile_id?: string; layout_revision: string; cover: Record<string, string> }) {
   layoutSaving.value = true
   try {
     layoutState.value = await updateDocumentLayout(selectedProjectId.value, selectedDocumentId.value, payload)
+    await loadTemplatePreviews(layoutState.value)
     ElMessage.success('排版模板与封面信息已保存')
   } catch (error) {
     ElMessage.error(errorMessage(error, '排版设置保存失败'))
@@ -2252,9 +2390,22 @@ async function saveLayout(payload: { profile_id?: string; layout_revision: strin
   }
 }
 
-async function previewLayoutSample() {
+async function uploadLayoutReference(file: File) {
+  layoutSaving.value = true
   try {
-    const blob = await getDocumentLayoutSample(selectedProjectId.value, selectedDocumentId.value, 'pdf')
+    layoutState.value = await uploadDocumentLayoutReference(selectedProjectId.value, selectedDocumentId.value, file)
+    await loadTemplatePreviews(layoutState.value)
+    ElMessage.success('已将当前 Word 登记为排版权威模板')
+  } catch (error) {
+    ElMessage.error(errorMessage(error, 'Word 模板登记失败'))
+  } finally {
+    layoutSaving.value = false
+  }
+}
+
+async function previewTemplate(profileId: string) {
+  try {
+    const blob = await getDocumentLayoutTemplatePreview(selectedProjectId.value, selectedDocumentId.value, profileId, 'pdf')
     const url = URL.createObjectURL(blob)
     objectUrls.value.push(url)
     pdfPreviewUrl.value = url
@@ -2510,17 +2661,19 @@ onBeforeUnmount(() => {
 .document-group > header strong { color: var(--text-primary); font-size: 12px; }
 .document-group > header small { color: var(--text-secondary); font-size: 9px; }
 .internal-documents { border-style: dashed; }
-.project-document-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; }
-.project-document-card { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 9px; align-items: center; min-width: 0; padding: 10px; border: 1px solid var(--line-color); border-radius: 5px; cursor: pointer; }
+.project-document-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr)); gap: 8px; }
+.project-document-card { display: grid; grid-template-areas: "icon body" ". actions"; grid-template-columns: 34px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) 26px; gap: 8px 9px; align-items: start; min-width: 0; min-height: 112px; padding: 10px; border: 1px solid var(--line-color); border-radius: 5px; cursor: pointer; }
 .project-document-card:hover, .project-document-card.active { border-color: var(--view-color-primary); background: var(--view-color-faint); }
 .project-document-card.internal { background: var(--card-bg); }
 .project-document-card.archived { opacity: .64; }
-.document-type-icon { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; color: var(--view-color-primary); background: var(--view-color-faint); }
-.document-card-body { display: grid; gap: 4px; min-width: 0; }
-.document-card-body > div { display: flex; align-items: center; gap: 6px; min-width: 0; }
-.document-card-body strong { overflow: hidden; color: var(--text-primary); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
-.document-card-body small { color: var(--text-secondary); font-size: 9px; }
-.document-card-actions { display: flex; align-items: center; }
+.document-type-icon { display: inline-flex; grid-area: icon; align-items: center; justify-content: center; width: 34px; height: 34px; color: var(--view-color-primary); background: var(--view-color-faint); }
+.document-card-body { display: grid; grid-area: body; gap: 4px; min-width: 0; }
+.document-card-title { overflow: hidden; color: var(--text-primary); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.document-card-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-width: 0; }
+.document-card-tags :deep(.el-tag) { max-width: 100%; margin: 0; }
+.document-card-tags :deep(.el-tag__content) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.document-card-body small { overflow: hidden; color: var(--text-secondary); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.document-card-actions { display: flex; grid-area: actions; align-items: center; justify-content: flex-end; min-width: 0; }
 .document-card-actions .el-button { width: 26px; height: 26px; margin: 0; }
 .document-form { display: grid; gap: 14px; }
 .project-form { display: grid; gap: 12px; }
@@ -2596,10 +2749,13 @@ onBeforeUnmount(() => {
 .markdown-body :deep(h2) { margin: 1.45em 0 .65em; padding-bottom: 6px; border-bottom: 1px solid var(--line-color); font-size: 19px; letter-spacing: 0; }
 .markdown-body :deep(h3) { margin: 1.3em 0 .55em; font-size: 16px; letter-spacing: 0; }
 .markdown-body :deep(h4) { font-size: 14px; letter-spacing: 0; }
-.markdown-body :deep(p) { margin: .8em 0; }
+.markdown-body :deep(p) { margin: .8em 0; text-indent: 2em; }
+.markdown-body :deep(td p), .markdown-body :deep(th p), .markdown-body :deep(li p), .markdown-body :deep(blockquote p), .markdown-body :deep(p.artifact-figure-caption), .markdown-body :deep(p.artifact-table-caption) { text-indent: 0; }
+.markdown-body :deep(.document-citation) { font-size: .72em; line-height: 0; vertical-align: super; white-space: nowrap; }
 .markdown-body :deep(img) { display: block; max-width: 100%; max-height: 620px; margin: 18px auto; object-fit: contain; }
-.markdown-body :deep(table) { width: 100%; border-collapse: collapse; font-size: 12px; }
-.markdown-body :deep(th), .markdown-body :deep(td) { padding: 7px 9px; border: 1px solid var(--line-color); }
+.markdown-body :deep(table) { width: 100%; margin: 1.25em auto; border-collapse: collapse; font-size: 12px; }
+.markdown-body :deep(th), .markdown-body :deep(td) { padding: 7px 9px; border: 1px solid var(--line-color); vertical-align: middle; text-align: center !important; }
+.markdown-body :deep(th p), .markdown-body :deep(td p) { text-align: center !important; text-indent: 0; }
 .markdown-body :deep(blockquote) { margin: 14px 0; padding: 6px 14px; border-left: 3px solid var(--view-color-primary); color: var(--text-secondary); }
 .markdown-editor { padding: 12px; }
 .markdown-editor :deep(textarea) { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; line-height: 1.65; }

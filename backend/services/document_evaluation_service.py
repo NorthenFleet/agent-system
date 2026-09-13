@@ -1132,7 +1132,11 @@ class DocumentEvaluationService:
         return report
 
     def linked_summary(self, project: dict[str, Any]) -> dict[str, Any]:
-        documents = self._multi().list_documents(project)["documents"]
+        documents = [
+            document
+            for document in self._multi().list_documents(project)["documents"]
+            if document.get("kind") in {"rich_text", "presentation", "workbook"}
+        ]
         rows = []
         for document in documents:
             report = self.latest(

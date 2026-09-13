@@ -314,24 +314,33 @@ const structureVersionLabel = computed(() => {
 const presentationSummary = computed(() => {
   return `PPT · ${documentVersionLabel.value} · ${slideCount.value}页 · ${structureVersionLabel.value} · ${publicationLabel(props.document.publication_status)}`
 })
-const bindingStatusLabel = computed(() => ({
+const bindingStatusLabel = computed(() => {
+  if (binding.value?.reference_status === 'document_updated') return '正文更新待优化'
+  return ({
   aligned: '一致',
   diverged: '有差异',
   stale: '已过期',
   missing: '未绑定'
-} as Record<string, string>)[binding.value?.status || 'missing'])
+  } as Record<string, string>)[binding.value?.integrity_status || binding.value?.status || 'missing'] || '未绑定'
+})
 const bindingMessage = computed(() => {
-  if (binding.value?.status === 'aligned') {
-    return `当前PPT与源文档 ${binding.value.source_version || ''} 结构一致；浏览器使用静态PDF预览，动画保留在PPTX原稿中。`
+  if (binding.value?.reference_status === 'document_updated') {
+    return `源文档已更新至 ${binding.value.referenced_document_revision || binding.value.source_version || '新版本'}；当前 PPT 保持为同一份最新版本，优化并保存后才会重新对齐。`
   }
-  if (binding.value?.status === 'stale') return 'PPT文件或源正文已变化，逐页映射已过期，请重新校验后再用于答辩。'
-  if (binding.value?.status === 'diverged') return 'PPT存在未映射页面或变更章节，请完成差异核校。'
+  const integrityStatus = binding.value?.integrity_status || binding.value?.status
+  if (integrityStatus === 'aligned') {
+    return `当前PPT与源文档 ${binding.value?.source_version || ''} 结构一致；浏览器使用静态PDF预览，动画保留在PPTX原稿中。`
+  }
+  if (integrityStatus === 'stale') return 'PPT文件或源正文已变化，逐页映射已过期，请重新校验后再用于答辩。'
+  if (integrityStatus === 'diverged') return 'PPT存在未映射页面或变更章节，请完成差异核校。'
   return '当前PPT尚未建立正文结构绑定。'
 })
 const bindingAlertType = computed(() => (
-  binding.value?.status === 'aligned'
+  binding.value?.reference_status === 'document_updated'
+    ? 'warning'
+    : (binding.value?.integrity_status || binding.value?.status) === 'aligned'
     ? 'success'
-    : binding.value?.status === 'missing'
+    : (binding.value?.integrity_status || binding.value?.status) === 'missing'
       ? 'info'
       : 'warning'
 ))

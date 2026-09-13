@@ -34,7 +34,7 @@
         <span>{{ targetDetail }}</span>
       </div>
       <el-tag v-if="effectiveTarget" size="small" effect="plain">
-        {{ effectiveTarget.kind === 'document' ? '文档' : 'PPT' }}
+        {{ effectiveTarget.kind === 'document' ? '文档' : effectiveTarget.kind === 'presentation' ? 'PPT' : '画图' }}
       </el-tag>
       <el-tag v-else size="small" type="info" effect="plain">待选择</el-tag>
     </section>
@@ -104,8 +104,8 @@
           {{ messageTargetSummary(message) }}
         </div>
         <el-alert
-          v-if="message.error"
-          :title="message.error"
+          v-if="displayMessageError(message.error)"
+          :title="displayMessageError(message.error)"
           type="error"
           :closable="false"
           show-icon
@@ -123,7 +123,7 @@
           <template v-for="proposalId in message.proposal_ids" :key="proposalId">
             <el-tag size="small" effect="plain">建议 {{ shortId(proposalId) }}</el-tag>
             <el-button
-              v-if="message.target_context.kind === 'document'"
+              v-if="message.target_context.kind === 'document' || message.target_context.kind === 'diagram'"
               size="small"
               type="primary"
               plain
@@ -133,7 +133,7 @@
               {{ proposalDecisions[proposalId] === 'accept' ? '已接受' : '接受' }}
             </el-button>
             <el-button
-              v-if="message.target_context.kind === 'document'"
+              v-if="message.target_context.kind === 'document' || message.target_context.kind === 'diagram'"
               size="small"
               :disabled="Boolean(proposalDecisions[proposalId])"
               @click="decideProposal(message, proposalId, 'reject')"
@@ -192,12 +192,14 @@ import { ChatLineSquare, Close, MagicStick, Refresh } from '@element-plus/icons-
 import { ElMessage } from 'element-plus'
 import {
   acceptWritingProposal,
+  acceptWritingDiagramProposal,
   cancelWritingAiConversationMessage,
   createWritingAiConversation,
   createWritingAiConversationMessage,
   getWritingAiConversationMessages,
   getWritingAiConversations,
   rejectWritingProposal,
+  rejectWritingDiagramProposal,
   type WritingAiConversation,
   type WritingAiMessage,
   type WritingAiTarget
@@ -219,6 +221,7 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
   'lock-changed': [locked: boolean]
   'conversation-changed': [conversationId: string]
+  'document-changed': [documentId: string]
 }>()
 
 const availableAgents = [
@@ -242,6 +245,13 @@ const presentationActions: QuickAction[] = [
   { key: 'verify-slide', label: '核查证据', instruction: '核查当前PPT页的主张、证据和正文映射，给出风险和修改建议。' }
 ]
 
+const diagramActions: QuickAction[] = [
+  { key: 'diagram-draft', label: '生成初稿', instruction: '根据当前上下文生成结构化图表初稿，保持主张、对象和关系可追溯。' },
+  { key: 'diagram-layout', label: '优化布局', instruction: '优化当前图表的层级、间距、对齐和连线，只返回结构化操作。' },
+  { key: 'diagram-style', label: '统一样式', instruction: '统一当前图表的学术配色、字体、边框和连线样式。' },
+  { key: 'diagram-check', label: '检查断链', instruction: '检查当前图表的断链、孤立节点、语义重复和方向错误，并给出结构化修订建议。' }
+]
+
 const conversations = ref<WritingAiConversation[]>([])
 const messages = ref<WritingAiMessage[]>([])
 const activeConversationId = ref(props.conversationId)
@@ -255,6 +265,7 @@ const creatingConversation = ref(false)
 const submitting = ref(false)
 const cancellingMessageId = ref('')
 const proposalDecisions = ref<Record<string, ProposalDecision>>({})
+const notifiedDocumentMessages = new Set<string>()
 const messageViewport = ref<HTMLElement>()
 let pollTimer: ReturnType<typeof setTimeout> | undefined
 let bootstrapSequence = 0
@@ -268,12 +279,16 @@ const activeAgentName = computed(() => (
   || '协作智能体'
 ))
 const quickActions = computed(() => (
-  effectiveTarget.value?.kind === 'presentation' ? presentationActions : documentActions
+  effectiveTarget.value?.kind === 'presentation'
+    ? presentationActions
+    : effectiveTarget.value?.kind === 'diagram'
+      ? diagramActions
+      : documentActions
 ))
 const targetTitle = computed(() => effectiveTarget.value?.document_title || (
-  effectiveTarget.value?.kind === 'presentation' ? '当前 PPT' : '当前文档'
+  effectiveTarget.value?.kind === 'presentation' ? '当前 PPT' : effectiveTarget.value?.kind === 'diagram' ? '当前图表' : '当前文档'
 ))
-const targetDetail = computed(() => describeTarget(effectiveTarget.value) || '请先在另一个窗口选择文档、章节或PPT页')
+const targetDetail = computed(() => describeTarget(effectiveTarget.value) || '请先在另一个窗口选择文档、章节、PPT页或图表元素')
 
 function cloneTarget(target?: WritingAiTarget): WritingAiTarget | undefined {
   if (!target) return undefined
@@ -289,6 +304,7 @@ function setTargetLocked(locked: boolean) {
 function describeTarget(target?: WritingAiTarget) {
   if (!target) return ''
   if (target.kind === 'presentation') return `第 ${Math.max(1, Number(target.slide || 1))} 页 · 结构版本 ${target.revision ?? '未标注'}`
+  if (target.kind === 'diagram') return `${target.cell_ids?.length ? `已选 ${target.cell_ids.length} 个元素` : '整张图'} · 修订 ${target.diagram_revision ?? target.revision ?? '未标注'}`
   if (target.scope === 'selection' && target.selection?.text) {
     const preview = target.selection.text.replace(/\s+/g, ' ').trim()
     return `选区 · ${preview.slice(0, 42)}${preview.length > 42 ? '…' : ''}`
@@ -322,6 +338,18 @@ function statusMeta(message: WritingAiMessage): { label: string; type: '' | 'suc
 
 function shortId(value: string) {
   return value.length > 12 ? `${value.slice(0, 8)}…` : value
+}
+
+function displayMessageError(error?: string) {
+  const value = String(error || '').trim()
+  if (!value) return ''
+  if (value.includes('未返回可显示文本') || value.includes('未生成可审阅内容')) {
+    return '智能体本次未生成可审阅内容，请重试。'
+  }
+  if (value.includes('OpenClaw')) return '智能体服务暂时无法完成请求，请稍后重试。'
+  const jsonIndex = value.search(/[\[{]/)
+  const concise = (jsonIndex > 0 ? value.slice(0, jsonIndex) : value).replace(/[：:]\s*$/, '').trim()
+  return concise.length > 180 ? `${concise.slice(0, 180)}…` : concise
 }
 
 function formatTime(value: string) {
@@ -358,7 +386,9 @@ async function loadMessages(silent = false) {
   }
   if (!silent) loadingMessages.value = true
   try {
-    messages.value = await getWritingAiConversationMessages(props.projectId, activeConversationId.value)
+    const nextMessages = await getWritingAiConversationMessages(props.projectId, activeConversationId.value)
+    messages.value = nextMessages
+    notifyAppliedDocumentMessages(nextMessages)
     await scrollToLatest()
     schedulePolling()
   } catch (error) {
@@ -366,6 +396,17 @@ async function loadMessages(silent = false) {
     else ElMessage.error(errorMessage(error, 'AI 会话加载失败'))
   } finally {
     if (!silent) loadingMessages.value = false
+  }
+}
+
+function notifyAppliedDocumentMessages(rows: WritingAiMessage[]) {
+  for (const message of rows) {
+    const target = message.target_context as WritingAiTarget | undefined
+    const documentId = target?.kind === 'document' ? String(target.document_id || '') : ''
+    const changed = message.status === 'applied' || message.status === 'partially_applied'
+    if (!documentId || !changed || notifiedDocumentMessages.has(message.id)) continue
+    notifiedDocumentMessages.add(message.id)
+    emit('document-changed', documentId)
   }
 }
 
@@ -413,7 +454,7 @@ async function createConversation() {
   creatingConversation.value = true
   try {
     const created = await createWritingAiConversation(props.projectId, {
-      title: effectiveTarget.value?.kind === 'presentation' ? 'PPT 协作' : '文档协作',
+      title: effectiveTarget.value?.kind === 'presentation' ? 'PPT 协作' : effectiveTarget.value?.kind === 'diagram' ? '图表协作' : '文档协作',
       agent_id: selectedAgent.value
     })
     conversations.value = [created, ...conversations.value]
@@ -470,8 +511,14 @@ async function decideProposal(message: WritingAiMessage, proposalId: string, dec
     if (target?.kind === 'document' && target.document_id) {
       if (decision === 'accept') await acceptWritingProposal(props.projectId, target.document_id, proposalId)
       else await rejectWritingProposal(props.projectId, target.document_id, proposalId)
+    } else if (target?.kind === 'diagram' && target.document_id) {
+      if (decision === 'accept') await acceptWritingDiagramProposal(props.projectId, target.document_id, proposalId)
+      else await rejectWritingDiagramProposal(props.projectId, target.document_id, proposalId)
     }
     proposalDecisions.value = { ...proposalDecisions.value, [proposalId]: decision }
+    if (decision === 'accept' && target?.kind === 'document' && target.document_id) {
+      emit('document-changed', target.document_id)
+    }
     ElMessage.success(decision === 'accept' ? '建议已接受' : '建议已拒绝')
   } catch (error) {
     ElMessage.error(errorMessage(error, decision === 'accept' ? '接受建议失败' : '拒绝建议失败'))

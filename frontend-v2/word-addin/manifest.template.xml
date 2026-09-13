@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+           xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
+           xsi:type="TaskPaneApp">
+  <Id>f5402ad8-9081-4c4c-b573-668273dfb9a1</Id>
+  <Version>0.1.0.0</Version>
+  <ProviderName>3021</ProviderName>
+  <DefaultLocale>zh-CN</DefaultLocale>
+  <DisplayName DefaultValue="3021 人机双写" />
+  <Description DefaultValue="在Microsoft Word候选副本中审阅并应用3021块级写作建议。" />
+  <IconUrl DefaultValue="__WORD_ADDIN_ORIGIN__/icons/icon-192.png" />
+  <HighResolutionIconUrl DefaultValue="__WORD_ADDIN_ORIGIN__/icons/icon-192.png" />
+  <SupportUrl DefaultValue="__WORD_ADDIN_ORIGIN__/word-addin/taskpane.html" />
+  <AppDomains>
+    <AppDomain>__WORD_ADDIN_ORIGIN__</AppDomain>
+  </AppDomains>
+  <Hosts>
+    <Host Name="Document" />
+  </Hosts>
+  <DefaultSettings>
+    <SourceLocation DefaultValue="__WORD_ADDIN_ORIGIN__/word-addin/taskpane.html" />
+  </DefaultSettings>
+  <Permissions>ReadWriteDocument</Permissions>
+  <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
+    <Hosts>
+      <Host xsi:type="Document">
+        <DesktopFormFactor>
+          <GetStarted>
+            <Title resid="GetStarted.Title" />
+            <Description resid="GetStarted.Description" />
+            <LearnMoreUrl resid="GetStarted.LearnMoreUrl" />
+          </GetStarted>
+          <FunctionFile resid="Taskpane.Url" />
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+            <OfficeTab id="TabHome">
+              <Group id="CommandsGroup">
+                <Label resid="CommandsGroup.Label" />
+                <Control xsi:type="Button" id="TaskpaneButton">
+                  <Label resid="TaskpaneButton.Label" />
+                  <Supertip>
+                    <Title resid="TaskpaneButton.Label" />
+                    <Description resid="TaskpaneButton.Tooltip" />
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16x16" />
+                    <bt:Image size="32" resid="Icon.32x32" />
+                    <bt:Image size="80" resid="Icon.80x80" />
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>Office.AutoShowTaskpaneWithDocument</TaskpaneId>
+                    <SourceLocation resid="Taskpane.Url" />
+                  </Action>
+                </Control>
+              </Group>
+            </OfficeTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+    </Hosts>
+    <Resources>
+      <bt:Images>
+        <bt:Image id="Icon.16x16" DefaultValue="__WORD_ADDIN_ORIGIN__/icons/icon-192.png" />
+        <bt:Image id="Icon.32x32" DefaultValue="__WORD_ADDIN_ORIGIN__/icons/icon-192.png" />
+        <bt:Image id="Icon.80x80" DefaultValue="__WORD_ADDIN_ORIGIN__/icons/icon-192.png" />
+      </bt:Images>
+      <bt:Urls>
+        <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="__WORD_ADDIN_ORIGIN__/word-addin/taskpane.html" />
+        <bt:Url id="Taskpane.Url" DefaultValue="__WORD_ADDIN_ORIGIN__/word-addin/taskpane.html" />
+      </bt:Urls>
+      <bt:ShortStrings>
+        <bt:String id="GetStarted.Title" DefaultValue="3021 人机双写已加载" />
+        <bt:String id="CommandsGroup.Label" DefaultValue="3021" />
+        <bt:String id="TaskpaneButton.Label" DefaultValue="人机双写" />
+      </bt:ShortStrings>
+      <bt:LongStrings>
+        <bt:String id="GetStarted.Description" DefaultValue="在Word候选副本中生成、审阅和应用块级写作建议。" />
+        <bt:String id="TaskpaneButton.Tooltip" DefaultValue="打开3021候选写作任务窗格" />
+      </bt:LongStrings>
+    </Resources>
+  </VersionOverrides>
+</OfficeApp>

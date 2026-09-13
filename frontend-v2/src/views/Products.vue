@@ -20,6 +20,20 @@
       <div><span>项目绑定</span><strong>{{ registry?.summary.project_bindings || 0 }}</strong></div>
     </section>
 
+    <section v-if="leadProduct" class="portfolio-leadership">
+      <div class="portfolio-lead-copy">
+        <span>产品体系牵引</span>
+        <h3>{{ leadProduct.name }}</h3>
+        <p>{{ leadProduct.positioning || leadProduct.description }}</p>
+      </div>
+      <div class="portfolio-flow" aria-label="产品体系链路">
+        <div v-for="stage in portfolioStages" :key="stage.label">
+          <strong>{{ stage.label }}</strong>
+          <small>{{ stage.summary }}</small>
+        </div>
+      </div>
+    </section>
+
     <section v-if="projectContextId" class="project-binding-band">
       <div>
         <span>当前项目</span>
@@ -60,10 +74,104 @@
       </div>
     </section>
 
+    <section v-if="portfolioGroups.length" class="portfolio-modules" aria-label="产品体系模块">
+      <div class="section-head">
+        <h3>产品体系</h3>
+        <span>按平台、能力、业务产品和交付物组织</span>
+      </div>
+      <div class="portfolio-group-grid">
+        <section v-for="group in portfolioGroups" :key="group.key" class="portfolio-group">
+          <header>
+            <div>
+              <span>{{ group.kicker }}</span>
+              <h4>{{ group.title }}</h4>
+            </div>
+            <el-tag effect="plain" size="small">{{ group.products.length }} 项</el-tag>
+          </header>
+          <div class="portfolio-product-list">
+            <button
+              v-for="product in group.products"
+              :key="product.id"
+              type="button"
+              class="portfolio-product-card"
+              @click="openProductDetail(product)"
+            >
+              <div class="product-visual" :style="coverStyle(product)">
+                <span>{{ product.short_name || product.name.slice(0, 8) }}</span>
+              </div>
+              <div>
+                <strong>{{ product.name }}</strong>
+                <small>{{ product.positioning || product.description || '尚未补充产品定位' }}</small>
+              </div>
+            </button>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section v-if="featuredProducts.length" class="featured-products" aria-label="主产品展示">
+      <div class="section-head">
+        <h3>主产品展示</h3>
+        <span>真实运行图、体系定位和下一步动作</span>
+      </div>
+      <div class="featured-grid">
+        <article v-for="product in featuredProducts" :key="product.id" class="featured-card">
+          <button type="button" class="featured-visual" :style="coverStyle(product)" @click="openProductDetail(product)">
+            <span>{{ product.short_name || product.name.slice(0, 8) }}</span>
+          </button>
+          <div class="featured-copy">
+            <div>
+              <span>{{ product.category || kindLabel(product.kind) }}</span>
+              <h4>{{ product.name }}</h4>
+            </div>
+            <p>{{ product.positioning || product.description || '尚未补充产品定位。' }}</p>
+            <div class="featured-tags">
+              <el-tag v-for="item in (product.value_props || product.capabilities || []).slice(0, 3)" :key="item" effect="plain" size="small">{{ item }}</el-tag>
+              <span v-if="!(product.value_props || product.capabilities || []).length" class="empty-inline">尚未登记价值说明</span>
+            </div>
+            <footer>
+              <el-tag :type="runtimeTagType(product.runtime?.state)" effect="plain" size="small">{{ runtimeLabel(product.runtime?.state) }}</el-tag>
+              <el-button text size="small" @click="openProductDetail(product)">进入详情</el-button>
+            </footer>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="evidence-roadmap">
+      <div class="evidence-panel">
+        <div class="section-head">
+          <h3>交付证据</h3>
+          <span>{{ evidenceProducts.length }} 项有登记交付物</span>
+        </div>
+        <div v-if="evidenceProducts.length" class="evidence-product-list">
+          <button v-for="product in evidenceProducts" :key="product.id" type="button" @click="openProductDetail(product)">
+            <strong>{{ product.name }}</strong>
+            <small>待验收 {{ product.delivery_summary?.pending_review || 0 }} · 已验收 {{ product.delivery_summary?.accepted || 0 }}</small>
+          </button>
+        </div>
+        <span v-else class="empty-inline">尚未登记产品交付证据</span>
+      </div>
+      <div class="roadmap-panel">
+        <div class="section-head">
+          <h3>产品路线</h3>
+          <span>体系化推进顺序</span>
+        </div>
+        <div class="roadmap-list">
+          <article v-for="step in roadmapSteps" :key="step.title">
+            <div>
+              <strong>{{ step.title }}</strong>
+              <small>{{ step.summary }}</small>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
     <main class="registry-layout">
       <section class="product-list">
         <div class="section-head">
-          <h3>产品目录</h3>
+          <h3>产品目录管理</h3>
           <el-segmented v-model="kindFilter" :options="kindOptions" size="small" />
         </div>
         <div class="product-grid" role="list" aria-label="产品卡片列表">
@@ -74,8 +182,11 @@
             class="product-card"
             :class="{ selected: selectedProduct?.id === product.id }"
             role="listitem"
-            @click="selectProduct(product)"
+            @click="openProductDetail(product)"
           >
+            <div class="product-card-visual" :style="coverStyle(product)">
+              <span>{{ product.short_name || product.name.slice(0, 8) }}</span>
+            </div>
             <header>
               <span class="product-kind">{{ kindLabel(product.kind) }}</span>
               <el-tag :type="runtimeTagType(product.runtime?.state)" effect="plain" size="small">
@@ -294,6 +405,7 @@ import {
   createProductRuntimeInstance,
   deleteProduct,
   deleteProductRuntimeInstance,
+  downloadProductAsset,
   getProductDeliverables,
   getProductRegistry,
   getProductReleases,
@@ -330,6 +442,7 @@ const runtimeInstances = ref<ProductRuntimeInstance[]>([])
 const timeline = ref<ProductEvent[]>([])
 const allProjects = ref<Project[]>([])
 const currentProject = ref<Project>()
+const coverUrls = ref<Record<string, string>>({})
 const kindFilter = ref('all')
 const productDialogVisible = ref(false)
 const productDialogMode = ref<'create' | 'edit'>('create')
@@ -398,6 +511,49 @@ const bindingForSelected = computed<ProjectProductBinding | undefined>(() => cur
 const bindableProjects = computed(() => allProjects.value.filter(project => !selectedProduct.value?.project_references?.some(row => row.project_id === project.id)))
 const acceptedDeliverables = computed(() => deliverables.value.filter(row => row.status === 'accepted'))
 const canDeleteSelectedProduct = computed(() => Boolean(selectedProduct.value && !['openclaw-3021', 'ai-planning-5130', 'one-sim'].includes(selectedProduct.value.id)))
+const leadProduct = computed(() => registry.value?.products.find(row => row.id === 'openclaw-3021') || registry.value?.products.find(row => row.kind === 'platform'))
+const portfolioStages = [
+  { label: '智能体系统', summary: '组织项目、知识、产品和交付证据' },
+  { label: '任务规划', summary: '承接想定、计划生成和重规划' },
+  { label: '仿真验证', summary: '形成权威运行记录和实验依据' },
+  { label: '产品交付', summary: '沉淀规划书、案例、系统入口和版本' }
+]
+const roadmapSteps = [
+  { title: '体系牵引', summary: 'OpenClaw 统一纳管产品、项目、运行状态和交付证据。' },
+  { title: '能力产品化', summary: '智能筹划和兵棋仿真作为核心能力产品独立展示。' },
+  { title: '业务产品沉淀', summary: '本体筹划、电子化兵棋、智能兵棋承接具体场景和交付。' },
+  { title: '证据验收', summary: '规划书、截图、视频、版本和运行记录进入可追溯交付链。' }
+]
+const portfolioGroupDefs = [
+  { key: 'platform', title: '总体牵引平台', kicker: 'Core', match: (product: RegisteredProduct) => product.id === 'openclaw-3021' || product.portfolio_group === 'platform' },
+  { key: 'capability', title: '规划与仿真能力', kicker: 'Capability', match: (product: RegisteredProduct) => ['ai-planning-5130', 'one-sim'].includes(product.id) || product.portfolio_group === 'capability' },
+  { key: 'business', title: '业务产品', kicker: 'Product', match: (product: RegisteredProduct) => product.kind === 'offering' || product.portfolio_group === 'business' },
+  { key: 'documented', title: '文档与案例牵引', kicker: 'Evidence', match: (product: RegisteredProduct) => Boolean(product.delivery_summary?.total || product.document_links?.length || product.portfolio_group === 'documented') }
+]
+const portfolioGroups = computed(() => {
+  const products = registry.value?.products || []
+  const seen = new Set<string>()
+  return portfolioGroupDefs.map(group => {
+    const grouped = products
+      .filter(product => group.match(product))
+      .filter(product => {
+        if (group.key !== 'documented' && seen.has(product.id)) return false
+        if (group.key !== 'documented') seen.add(product.id)
+        return true
+      })
+      .sort((a, b) => (a.display_order ?? 999) - (b.display_order ?? 999) || a.name.localeCompare(b.name, 'zh-CN'))
+    return { ...group, products: grouped }
+  }).filter(group => group.products.length)
+})
+const featuredProducts = computed(() => {
+  const priority = ['ai-planning-5130', 'one-sim', 'knowledge-ontology-planning-system', 'openclaw-3021']
+  const products = registry.value?.products || []
+  return priority.map(id => products.find(product => product.id === id)).filter(Boolean) as RegisteredProduct[]
+})
+const evidenceProducts = computed(() => (registry.value?.products || [])
+  .filter(product => product.delivery_summary?.total || product.document_links?.length)
+  .sort((a, b) => (b.delivery_summary?.pending_review || 0) - (a.delivery_summary?.pending_review || 0))
+  .slice(0, 5))
 
 function emptyProductForm() {
   return { id: '', name: '', kind: 'offering', category: '', description: '', version: '', status: 'planning', owner: '', repository: '', capabilities: '', tags: '', deployment_mode: 'planned', device: '', host: '', port: undefined as number | undefined, public_url: '' }
@@ -418,10 +574,17 @@ function splitTags(value: string) {
 async function loadProducts() {
   loading.value = true
   try {
-    const [nextRegistry, projectResult] = await Promise.all([getProductRegistry(), getProjects()])
+    const nextRegistry = await getProductRegistry()
     registry.value = nextRegistry
-    allProjects.value = projectResult.projects
-    currentProject.value = projectResult.projects.find(project => project.id === projectContextId.value)
+    await loadCoverImages(nextRegistry.products)
+    try {
+      const projectResult = await getProjects()
+      allProjects.value = projectResult.projects
+      currentProject.value = projectResult.projects.find(project => project.id === projectContextId.value)
+    } catch {
+      allProjects.value = []
+      currentProject.value = undefined
+    }
     const currentId = selectedProduct.value?.id || String(route.query.product_id || '') || 'openclaw-3021'
     selectedProduct.value = registry.value.products.find(row => row.id === currentId) || registry.value.products[0]
     if (selectedProduct.value) await loadProductEvidence(selectedProduct.value.id)
@@ -435,6 +598,36 @@ async function loadProducts() {
 async function selectProduct(product: RegisteredProduct) {
   selectedProduct.value = product
   await loadProductEvidence(product.id)
+}
+
+function openProductDetail(product: RegisteredProduct) {
+  router.push({ name: 'ProductDetail', params: { productId: product.id } })
+}
+
+function coverStyle(product: RegisteredProduct) {
+  if (coverUrls.value[product.id]) return { backgroundImage: `url("${coverUrls.value[product.id]}")` }
+  const swatches: Record<string, string> = {
+    platform: 'linear-gradient(135deg, #10233f, #21605e)',
+    service: 'linear-gradient(135deg, #1f3b4d, #2d6f99)',
+    simulation: 'linear-gradient(135deg, #24351f, #5f7b3a)',
+    offering: 'linear-gradient(135deg, #423022, #8b6440)'
+  }
+  return { backgroundImage: swatches[product.kind] || 'linear-gradient(135deg, #263241, #59616f)' }
+}
+
+async function loadCoverImages(products: RegisteredProduct[]) {
+  const nextUrls: Record<string, string> = {}
+  await Promise.all(products.map(async (product) => {
+    if (!product.cover_image) return
+    try {
+      const blob = await downloadProductAsset(product.cover_image)
+      nextUrls[product.id] = URL.createObjectURL(blob)
+    } catch {
+      // Optional covers fall back to deterministic visual swatches.
+    }
+  }))
+  Object.values(coverUrls.value).forEach(url => URL.revokeObjectURL(url))
+  coverUrls.value = nextUrls
 }
 
 async function loadProductEvidence(productId: string) {
@@ -621,21 +814,67 @@ onMounted(loadProducts)
 .products-page { display: grid; gap: 18px; min-width: 0; }
 .page-head, .section-head, .product-detail > header, .section-title, .head-actions, .detail-actions, .row-actions { display: flex; align-items: center; gap: 8px; }
 .page-head, .section-head, .product-detail > header, .section-title { justify-content: space-between; }
-.page-head h2, .page-head span, .section-head h3, .product-detail h3, .product-detail h4, .product-detail p { margin: 0; }
+.page-head h2, .page-head span, .section-head h3, .portfolio-leadership h3, .portfolio-group h4, .product-detail h3, .product-detail h4, .product-detail p { margin: 0; }
 .page-head h2 { color: var(--text-primary); font-size: 18px; }
-.page-head span, .chain-product span, .chain-product small, .product-detail header span, .detail-list small, .empty-inline, .timeline-list small { color: var(--text-secondary); font-size: 11px; }
+.page-head span, .section-head span, .portfolio-lead-copy span, .portfolio-flow small, .portfolio-group header span, .portfolio-product-card small, .chain-product span, .chain-product small, .product-detail header span, .detail-list small, .empty-inline, .timeline-list small { color: var(--text-secondary); font-size: 11px; }
 .registry-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--line-color); border-bottom: 1px solid var(--line-color); }
 .registry-metrics > div { display: grid; gap: 4px; padding: 10px 12px; border-right: 1px solid var(--line-color); }
 .registry-metrics > div:last-child { border-right: 0; }
 .registry-metrics span, .product-card-stats dt { color: var(--text-secondary); font-size: 11px; }
 .registry-metrics strong { color: var(--text-primary); font-size: 20px; }
-.dependency-band, .project-binding-band, .product-list, .product-detail { min-width: 0; padding: 14px; border: 1px solid var(--line-color); border-radius: 6px; background: var(--card-bg); }
+.dependency-band, .project-binding-band, .portfolio-leadership, .portfolio-modules, .featured-products, .evidence-panel, .roadmap-panel, .product-list, .product-detail { min-width: 0; padding: 14px; border: 1px solid var(--line-color); border-radius: 6px; background: var(--card-bg); }
+.portfolio-leadership { display: grid; grid-template-columns: minmax(260px, 0.9fr) minmax(0, 1.4fr); gap: 16px; align-items: stretch; }
+.portfolio-lead-copy { display: grid; gap: 7px; align-content: center; }
+.portfolio-lead-copy h3 { color: var(--text-primary); font-size: 18px; }
+.portfolio-lead-copy p { margin: 0; color: var(--text-secondary); font-size: 12px; line-height: 1.6; }
+.portfolio-flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.portfolio-flow > div { display: grid; gap: 5px; min-width: 0; padding: 10px; border: 1px solid var(--line-color); border-radius: 6px; background: var(--view-color-faint); }
+.portfolio-flow strong { color: var(--text-primary); font-size: 12px; }
 .project-binding-band { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .project-binding-band > div:first-child { display: grid; gap: 3px; }
 .project-binding-band span, .project-binding-band small { color: var(--text-secondary); font-size: 11px; }
 .project-binding-band strong { color: var(--text-primary); font-size: 14px; }
 .section-head { margin-bottom: 12px; }
 .section-head h3, .product-detail h3 { color: var(--text-primary); font-size: 14px; }
+.portfolio-group-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.portfolio-group { display: grid; gap: 10px; min-width: 0; padding: 12px; border: 1px solid var(--line-color); border-radius: 6px; background: color-mix(in srgb, var(--card-bg) 94%, var(--view-color-faint)); }
+.portfolio-group > header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.portfolio-group h4 { color: var(--text-primary); font-size: 13px; }
+.portfolio-product-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.portfolio-product-card { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 10px; align-items: center; min-width: 0; min-height: 76px; padding: 8px; border: 1px solid var(--line-color); border-radius: 6px; color: inherit; text-align: left; background: transparent; cursor: pointer; }
+.portfolio-product-card:hover { border-color: var(--view-color-border); background: var(--view-color-faint); }
+.portfolio-product-card strong, .portfolio-product-card small { display: block; overflow: hidden; text-overflow: ellipsis; }
+.portfolio-product-card strong { color: var(--text-primary); font-size: 12px; white-space: nowrap; }
+.portfolio-product-card small { display: -webkit-box; margin-top: 4px; line-height: 1.4; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.product-visual, .product-card-visual { display: grid; place-items: end start; overflow: hidden; border-radius: 5px; background-position: center; background-size: cover; color: #fff; }
+.product-visual { width: 72px; height: 58px; }
+.product-card-visual { min-height: 86px; padding: 10px; }
+.product-visual span, .product-card-visual span { max-width: 100%; padding: 3px 5px; overflow: hidden; border-radius: 4px; background: rgb(0 0 0 / 42%); font-size: 11px; font-weight: 600; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; }
+.featured-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.featured-card { display: grid; grid-template-rows: 170px minmax(0, 1fr); min-width: 0; overflow: hidden; border: 1px solid var(--line-color); border-radius: 6px; background: color-mix(in srgb, var(--card-bg) 92%, var(--view-color-faint)); }
+.featured-visual { display: grid; place-items: end start; min-width: 0; padding: 12px; border: 0; background-position: center; background-size: cover; color: #fff; cursor: pointer; }
+.featured-visual span { max-width: 100%; padding: 4px 7px; overflow: hidden; border-radius: 4px; background: rgb(0 0 0 / 48%); font-size: 12px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.featured-copy { display: grid; gap: 9px; min-width: 0; padding: 12px; }
+.featured-copy > div:first-child { display: grid; gap: 4px; min-width: 0; }
+.featured-copy span, .featured-copy p { color: var(--text-secondary); font-size: 11px; }
+.featured-copy h4 { margin: 0; overflow: hidden; color: var(--text-primary); font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+.featured-copy p { display: -webkit-box; min-height: 49px; margin: 0; overflow: hidden; line-height: 1.5; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+.featured-tags { display: flex; flex-wrap: wrap; gap: 6px; min-height: 24px; }
+.featured-card footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; }
+.evidence-roadmap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 0.72fr); gap: 14px; align-items: start; }
+.evidence-product-list { display: grid; gap: 8px; }
+.evidence-product-list button { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 0; padding: 9px 10px; border: 1px solid var(--line-color); border-radius: 6px; color: inherit; text-align: left; background: transparent; cursor: pointer; }
+.evidence-product-list button:hover { border-color: var(--view-color-border); background: var(--view-color-faint); }
+.evidence-product-list strong, .evidence-product-list small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.evidence-product-list strong { color: var(--text-primary); font-size: 12px; }
+.evidence-product-list small { flex: none; color: var(--text-secondary); font-size: 11px; }
+.roadmap-list { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
+.roadmap-list article { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 8px; padding: 9px 0; border-bottom: 1px solid var(--line-color); }
+.roadmap-list article:last-child { border-bottom: 0; }
+.roadmap-list article::before { width: 8px; height: 8px; margin: 7px auto 0; border: 1px solid var(--view-color-border); border-radius: 50%; background: var(--view-color-faint); content: ""; }
+.roadmap-list strong, .roadmap-list small { display: block; min-width: 0; }
+.roadmap-list strong { color: var(--text-primary); font-size: 12px; }
+.roadmap-list small { margin-top: 3px; color: var(--text-secondary); font-size: 11px; line-height: 1.45; }
 .core-chain { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr); gap: 10px; align-items: center; }
 .chain-product { display: grid; gap: 4px; min-width: 0; padding: 8px 10px; border: 0; border-left: 2px solid var(--view-color-border); color: inherit; text-align: left; background: transparent; cursor: pointer; }
 .chain-product:hover { background: var(--view-color-faint); }
@@ -680,6 +919,6 @@ onMounted(loadProducts)
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 12px; }
 .dialog-form :deep(.el-select), .dialog-form :deep(.el-input-number) { width: 100%; }
 .dialog-spacer { flex: 1; }
-@media (max-width: 1000px) { .registry-layout { grid-template-columns: 1fr; } .product-detail { position: static; max-height: none; } }
-@media (max-width: 680px) { .page-head, .project-binding-band { align-items: flex-start; flex-direction: column; } .registry-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .registry-metrics > div:nth-child(2) { border-right: 0; } .registry-metrics > div:nth-child(-n + 2) { border-bottom: 1px solid var(--line-color); } .product-grid, .form-grid { grid-template-columns: 1fr; } .core-chain { grid-template-columns: 1fr; } .chain-arrow { transform: rotate(90deg); text-align: center; } .head-actions { flex-wrap: wrap; } }
+@media (max-width: 1100px) { .portfolio-leadership, .portfolio-group-grid, .featured-grid, .evidence-roadmap, .registry-layout { grid-template-columns: 1fr; } .portfolio-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); } .product-detail { position: static; max-height: none; } }
+@media (max-width: 680px) { .page-head, .project-binding-band { align-items: flex-start; flex-direction: column; } .registry-metrics, .portfolio-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); } .registry-metrics > div:nth-child(2) { border-right: 0; } .registry-metrics > div:nth-child(-n + 2) { border-bottom: 1px solid var(--line-color); } .portfolio-product-list, .product-grid, .form-grid { grid-template-columns: 1fr; } .core-chain { grid-template-columns: 1fr; } .chain-arrow { transform: rotate(90deg); text-align: center; } .head-actions { flex-wrap: wrap; } .featured-card { grid-template-rows: 150px minmax(0, 1fr); } .evidence-product-list button { display: grid; } .evidence-product-list small { flex: auto; } }
 </style>

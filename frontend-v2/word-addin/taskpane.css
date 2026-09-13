@@ -1,0 +1,32 @@
+:root {
+  color: #17202a;
+  background: #f4f6f8;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14px;
+  letter-spacing: 0;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 280px; }
+.taskpane { padding: 16px; display: grid; gap: 16px; }
+header { border-bottom: 1px solid #d8dee5; padding-bottom: 12px; }
+.eyebrow { margin: 0 0 4px; color: #526170; font-size: 11px; font-weight: 700; }
+h1 { margin: 0 0 8px; font-size: 22px; }
+h2 { margin: 0; font-size: 15px; }
+.status { color: #365b44; font-size: 12px; font-weight: 600; }
+details, section { border-top: 1px solid #d8dee5; padding-top: 12px; }
+details[open] summary { margin-bottom: 10px; }
+summary { cursor: pointer; font-weight: 700; }
+label { display: grid; gap: 5px; margin: 10px 0; color: #3e4b57; font-size: 12px; }
+input, textarea { width: 100%; border: 1px solid #b7c0c9; border-radius: 4px; background: #fff; color: #17202a; padding: 8px; font: inherit; }
+textarea { resize: vertical; min-height: 84px; }
+button { width: 100%; min-height: 36px; border: 1px solid #1f5e9c; border-radius: 4px; background: #1f5e9c; color: #fff; font-weight: 650; cursor: pointer; }
+button.secondary { width: auto; min-height: 30px; padding: 4px 12px; background: transparent; color: #1f5e9c; }
+button:disabled { cursor: not-allowed; opacity: .45; }
+.section-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.content { min-height: 72px; max-height: 210px; overflow: auto; margin: 0; padding: 10px; border-left: 3px solid #74879a; background: #fff; white-space: pre-wrap; overflow-wrap: anywhere; font: 13px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; }
+.content.empty { color: #768391; }
+.warning { color: #805a14; background: #fff8e8; border-left: 3px solid #d4a017; padding: 8px; font-size: 12px; line-height: 1.5; }
+output { display: block; min-height: 38px; padding: 9px; background: #eaf2f8; color: #20445f; line-height: 1.45; }
+output.error { background: #fff0f0; color: #8a2626; }
+.busy { cursor: progress; }

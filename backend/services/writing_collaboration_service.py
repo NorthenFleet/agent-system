@@ -10,6 +10,7 @@ import os
 import re
 import uuid
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Any, Awaitable, Callable
 
 from sqlalchemy import and_, func, or_, select, update
@@ -27,6 +28,8 @@ from models.writing_collaboration import (
     WritingDocumentState,
     WritingDocumentVersion,
     WritingEvidenceRef,
+    WritingResearchEvaluation,
+    WritingResearchIteration,
 )
 from services.document_workspace_service import (
     DocumentVersionConflict,
@@ -198,11 +201,20 @@ class WritingCollaborationService:
         fulltext = self.workspace_service.fulltext(context)
         markdown = str(fulltext.get("content") or "")
         revision = max(int(fulltext.get("version") or 1), 1)
-        document = self.codec.from_markdown(
-            markdown,
-            namespace=f"{project_id}/{document_id}",
-        )
-        self._validate_round_trip(markdown, document)
+        structured_source = getattr(self.documents_service, "structured_source_document", None)
+        imported_document = structured_source(project, document_id) if callable(structured_source) else None
+        if imported_document is not None:
+            document = copy.deepcopy(imported_document)
+            self.codec.ensure_block_ids(document, namespace=f"{project_id}/{document_id}/structured-source")
+            self.codec.validate_document(document)
+            if self.codec.to_markdown(document) != markdown:
+                raise DocumentWorkspaceError("结构化导入源与 Markdown 投影不一致，已阻止迁移")
+        else:
+            document = self.codec.from_markdown(
+                markdown,
+                namespace=f"{project_id}/{document_id}",
+            )
+            self._validate_round_trip(markdown, document)
         content_sha = self.codec.document_sha256(document)
         source_sha = _sha256(markdown)
         state = WritingDocumentState(
@@ -254,6 +266,185 @@ class WritingCollaborationService:
         with self.session_factory() as session:
             return self._load_state(session, project_id, document_id)  # type: ignore[return-value]
 
+    def replace_authority_from_markdown(
+        self,
+        project: dict[str, Any],
+        document_id: str,
+        markdown: str,
+        *,
+        label: str,
+        actor: str,
+    ) -> dict[str, Any]:
+        """Replace a document's structured authority during a controlled source migration.
+
+        This is intentionally not exposed through the ordinary editing API.  It is
+        used for audited imports where an external authoritative source (such as a
+        frozen Word master) supersedes an earlier import.  Existing structured
+        versions remain in the database and the Markdown workspace creates a
+        checkpoint before its compatibility projection is replaced.
+        """
+        self._require_mutation_backend()
+        if not markdown.strip():
+            raise DocumentWorkspaceError("迁移正文不能为空")
+        project_id = str(project.get("id") or "")
+        if not project_id:
+            raise DocumentWorkspaceError("项目标识不能为空")
+
+        context = self._context(project, document_id)
+        document = self.codec.from_markdown(
+            markdown,
+            namespace=f"{project_id}/{document_id}/authority-import",
+        )
+        self._validate_round_trip(markdown, document)
+        content_sha = self.codec.document_sha256(document)
+        workspace_manifest = self.workspace_service.ensure_workspace(context)
+        projected_revision = int(workspace_manifest.get("structured_projection_revision") or 0)
+
+        with self.session_factory() as session:
+            state = self._load_state(session, project_id, document_id, lock=True)
+            if not state:
+                raise DocumentWorkspaceError("结构化正文状态不存在，不能替换权威源")
+            previous_revision = int(state.document_revision)
+            # A controlled source migration can follow an interrupted import.
+            # Never regress the Markdown compatibility projection in that case.
+            next_revision = max(previous_revision, projected_revision) + 1
+            before_sha = state.content_sha256
+            state.schema_version = SCHEMA_VERSION
+            state.document_revision = next_revision
+            state.content_json = document
+            state.content_sha256 = content_sha
+            state.source_markdown_sha256 = _sha256(markdown)
+            state.projection_status = "stale"
+            state.projection_error = ""
+            state.updated_at = _now()
+            session.add(WritingDocumentVersion(
+                id=_uuid("wver"),
+                project_id=project_id,
+                document_id=document_id,
+                document_revision=next_revision,
+                label=label[:160],
+                reason="authority_import",
+                content_json=copy.deepcopy(document),
+                content_sha256=content_sha,
+                markdown_snapshot=markdown,
+                actor_type="system",
+                actor_id=actor[:64],
+                parent_revision=previous_revision,
+                lifecycle_status="working",
+            ))
+            session.add(WritingChangeEvent(
+                id=_uuid("wevt"),
+                project_id=project_id,
+                document_id=document_id,
+                document_revision=next_revision,
+                client_change_id=f"authority-import-r{next_revision}-{content_sha[:24]}",
+                actor_type="system",
+                actor_id=actor[:64],
+                source="authority_import",
+                operations={
+                    "label": label,
+                    "previous_revision": previous_revision,
+                    "source_markdown_sha256": state.source_markdown_sha256,
+                },
+                before_sha256=before_sha,
+                after_sha256=content_sha,
+            ))
+            session.commit()
+
+        if not self._refresh_projection(
+            project,
+            document_id,
+            checkpoint_label="before-word-authority-import",
+        ):
+            raise DocumentWorkspaceError("Word 权威正文已入库，但 Markdown 投影更新失败")
+        return self.get_state(project, document_id)
+
+    def replace_authority_from_document(
+        self,
+        project: dict[str, Any],
+        document_id: str,
+        document: dict[str, Any],
+        markdown: str,
+        *,
+        label: str,
+        actor: str,
+    ) -> dict[str, Any]:
+        """Install an audited v2 document while preserving the supplied projection.
+
+        DOCX/Pandoc imports can contain merged tables and OMML equations that are
+        not reconstructible from pipe Markdown alone.  The structured JSON is
+        authoritative; ``markdown`` is its reviewed compatibility projection.
+        """
+        self._require_mutation_backend()
+        if not markdown.strip():
+            raise DocumentWorkspaceError("迁移正文不能为空")
+        project_id = str(project.get("id") or "")
+        if not project_id:
+            raise DocumentWorkspaceError("项目标识不能为空")
+        value = copy.deepcopy(document)
+        self.codec.ensure_block_ids(value, namespace=f"{project_id}/{document_id}/fidelity-migration")
+        self.codec.validate_document(value)
+        if self.codec.metrics(value)["replacement_character_count"]:
+            raise DocumentWorkspaceError("结构化正文包含替代字符，已阻止迁移")
+
+        context = self._context(project, document_id)
+        workspace_manifest = self.workspace_service.ensure_workspace(context)
+        projected_revision = int(workspace_manifest.get("structured_projection_revision") or 0)
+        content_sha = self.codec.document_sha256(value)
+
+        with self.session_factory() as session:
+            state = self._load_state(session, project_id, document_id, lock=True)
+            if not state:
+                raise DocumentWorkspaceError("结构化正文状态不存在，不能执行保真迁移")
+            previous_revision = int(state.document_revision)
+            next_revision = max(previous_revision, projected_revision) + 1
+            before_sha = state.content_sha256
+            state.schema_version = SCHEMA_VERSION
+            state.document_revision = next_revision
+            state.content_json = value
+            state.content_sha256 = content_sha
+            state.source_markdown_sha256 = _sha256(markdown)
+            state.projection_status = "stale"
+            state.projection_error = ""
+            state.updated_at = _now()
+            session.add(WritingDocumentVersion(
+                id=_uuid("wver"), project_id=project_id, document_id=document_id,
+                document_revision=next_revision, label=label[:160], reason="fidelity_migration",
+                content_json=copy.deepcopy(value), content_sha256=content_sha,
+                markdown_snapshot=markdown, actor_type="system", actor_id=actor[:64],
+                parent_revision=previous_revision, lifecycle_status="working",
+            ))
+            session.add(WritingChangeEvent(
+                id=_uuid("wevt"), project_id=project_id, document_id=document_id,
+                document_revision=next_revision,
+                client_change_id=f"fidelity-migration-r{next_revision}-{content_sha[:24]}",
+                actor_type="system", actor_id=actor[:64], source="fidelity_migration",
+                operations={"label": label, "previous_revision": previous_revision, "schema_version": SCHEMA_VERSION},
+                before_sha256=before_sha, after_sha256=content_sha,
+            ))
+            session.commit()
+
+        try:
+            self.workspace_service.apply_structured_projection(
+                context,
+                markdown,
+                next_revision,
+                actor,
+                checkpoint_label="before-fidelity-migration",
+            )
+        except Exception as exc:
+            self._mark_projection_stale(project, document_id, next_revision, exc)
+            raise DocumentWorkspaceError("结构化保真正文已入库，但 Markdown 投影更新失败") from exc
+        with self.session_factory() as session:
+            state = self._load_state(session, project_id, document_id, lock=True)
+            if state and state.document_revision == next_revision:
+                state.projection_revision = next_revision
+                state.projection_status = "current"
+                state.projection_error = ""
+                state.source_markdown_sha256 = _sha256(markdown)
+                session.commit()
+        return self.get_state(project, document_id)
+
     def _block_text(self, node: dict[str, Any]) -> str:
         if node.get("type") == "text":
             return str(node.get("text") or "")
@@ -295,8 +486,23 @@ class WritingCollaborationService:
                 "kind": "chapter",
             }
         else:
-            section = self.workspace_service.section(context, section_id)
-            order_index = int(section.get("order_index") or 0)
+            # Markdown section IDs are title-derived and therefore change after a
+            # heading rename. The structured document already owns stable IDs;
+            # accept the old ordinal form once and return the authoritative ID.
+            legacy_match = re.fullmatch(r"section-(\d+)(?:-.*)?", section_id)
+            legacy_order = int(legacy_match.group(1)) - 1 if legacy_match else -1
+            if 0 <= legacy_order < len(heading_positions):
+                order_index = legacy_order
+                stable_position = heading_positions[order_index]
+                section = {
+                    "id": section_id,
+                    "title": self._block_text(blocks[stable_position]),
+                    "order_index": order_index,
+                    "kind": "chapter",
+                }
+            else:
+                section = self.workspace_service.section(context, section_id)
+                order_index = int(section.get("order_index") or 0)
         if order_index >= len(heading_positions):
             raise DocumentWorkspaceError("结构化正文无法定位所选章节")
         start = heading_positions[order_index]
@@ -1213,7 +1419,33 @@ class WritingCollaborationService:
                 return result
             return self._job_dict(job)
 
-    def _ai_prompt(self, job: WritingAiJob) -> str:
+    def _conversation_history(self, session: Session, job: WritingAiJob) -> str:
+        """Return a bounded transcript so a conversation is genuinely multi-turn.
+
+        Historic messages are context only. They never enlarge the set of blocks
+        the current job may modify.
+        """
+        if not job.conversation_id:
+            return ""
+        rows = session.execute(
+            select(WritingAiMessage)
+            .where(
+                WritingAiMessage.project_id == job.project_id,
+                WritingAiMessage.conversation_id == job.conversation_id,
+                WritingAiMessage.id.notin_([job.request_message_id, job.response_message_id]),
+                WritingAiMessage.created_at <= job.created_at,
+            )
+            .order_by(WritingAiMessage.created_at.desc())
+            .limit(12)
+        ).scalars().all()
+        transcript: list[str] = []
+        for row in reversed(rows):
+            content = re.sub(r"\s+", " ", str(row.content or "")).strip()
+            if content:
+                transcript.append(f"{'用户' if row.role == 'user' else '助手'}：{content[:2000]}")
+        return "\n".join(transcript)[-16_000:]
+
+    def _ai_prompt(self, job: WritingAiJob, conversation_history: str = "") -> str:
         targets = list(job.target_blocks or [])
         source = "\n\n".join(
             f"--- BLOCK {row['block_id']} REV {row['block_revision']} ---\n{row['markdown']}"
@@ -1226,6 +1458,9 @@ class WritingCollaborationService:
 用户指令：{job.instruction}
 作用范围：{job.scope}
 基础文档修订：{job.base_document_revision}
+
+此前会话（仅用于保持本轮对话连续性；当前指令与下列作用范围优先）：
+{conversation_history or '无此前会话'}
 
 请只返回一个 JSON 对象，不要使用 Markdown 代码围栏：
 {{
@@ -1248,6 +1483,7 @@ class WritingCollaborationService:
 2. replace/delete 的 block_id 必须来自输入；insert_after 使用锚点 block_id。
 3. 保留事实限定、引用编号和图片路径；资料不足时在 rationale 中说明，不要补造。
 4. replacement_markdown 必须是完整可解析的 Markdown 块。
+5. 此前会话不能扩大修改范围，也不能覆盖当前指令或证据约束。
 
 目标正文：
 {source}
@@ -1388,7 +1624,7 @@ class WritingCollaborationService:
                     return
                 self._sync_job_message(session, job)
                 session.commit()
-                prompt = self._ai_prompt(job)
+                prompt = self._ai_prompt(job, self._conversation_history(session, job))
                 agent_id = job.agent_id
             response = await self.ai_requester(agent_id, prompt)
             payload = self._parse_ai_response(response)
@@ -1888,6 +2124,170 @@ class WritingCollaborationService:
             project,
             document_id,
             checkpoint_label=f"proposal-{proposal_id}",
+        )
+        return self.get_state(project, document_id, section_id)
+
+    def accept_research_change_set(
+        self,
+        project: dict[str, Any],
+        document_id: str,
+        change_set_id: str,
+        actor: str,
+    ) -> dict[str, Any]:
+        self._require_mutation_backend()
+        project_id = str(project.get("id"))
+        section_id = ""
+        with self.session_factory() as session:
+            change_set = session.execute(select(WritingChangeSet).where(
+                WritingChangeSet.id == change_set_id,
+                WritingChangeSet.project_id == project_id,
+                WritingChangeSet.document_id == document_id,
+            ).with_for_update()).scalar_one_or_none()
+            if not change_set or change_set.approval_policy != "research_candidate":
+                raise DocumentWorkspaceError("研究候选 ChangeSet 不存在")
+            if change_set.status != "review_required":
+                raise DocumentWorkspaceError("该研究候选已经处理")
+            iteration = session.execute(select(WritingResearchIteration).where(
+                WritingResearchIteration.change_set_id == change_set.id,
+            )).scalar_one_or_none()
+            if not iteration:
+                raise DocumentWorkspaceError("研究候选缺少可审计迭代记录")
+            evaluation = session.execute(select(WritingResearchEvaluation).where(
+                WritingResearchEvaluation.iteration_id == iteration.id,
+                WritingResearchEvaluation.decision == "kept",
+            ).order_by(WritingResearchEvaluation.created_at.desc()).limit(1)).scalar_one_or_none()
+            if not evaluation or not all(
+                value is True or (key == "body_write_operations" and value == 0)
+                for key, value in (evaluation.hard_gates or {}).items()
+            ):
+                raise DocumentWorkspaceError("研究候选未通过全部硬门禁")
+            candidate_payload = iteration.candidate_payload or {}
+            section_id = str(candidate_payload.get("section_id") or "")
+            if candidate_payload.get("operations") != (change_set.operations or []):
+                raise DocumentWorkspaceError("研究候选与 ChangeSet 操作不一致")
+            candidate_evidence_ids = list(candidate_payload.get("evidence_ref_ids") or [])
+            if candidate_evidence_ids != list(change_set.evidence_ref_ids or []):
+                raise DocumentWorkspaceError("研究候选与 ChangeSet 证据引用不一致")
+            evidence_rows = session.execute(select(WritingEvidenceRef).where(
+                WritingEvidenceRef.id.in_(candidate_evidence_ids),
+                WritingEvidenceRef.project_id == project_id,
+                WritingEvidenceRef.document_id == document_id,
+            )).scalars().all() if candidate_evidence_ids else []
+            if len(evidence_rows) != len(candidate_evidence_ids):
+                raise DocumentWorkspaceError("研究候选引用的不可变证据不存在")
+            current_categories: set[str] = set()
+            for evidence in evidence_rows:
+                path = Path(evidence.artifact_path)
+                if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != evidence.artifact_sha256:
+                    raise DocumentWorkspaceError("研究候选引用的 EvidenceRef 快照缺失或哈希不一致")
+                if evidence.perspective_scope not in {"public", "project", "paper", "aggregate"}:
+                    raise DocumentWorkspaceError("研究候选包含不可用于论文正文的受限证据视角")
+                if evidence.support_role not in {"supports", "method_basis"} or evidence.directness == "metadata_only":
+                    continue
+                if evidence.evidence_kind in {"literature", "policy"}:
+                    current_categories.add("literature")
+                elif evidence.evidence_kind in {"simulation", "dataset", "system_record"}:
+                    current_categories.add("experiment")
+            required_categories = set(candidate_payload.get("required_evidence_categories") or [])
+            selected_categories = set(candidate_payload.get("selected_evidence_categories") or [])
+            categories_changed = (
+                "selected_evidence_categories" in candidate_payload
+                and selected_categories != current_categories
+            )
+            conservative_qualification = (
+                candidate_payload.get("evidence_policy_mode") == "conservative_qualification"
+            )
+            if (
+                (not conservative_qualification and not required_categories.issubset(current_categories))
+                or categories_changed
+            ):
+                raise DocumentWorkspaceError("研究候选的文献与实验证据约束已变化，请重新评价")
+            artifact_path = str(iteration.candidate_artifact_path or "")
+            try:
+                artifact_payload = json.loads(Path(artifact_path).read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError) as exc:
+                raise DocumentWorkspaceError("研究候选不可变快照缺失或损坏") from exc
+            if artifact_payload != candidate_payload:
+                raise DocumentWorkspaceError("研究候选数据库记录与不可变快照不一致")
+
+            state = self._load_state(session, project_id, document_id, lock=True)
+            if not state or state.document_revision != change_set.base_revision:
+                raise DocumentVersionConflict("正文修订已变化，请基于当前正文重新生成研究候选")
+            document = copy.deepcopy(state.content_json)
+            allowed_blocks = {
+                str((node.get("attrs") or {}).get("blockId") or "")
+                for node in candidate_payload.get("candidate_section_nodes") or []
+            }
+            applied: list[dict[str, Any]] = []
+
+            def replace_once(node: dict[str, Any], old_text: str, new_text: str) -> int:
+                for child in node.get("content") or []:
+                    if child.get("type") == "text" and old_text in str(child.get("text") or ""):
+                        child["text"] = str(child.get("text") or "").replace(old_text, new_text, 1)
+                        return 1
+                    if isinstance(child, dict) and replace_once(child, old_text, new_text):
+                        return 1
+                return 0
+
+            for operation in change_set.operations or []:
+                if operation.get("op") != "replace_text":
+                    raise DocumentWorkspaceError("研究候选仅允许精确文本替换")
+                block_id = str(operation.get("block_id") or "")
+                old_text = str(operation.get("old_text") or "")
+                new_text = str(operation.get("new_text") or "")
+                if block_id not in allowed_blocks:
+                    raise DocumentWorkspaceError("研究候选操作超出审定章节范围")
+                old_citations = set(re.findall(r"\[(\d+)\]", old_text))
+                new_citations = set(re.findall(r"\[(\d+)\]", new_text))
+                old_numbers = set(re.findall(r"(?<!\w)(?:20\d{2}|\d+(?:\.\d+)?)(?!\w)", old_text))
+                new_numbers = set(re.findall(r"(?<!\w)(?:20\d{2}|\d+(?:\.\d+)?)(?!\w)", new_text))
+                if not new_citations.issubset(old_citations) or not new_numbers.issubset(old_numbers):
+                    raise DocumentWorkspaceError("研究候选引入了未经核验的引文或数字")
+                found = self._find_block(document, block_id)
+                if not found or replace_once(found[1], old_text, new_text) != 1:
+                    raise DocumentVersionConflict("研究候选目标原文已变化，请重新生成")
+                attrs = found[1].setdefault("attrs", {})
+                attrs["blockRevision"] = int(attrs.get("blockRevision") or 1) + 1
+                applied.append(copy.deepcopy(operation))
+
+            document = self._validate_document(document, f"{project_id}/{document_id}/{change_set_id}")
+            self._assert_section_boundaries(state.content_json, document)
+            before_sha = state.content_sha256
+            state.document_revision += 1
+            state.content_json = document
+            state.content_sha256 = self.codec.document_sha256(document)
+            state.projection_status = "stale"
+            change_set.status = "approved"
+            change_set.result_revision = state.document_revision
+            change_set.decided_by = actor
+            change_set.decided_at = _now()
+            iteration.status = "kept"
+            session.add(WritingChangeEvent(
+                id=_uuid("wevt"),
+                project_id=project_id,
+                document_id=document_id,
+                document_revision=state.document_revision,
+                client_change_id=f"research-candidate:{change_set.id}",
+                actor_type="human",
+                actor_id=actor,
+                source="research-candidate-accept",
+                operations=applied,
+                before_sha256=before_sha,
+                after_sha256=state.content_sha256,
+            ))
+            self._create_version_row(
+                session,
+                state,
+                label=f"批准研究候选：{change_set.summary[:100]}",
+                reason="research_candidate_accept",
+                actor_type="human",
+                actor_id=actor,
+            )
+            session.commit()
+        self._refresh_projection(
+            project,
+            document_id,
+            checkpoint_label=f"research-candidate-{change_set_id}",
         )
         return self.get_state(project, document_id, section_id)
 

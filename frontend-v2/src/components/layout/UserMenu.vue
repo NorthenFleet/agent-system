@@ -20,7 +20,10 @@
             {{ getRoleLabel(authStore.user?.role) }}
           </el-tag>
         </el-dropdown-item>
-        <el-dropdown-item divided command="logout">
+        <el-dropdown-item v-if="!authStore.loginEnabled" disabled>
+          <el-tag size="small" type="warning">免登录开发模式</el-tag>
+        </el-dropdown-item>
+        <el-dropdown-item v-if="authStore.loginEnabled" divided command="logout">
           <el-icon><SwitchButton /></el-icon>
           退出登录
         </el-dropdown-item>

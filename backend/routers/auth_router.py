@@ -9,7 +9,8 @@ POST /api/v2/auth/init-admin
 from fastapi import APIRouter, HTTPException, Depends, Header, Request
 from pydantic import BaseModel
 from typing import Optional
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+import ipaddress
 import os
 from sqlalchemy.orm import Session
 
@@ -17,7 +18,14 @@ from database import get_db
 from services.user_service import UserService
 from services.auth_service import (
     verify_password, hash_password, create_access_token, create_refresh_token,
-    decode_access_token, revoke_token, generate_default_admin_password
+    decode_access_token, revoke_token, generate_default_admin_password,
+    get_current_user, require_role,
+)
+from services.auth_settings_service import (
+    development_admin_payload,
+    is_login_enabled,
+    public_auth_settings,
+    set_login_enabled,
 )
 from services.module_permission_service import get_user_module_keys, modules_for_user
 
@@ -41,24 +49,6 @@ def require_init_admin_allowed(request: Request) -> None:
     elif _is_local_setup_request(request):
         return
     raise HTTPException(403, "init-admin 仅允许本机调用，或提供 X-Init-Token")
-
-
-def get_current_user(authorization: Optional[str] = Header(None)):
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(401, "未登录")
-    token = authorization[7:]
-    payload = decode_access_token(token)
-    if not payload:
-        raise HTTPException(401, "Token 无效或已过期")
-    return payload
-
-
-def require_role(*roles):
-    def check(user: dict = Depends(get_current_user)):
-        if user.get("role") not in roles:
-            raise HTTPException(403, "权限不足")
-        return user
-    return check
 
 
 def user_payload_with_modules(db: Session, user_obj) -> dict:
@@ -86,6 +76,74 @@ class UserCreateRequest(BaseModel):
     password: str
     display_name: str
     role: str = "viewer"
+
+
+class AuthSettingsUpdateRequest(BaseModel):
+    login_enabled: bool
+
+
+TRUSTED_DEVELOPMENT_NETWORKS = tuple(
+    ipaddress.ip_network(network)
+    for network in (
+        "127.0.0.0/8",
+        "::1/128",
+        "192.168.31.0/24",
+        "100.64.0.0/10",
+        "fd7a:115c:a1e0::/48",
+    )
+)
+
+
+def _is_trusted_development_request(request: Request) -> bool:
+    client_host = request.client.host if request.client else ""
+    if client_host in {"localhost", "testclient"}:
+        return True
+    try:
+        address = ipaddress.ip_address(client_host)
+    except ValueError:
+        return False
+    return any(address in network for network in TRUSTED_DEVELOPMENT_NETWORKS)
+
+
+@router.get("/settings")
+def get_auth_settings(db: Session = Depends(get_db)):
+    return public_auth_settings(db)
+
+
+@router.post("/development-session")
+def create_development_session(
+    request: Request,
+    svc: UserService = Depends(get_user_service),
+):
+    if is_login_enabled(svc.db):
+        raise HTTPException(403, "当前已启用用户登录")
+    if not _is_trusted_development_request(request):
+        raise HTTPException(403, "免登录开发会话仅允许指定局域网或 Tailscale 网络访问")
+
+    payload = development_admin_payload(svc.db)
+    user = svc.get_active_user_by_id(int(payload["sub"]))
+    access_token = create_access_token(payload, expires_delta=timedelta(hours=12))
+    return {
+        "access_token": access_token,
+        "token_type": "Bearer",
+        "expires_in": 43200,
+        "auth_mode": "development",
+        "user": user_payload_with_modules(svc.db, user),
+    }
+
+
+@router.put("/settings")
+def update_auth_settings(
+    req: AuthSettingsUpdateRequest,
+    admin: dict = Depends(require_role("admin")),
+    db: Session = Depends(get_db),
+):
+    enabled = set_login_enabled(db, req.login_enabled, updated_by=int(admin["sub"]))
+    return {
+        "success": True,
+        "login_enabled": enabled,
+        "mode": "login_required" if enabled else "development",
+    }
 
 
 @router.post("/login")

@@ -75,6 +75,44 @@ def test_workspace_parses_sections_references_and_assets(workspace):
     assert result["quality"]["missing_assets"] == 0
 
 
+def test_section_asset_paths_exclude_optional_markdown_image_title(workspace):
+    source = workspace.vault / "10-成果库-Outputs" / "毕业论文" / "博士论文" / "博士论文 - 测试.md"
+    source.write_text(
+        source.read_text(encoding="utf-8").replace(
+            "![测试图](assets/test.png)",
+            '![测试图](assets/test.png "图1-1 测试标题")',
+        ),
+        encoding="utf-8",
+    )
+
+    result = workspace.workspace(project())
+    chapter = next(row for row in result["sections"] if row["kind"] == "chapter")
+
+    assert workspace.section(project(), chapter["id"])["asset_paths"] == ["assets/test.png"]
+    assert "assets/test.png" in workspace.fulltext(project())["asset_paths"]
+    assert workspace.quality(project())["summary"]["missing_assets"] == 0
+
+
+def test_resolve_asset_uses_isolated_import_source_assets(workspace, tmp_path):
+    document_root = tmp_path / "project" / "_workspace" / "documents" / "doc-imported"
+    working = document_root / "working" / "document.md"
+    asset = document_root / "source" / "assets" / "imported.png"
+    working.parent.mkdir(parents=True)
+    asset.parent.mkdir(parents=True)
+    working.write_text("![导入图片](assets/imported.png)\n", encoding="utf-8")
+    asset.write_bytes(b"imported-png")
+
+    resolved = workspace._resolve_asset(  # noqa: SLF001
+        {
+            "source_base_dir": str(tmp_path / "original-source"),
+            "working_markdown": str(working),
+        },
+        "assets/imported.png",
+    )
+
+    assert resolved == asset.resolve()
+
+
 def test_workspace_exposes_three_level_directory(workspace):
     result = workspace.workspace(project())
     document = result["directory"][0]
@@ -387,6 +425,68 @@ def test_formal_docx_postprocess_applies_layout_contract_and_cover(tmp_path):
     assert settings.find(f"./{W}updateFields") is not None
     assert "测试论文题目" in "".join(node.text or "" for node in document.findall(f".//{W}t"))
     assert "PAGE" in "".join(node.text or "" for node in footer.findall(f".//{W}instrText"))
+
+
+def test_formal_docx_postprocess_prevents_inline_image_clipping(tmp_path):
+    path = tmp_path / "paper-with-image.docx"
+    template = Path(__file__).resolve().parents[1] / "assets" / "wargame_a4_reference.docx"
+    shutil.copy2(template, path)
+
+    with ZipFile(path, "r") as archive:
+        parts = {
+            entry.filename: (entry, archive.read(entry.filename))
+            for entry in archive.infolist()
+        }
+    document_entry, payload = parts["word/document.xml"]
+    document = ET.fromstring(payload)
+    body = document.find(f".//{W}body")
+    image_paragraph = ET.Element(f"{W}p")
+    properties = ET.SubElement(image_paragraph, f"{W}pPr")
+    ET.SubElement(properties, f"{W}pStyle").set(f"{W}val", "Normal")
+    run = ET.SubElement(image_paragraph, f"{W}r")
+    drawing = ET.SubElement(run, f"{W}drawing")
+    ET.SubElement(
+        drawing,
+        "{http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing}inline",
+    )
+    section = body.find(f"./{W}sectPr")
+    body.insert(list(body).index(section), image_paragraph)
+    parts["word/document.xml"] = (
+        document_entry,
+        ET.tostring(document, encoding="utf-8", xml_declaration=True),
+    )
+    with ZipFile(path, "w") as archive:
+        for entry, part_payload in parts.values():
+            archive.writestr(entry, part_payload)
+
+    _postprocess_formal_docx(path)
+
+    with ZipFile(path) as archive:
+        document = ET.fromstring(archive.read("word/document.xml"))
+    paragraph = next(
+        paragraph
+        for paragraph in document.findall(f".//{W}p")
+        if paragraph.find(
+            ".//{http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing}inline"
+        )
+        is not None
+    )
+    properties = paragraph.find(f"./{W}pPr")
+    spacing = properties.find(f"./{W}spacing")
+    indentation = properties.find(f"./{W}ind")
+    alignment = properties.find(f"./{W}jc")
+    assert {
+        "before": spacing.get(f"{W}before"),
+        "after": spacing.get(f"{W}after"),
+        "line": spacing.get(f"{W}line"),
+        "lineRule": spacing.get(f"{W}lineRule"),
+    } == {"before": "0", "after": "0", "line": "240", "lineRule": "auto"}
+    assert {
+        "left": indentation.get(f"{W}left"),
+        "right": indentation.get(f"{W}right"),
+        "firstLine": indentation.get(f"{W}firstLine"),
+    } == {"left": "0", "right": "0", "firstLine": "0"}
+    assert alignment.get(f"{W}val") == "center"
 
 
 def test_wargame_docx_postprocess_sets_print_boundaries(tmp_path):

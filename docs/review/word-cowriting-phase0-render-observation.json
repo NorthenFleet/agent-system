@@ -1,0 +1,74 @@
+{
+  "schema": "word-cowriting-phase0-render-observation/v1",
+  "purpose": "Read-only page-count comparison; this does not modify the gold DOCX files and does not prove pixel fidelity.",
+  "captured_at": "2026-08-24T02:21:19+08:00",
+  "environment": {
+    "hostname": "appledeMac-mini.local",
+    "os": "macOS 26.5.2 (25F84)",
+    "architecture": "arm64"
+  },
+  "renderer": {
+    "name": "LibreOffice",
+    "version": "26.2.0.3",
+    "build": "afbbd0df0edb6d40b450b0337ac646b0913a760c"
+  },
+  "commands": {
+    "render": "/opt/homebrew/bin/soffice --headless -env:UserInstallation=file://<isolated-profile> --convert-to pdf --outdir <output-directory> <gold-docx>",
+    "page_count": "/usr/bin/swift /private/tmp/word_phase0_pdf_pages.swift <rendered-pdf>",
+    "font_probe": "/opt/homebrew/bin/fc-match --format=%{family} <font-name>"
+  },
+  "font_probe": {
+    "Arial": "Arial",
+    "Calibri": "Verdana",
+    "Cambria Math": "STIX Two Math",
+    "Courier New": "Courier New",
+    "DejaVu Math TeX Gyre": "Verdana",
+    "MS Mincho": "Verdana",
+    "MS PGothic": "Verdana",
+    "Segoe Print": "Verdana",
+    "Symbol": "Symbol",
+    "Tahoma": "Tahoma",
+    "Times New Roman": "Times New Roman",
+    "Times New Roman Bold": "Verdana",
+    "Times NewMan": "Verdana",
+    "Wingdings": "Wingdings",
+    "仿宋": "Verdana",
+    "仿宋_GB2312": "Verdana",
+    "华文中宋": "Verdana",
+    "宋体": "Verdana",
+    "微软雅黑": "Verdana",
+    "方正仿宋_GBK": "Verdana",
+    "方正公文小标宋": "Verdana",
+    "方正小标宋简体": "Verdana",
+    "楷体": "Verdana",
+    "楷体_GB2312": "Verdana",
+    "汉仪书宋二KW": "Verdana",
+    "汉仪楷体简": "Verdana",
+    "黑体": "Verdana"
+  },
+  "observations": [
+    {
+      "document_id": "course-plan-original-20h",
+      "source_sha256": "625c5adc0d113828d4fa64b3bd7f6ee477cbc1f3335a67af6e9190c9b1347bc4",
+      "source_application": "WPS Office_12.1.0.24657_F1E327BC-269C-435d-A152-05C5408002CA",
+      "source_saved_pages": 23,
+      "libreoffice_pdf_pages": 23,
+      "page_delta": 0,
+      "pdf_sha256": "7a0a81086947ec93f18d50785f8b2ff797821ad32fa387cceada9f1fc566c8b5",
+      "pdf_size_bytes": 578589,
+      "ephemeral_artifact_path": "/private/tmp/word-phase0-render-20260824/course/《兵棋推演与智能决策》-军兵种作战指挥专业-20课时-孙翼.pdf"
+    },
+    {
+      "document_id": "thesis-v25-r4.1-layout-reference",
+      "source_sha256": "7664c57c0f784ab9666bcdb76c1be6dac938d53e41638cbe0e77fa78a1410ecf",
+      "source_application": "WPS Office_12.1.0.25225_F1E327BC-269C-435d-A152-05C5408002CA",
+      "source_saved_pages": 121,
+      "libreoffice_pdf_pages": 148,
+      "page_delta": 27,
+      "pdf_sha256": "e0b554d4a6014e35457f73c2d4eaac3fe95f10402f35c236e975cb59bf386687",
+      "pdf_size_bytes": 5870905,
+      "ephemeral_artifact_path": "/private/tmp/word-phase0-render-20260824/thesis/博士论文-第三版-七章工作稿-v25-排版R4.1.pdf"
+    }
+  ],
+  "interpretation": "This bounded observation shows page-count agreement on the course document and a 27-page divergence on the thesis while multiple requested fonts were substituted. It does not isolate font substitution as the only cause and does not prove pixel fidelity. This LibreOffice rendering result cannot be treated as Word/WPS layout authority for thesis-class documents."
+}

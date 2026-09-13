@@ -23,6 +23,7 @@ COURSE_TEMPLATE_KEY = "surface_wargame_course_v1"
 COURSE_PROJECT_ID = "proj-16ca49b862"
 MANUAL_PROJECT_ID = "proj-c57e28f8e0"
 SIMULATION_PROJECT_ID = "proj-87336865f4"
+COURSE_DATA_VERSION = "course-baseline-20h-v4"
 
 MANUAL_RULE_REFS = [
     {
@@ -315,6 +316,18 @@ def _template_products() -> list[dict[str, Any]]:
                 "is_output_product": False,
             },
             {
+                "key": "course-knowledge-selection",
+                "title": "课程知识库优选底稿与融合说明",
+                "aliases": [],
+                "legacy_id": "",
+                "kind": "rich_text",
+                "product_type": "internal_reference",
+                "quality_profile": "",
+                "outline": [],
+                "required_for_release": False,
+                "is_output_product": False,
+            },
+            {
                 "key": "internal-practice-template",
                 "title": "实作指导书编写模板（反潜专业基础课程参考）",
                 "aliases": [],
@@ -415,11 +428,20 @@ class CourseProductionService:
     def _source_refs_for(self, product: dict[str, Any]) -> list[dict[str, Any]]:
         product_type = product["product_type"]
         units = set(product.get("course_unit_ids") or [])
-        if product_type in {"course_plan", "teaching_schedule"}:
-            return [MANUAL_RULE_REFS[0], SIMULATION_REFS[0]]
+        if product_type in {"course_plan", "teaching_schedule", "course_presentation"}:
+            return copy.deepcopy([*MANUAL_RULE_REFS, *SIMULATION_REFS])
         if product_type == "lesson_plan" and units & {"L09", "L10"}:
             return copy.deepcopy([*MANUAL_RULE_REFS, *SIMULATION_REFS])
-        if product_type == "lesson_plan" and units & {"L03", "L04", "L05", "L06", "L07", "L08"}:
+        if product_type == "lesson_plan" and units & {
+            "L01",
+            "L02",
+            "L03",
+            "L04",
+            "L05",
+            "L06",
+            "L07",
+            "L08",
+        }:
             return copy.deepcopy(MANUAL_RULE_REFS)
         if product_type == "practice_guide":
             return copy.deepcopy([*MANUAL_RULE_REFS, *MANUAL_DATA_REFS, *SIMULATION_REFS])
@@ -433,17 +455,22 @@ class CourseProductionService:
 
     def _find_document(self, documents: list[dict[str, Any]], product: dict[str, Any]) -> dict[str, Any] | None:
         unit_ids = set(product.get("course_unit_ids") or [])
-        for row in documents:
-            if row.get("product_type") == product["product_type"]:
-                if not unit_ids or unit_ids == set(row.get("course_unit_ids") or []):
-                    return row
         legacy_id = product.get("legacy_id")
         if legacy_id:
             found = next((row for row in documents if row.get("id") == legacy_id), None)
             if found:
                 return found
         names = {product["title"], *(product.get("aliases") or [])}
-        return next((row for row in documents if row.get("title") in names), None)
+        found = next((row for row in documents if row.get("title") in names), None)
+        if found:
+            return found
+        if product["product_type"] == "internal_reference":
+            return None
+        for row in documents:
+            if row.get("product_type") == product["product_type"]:
+                if not unit_ids or unit_ids == set(row.get("course_unit_ids") or []):
+                    return row
+        return None
 
     def apply_template(self, project: dict[str, Any], dry_run: bool = False) -> dict[str, Any]:
         if str(project.get("project_type") or "") != "document":
@@ -477,7 +504,7 @@ class CourseProductionService:
                 "required_for_release": product["required_for_release"],
                 "source_refs": self._source_refs_for(product),
                 "rules_version": "R1.2" if self._source_refs_for(product) and any(ref["project_id"] == MANUAL_PROJECT_ID for ref in self._source_refs_for(product)) else "",
-                "data_version": "course-baseline-20h-v3",
+                "data_version": COURSE_DATA_VERSION,
                 "expected_chapters": (
                     len(product["outline"])
                     if product["kind"] == "rich_text" and product["outline"]
@@ -514,6 +541,7 @@ class CourseProductionService:
         internal_sources = [
             resolved["lecture-material"],
             resolved["rule-verification-matrix"],
+            resolved["course-knowledge-selection"],
         ]
         for key, row in list(resolved.items()):
             if not row.get("is_output_product", True):

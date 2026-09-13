@@ -1,0 +1,74 @@
+{
+  "schema": "openclaw.word-fidelity-gold-set.v1",
+  "scope": "3021 WorkBuddy-class human-AI co-writing phase 0",
+  "documents": [
+    {
+      "id": "course-plan-original-20h",
+      "title": "《兵棋推演与智能决策》军兵种作战指挥专业20课时教学计划",
+      "path": "/Users/apple/工作桌面/knowledge/06-项目库-Projects/水面舰艇作战软件与兵棋推演课程--proj-16ca49b862/《兵棋推演与智能决策》-军兵种作战指挥专业-20课时-孙翼.docx",
+      "expected_sha256": "625c5adc0d113828d4fa64b3bd7f6ee477cbc1f3335a67af6e9190c9b1347bc4",
+      "authority_role": "content_and_layout_reference",
+      "authority_evidence": [
+        "project manifest source_word",
+        "documents.json source_path/source_sha256",
+        "restore_course_plan_authoritative_original.py SOURCE_WORD_SHA256"
+      ],
+      "notes": [
+        "The same-named Teaching library copy has a different SHA and is not this gold source."
+      ]
+    },
+    {
+      "id": "thesis-v25-r4.1-layout-reference",
+      "title": "博士论文第三版七章工作稿v25排版R4.1",
+      "path": "/Users/apple/工作桌面/knowledge/10-成果库-Outputs/毕业论文/博士论文/博士论文-第三版-七章工作稿-v25-排版R4.1.docx",
+      "expected_sha256": "7664c57c0f784ab9666bcdb76c1be6dac938d53e41638cbe0e77fa78a1410ecf",
+      "authority_role": "historical_layout_reference_only",
+      "authority_evidence": [
+        "user-specified Results library R4.1 path",
+        "matches v25-to-v34 authority-switch backup SHA"
+      ],
+      "notes": [
+        "This file freezes the Word layout baseline; it is not the current structured thesis content authority.",
+        "The layout/staging/r4-v25 candidate has a different SHA and is excluded."
+      ]
+    }
+  ],
+  "acceptance_profiles": {
+    "source_integrity": {
+      "required": true,
+      "rules": [
+        "exact source SHA-256",
+        "valid ZIP CRC",
+        "all required OOXML parts present"
+      ]
+    },
+    "no_op_roundtrip": {
+      "required_for_editor_poc": true,
+      "rules": [
+        "no repair prompt in Microsoft Word and WPS",
+        "visible text unchanged",
+        "tables, formulas, media, captions, bookmarks, fields, sections, headers and footers preserved",
+        "untouched media bytes preserved",
+        "page count and unchanged-page rendering remain within the approved visual tolerance"
+      ]
+    },
+    "surgical_edit": {
+      "required_for_editor_poc": true,
+      "rules": [
+        "edit applies only to the selected native office object",
+        "untouched style IDs and object relationships remain stable",
+        "undo and redo use the editor-native history",
+        "saved DOCX reopens in Microsoft Word and WPS without repair"
+      ]
+    },
+    "human_ai_concurrency": {
+      "required_for_editor_poc": true,
+      "rules": [
+        "human and AI share one current editor revision",
+        "stale selection is rejected or rebased explicitly",
+        "AI changes are reviewable and traceable to a WritingChangeSet"
+      ]
+    }
+  }
+}
+

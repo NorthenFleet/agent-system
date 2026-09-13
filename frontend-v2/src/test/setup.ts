@@ -4,6 +4,14 @@ import ElementPlus from 'element-plus'
 // Stub fetch globally for API mocking
 global.fetch = vi.fn()
 
+class ResizeObserverMock {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+
+global.ResizeObserver = ResizeObserverMock as typeof ResizeObserver
+
 // Mock Element Plus icons — Sidebar uses Monitor, List, Cpu, Grid
 vi.mock('@element-plus/icons-vue', () => ({
   Loading: { name: 'Loading', render: () => null },
@@ -43,5 +51,11 @@ vi.mock('@element-plus/icons-vue', () => ({
   VideoPlay: { name: 'VideoPlay', render: () => null },
   ArrowDown: { name: 'ArrowDown', render: () => null },
   ArrowUp: { name: 'ArrowUp', render: () => null },
-  Delete: { name: 'Delete', render: () => null }
+  Delete: { name: 'Delete', render: () => null },
+  Pointer: { name: 'Pointer', render: () => null },
+  Lock: { name: 'Lock', render: () => null },
+  Operation: { name: 'Operation', render: () => null },
+  Setting: { name: 'Setting', render: () => null },
+  ZoomIn: { name: 'ZoomIn', render: () => null },
+  ZoomOut: { name: 'ZoomOut', render: () => null }
 }))

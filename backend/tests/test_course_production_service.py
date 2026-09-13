@@ -6,6 +6,7 @@ from zipfile import ZipFile
 import pytest
 
 import services.course_production_service as course_module
+import scripts.migrate_surface_wargame_course_p0 as course_migration
 from services.course_production_service import (
     COURSE_TEMPLATE_KEY,
     CourseProductionService,
@@ -21,10 +22,12 @@ from scripts.migrate_surface_wargame_course_p0 import (
     _complete_lesson,
     _course_plan,
     _extract_pptx_text,
+    _knowledge_selection_markdown,
     _lecture_material,
     _merge_lecture_supplement,
     _merge_practice_supplement,
     _practice_guide,
+    _replace_course_markdown,
     _rule_verification_matrix,
     _teaching_schedule,
 )
@@ -309,12 +312,12 @@ def test_course_template_is_idempotent_and_creates_complete_product_architecture
         course_project.get_project("proj-course")
     )["documents"]
 
-    assert first["summary"] == {"total": 19, "create": 18, "update": 1}
-    assert second["summary"] == {"total": 19, "create": 0, "update": 19}
-    assert len(documents) == 19
+    assert first["summary"] == {"total": 20, "create": 19, "update": 1}
+    assert second["summary"] == {"total": 20, "create": 0, "update": 20}
+    assert len(documents) == 20
     assert sum(row["product_type"] == "lesson_plan" for row in documents) == 10
     assert sum(row["required_for_release"] for row in documents) == 16
-    assert sum(not row["is_output_product"] for row in documents) == 3
+    assert sum(not row["is_output_product"] for row in documents) == 4
     assert (
         course_project.project["document_spec"]["course_profile"]["total_hours"]
         == 20
@@ -336,12 +339,29 @@ def test_course_template_is_idempotent_and_creates_complete_product_architecture
         for row in documents
         if row["product_type"] == "rule_verification_matrix"
     )
+    knowledge_selection = next(
+        row
+        for row in documents
+        if row["title"] == "课程知识库优选底稿与融合说明"
+    )
+    practice_template = next(
+        row
+        for row in documents
+        if row["title"] == "实作指导书编写模板（反潜专业基础课程参考）"
+    )
     assert practice_guide["course_unit_ids"] == [f"L{index:02d}" for index in range(3, 10)]
     assert assessment["course_unit_ids"] == ["L10"]
     assert lecture_material["is_output_product"] is False
     assert verification_matrix["is_output_product"] is False
+    assert knowledge_selection["product_type"] == "internal_reference"
+    assert knowledge_selection["id"] != practice_template["id"]
+    assert all(row["data_version"] == "course-baseline-20h-v4" for row in documents)
     assert all(
-        {lecture_material["id"], verification_matrix["id"]}
+        {
+            lecture_material["id"],
+            verification_matrix["id"],
+            knowledge_selection["id"],
+        }
         <= set(row["data_source_ids"])
         for row in documents
         if row["is_output_product"]
@@ -498,6 +518,12 @@ def test_course_point_requires_review_before_completion(course_project):
 def test_course_source_refs_follow_manual_practice_and_assessment_flow():
     service = CourseProductionService()
 
+    plan_refs = service._source_refs_for(  # noqa: SLF001
+        {"product_type": "course_plan", "course_unit_ids": []}
+    )
+    l01_refs = service._source_refs_for(  # noqa: SLF001
+        {"product_type": "lesson_plan", "course_unit_ids": ["L01"]}
+    )
     l03_refs = service._source_refs_for(  # noqa: SLF001
         {"product_type": "lesson_plan", "course_unit_ids": ["L03"]}
     )
@@ -508,11 +534,17 @@ def test_course_source_refs_follow_manual_practice_and_assessment_flow():
         {"product_type": "lesson_plan", "course_unit_ids": ["L10"]}
     )
 
-    assert {row["relation"] for row in l03_refs} == {
+    expected_rule_relations = {
         "authoritative_rule",
         "adjudication_rule",
         "operator_table",
     }
+    assert expected_rule_relations <= {row["relation"] for row in plan_refs}
+    assert {"practice_runtime", "planning_runtime"} <= {
+        row["relation"] for row in plan_refs
+    }
+    assert {row["relation"] for row in l01_refs} == expected_rule_relations
+    assert {row["relation"] for row in l03_refs} == expected_rule_relations
     assert {"authoritative_rule", "practice_runtime", "planning_runtime"} <= {
         row["relation"] for row in l09_refs
     }
@@ -536,6 +568,18 @@ title: old
 | old |
 
 ## 二、课程内容与教学要求
+
+## 四、实施过程
+
+本课程共10学时，其中理论4学时、实践6学时。
+
+| 合计 | 8次课 | 4 | 12 | 16 |
+
+谋战谋战兵棋。
+
+## 六、考核评价
+
+保留本节。
 """
 
     first = _course_plan(original, profile)
@@ -545,8 +589,90 @@ title: old
     assert second.count("## 20学时课程总体安排") == 1
     assert "2次理论、7次实作、1次考核" in second
     assert "| 第10讲 | 综合考核：想定分析、对抗推演与复盘答辩 | 综合考核 | 2 |" in second
+    assert second.count("## 四、实施过程") == 1
+    assert "| 合计 | 10次课 | 2次理论、7次实作、1次考核 | 4 | 14 | 2 | 20 |" in second
+    assert "| 合计 | 第3—9次课 | 7次《谋战》兵棋实作 | 14 |" in second
+    assert "10学时" not in second
+    assert "16学时" not in second
+    assert "谋战谋战" not in second
+    assert "## 六、考核评价" in second
     assert "| 合计 | 10次课 | 10讲 |  | 4 | 14 | 2 | 20 |" in schedule
     assert schedule.count("《谋战》兵棋实作") >= 7
+
+
+def test_knowledge_selection_note_records_sources_boundaries_and_ten_unit_mapping():
+    records = [
+        {
+            "title": "来源一",
+            "relative_path": "08-教学库-Teaching/来源一.md",
+            "version": "v1",
+            "sha256": "a" * 64,
+            "selection": "补充来源",
+            "allowed_use": "结构参考",
+            "snapshot_path": "06-项目库-Projects/course/_workspace/imported_sources/来源一.md",
+        }
+    ]
+
+    note = _knowledge_selection_markdown(records, default_course_profile())
+
+    assert 'data_version: "course-baseline-20h-v4"' in note
+    assert "proj-c57e28f8e0" in note
+    assert "R1.2/D1.2" in note
+    assert "R1.1/D1.1" in note
+    assert "理论10＋实作10" in note
+    assert "未经规则核验不得进入正式裁决" in note
+    assert note.count("| L") == 10
+    assert "| L03 | 第3讲：" in note
+    assert "| L10 | 第10讲：" in note
+
+
+def test_course_markdown_replacement_uses_structured_authority_for_collaborative_documents(
+    monkeypatch,
+):
+    calls = {}
+    monkeypatch.setattr(
+        course_migration.multi_document_service,
+        "rich_project_context",
+        lambda project, document_id: {"id": document_id},
+    )
+    monkeypatch.setattr(
+        course_migration.document_workspace_service,
+        "ensure_workspace",
+        lambda _context: {"content_authority": "structured_json"},
+    )
+
+    def replace_authority(project, document_id, markdown, *, label, actor):
+        calls.update(
+            {
+                "project": project,
+                "document_id": document_id,
+                "markdown": markdown,
+                "label": label,
+                "actor": actor,
+            }
+        )
+
+    monkeypatch.setattr(
+        course_migration.writing_collaboration_service,
+        "replace_authority_from_markdown",
+        replace_authority,
+    )
+    monkeypatch.setattr(
+        course_migration.multi_document_service,
+        "replace_rich_text_markdown",
+        lambda *_args, **_kwargs: pytest.fail("不应调用旧Markdown替换入口"),
+    )
+
+    project = {"id": "proj-course"}
+    _replace_course_markdown(project, "doc-structured", "# 新正文", "course-migration")
+
+    assert calls == {
+        "project": project,
+        "document_id": "doc-structured",
+        "markdown": "# 新正文",
+        "label": "课程20学时v4知识库融合",
+        "actor": "course-migration",
+    }
 
 
 def test_lecture_material_is_normalised_mapped_and_mergeable_idempotently():

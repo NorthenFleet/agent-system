@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import copy
+import hashlib
 import html
 import json
 import re
@@ -24,9 +25,52 @@ from services.course_production_service import (  # noqa: E402
 )
 from services.document_workspace_service import document_workspace_service  # noqa: E402
 from services.multi_document_service import multi_document_service  # noqa: E402
+from services.writing_collaboration_service import (  # noqa: E402
+    writing_collaboration_service,
+)
 
 
 CONTENT_VERSION = "surface-course-p0-v2"
+KNOWLEDGE_SELECTION_VERSION = "course-knowledge-selection-v1"
+KNOWLEDGE_SELECTION_TITLE = "课程知识库优选底稿与融合说明"
+KNOWLEDGE_SELECTION_ROOT = Path("08-教学库-Teaching")
+KNOWLEDGE_SELECTION_SNAPSHOT = Path(
+    "imported_sources/knowledge_selection/20260808"
+)
+KNOWLEDGE_SELECTION_SOURCES = [
+    {
+        "key": "course-plan",
+        "title": "《兵棋推演与智能决策》20学时教学计划",
+        "relative_path": Path("教学计划/兵棋推演与智能决策 - 教学计划.md"),
+        "version": "知识库20学时稿",
+        "selection": "补充来源，不覆盖3021正式教学计划",
+        "allowed_use": "课程定位、目标、内容组织与教学实施表述参考",
+    },
+    {
+        "key": "schedule-2026",
+        "title": "《兵棋推演》封面与进度表（2026）",
+        "relative_path": Path("教学进度表/2.《兵棋推演》封面与进度表（2026）.md"),
+        "version": "v2026.2",
+        "selection": "结构参考，不采用理论10＋实作10口径",
+        "allowed_use": "进度表栏目、教学组织和过程考核要素参考",
+    },
+    {
+        "key": "manual-lecture",
+        "title": "手工兵棋讲解稿",
+        "relative_path": Path("教案/手工兵棋讲解稿.md"),
+        "version": "知识库讲解稿",
+        "selection": "讲授与案例补充来源，参数须经规则核验",
+        "allowed_use": "三级能力、五人编组、侦察预警、电子战和复盘案例",
+    },
+    {
+        "key": "manual-textbook-v3",
+        "title": "手工兵棋课程教材v3.0目录及完成状态",
+        "relative_path": Path("教材/手工兵棋课程/README.md"),
+        "version": "v3.0目录状态",
+        "selection": "教材结构参考，第6—8章待整理内容不得作为正式依据",
+        "allowed_use": "教材章节框架、已完成内容索引和后续完善清单",
+    },
+]
 
 
 def _snapshot(project: dict) -> Path:
@@ -58,6 +102,216 @@ def _snapshot(project: dict) -> Path:
             destination.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(source, destination)
     return target
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _snapshot_knowledge_selection(project: dict) -> tuple[list[dict], Path, Path]:
+    vault = Path(document_workspace_service.vault).resolve()
+    workspace = document_workspace_service._workspace_root(project)  # noqa: SLF001
+    source_root = vault / KNOWLEDGE_SELECTION_ROOT
+    target_root = workspace / KNOWLEDGE_SELECTION_SNAPSHOT
+    target_root.mkdir(parents=True, exist_ok=True)
+    records = []
+    for spec in KNOWLEDGE_SELECTION_SOURCES:
+        source = source_root / spec["relative_path"]
+        if not source.is_file():
+            raise FileNotFoundError(f"课程知识库来源不存在：{source}")
+        destination = target_root / spec["relative_path"]
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        source_hash = _sha256(source)
+        if not destination.is_file() or _sha256(destination) != source_hash:
+            shutil.copy2(source, destination)
+        records.append(
+            {
+                **spec,
+                "relative_path": (KNOWLEDGE_SELECTION_ROOT / spec["relative_path"]).as_posix(),
+                "snapshot_path": destination.relative_to(vault).as_posix(),
+                "sha256": source_hash,
+                "size_bytes": source.stat().st_size,
+            }
+        )
+    manifest_path = target_root / "manifest.json"
+    manifest = {
+        "schema": "openclaw.course-knowledge-selection.v1",
+        "baseline": "course-baseline-20h-v4",
+        "course_project_id": str(project["id"]),
+        "authority": {
+            "course_structure": "20学时、10次课、2次理论＋7次《谋战》实作＋1次考核",
+            "rules": "proj-c57e28f8e0 R1.2/D1.2",
+            "adjudication_and_operator_data": "proj-c57e28f8e0 R1.1/D1.1",
+        },
+        "sources": records,
+    }
+    manifest_path.write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    return records, target_root, manifest_path
+
+
+def _knowledge_selection_markdown(records: list[dict], profile: dict) -> str:
+    source_rows = []
+    for row in records:
+        source_rows.append(
+            "| {title} | `{path}` | {version} | `{sha}` | {selection} | {allowed_use} | `{snapshot}` |".format(
+                title=row["title"],
+                path=row["relative_path"],
+                version=row["version"],
+                sha=row["sha256"],
+                selection=row["selection"],
+                allowed_use=row["allowed_use"],
+                snapshot=row["snapshot_path"],
+            )
+        )
+    mapping_rows = []
+    for unit in profile["units"]:
+        if unit["delivery_mode"] == "theory":
+            sources = "20学时教学计划、教材v3.0目录"
+            use = "理论框架、课程目标、规则与裁决方法"
+        elif unit["delivery_mode"] == "practice":
+            sources = "手工兵棋讲解稿、教材v3.0目录"
+            use = "操作案例、协同方法与复盘问题；参数经核验矩阵过滤"
+        else:
+            sources = "20学时教学计划、2026进度表结构"
+            use = "考核组织与成果要求；不采用旧日期、教室和学时口径"
+        mapping_rows.append(
+            f"| {unit['id']} | 第{unit['order']}讲：{unit['title']} | {sources} | {use} |"
+        )
+    return "\n".join(
+        [
+            "---",
+            f'title: "{KNOWLEDGE_SELECTION_TITLE}"',
+            "status: internal",
+            f'content_version: "{KNOWLEDGE_SELECTION_VERSION}"',
+            'data_version: "course-baseline-20h-v4"',
+            "---",
+            "",
+            f"# {KNOWLEDGE_SELECTION_TITLE}",
+            "",
+            "## 一、底稿定位与使用边界",
+            "",
+            "本底稿是3021课程项目的内部来源索引，不是发布成果，也不参与审批。正式课程结构唯一采用20学时、10次课、2次理论＋7次《谋战》实作＋1次综合考核；实际开课日期、班次和场地以本学期排课为准。",
+            "",
+            "规则引用以关联项目`proj-c57e28f8e0`的R1.2/D1.2三册规则为权威，裁决与算子数据继续使用登记的R1.1/D1.1。知识库旧教材、口述案例以及V2/V3数据只可用于内容启发，未经规则核验不得进入正式裁决。",
+            "",
+            "## 二、优选来源、哈希与快照",
+            "",
+            "| 来源 | 原始路径 | 版本结论 | SHA-256 | 选用结论 | 允许使用范围 | 项目内完整快照 |",
+            "| --- | --- | --- | --- | --- | --- | --- |",
+            *source_rows,
+            "",
+            "完整源文按原目录层级保存在项目`_workspace/imported_sources/knowledge_selection/20260808`目录，并由同目录`manifest.json`记录来源、哈希和权威边界。",
+            "",
+            "## 三、正式主版本与冲突处理",
+            "",
+            "- 教学计划主版本：`doc-e811bedd87f9`；本次仅修复旧10/16学时实施表和明显重复错误。",
+            "- 教学进度表主版本：`doc-2a28da7429f0`；知识库v2026.2只提供栏目与组织参考。",
+            "- 教案主版本：3021现有L01—L10十讲完整教案；知识库三份高度重复的独立教案不作主版本。",
+            "- 实作指导书主版本：`doc-e6071aa369ed`，覆盖L03—L09。",
+            "- 考核方案主版本：`doc-f7ff5f8fe4f2`，绑定L10。",
+            "- 2026春季日期、班次、教室，以及‘理论10＋实作10’旧口径全部排除。",
+            "- 32学时教材第6—8章仍标记待整理，仅作为后续补充清单，不覆盖正式成果。",
+            "",
+            "## 四、10讲融合映射",
+            "",
+            "| 讲次 | 正式课程单元 | 优选补充来源 | 融合规则 |",
+            "| --- | --- | --- | --- |",
+            *mapping_rows,
+            "",
+            "## 五、后续修订规则",
+            "",
+            "后续教学计划、教案、实作指导书、课件和考核材料均在现有正式文档上形成新修订，不创建同名重复成果。任何影响裁决、参数、算子或胜负判定的内容，必须先在规则核验矩阵登记并回指R1.2/D1.2或R1.1/D1.1权威来源。",
+            "",
+        ]
+    )
+
+
+def _implementation_plan(profile: dict) -> str:
+    mode_labels = {
+        "theory": "理论讲授/研讨",
+        "practice": "《谋战》兵棋实作",
+        "assessment": "综合考核",
+    }
+    rows = []
+    for unit in profile["units"]:
+        theory = "2" if unit["delivery_mode"] == "theory" else ""
+        practice = "2" if unit["delivery_mode"] == "practice" else ""
+        assessment = "2" if unit["delivery_mode"] == "assessment" else ""
+        rows.append(
+            f"| 第{unit['order']}次课 | {unit['id']} {unit['title']} | {mode_labels[unit['delivery_mode']]} | {theory} | {practice} | {assessment} | 2 |"
+        )
+    practice_outputs = {
+        "L03": "规则查用清单与组件识别记录",
+        "L04": "回合记录表、态势标绘图与裁决日志",
+        "L05": "想定分析表、关键点清单与任务构建表",
+        "L06": "五人编组分工表、部署图与行动方案",
+        "L07": "侦察预警、电磁管控与指挥协同记录",
+        "L08": "制空支援、对海打击与防空反导推演记录",
+        "L09": "综合对抗记录、软件辅助复盘与改进报告",
+    }
+    practice_rows = [
+        f"| {unit['id']} | 第{unit['order']}次课 | {unit['title']} | 2 | {practice_outputs[unit['id']]} |"
+        for unit in profile["units"]
+        if unit["delivery_mode"] == "practice"
+    ]
+    return "\n".join(
+        [
+            "## 四、实施过程",
+            "",
+            "### （一）开课时机",
+            "",
+            "本课程共20学时，每次课2学时，共10次课。其中，第1—2次课为理论教学4学时，第3—9次课为《谋战》兵棋实作14学时，第10次课为综合考核2学时。课程安排在第六、七学期，实际开课日期、班次和场地以本学期排课为准。",
+            "",
+            "### （二）教学实施总体方案",
+            "",
+            "| 次课 | 教学内容 | 教学方式 | 理论 | 实作 | 考核 | 小计 |",
+            "| --- | --- | --- | --- | --- | --- | --- |",
+            *rows,
+            "| 合计 | 10次课 | 2次理论、7次实作、1次考核 | 4 | 14 | 2 | 20 |",
+            "",
+            "### （三）课程实验（实作）实施方案",
+            "",
+            "第3—9次课统一采用《谋战·水面舰艇编队战术手工兵棋》组织实作。实作内容与现有指导书逐讲对应，口述案例只用于训练设计，裁决、参数和算子以关联规则项目的R1.2/D1.2及登记数据R1.1/D1.1为准。",
+            "",
+            "| 单元 | 次课 | 实作内容 | 学时 | 主要过程成果 |",
+            "| --- | --- | --- | --- | --- |",
+            *practice_rows,
+            "| 合计 | 第3—9次课 | 7次《谋战》兵棋实作 | 14 | 形成连续实作档案并支撑第10次课考核 |",
+            "",
+        ]
+    )
+
+
+def _replace_course_markdown(
+    project: dict,
+    document_id: str,
+    markdown: str,
+    actor: str,
+) -> None:
+    context = multi_document_service.rich_project_context(project, document_id)
+    manifest = document_workspace_service.ensure_workspace(context)
+    if manifest.get("content_authority") == "structured_json":
+        writing_collaboration_service.replace_authority_from_markdown(
+            project,
+            document_id,
+            markdown,
+            label="课程20学时v4知识库融合",
+            actor=actor,
+        )
+        return
+    multi_document_service.replace_rich_text_markdown(
+        project,
+        document_id,
+        markdown,
+        actor,
+    )
 
 
 def _course_plan(markdown: str, profile: dict) -> str:
@@ -125,6 +379,23 @@ def _course_plan(markdown: str, profile: dict) -> str:
         markdown = markdown.replace(marker, f"{schedule}\n{marker}", 1)
     else:
         markdown = f"{markdown.rstrip()}\n\n{schedule}\n"
+    implementation = _implementation_plan(profile)
+    if "## 四、实施过程" in markdown and "## 六、考核评价" in markdown:
+        markdown = re.sub(
+            r"## 四、实施过程[\s\S]*?(?=## 六、考核评价)",
+            f"{implementation}\n",
+            markdown,
+            count=1,
+        )
+    elif "## 六、考核评价" in markdown:
+        markdown = markdown.replace(
+            "## 六、考核评价",
+            f"{implementation}\n## 六、考核评价",
+            1,
+        )
+    else:
+        markdown = f"{markdown.rstrip()}\n\n{implementation}\n"
+    markdown = markdown.replace("谋战谋战", "谋战")
     return markdown
 
 
@@ -1192,7 +1463,7 @@ def migrate(project_id: str, dry_run: bool) -> dict:
         "fulltext",
     )["content"]
     if not _has_content_version(lecture_markdown):
-        multi_document_service.replace_rich_text_markdown(
+        _replace_course_markdown(
             project,
             str(lecture_material["id"]),
             _lecture_material(),
@@ -1200,11 +1471,26 @@ def migrate(project_id: str, dry_run: bool) -> dict:
         )
     verification_matrix = by_type["rule_verification_matrix"][0]
     ppt_audit = _presentation_content_audit(project, documents)
-    multi_document_service.replace_rich_text_markdown(
+    _replace_course_markdown(
         project,
         str(verification_matrix["id"]),
         _rule_verification_matrix(ppt_audit),
         "course-rule-verification-migration",
+    )
+    knowledge_records, knowledge_snapshot, knowledge_manifest = (
+        _snapshot_knowledge_selection(project)
+    )
+    knowledge_selection = next(
+        row
+        for row in by_type["internal_reference"]
+        if row.get("title") == KNOWLEDGE_SELECTION_TITLE
+    )
+    profile = (project.get("document_spec") or {}).get("course_profile") or {}
+    _replace_course_markdown(
+        project,
+        str(knowledge_selection["id"]),
+        _knowledge_selection_markdown(knowledge_records, profile),
+        "course-knowledge-selection-migration",
     )
     plan = by_type["course_plan"][0]
     plan = multi_document_service.detach_legacy_primary(project, str(plan["id"]))
@@ -1212,14 +1498,14 @@ def migrate(project_id: str, dry_run: bool) -> dict:
     profile = (project.get("document_spec") or {}).get("course_profile") or {}
     plan_workspace = multi_document_service.rich_workspace(project, str(plan["id"]))
     plan_markdown = multi_document_service.rich_call(project, str(plan["id"]), "fulltext")["content"]
-    multi_document_service.replace_rich_text_markdown(
+    _replace_course_markdown(
         project,
         str(plan["id"]),
         _course_plan(plan_markdown, profile),
         "course-p0-migration",
     )
     schedule = by_type["teaching_schedule"][0]
-    multi_document_service.replace_rich_text_markdown(
+    _replace_course_markdown(
         project,
         str(schedule["id"]),
         _teaching_schedule(profile),
@@ -1238,7 +1524,7 @@ def migrate(project_id: str, dry_run: bool) -> dict:
         )["content"]
         next_markdown = current if _has_content_version(current) else _complete_lesson(unit)
         next_markdown = _merge_lecture_supplement(next_markdown, unit["id"])
-        multi_document_service.replace_rich_text_markdown(
+        _replace_course_markdown(
             project,
             str(row["id"]),
             next_markdown,
@@ -1253,7 +1539,7 @@ def migrate(project_id: str, dry_run: bool) -> dict:
     )["content"]
     if not _has_content_version(practice_markdown):
         practice_markdown = _practice_guide(profile)
-    multi_document_service.replace_rich_text_markdown(
+    _replace_course_markdown(
         project,
         str(practice_guide["id"]),
         _merge_practice_supplement(practice_markdown),
@@ -1268,7 +1554,7 @@ def migrate(project_id: str, dry_run: bool) -> dict:
     )["content"]
     if not _has_content_version(assessment_markdown):
         assessment_markdown = _assessment_plan(profile)
-    multi_document_service.replace_rich_text_markdown(
+    _replace_course_markdown(
         project,
         str(assessment["id"]),
         _merge_assessment_supplement(assessment_markdown),
@@ -1309,8 +1595,8 @@ def migrate(project_id: str, dry_run: bool) -> dict:
             "current_phase": "course_content_p0",
             "context": {
                 "course_baseline_summary": "20学时、10次课：2次理论、7次《谋战》兵棋实作、1次综合考核",
-                "content_baseline_summary": "10份七章教案、7次实作指导、综合考核方案与口述参数核验矩阵已按0522 R1.2/D1.2完成P0重构",
-                "next_step": "人工逐页复核并修订两套PPT内容，随后完成16份正式成果的审批与发布",
+                "content_baseline_summary": "16份正式成果、4份内部来源与知识库优选快照已统一为course-baseline-20h-v4；规则保持0522 R1.2/D1.2，裁决与算子数据保持R1.1/D1.1",
+                "next_step": "确认本学期开课日期、班次和场地，继续完善现有文档并逐页复核两套PPT；批准前保持草稿状态",
             },
         },
     )
@@ -1328,6 +1614,19 @@ def migrate(project_id: str, dry_run: bool) -> dict:
         "production_status": status["summary"],
         "blockers": status["blockers"],
         "legacy_workspace": plan_workspace["manifest"]["working_markdown"],
+        "knowledge_import": {
+            "document_id": str(knowledge_selection["id"]),
+            "snapshot_root": str(knowledge_snapshot),
+            "manifest": str(knowledge_manifest),
+            "sources": [
+                {
+                    "source": row["relative_path"],
+                    "snapshot": row["snapshot_path"],
+                    "sha256": row["sha256"],
+                }
+                for row in knowledge_records
+            ],
+        },
     }
 
 

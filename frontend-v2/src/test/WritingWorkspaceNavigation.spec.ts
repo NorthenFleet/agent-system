@@ -21,6 +21,7 @@ describe('WritingWorkspace unified navigation', () => {
       '研究总览',
       '协同工作台',
       '概念与论证',
+      '研究迭代',
       '参考文献',
       '排版与交付'
     ])
@@ -30,5 +31,11 @@ describe('WritingWorkspace unified navigation', () => {
     expect(navigation).not.toContain('PPT 制作')
     expect(navigation).not.toContain('联动工作台')
     expect(source).toContain('@tab-change="handleUnifiedNavigationChange"')
+  })
+
+  it('prioritizes a presentation selected from the document library over the saved pane layout', () => {
+    expect(source).toContain(':key="`${selectedProjectId}-${linkedPresentationDocumentId}`"')
+    expect(source).toContain('workbenchInitialPresetOverride.value = true')
+    expect(source).toContain('linkedPresentationDocumentId.value = nextDocument.id')
   })
 })

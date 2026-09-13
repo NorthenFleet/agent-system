@@ -2,104 +2,66 @@ import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ElementPlus from 'element-plus'
 import DocumentLayoutPanel from '@/components/writing/DocumentLayoutPanel.vue'
-import type { DocumentLayoutState } from '@/api/writing'
+import type { DocumentLayoutProfile, DocumentLayoutState } from '@/api/writing'
+
+const profile = (id = 'course-plan-word-a1b2c3', type = 'course_plan'): DocumentLayoutProfile => ({
+  id, name: '课程教学计划·当前 Word 模板', version: 'sha-a1b2c3',
+  applies_to: { kind: 'rich_text', document_types: [type] },
+  authority_source: { sha256: 'a1b2c3d4e5f6', filename: '课程教学计划-v14.docx', document_title: '课程教学计划' },
+  template_path: '/template.docx', template_sha256: 'a1b2c3d4e5f6', status: 'validated', page: {}, styles: {}, rules: { template_mode: 'reference_docx' },
+  preview: { pdf_path: '/preview.pdf', page_count: 3, showcase_pages: [{ kind: 'cover', label: '封面/首页', page: 1 }, { kind: 'frontmatter', label: '目录或前置页', page: 2 }, { kind: 'body', label: '正文样式', page: 3 }] }
+})
 
 function layoutState(status: 'aligned' | 'stale' | 'missing' = 'aligned'): DocumentLayoutState {
+  const current = profile()
   return {
-    profiles: [{
-      id: 'rich_text.doctoral.second_edition_formal.v1',
-      name: '博士论文第二版正式排版',
-      version: '1.0.0',
-      applies_to: { kind: 'rich_text', document_types: ['博士论文'] },
-      authority_source: { path: '/authority.docx', sha256: 'cce0e6ebb84f23f17b34c97cb57c59a' },
-      template_path: '/template.docx',
-      template_sha256: 'abcdef0123456789abcdef0123456789',
-      status: 'validated',
-      page: { margin_top_mm: 37, margin_bottom_mm: 35, margin_left_mm: 28, margin_right_mm: 26 },
-      styles: {},
-      rules: {}
-    }],
-    profile: {
-      id: 'rich_text.doctoral.second_edition_formal.v1',
-      name: '博士论文第二版正式排版',
-      version: '1.0.0',
-      applies_to: { kind: 'rich_text', document_types: ['博士论文'] },
-      authority_source: { path: '/authority.docx', sha256: 'cce0e6ebb84f23f17b34c97cb57c59a' },
-      template_path: '/template.docx',
-      template_sha256: 'abcdef0123456789abcdef0123456789',
-      status: 'validated',
-      page: { margin_top_mm: 37, margin_bottom_mm: 35, margin_left_mm: 28, margin_right_mm: 26 },
-      styles: {},
-      rules: {}
-    },
-    binding: {
-      profile_id: 'rich_text.doctoral.second_edition_formal.v1',
-      content_version: 22,
-      layout_revision: 'R1',
-      status,
-      changed_reasons: status === 'stale' ? ['正文哈希已变化'] : [],
-      latest_delivery: { docx_path: '/delivery.docx' },
-      delivery_history: [{ layout_revision: 'R1', content_version: 22, created_at: '2026-08-03', audit_score: 100 }]
-    },
-    cover: { title: '测试博士论文', author: '测试作者', advisor: '测试导师', advisor_title: '研究员', institution: '测试单位', date: '2026年8月' },
-    frontmatter: { abstract_zh: 'pending', abstract_en: 'pending', keywords_zh: 'pending', keywords_en: 'pending', toc: 'generated' },
-    audit: {
-      generated_at: '2026-08-03T00:00:00Z',
-      compliance_score: 100,
-      status: 'passed',
-      checks: [{ key: 'page', label: 'A4页面与页边距', passed: true, detail: '符合当前模板', severity: 'blocker' }],
-      blockers: [],
-      warnings: ['摘要待同步'],
-      page_anomalies: []
-    },
-    sample: { docx_path: '/sample.docx', pdf_path: '/sample.pdf' },
-    display: { content: '正文v22', template: '排版模板v1', delivery: '交付R1', publication_status: 'draft' }
+    profiles: [current, profile('course-plan-word-d4e5f6', 'course_plan')], profile: current,
+    template_catalog: { document_type: 'course_plan', same_type_count: 2, total_count: 2 },
+    binding: { profile_id: current.id, content_version: 22, layout_revision: 'R1', status, changed_reasons: status === 'stale' ? ['正文哈希已变化'] : [], latest_delivery: { docx_path: '/delivery.docx' } },
+    cover: {}, frontmatter: { abstract_zh: 'pending', abstract_en: 'pending', keywords_zh: 'pending', keywords_en: 'pending', toc: 'generated' },
+    audit: { generated_at: '2026-08-03T00:00:00Z', compliance_score: 100, status: 'passed', checks: [{ key: 'page', label: '页面设置', passed: true, detail: '符合当前模板', severity: 'blocker' }], blockers: [], warnings: [], page_anomalies: [] },
+    sample: { docx_path: '/sample.docx', pdf_path: '/sample.pdf' }, display: { content: '正文v22', template: '排版模板v1', delivery: '交付R1', publication_status: 'draft' }
   }
 }
 
-function mountPanel(layout = layoutState()) {
-  return mount(DocumentLayoutPanel, {
-    props: { layout },
-    global: { plugins: [ElementPlus] }
-  })
-}
+function mountPanel(layout = layoutState()) { return mount(DocumentLayoutPanel, { props: { layout, templatePreviewUrls: { 'course-plan-word-a1b2c3:1': 'blob:cover', 'course-plan-word-a1b2c3:2': 'blob:toc', 'course-plan-word-a1b2c3:3': 'blob:body' } }, global: { plugins: [ElementPlus] } }) }
 
 describe('DocumentLayoutPanel', () => {
-  it('shows the bound template, independent versions, and draft frontmatter warning', () => {
+  it('shows real Word template cards and independent delivery state', () => {
     const wrapper = mountPanel()
-    expect(wrapper.text()).toContain('博士论文第二版正式排版')
+    expect(wrapper.text()).toContain('历史 Word 版式库')
+    expect(wrapper.text()).toContain('课程教学计划·当前 Word 模板')
+    expect(wrapper.text()).toContain('第 1 页 · 封面/首页')
+    expect(wrapper.text()).toContain('第 2 页 · 目录或前置页')
     expect(wrapper.text()).toContain('正文v22 · 排版模板v1 · 交付R1 · 草稿')
-    expect(wrapper.text()).toContain('中文摘要、英文摘要或关键词尚未同步')
-    expect(wrapper.text()).toContain('排版合规度')
-    expect(wrapper.text()).toContain('100')
+    expect(wrapper.findAll('img')).toHaveLength(3)
   })
 
-  it('renders template rules and editable cover fields from backend data', () => {
+  it('does not render generic thesis cover fields for a reference Word', () => {
     const wrapper = mountPanel()
-    expect(wrapper.text()).toContain('A4 · 上37mm · 下35mm · 左28mm · 右26mm')
-    expect(wrapper.text()).toContain('宋体 / Times New Roman · 10.5磅 · 固定18磅')
-    const inputs = wrapper.findAll('input')
-    expect(inputs.some(input => input.element.value === '测试博士论文')).toBe(true)
-    expect(inputs.some(input => input.element.value === '测试作者')).toBe(true)
+    expect(wrapper.text()).toContain('来自选中 Word，不套用通用规则')
+    expect(wrapper.text()).not.toContain('导师职称')
+    expect(wrapper.text()).not.toContain('宋体 / Times New Roman')
   })
 
-  it('emits the selected template and edited cover on save', async () => {
+  it('emits a binding change only after selecting another template', async () => {
     const wrapper = mountPanel()
-    const title = wrapper.findAll('input').find(input => input.element.value === '测试博士论文')
-    expect(title).toBeTruthy()
-    await title!.setValue('修改后的论文题目')
-    const saveButton = wrapper.findAll('button').find(button => button.text().includes('保存封面'))
-    await saveButton!.trigger('click')
-    expect(wrapper.emitted('save')?.[0]?.[0]).toMatchObject({
-      profile_id: 'rich_text.doctoral.second_edition_formal.v1',
-      layout_revision: 'R1',
-      cover: { title: '修改后的论文题目' }
-    })
+    const select = wrapper.findAll('button').find(button => button.text().includes('选择此模板'))
+    expect(select).toBeTruthy()
+    await select!.trigger('click')
+    expect(wrapper.emitted('save')?.[0]?.[0]).toMatchObject({ profile_id: 'course-plan-word-d4e5f6', layout_revision: 'R1', cover: {} })
   })
 
   it('shows explicit stale reasons instead of silently presenting an old delivery', () => {
     const wrapper = mountPanel(layoutState('stale'))
     expect(wrapper.text()).toContain('需重排')
     expect(wrapper.text()).toContain('正文哈希已变化')
+  })
+
+  it('opens the selected template preview instead of manufacturing a sample', async () => {
+    const wrapper = mountPanel()
+    const preview = wrapper.findAll('button').find(button => button.text().includes('查看完整 Word 样张'))
+    await preview!.trigger('click')
+    expect(wrapper.emitted('preview-template')?.[0]).toEqual(['course-plan-word-a1b2c3'])
   })
 })

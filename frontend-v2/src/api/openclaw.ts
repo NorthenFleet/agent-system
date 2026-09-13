@@ -59,6 +59,91 @@ export type AgentMemoryItem = string | {
   details?: string
 }
 
+export interface GraphMemoryExtraction {
+  outcome: 'started' | 'succeeded' | 'failed'
+  messageCount: number
+  nodeCount: number
+  edgeCount: number
+  errorCode?: string | null
+  createdAt: number
+}
+
+export interface GraphMemorySummary {
+  agentId: string
+  initialized: boolean
+  state: 'not_initialized' | 'empty' | 'ready' | 'backlog' | 'attention'
+  totalNodes: number
+  totalEdges: number
+  communities: number
+  byType: Record<string, number>
+  byEdgeType: Record<string, number>
+  pendingMessages: number
+  queueState?: 'idle' | 'pending' | 'processing' | 'retrying' | 'dead_letter' | string
+  oldestPendingAt?: number | null
+  pendingSessions?: number
+  nextRetryAt?: number | null
+  lastUpdatedAt?: number | null
+  lastExtraction?: GraphMemoryExtraction | null
+  lastSuccessfulExtraction?: number | null
+  vectorCount?: number
+  retrievalMode?: 'fts5' | 'vector' | 'hybrid' | 'unavailable' | string
+  deadLetterCount?: number
+  extractionFailureCount?: number
+}
+
+export interface GraphMemoryNode {
+  id: string
+  type: 'TASK' | 'SKILL' | 'EVENT'
+  name: string
+  description: string
+  content?: string
+  contentTruncated?: boolean
+  status: string
+  validatedCount: number
+  communityId?: string | null
+  pagerank: number
+  createdAt: number
+  updatedAt: number
+  scope: 'private'
+}
+
+export interface GraphMemoryNodePage {
+  agentId: string
+  nodes: GraphMemoryNode[]
+  total: number
+  limit: number
+  offset: number
+}
+
+export interface GraphMemoryGraph {
+  agentId: string
+  nodes: GraphMemoryNode[]
+  edges: Array<{
+    id: string
+    fromId: string
+    toId: string
+    type: string
+    createdAt: number
+  }>
+  limited: boolean
+}
+
+export interface GraphMemoryShare {
+  id: string
+  direction: 'incoming' | 'outgoing'
+  sourceAgent: string
+  nodeId: string
+  nodeType: string
+  nodeName: string
+  audience: string[]
+  approvedBy: string
+  approvalRef: string
+  approvedAt: number
+  expiresAt?: number | null
+  revokedAt?: number | null
+  state: 'active' | 'expired' | 'revoked' | 'invalid'
+}
+
 export interface AgentOrganizationNode {
   id: string
   parent_id?: string
@@ -486,6 +571,36 @@ export function getAgentOrganization() {
 
 export function getAgentMemory(agentId: string) {
   return apiClient.get<{ agent_id: string; memory: AgentMemoryItem[] }>(`/api/agents/${encodeURIComponent(agentId)}/memory`).then(r => r.data)
+}
+
+export function getAgentGraphMemorySummary(agentId: string) {
+  return apiClient.get<GraphMemorySummary>(`/api/v3/agents/${encodeURIComponent(agentId)}/graph-memory/summary`).then(r => r.data)
+}
+
+export function getAgentGraphMemoryNodes(
+  agentId: string,
+  params: { limit?: number; offset?: number; type?: string; q?: string } = {}
+) {
+  return apiClient.get<GraphMemoryNodePage>(`/api/v3/agents/${encodeURIComponent(agentId)}/graph-memory/nodes`, { params }).then(r => r.data)
+}
+
+export function getAgentGraphMemoryNode(agentId: string, nodeId: string) {
+  return apiClient.get<{ agentId: string; node: GraphMemoryNode }>(
+    `/api/v3/agents/${encodeURIComponent(agentId)}/graph-memory/nodes/${encodeURIComponent(nodeId)}`
+  ).then(r => r.data)
+}
+
+export function getAgentGraphMemoryGraph(agentId: string, limit = 60) {
+  return apiClient.get<GraphMemoryGraph>(`/api/v3/agents/${encodeURIComponent(agentId)}/graph-memory/graph`, {
+    params: { limit }
+  }).then(r => r.data)
+}
+
+export function getAgentGraphMemoryShares(agentId: string, limit = 50) {
+  return apiClient.get<{ agentId: string; shares: GraphMemoryShare[]; total: number }>(
+    `/api/v3/agents/${encodeURIComponent(agentId)}/graph-memory/shares`,
+    { params: { limit } }
+  ).then(r => r.data)
 }
 
 export function getKnowledgeStats() {

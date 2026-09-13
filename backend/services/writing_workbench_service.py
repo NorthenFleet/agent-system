@@ -18,6 +18,7 @@ from models.writing_collaboration import (
     WritingWorkspacePreference,
 )
 from services.document_workspace_service import DocumentWorkspaceError
+from services.diagram_service import DiagramService, diagram_service
 from services.multi_document_service import MultiDocumentService, multi_document_service
 from services.writing_collaboration_service import (
     WritingCollaborationService,
@@ -37,8 +38,19 @@ def _response_client_id(client_message_id: str) -> str:
     return f"reply:{client_message_id}"[:96]
 
 
+def _public_error(exc: Exception) -> str:
+    text = str(exc).strip()
+    if "未返回可显示文本" in text or "未生成可审阅内容" in text:
+        return "智能体本次未生成可审阅内容，请重试。"
+    if isinstance(exc, DocumentWorkspaceError):
+        return text[:240] or "请求内容不符合当前文档约束。"
+    if "OpenClaw" in text:
+        return "智能体服务暂时无法完成请求，请稍后重试。"
+    return "任务处理失败，请重试；如持续发生，请联系管理员。"
+
+
 DEFAULT_PREFERENCE: dict[str, Any] = {
-    "schema_version": 2,
+    "schema_version": 3,
     "preset": "writing",
     "split_percent": 42,
     "maximized_pane": None,
@@ -60,10 +72,12 @@ class WritingWorkbenchService:
         session_factory=SessionLocal,
         collaboration_service: WritingCollaborationService = writing_collaboration_service,
         documents_service: MultiDocumentService = multi_document_service,
+        diagrams_service: DiagramService = diagram_service,
     ) -> None:
         self.session_factory = session_factory
         self.collaboration_service = collaboration_service
         self.documents_service = documents_service
+        self.diagrams_service = diagrams_service
 
     def _preference_dict(self, row: WritingWorkspacePreference | None) -> dict[str, Any]:
         preference = copy.deepcopy(DEFAULT_PREFERENCE)
@@ -71,7 +85,7 @@ class WritingWorkbenchService:
             preference.update(copy.deepcopy(row.preference_json or {}))
             if preference.get("preset") == "comparison":
                 preference["preset"] = "document_presentation"
-            preference["schema_version"] = 2
+            preference["schema_version"] = 3
             preference["revision"] = row.revision
             preference["updated_at"] = row.updated_at.isoformat() if row.updated_at else ""
         else:
@@ -98,7 +112,7 @@ class WritingWorkbenchService:
         preference.update(copy.deepcopy(payload))
         if preference.get("preset") == "comparison":
             preference["preset"] = "document_presentation"
-        preference["schema_version"] = 2
+        preference["schema_version"] = 3
         preference.pop("revision", None)
         preference.pop("updated_at", None)
         with self.session_factory() as session:
@@ -117,7 +131,7 @@ class WritingWorkbenchService:
                 )
             if row:
                 row.preference_json = preference
-                row.schema_version = 2
+                row.schema_version = 3
                 row.revision += 1
                 row.updated_at = _now()
             else:
@@ -125,7 +139,7 @@ class WritingWorkbenchService:
                     id=_uuid("wpref"),
                     project_id=project_id,
                     owner_user_id=owner_user_id,
-                    schema_version=2,
+                    schema_version=3,
                     revision=1,
                     preference_json=preference,
                 )
@@ -372,14 +386,69 @@ class WritingWorkbenchService:
                 return {"job": job, "response_message_id": response_id}
             raise DocumentWorkspaceError("AI目标必须是文档或PPT")
         except Exception as exc:
+            public_error = _public_error(exc)
             with self.session_factory() as session:
                 response = session.get(WritingAiMessage, response_id)
                 if response:
                     response.status = "failed"
                     response.content = "任务提交失败"
-                    response.error = str(exc)[:4000]
+                    response.error = public_error
                     session.commit()
-            raise
+            raise DocumentWorkspaceError(public_error) from exc
+
+    async def submit_diagram_message(
+        self,
+        project: dict[str, Any],
+        owner_user_id: str,
+        conversation_id: str,
+        payload: dict[str, Any],
+    ) -> dict[str, Any]:
+        project_id = str(project.get("id") or "")
+        request_id, response_id, target, idempotent_replay = self._create_message_pair(
+            project_id, owner_user_id, conversation_id, payload
+        )
+        if idempotent_replay:
+            return {
+                "request_message_id": request_id,
+                "response_message_id": response_id,
+                "idempotent_replay": True,
+            }
+        document_id = str(target.get("document_id") or "")
+        if not document_id:
+            raise DocumentWorkspaceError("AI目标缺少图表资源")
+        try:
+            job = await self.diagrams_service.submit_ai_job(
+                project,
+                document_id,
+                {
+                    "client_request_id": str(payload.get("client_message_id") or request_id),
+                    "agent_id": str(payload.get("agent_id") or "ultra-magnus"),
+                    "instruction": str(payload.get("content") or "").strip(),
+                    "target_cell_ids": list(target.get("cell_ids") or []),
+                },
+                owner_user_id,
+            )
+            proposal = job.get("proposal") or {}
+            with self.session_factory() as session:
+                response = session.get(WritingAiMessage, response_id)
+                if response:
+                    response.job_kind = "diagram"
+                    response.job_id = str(job.get("id") or "")
+                    response.proposal_ids = [str(proposal["id"])] if proposal.get("id") else []
+                    response.status = str(job.get("status") or "succeeded")
+                    response.content = str(proposal.get("summary") or "已生成结构化图表修改建议")
+                    session.commit()
+            return {"job": job, "response_message_id": response_id}
+        except Exception as exc:
+            public_error = _public_error(exc)
+            with self.session_factory() as session:
+                response = session.get(WritingAiMessage, response_id)
+                if response:
+                    response.status = "failed"
+                    response.content = "图表任务提交失败"
+                    response.error = public_error
+                    session.commit()
+            raise DocumentWorkspaceError(public_error) from exc
 
     def submit_presentation_job(
         self,

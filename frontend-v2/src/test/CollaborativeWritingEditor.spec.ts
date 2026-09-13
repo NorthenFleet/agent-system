@@ -381,7 +381,7 @@ describe('CollaborativeWritingEditor', () => {
     wrapper.unmount()
   })
 
-  it('inserts image metadata and display math blocks as structured editor content', async () => {
+  it('inserts image metadata and display math nodes as structured editor content', async () => {
     const wrapper = mountEditor()
     await flushPromises()
     vi.spyOn(ElMessageBox, 'prompt')
@@ -399,11 +399,10 @@ describe('CollaborativeWritingEditor', () => {
     expect(JSON.stringify(content)).toContain('系统结构示意图')
     expect(JSON.stringify(content)).toContain('artifactKind')
     expect(JSON.stringify(content)).toContain('figure-caption')
-    expect(JSON.stringify(content)).toContain('rawMarkdown')
-    const formula = content.find((node: any) => node.type === 'rawMarkdown')
-    expect(formula?.attrs.markdown).toMatch(/^\$\$\n/)
-    expect(formula?.attrs.markdown).toContain('Phi_A')
-    expect(formula?.attrs.markdown).toMatch(/\n\$\$$/)
+    expect(JSON.stringify(content)).toContain('mathBlock')
+    const formula = content.find((node: any) => node.type === 'mathBlock')
+    expect(formula?.attrs.latex).toContain('Phi_A')
+    expect(formula?.attrs.sourceMarkdown).toBe('')
     expect(formula?.attrs.artifactKind).toBe('equation')
     expect(formula?.attrs.artifactLabel).toBe('式 1')
     wrapper.unmount()
@@ -609,7 +608,7 @@ describe('CollaborativeWritingEditor', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('项目资产')
-    expect(wrapper.find('.math-preview').text()).toBe('\\\\alpha + \\\\beta')
+    expect(wrapper.find('.math-block .katex').exists()).toBe(true)
 
     const referenceButtons = wrapper.findAll('.artifact-list button').filter(button => button.text() === '引用')
     expect(referenceButtons.length).toBeGreaterThanOrEqual(2)
@@ -642,6 +641,8 @@ describe('CollaborativeWritingEditor', () => {
   })
 
   it('renders project asset images through authenticated blob previews without changing JSON src', async () => {
+    const assetRequest = deferred<Blob>()
+    vi.mocked(getDocumentWritingAsset).mockReturnValueOnce(assetRequest.promise)
     vi.mocked(getWritingCollaboration).mockResolvedValue(collaboration({
       document: {
         type: 'doc',
@@ -672,8 +673,53 @@ describe('CollaborativeWritingEditor', () => {
 
     expect(getDocumentWritingAsset).toHaveBeenCalledWith('project-1', 'document-1', 'assets/existing.png')
     const image = wrapper.get('img[data-asset-src="assets/existing.png"]')
+    expect(image.attributes('src')).toBeUndefined()
+    assetRequest.resolve(new Blob(['fake-png'], { type: 'image/png' }))
+    await flushPromises()
     expect(image.attributes('src')).toBe('blob:preview-image')
     expect(JSON.stringify((wrapper.vm as any).editor.getJSON())).toContain('"src":"assets/existing.png"')
+    wrapper.unmount()
+  })
+
+  it('loads current section assets while a stale section asset request is still pending', async () => {
+    const staleAsset = deferred<Blob>()
+    vi.mocked(getDocumentWritingAsset)
+      .mockReturnValueOnce(staleAsset.promise)
+      .mockResolvedValueOnce(new Blob(['current-svg'], { type: 'image/svg+xml' }))
+    vi.mocked(getWritingCollaboration)
+      .mockResolvedValueOnce(collaboration({
+        document: {
+          type: 'doc',
+          content: [{
+            type: 'image',
+            attrs: { src: 'assets/stale.svg', blockId: 'stale-image', blockRevision: 1 }
+          }]
+        }
+      }))
+      .mockResolvedValueOnce(collaboration({
+        revision: 8,
+        document: {
+          type: 'doc',
+          content: [{
+            type: 'image',
+            attrs: { src: 'assets/current.svg', blockId: 'current-image', blockRevision: 1 }
+          }]
+        }
+      }))
+    const wrapper = mountEditor()
+    await flushPromises()
+
+    await wrapper.setProps({ sectionId: 'section-2', selectedNodeId: 'section-2' })
+    await flushPromises()
+
+    expect(getDocumentWritingAsset).toHaveBeenCalledWith('project-1', 'document-1', 'assets/current.svg')
+    await vi.waitFor(() => {
+      expect(wrapper.get('img[data-asset-src="assets/current.svg"]').attributes('src')).toBe('blob:preview-image')
+    })
+
+    staleAsset.resolve(new Blob(['stale-svg'], { type: 'image/svg+xml' }))
+    await flushPromises()
+    expect(wrapper.find('img[data-asset-src="assets/stale.svg"]').exists()).toBe(false)
     wrapper.unmount()
   })
 
@@ -690,6 +736,38 @@ describe('CollaborativeWritingEditor', () => {
     expect(wrapper.text()).not.toContain('不应加载')
     expect((wrapper.vm as any).editor.getJSON().content[0].type).toBe('paragraph')
     expect(patchWritingCollaborationDraft).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it('ignores a collaboration response after the editor has moved to another section', async () => {
+    const staleRequest = deferred<WritingCollaborationState>()
+    const currentRequest = deferred<WritingCollaborationState>()
+    vi.mocked(getWritingCollaboration)
+      .mockReturnValueOnce(staleRequest.promise)
+      .mockReturnValueOnce(currentRequest.promise)
+    const wrapper = mountEditor()
+    await flushPromises()
+
+    await wrapper.setProps({ sectionId: 'section-2', selectedNodeId: 'section-2' })
+    currentRequest.resolve(collaboration({
+      revision: 9,
+      document: {
+        type: 'doc',
+        content: [{ type: 'paragraph', content: [{ type: 'text', text: '当前章节内容' }] }]
+      }
+    }))
+    await flushPromises()
+
+    staleRequest.resolve(collaboration({
+      document: {
+        type: 'doc',
+        content: [{ type: 'unsupportedBlock', content: [{ type: 'text', text: '过期章节内容' }] }]
+      }
+    }))
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('当前章节内容')
+    expect(wrapper.text()).not.toContain('过期章节内容')
     wrapper.unmount()
   })
 })

@@ -83,7 +83,7 @@ def test_unknown_markdown_is_kept_as_raw_block():
     assert codec.to_markdown(document).strip() == "::: custom\n保留扩展语法\n:::"
 
 
-def test_display_math_is_kept_as_raw_block():
+def test_display_math_is_structured_without_losing_projection():
     codec = StructuredDocumentCodec()
     markdown = """$$
 \\Phi_A^{rob}(t)=
@@ -96,9 +96,27 @@ $$     （3.10）
     projected = codec.to_markdown(document)
     reparsed = codec.from_markdown(projected, namespace="math-roundtrip")
 
-    assert document["content"][0]["type"] == "rawMarkdown"
+    assert document["content"][0]["type"] == "mathBlock"
+    assert document["content"][0]["attrs"]["latex"].startswith("\\Phi_A")
+    assert document["content"][0]["attrs"]["suffix"] == "（3.10）"
     assert projected == markdown
     assert codec.metrics(document)["plain_text_sha256"] == codec.metrics(reparsed)["plain_text_sha256"]
+
+
+def test_pandoc_image_attributes_and_inline_math_are_structured():
+    codec = StructuredDocumentCodec()
+    document = codec.from_markdown(
+        "![态势图](../figures/map.svg){width=145mm height=80mm}\n\n收益为 $\\alpha+\\beta$。\n",
+        namespace="pandoc-attrs",
+    )
+
+    image, paragraph = document["content"]
+    assert image["type"] == "image"
+    assert image["attrs"]["width"] == "145mm"
+    assert image["attrs"]["height"] == "80mm"
+    assert paragraph["content"][1] == {"type": "mathInline", "attrs": {"latex": "\\alpha+\\beta"}}
+    assert codec.metrics(document)["image_count"] == 1
+    assert codec.metrics(document)["math_inline_count"] == 1
 
 
 def test_hard_break_markdown_spaces_do_not_become_plain_text():
@@ -113,6 +131,22 @@ def test_hard_break_markdown_spaces_do_not_become_plain_text():
     after = codec._plain_text(reparsed)
     assert before == "输入：总体任务。"
     assert after == before
+
+
+def test_citations_are_semantic_superscript_marks_without_changing_markdown():
+    codec = StructuredDocumentCodec()
+    markdown = "已有研究形成基本共识[1][7-9][12, 15]，但仍需验证。\n"
+
+    document = codec.from_markdown(markdown, namespace="citations")
+    paragraph = document["content"][0]
+    citation_nodes = [
+        node for node in paragraph["content"]
+        if any(mark.get("type") == "citation" for mark in node.get("marks") or [])
+    ]
+
+    assert [node["text"] for node in citation_nodes] == ["[1]", "[7-9]", "[12, 15]"]
+    assert codec.metrics(document)["citation_mark_count"] == 3
+    assert codec.to_markdown(document) == markdown
 
 
 def test_table_alignment_uses_tiptap_tablekit_align_attribute():

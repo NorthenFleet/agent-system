@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>3021 人机双写</title>
+    <link rel="icon" href="/icons/icon-192.png" />
+    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+  </head>
+  <body>
+    <main id="app" class="taskpane">
+      <header>
+        <p class="eyebrow">3021 · WORD CANDIDATE</p>
+        <h1>人机双写</h1>
+        <span id="authority" class="status">未连接</span>
+      </header>
+
+      <details id="connection" open>
+        <summary>连接</summary>
+        <label>API地址<input id="apiOrigin" autocomplete="off" /></label>
+        <label>项目ID<input id="projectId" autocomplete="off" /></label>
+        <label>文档ID<input id="documentId" autocomplete="off" /></label>
+        <label>访问令牌<input id="token" type="password" autocomplete="off" /></label>
+        <button id="connect" type="button">连接权威状态</button>
+      </details>
+
+      <section>
+        <div class="section-title"><h2>当前段落</h2><button id="capture" class="secondary" type="button">读取</button></div>
+        <pre id="sourceText" class="content empty">尚未读取</pre>
+        <label>修改要求<textarea id="instruction" rows="4" placeholder="说明需要如何修改当前段落"></textarea></label>
+        <button id="generate" type="button" disabled>生成待审建议</button>
+      </section>
+
+      <section>
+        <div class="section-title"><h2>候选建议</h2><span id="risk" class="status">待生成</span></div>
+        <pre id="replacementText" class="content empty">尚无候选</pre>
+        <p class="warning">应用只修改当前Word候选副本；3021正文保持原修订，必须通过Word回流流程再合并。</p>
+        <button id="apply" type="button" disabled>人工确认并应用到Word</button>
+      </section>
+
+      <output id="message" aria-live="polite"></output>
+    </main>
+    <script type="module" src="./taskpane.ts"></script>
+  </body>
+</html>

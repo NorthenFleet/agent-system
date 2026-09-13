@@ -1,6 +1,12 @@
 import axios, { type AxiosError } from 'axios'
 import { ElMessage } from 'element-plus'
 
+declare module 'axios' {
+  export interface AxiosRequestConfig {
+    suppressErrorToast?: boolean
+  }
+}
+
 const apiClient = axios.create({
   baseURL: '',
   timeout: 15000,
@@ -27,12 +33,20 @@ apiClient.interceptors.response.use(
   (error: AxiosError) => {
     const status = error.response?.status
 
+    // Some callers render their own local fallback (for example a missing
+    // document image).  They still receive the rejected promise, but a single
+    // optional asset must not make the whole workspace look as if it failed.
+    if (error.config?.suppressErrorToast && status !== 401 && status !== 403) {
+      return Promise.reject(error)
+    }
+
     if (status === 401) {
-      // Token 过期或无效 → 清除并跳转登录
+      const developmentMode = localStorage.getItem('auth_login_enabled') === 'false'
       localStorage.removeItem('jwt_token')
-      ElMessage.warning('登录已过期，请重新登录')
-      // 避免重复跳转
-      if (window.location.pathname !== '/login') {
+      localStorage.removeItem('jwt_refresh_token')
+      localStorage.removeItem('jwt_auth_mode')
+      ElMessage.warning(developmentMode ? '开发会话已失效，请刷新页面' : '登录已过期，请重新登录')
+      if (!developmentMode && window.location.pathname !== '/login') {
         window.location.href = '/login'
       }
     } else if (status === 403) {

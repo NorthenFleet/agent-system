@@ -167,6 +167,27 @@ def test_output_metadata_defaults_and_internal_workbook(service, tmp_path):
     assert updated["publication_status"] == "approved"
 
 
+def test_diagram_is_an_internal_project_resource(service):
+    multi, source = service
+    diagram = multi.create_document(
+        project(source),
+        "任务规划技术路线",
+        "diagram",
+        is_output_product=False,
+        product_type="diagram_asset",
+        publication_status="internal",
+        delivery_role="candidate",
+        lineage={"source_type": "structured_diagram"},
+    )
+
+    listed = multi.list_documents(project(source))
+    assert diagram["kind"] == "diagram"
+    assert diagram["is_output_product"] is False
+    assert diagram["delivery_role"] == "candidate"
+    assert diagram["lineage"]["source_type"] == "structured_diagram"
+    assert listed["summary"]["diagram"] == 1
+
+
 def test_course_product_metadata_and_docx_fidelity_import(service):
     multi, source = service
     original_docx = docx_bytes()
@@ -325,6 +346,43 @@ def test_historical_document_is_read_only_but_metadata_can_change(service):
     assert renamed["title"] == "第一版·历史基线"
 
 
+def test_candidate_document_remains_editable_but_is_excluded_from_delivery(service, tmp_path, monkeypatch):
+    multi, source = service
+    baseline = multi.list_documents(project(source))["documents"][0]
+    multi.update_document(
+        project(source), baseline["id"], {"publication_status": "approved"}
+    )
+    candidate = multi.create_document(
+        project(source),
+        "v34 候选工作稿",
+        "rich_text",
+        publication_status="draft",
+        delivery_role="candidate",
+        lineage={
+            "series_id": "doctoral-thesis",
+            "edition_label": "v34",
+            "sequence": 4,
+            "source_type": "structured_authority",
+            "parent_document_id": baseline["id"],
+            "source_checksum": "b" * 64,
+        },
+    )
+
+    assert candidate["delivery_role"] == "candidate"
+    multi.assert_writable(project(source), candidate["id"])
+
+    def fake_export(synthetic_project, output_format):
+        target = tmp_path / f"{synthetic_project.get('_document_id')}.docx"
+        target.write_bytes(b"export")
+        return target
+
+    monkeypatch.setattr(document_workspace_service, "export", fake_export)
+    package = multi.export_package(project(source))
+    with ZipFile(package) as archive:
+        names = archive.namelist()
+    assert all(candidate["title"] not in name for name in names)
+
+
 def test_presentation_structure_binding_detects_stale_and_preserves_versions(
     service, tmp_path, monkeypatch
 ):
@@ -382,6 +440,8 @@ def test_presentation_structure_binding_detects_stale_and_preserves_versions(
         manifest,
     )
     assert binding["status"] == "aligned"
+    assert binding["integrity_status"] == "aligned"
+    assert binding["reference_status"] == "current"
     linked = multi.get_document(project(source), presentation["id"])
     assert linked["is_output_product"] is True
     assert linked["output_format"] == "pptx"
@@ -402,6 +462,58 @@ def test_presentation_structure_binding_detects_stale_and_preserves_versions(
         row["name"].startswith("v0001-before")
         for row in multi.versions(project(source), presentation["id"])
     )
+
+
+def test_document_revision_marks_linked_presentation_for_reference_without_copying_it(
+    service, tmp_path, monkeypatch
+):
+    multi, source = service
+    monkeypatch.setattr(
+        multi,
+        "_render_presentation",
+        lambda _project, _record: {"status": "completed", "slide_count": 1},
+    )
+    ppt_source = tmp_path / "10-成果库-Outputs" / "test" / "linked.pptx"
+    ppt_source.write_bytes(presentation_bytes(slide_count=1))
+    thesis = multi.list_documents(project(source))["documents"][0]
+    presentation = multi.create_document(
+        project(source), "关联课件", "presentation", source_path=str(ppt_source)
+    )
+    multi.set_structure_binding(
+        project(source),
+        presentation["id"],
+        {
+            "mode": "mapped",
+            "source_document_id": thesis["id"],
+            "mapped_items": 1,
+            "unmapped_items": [],
+            "changed_sections": [],
+        },
+        {
+            "authority": {
+                "presentation_output": {"sha256": presentation["source_checksum"]}
+            },
+            "slides": [{"slide": 1, "thesis_sections": ["1.1"]}],
+        },
+    )
+
+    source_before = multi.get_document(project(source), thesis["id"])
+    presentation_before = multi.get_document(project(source), presentation["id"])
+    multi.replace_rich_text_markdown(
+        project(source),
+        thesis["id"],
+        "# 文档说明\n\n更新后的正文。\n\n# 第一章 测试\n\n内容。\n",
+        "tester",
+    )
+    source_after = multi.get_document(project(source), thesis["id"])
+    presentation_after = multi.get_document(project(source), presentation["id"])
+
+    assert source_after["revision"] > source_before["revision"]
+    assert presentation_after["id"] == presentation_before["id"]
+    assert presentation_after["revision"] == presentation_before["revision"]
+    assert presentation_after["structure_binding"]["status"] == "aligned"
+    assert presentation_after["structure_binding"]["integrity_status"] == "aligned"
+    assert presentation_after["structure_binding"]["reference_status"] == "document_updated"
 
 
 def test_presentation_manifest_rejects_duplicate_and_reports_unmapped(

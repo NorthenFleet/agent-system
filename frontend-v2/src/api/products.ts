@@ -12,7 +12,14 @@ export interface ProductDeployment {
   host?: string
   port?: number
   public_url?: string
+  health_url?: string
   mode?: string
+}
+
+export interface ProductSystemLink {
+  label: string
+  url: string
+  kind?: 'runtime' | 'health' | 'repository' | 'document' | 'project' | string
 }
 
 export interface ProductRuntime {
@@ -101,12 +108,33 @@ export interface ProductEvent {
   created_at?: string
 }
 
+export interface ProductMediaAsset {
+  title: string
+  uri: string
+  kind?: 'image' | 'video'
+  caption?: string
+  source?: string
+  captured_at?: string
+}
+
 export interface RegisteredProduct {
   id: string
   name: string
   kind: string
   category?: string
   description?: string
+  short_name?: string
+  positioning?: string
+  cover_image?: string
+  portfolio_group?: string
+  display_order?: number
+  featured?: boolean
+  target_users?: string[]
+  scenarios?: string[]
+  value_props?: string[]
+  system_links?: ProductSystemLink[]
+  document_links?: ProductSystemLink[]
+  media_assets?: ProductMediaAsset[]
   version?: string
   status?: string
   owner?: string
@@ -235,6 +263,13 @@ export function syncProductRuntimeHealth(productId: string) {
     product_id: string
     results: Array<{ runtime_instance_id: string; runtime_instance?: ProductRuntimeInstance; observation?: ProductRuntime; skipped?: boolean; reason?: string }>
   }>(`/api/v2/products/${encodeURIComponent(productId)}/runtimes/sync-health`).then(response => response.data)
+}
+
+export function downloadProductAsset(uri: string) {
+  return apiClient.get<Blob>(uri, {
+    responseType: 'blob',
+    suppressErrorToast: true
+  }).then(response => response.data)
 }
 
 export function bindProductToProject(

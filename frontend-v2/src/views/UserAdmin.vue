@@ -1,7 +1,41 @@
 <template>
   <div class="user-admin-page">
+    <el-card class="panel login-policy-panel" shadow="never">
+      <div class="login-policy-content">
+        <div>
+          <div class="login-policy-title">
+            <h2>登录访问控制</h2>
+            <el-tag size="small" :type="loginEnabled ? 'success' : 'warning'">
+              {{ loginEnabled ? '已启用登录' : '免登录开发模式' }}
+            </el-tag>
+          </div>
+          <p class="muted">
+            {{ loginEnabled
+              ? '访问系统需要账号密码，并按用户模块权限显示功能。'
+              : '指定局域网和 Tailscale 网络将自动建立开发管理员会话。' }}
+          </p>
+        </div>
+        <div class="login-policy-switch">
+          <span>{{ loginEnabled ? '需要登录' : '无需登录' }}</span>
+          <el-switch
+            :model-value="loginEnabled"
+            :loading="savingLoginPolicy"
+            @change="changeLoginPolicy"
+          />
+        </div>
+      </div>
+      <el-alert
+        v-if="!loginEnabled"
+        class="development-alert"
+        title="当前处于开发阶段：192.168.31.0/24 与 Tailscale 网络可免登录访问，其他网络仍会被拒绝。"
+        type="warning"
+        :closable="false"
+        show-icon
+      />
+    </el-card>
+
     <el-row :gutter="16">
-      <el-col :span="10">
+      <el-col :xs="24" :lg="10">
         <el-card class="panel" shadow="hover">
           <template #header>
             <div class="panel-header">
@@ -44,7 +78,7 @@
         </el-card>
       </el-col>
 
-      <el-col :span="14">
+      <el-col :xs="24" :lg="14">
         <el-card class="panel" shadow="hover">
           <template #header>
             <div class="panel-header">
@@ -123,8 +157,11 @@
 
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { useRouter } from 'vue-router'
 import type { FeatureModule, User, UserRole } from '@/api/auth'
+import { updateAuthSettings } from '@/api/auth'
+import { useAuthStore } from '@/stores/auth'
 import {
   createUser,
   getUserModules,
@@ -135,6 +172,10 @@ import {
 } from '@/api/userAdmin'
 
 const loading = ref(false)
+const router = useRouter()
+const authStore = useAuthStore()
+const loginEnabled = ref(true)
+const savingLoginPolicy = ref(false)
 const users = ref<User[]>([])
 const modules = ref<FeatureModule[]>([])
 const selectedUser = ref<User | null>(null)
@@ -159,6 +200,37 @@ const createForm = reactive({
 
 function roleLabel(role: string) {
   return { admin: '管理员', agent: '成员', viewer: '观察者' }[role] || role
+}
+
+async function loadLoginPolicy() {
+  await authStore.loadAuthSettings(true)
+  loginEnabled.value = authStore.loginEnabled
+}
+
+async function changeLoginPolicy(value: string | number | boolean) {
+  const next = Boolean(value)
+  if (next) {
+    try {
+      await ElMessageBox.confirm(
+        '启用后将恢复账号密码和模块权限验证，当前开发会话会立即失效。',
+        '确认启用用户登录',
+        { confirmButtonText: '启用登录', cancelButtonText: '取消', type: 'warning' }
+      )
+    } catch {
+      return
+    }
+  }
+
+  savingLoginPolicy.value = true
+  try {
+    const data = await updateAuthSettings(next)
+    loginEnabled.value = data.login_enabled
+    await authStore.loadAuthSettings(true)
+    ElMessage.success(next ? '用户登录已启用' : '已切换为免登录开发模式')
+    if (next && !authStore.isAuthenticated) await router.replace('/login')
+  } finally {
+    savingLoginPolicy.value = false
+  }
 }
 
 async function loadAll() {
@@ -257,12 +329,54 @@ async function submitCreateUser() {
   }
 }
 
-onMounted(loadAll)
+onMounted(async () => {
+  await loadLoginPolicy()
+  await loadAll()
+})
 </script>
 
 <style scoped>
 .user-admin-page {
   min-height: 100%;
+}
+
+.login-policy-panel {
+  margin-bottom: 16px;
+  border-color: var(--view-color-border);
+}
+
+.login-policy-content,
+.login-policy-title,
+.login-policy-switch {
+  display: flex;
+  align-items: center;
+}
+
+.login-policy-content {
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.login-policy-title {
+  gap: 10px;
+  margin-bottom: 5px;
+}
+
+.login-policy-title h2 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 17px;
+}
+
+.login-policy-switch {
+  flex: 0 0 auto;
+  gap: 10px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.development-alert {
+  margin-top: 14px;
 }
 
 .panel {
@@ -361,5 +475,25 @@ onMounted(loadAll)
 .create-form {
   display: grid;
   gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .login-policy-content {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .login-policy-switch {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .panel {
+    margin-bottom: 16px;
+  }
+
+  .module-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 </style>

@@ -306,6 +306,12 @@ def test_doctoral_l5_requires_qualified_presentation_and_workbook(monkeypatch):
             "kind": "presentation",
             "structure_binding": {"status": "aligned"},
         },
+        {
+            "id": "diagram",
+            "title": "论文技术路线图",
+            "kind": "diagram",
+            "structure_binding": {},
+        },
     ]
 
     class FakeMulti:
@@ -340,15 +346,18 @@ def test_doctoral_l5_requires_qualified_presentation_and_workbook(monkeypatch):
     }
     evaluator = DocumentEvaluationService()
     monkeypatch.setattr(evaluator, "_multi", lambda: FakeMulti())
-    monkeypatch.setattr(
-        evaluator,
-        "latest",
-        lambda _project, document_id, create_if_missing=True: reports[document_id],
-    )
+    evaluated_documents = []
+
+    def latest(_project, document_id, create_if_missing=True):
+        evaluated_documents.append(document_id)
+        return reports[document_id]
+
+    monkeypatch.setattr(evaluator, "latest", latest)
     project = {"document_spec": {"document_type": "博士论文"}}
     blocked = evaluator.linked_summary(project)
     assert blocked["defense_ready"] is False
     assert any("工作簿" in row for row in blocked["blockers"])
+    assert "diagram" not in evaluated_documents
 
     documents.append(
         {

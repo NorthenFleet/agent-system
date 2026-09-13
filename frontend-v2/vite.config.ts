@@ -5,6 +5,14 @@ import { resolve } from 'path'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [vue()],
+  build: {
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        wordAddin: resolve(__dirname, 'word-addin/taskpane.html')
+      }
+    }
+  },
   resolve: {
     extensions: ['.ts', '.tsx', '.vue', '.mjs', '.js', '.json'],
     alias: {

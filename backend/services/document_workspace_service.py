@@ -49,6 +49,30 @@ def _relative(path: Path, root: Path) -> str:
         return str(path)
 
 
+_MARKDOWN_IMAGE_RE = re.compile(r"!\[[^\]\n]*\]\(([^)\n]+)\)")
+_MARKDOWN_DESTINATION_RE = re.compile(
+    r'''^(?P<path>\S+?)(?:\s+(?:"[^"]*"|'[^']*'|\([^)]*\)))?\s*$'''
+)
+
+
+def _markdown_destination(value: str) -> str:
+    """Return the URL portion of a Markdown destination without its optional title."""
+    raw = value.strip()
+    if raw.startswith("<"):
+        closing = raw.find(">")
+        return raw[1:closing].strip() if closing > 0 else raw
+    match = _MARKDOWN_DESTINATION_RE.fullmatch(raw)
+    return str(match.group("path") if match else raw).strip()
+
+
+def _markdown_image_paths(markdown: str) -> list[str]:
+    return list(dict.fromkeys(
+        path
+        for path in (_markdown_destination(match) for match in _MARKDOWN_IMAGE_RE.findall(markdown))
+        if path
+    ))
+
+
 def _citation_numbers(text: str) -> list[int]:
     """Expand numeric citation groups such as [1, 3-5] without matching Markdown links."""
     numbers: list[int] = []
@@ -424,6 +448,42 @@ def _postprocess_standard_a4_docx(path: Path) -> None:
     with tempfile.NamedTemporaryFile(
         suffix=".docx",
         prefix="standard-a4-",
+        dir=path.parent,
+        delete=False,
+    ) as handle:
+        temporary = Path(handle.name)
+    try:
+        with ZipFile(temporary, "w", compression=ZIP_DEFLATED) as target:
+            for entry, payload in parts.values():
+                target.writestr(entry, payload)
+        temporary.replace(path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def _enable_word_field_refresh(path: Path) -> None:
+    """Ask Word to refresh dynamic fields without changing reference formatting.
+
+    A reference DOCX owns the visual layout. This deliberately touches only
+    ``word/settings.xml`` so the table of contents, page numbers, and other
+    fields can refresh when the candidate is opened in Word.
+    """
+    with ZipFile(path, "r") as source:
+        parts = {
+            entry.filename: (entry, source.read(entry.filename))
+            for entry in source.infolist()
+        }
+    settings_entry, settings_payload = parts["word/settings.xml"]
+    settings_root = ET.fromstring(settings_payload)
+    _word_property(settings_root, "updateFields").set(f"{W}val", "true")
+    parts["word/settings.xml"] = (
+        settings_entry,
+        ET.tostring(settings_root, encoding="utf-8", xml_declaration=True),
+    )
+
+    with tempfile.NamedTemporaryFile(
+        suffix=".docx",
+        prefix="word-field-refresh-",
         dir=path.parent,
         delete=False,
     ) as handle:
@@ -836,7 +896,17 @@ def _postprocess_formal_docx(path: Path, cover: dict[str, Any] | None = None) ->
             if style_name == "heading1":
                 _set_page_break_before(paragraph)
         if paragraph.find(".//{http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing}inline") is not None:
-            _ordered_word_property(_paragraph_properties(paragraph), "jc", PPR_PROPERTY_ORDER).set(f"{W}val", "center")
+            properties = _paragraph_properties(paragraph)
+            spacing = _ordered_word_property(properties, "spacing", PPR_PROPERTY_ORDER)
+            spacing.set(f"{W}before", "0")
+            spacing.set(f"{W}after", "0")
+            spacing.set(f"{W}line", "240")
+            spacing.set(f"{W}lineRule", "auto")
+            indentation = _ordered_word_property(properties, "ind", PPR_PROPERTY_ORDER)
+            indentation.set(f"{W}left", "0")
+            indentation.set(f"{W}right", "0")
+            indentation.set(f"{W}firstLine", "0")
+            _ordered_word_property(properties, "jc", PPR_PROPERTY_ORDER).set(f"{W}val", "center")
 
     _materialize_toc_cache(document_root, style_names, toc_style_ids)
 
@@ -1348,7 +1418,7 @@ class DocumentWorkspaceService:
         return {
             **row,
             "version": manifest["version"],
-            "asset_paths": list(dict.fromkeys(re.findall(r"!\[[^\]]*\]\(([^)]+)\)", row["content"]))),
+            "asset_paths": _markdown_image_paths(row["content"]),
         }
 
     def fulltext(self, project: dict[str, Any]) -> dict[str, Any]:
@@ -1356,7 +1426,7 @@ class DocumentWorkspaceService:
         return {
             "content": markdown,
             "version": manifest["version"],
-            "asset_paths": list(dict.fromkeys(re.findall(r"!\[[^\]]*\]\(([^)]+)\)", markdown))),
+            "asset_paths": _markdown_image_paths(markdown),
         }
 
     def update_section(self, project: dict[str, Any], section_id: str, content: str, expected_version: int, actor: str) -> dict[str, Any]:
@@ -1399,7 +1469,7 @@ class DocumentWorkspaceService:
         return {
             **updated_section,
             "version": next_version,
-            "asset_paths": list(dict.fromkeys(re.findall(r"!\[[^\]]*\]\(([^)]+)\)", updated_section["content"]))),
+            "asset_paths": _markdown_image_paths(updated_section["content"]),
         }
 
     def apply_structured_projection(
@@ -1435,7 +1505,7 @@ class DocumentWorkspaceService:
             sections = self._parse_sections(markdown)
             manifest.update({
                 "content_authority": "structured_json",
-                "authority_schema_version": "tiptap-json-v1",
+                "authority_schema_version": "tiptap-json-v2",
                 "structured_projection_revision": document_revision,
                 "projection_status": "current",
                 "projection_error": "",
@@ -1459,7 +1529,7 @@ class DocumentWorkspaceService:
             manifest = self._load_manifest(project)
             manifest.update({
                 "content_authority": "structured_json",
-                "authority_schema_version": "tiptap-json-v1",
+                "authority_schema_version": "tiptap-json-v2",
                 "structured_projection_revision": min(
                     int(manifest.get("structured_projection_revision") or 0),
                     document_revision,
@@ -1540,11 +1610,13 @@ class DocumentWorkspaceService:
         }
 
     def _resolve_asset(self, manifest: dict[str, Any], raw_path: str) -> Path:
-        raw = raw_path.strip().split("#", 1)[0]
+        raw = _markdown_destination(raw_path).split("#", 1)[0]
         if raw.startswith(("http://", "https://", "data:")):
             raise DocumentWorkspaceError("外部资源不由本地文档服务代理")
         base = Path(manifest["source_base_dir"])
         formal_assets = base / "论文章节" / "正式稿" / "assets"
+        working_markdown = Path(str(manifest.get("working_markdown") or ""))
+        isolated_assets = working_markdown.parent.parent / "source" / "assets"
         aliases = {
             "fig1-1-overall-research-framework.jpg": "图1-1-海上无人集群智能协同任务规划总体研究框架.jpg",
             "fig1-2-technical-route.jpg": "图1-2-海上无人集群智能协同任务规划技术路线图.jpg",
@@ -1573,6 +1645,8 @@ class DocumentWorkspaceService:
             base / "论文章节" / raw,
             base / "论文章节" / "正式稿" / raw,
             formal_assets / filename,
+            isolated_assets / raw.lstrip("./").removeprefix("assets/"),
+            isolated_assets / filename,
         ]
         if filename in aliases:
             candidates.append(formal_assets / aliases[filename])
@@ -1597,7 +1671,7 @@ class DocumentWorkspaceService:
         cited_numbers = set(_citation_numbers(body))
         missing_refs = sorted(cited_numbers - formal_numbers)
         unresolved_assets = []
-        for raw_path in re.findall(r"!\[[^\]]*\]\(([^)]+)\)", markdown):
+        for raw_path in _markdown_image_paths(markdown):
             try:
                 self._resolve_asset(manifest, raw_path)
             except DocumentWorkspaceError:
@@ -1875,6 +1949,12 @@ class DocumentWorkspaceService:
             raise DocumentWorkspaceError(f"Word 导出失败：{result.stderr[-500:]}")
         try:
             if layout_binding.get("profile_id") and layout_template.is_file():
+                _enable_word_field_refresh(docx_path)
+            if (
+                layout_binding.get("profile_id")
+                and layout_template.is_file()
+                and layout_binding.get("postprocess") != "preserve_reference"
+            ):
                 _postprocess_formal_docx(docx_path, dict(layout_binding.get("cover") or {}))
             elif print_profile == "standard_a4":
                 _postprocess_standard_a4_docx(docx_path)

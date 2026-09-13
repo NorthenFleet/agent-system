@@ -14,7 +14,8 @@ import re
 from typing import Any, Iterable
 
 
-SCHEMA_VERSION = "tiptap-json-v1"
+SCHEMA_VERSION = "tiptap-json-v2"
+LEGACY_SCHEMA_VERSIONS = {"tiptap-json-v1"}
 _BLOCK_ID_TYPES = {
     "paragraph",
     "heading",
@@ -24,11 +25,15 @@ _BLOCK_ID_TYPES = {
     "codeBlock",
     "horizontalRule",
     "image",
+    "mathBlock",
     "table",
     "rawMarkdown",
 }
-_INLINE_NODE_TYPES = {"text", "hardBreak"}
-_MARK_TYPES = {"bold", "italic", "strike", "underline", "code", "link"}
+_INLINE_NODE_TYPES = {"text", "hardBreak", "mathInline"}
+_MARK_TYPES = {
+    "bold", "italic", "strike", "underline", "code", "link",
+    "superscript", "subscript", "citation",
+}
 _CONTAINER_BLOCK_TYPES = {
     "paragraph",
     "heading",
@@ -38,18 +43,37 @@ _CONTAINER_BLOCK_TYPES = {
     "codeBlock",
     "horizontalRule",
     "image",
+    "mathBlock",
     "table",
     "rawMarkdown",
 }
 _SPECIAL_LINE = re.compile(
     r"^(?:#{1,6}\s+|```|~~~|>\s?|[-+*]\s+|\d+\.\s+|!\[[^]]*]\(|<[^>]+>|\[\^[^]]+]:|:::)"
 )
-_IMAGE_LINE = re.compile(r'^!\[([^]]*)]\((\S+?)(?:\s+["\'](.*?)["\'])?\)\s*$')
+_IMAGE_LINE = re.compile(
+    r'^!\[([^]]*)]\((\S+?)(?:\s+["\'](.*?)["\'])?\)\s*(?:\{(.*?)\})?\s*$',
+    re.DOTALL,
+)
 _TABLE_SEPARATOR = re.compile(r"^\s*\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)+\|?\s*$")
 _LIST_LINE = re.compile(r"^(\s*)([-+*]|\d+\.)\s+(.+)$")
-_INLINE_TOKEN = re.compile(
-    r"(`[^`]+`|\*\*[^*]+\*\*|~~[^~]+~~|<u>.*?</u>|\[[^]]+]\([^)]+\)|\*[^*]+\*)"
+_CITATION_SOURCE = (
+    r"(?<!\\)\[(?:\d+(?:\s*[-–—]\s*\d+)?)"
+    r"(?:\s*[,，;；]\s*\d+(?:\s*[-–—]\s*\d+)?)*]"
 )
+_INLINE_TOKEN = re.compile(
+    r"(`[^`]+`|\*\*[^*]+\*\*|~~[^~]+~~|<u>.*?</u>|<sup>.*?</sup>|<sub>.*?</sub>|"
+    r"\[[^]]+]\([^)]+\)|" + _CITATION_SOURCE + r"|(?<!\\)\$(?!\$).+?(?<!\\)\$|\*[^*]+\*)"
+)
+
+
+def _dimension_attrs(raw: str | None) -> dict[str, str | None]:
+    values: dict[str, str | None] = {"width": None, "height": None}
+    for key, double, single, bare in re.findall(
+        r"(width|height)\s*=\s*(?:\"([^\"]+)\"|'([^']+)'|([^\s}]+))",
+        raw or "",
+    ):
+        values[key] = double or single or bare or None
+    return values
 
 
 def _canonical(value: Any) -> str:
@@ -96,7 +120,19 @@ class StructuredDocumentCodec:
                             index += 1
                             break
                         index += 1
-                blocks.append(self._raw("\n".join(math_block)))
+                source = "\n".join(math_block)
+                match = re.match(r"^\s*\$\$(.*?)\$\$\s*(.*?)\s*$", source, re.DOTALL)
+                if match:
+                    blocks.append({
+                        "type": "mathBlock",
+                        "attrs": {
+                            "latex": match.group(1).strip(),
+                            "suffix": match.group(2).strip(),
+                            "sourceMarkdown": source,
+                        },
+                    })
+                else:
+                    blocks.append(self._raw(source))
                 continue
 
             fence = re.match(r"^(```|~~~)(.*)$", line)
@@ -132,13 +168,33 @@ class StructuredDocumentCodec:
                 index += 1
                 continue
 
-            image = _IMAGE_LINE.match(line.strip())
+            image_source = line.strip()
+            image_line_count = 1
+            if image_source.startswith("![") and "{" in image_source and "}" not in image_source:
+                lookahead = index + 1
+                image_rows = [line]
+                while lookahead < len(lines) and lookahead - index <= 4:
+                    image_rows.append(lines[lookahead])
+                    if "}" in lines[lookahead]:
+                        break
+                    lookahead += 1
+                image_source = " ".join(row.strip() for row in image_rows)
+                image_line_count = len(image_rows)
+            image = _IMAGE_LINE.match(image_source)
             if image:
+                dimensions = _dimension_attrs(image.group(4))
                 blocks.append({
                     "type": "image",
-                    "attrs": {"src": image.group(2), "alt": image.group(1), "title": image.group(3)},
+                    "attrs": {
+                        "src": image.group(2),
+                        "alt": image.group(1),
+                        "title": image.group(3),
+                        "width": dimensions["width"],
+                        "height": dimensions["height"],
+                        "sourceAttributes": image.group(4) or "",
+                    },
                 })
-                index += 1
+                index += image_line_count
                 continue
 
             if index + 1 < len(lines) and "|" in line and _TABLE_SEPARATOR.match(lines[index + 1]):
@@ -237,7 +293,7 @@ class StructuredDocumentCodec:
         if not isinstance(attrs, dict):
             raise ValueError("正文 attrs 必须是对象")
         schema_version = attrs.get("schemaVersion")
-        if schema_version not in {None, self.schema_version}:
+        if schema_version not in {None, self.schema_version, *LEGACY_SCHEMA_VERSIONS}:
             raise ValueError(f"不支持的正文 schema_version：{schema_version}")
 
         seen: set[str] = set()
@@ -290,11 +346,17 @@ class StructuredDocumentCodec:
             if content:
                 raise ValueError(f"{path} 不能包含子节点")
             return
-        if kind in {"horizontalRule", "image", "rawMarkdown"}:
+        if kind == "mathInline":
+            if content or not isinstance(attrs.get("latex", ""), str):
+                raise ValueError(f"{path} 行内公式无效")
+            return
+        if kind in {"horizontalRule", "image", "mathBlock", "rawMarkdown"}:
             if content:
                 raise ValueError(f"{path} 不能包含子节点")
             if kind == "rawMarkdown" and not isinstance(attrs.get("markdown", ""), str):
                 raise ValueError(f"{path}.attrs.markdown 必须是字符串")
+            if kind == "mathBlock" and not isinstance(attrs.get("latex", ""), str):
+                raise ValueError(f"{path}.attrs.latex 必须是字符串")
             return
 
         child_types = {child.get("type") if isinstance(child, dict) else None for child in content}
@@ -317,6 +379,11 @@ class StructuredDocumentCodec:
                 raise ValueError(f"{path} 包含无效单元格内容")
             if attrs.get("align") not in {None, "left", "center", "right"}:
                 raise ValueError(f"{path}.attrs.align 无效")
+            for span in ("colspan", "rowspan"):
+                if attrs.get(span) is not None and (
+                    not isinstance(attrs.get(span), int) or int(attrs.get(span)) < 1
+                ):
+                    raise ValueError(f"{path}.attrs.{span} 无效")
 
         for index, child in enumerate(content):
             self._validate_node(child, f"{path}.content[{index}]")
@@ -357,16 +424,33 @@ class StructuredDocumentCodec:
 
     def metrics(self, document: dict[str, Any]) -> dict[str, Any]:
         blocks = document.get("content") or []
+        nodes = list(self._walk_nodes(document))
         text = self._plain_text(document)
         markdown = self.to_markdown(document)
         return {
             "block_count": len(blocks),
             "heading_count": sum(block.get("type") == "heading" for block in blocks),
-            "table_count": sum(block.get("type") == "table" for block in blocks),
-            "image_count": sum(block.get("type") == "image" for block in blocks),
+            "table_count": sum(node.get("type") == "table" for node in nodes),
+            "table_cell_count": sum(node.get("type") in {"tableHeader", "tableCell"} for node in nodes),
+            "image_count": sum(node.get("type") == "image" for node in nodes),
+            "math_block_count": sum(node.get("type") == "mathBlock" for node in nodes),
+            "math_inline_count": sum(node.get("type") == "mathInline" for node in nodes),
+            "replacement_character_count": text.count("�"),
             "citation_count": len(set(re.findall(r"\[(\d+)]", markdown))),
+            "citation_mark_count": sum(
+                mark.get("type") == "citation"
+                for node in nodes
+                if node.get("type") == "text"
+                for mark in node.get("marks") or []
+            ),
             "plain_text_sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
         }
+
+    def _walk_nodes(self, node: dict[str, Any]) -> Iterable[dict[str, Any]]:
+        yield node
+        for child in node.get("content") or []:
+            if isinstance(child, dict):
+                yield from self._walk_nodes(child)
 
     def block_markdown(self, block: dict[str, Any]) -> str:
         return self._render_block(block).strip() + "\n"
@@ -412,10 +496,18 @@ class StructuredDocumentCodec:
                 result.append({"type": "text", "text": token[2:-2], "marks": [{"type": "strike"}]})
             elif token.startswith("<u>"):
                 result.append({"type": "text", "text": token[3:-4], "marks": [{"type": "underline"}]})
+            elif token.startswith("<sup>"):
+                result.append({"type": "text", "text": token[5:-6], "marks": [{"type": "superscript"}]})
+            elif token.startswith("<sub>"):
+                result.append({"type": "text", "text": token[5:-6], "marks": [{"type": "subscript"}]})
             elif token.startswith("["):
                 link = re.match(r"^\[([^]]+)]\(([^)]+)\)$", token)
                 if link:
                     result.append({"type": "text", "text": link.group(1), "marks": [{"type": "link", "attrs": {"href": link.group(2), "target": None, "rel": "noopener noreferrer nofollow", "class": None}}]})
+                else:
+                    result.append({"type": "text", "text": token, "marks": [{"type": "citation"}]})
+            elif token.startswith("$"):
+                result.append({"type": "mathInline", "attrs": {"latex": token[1:-1]}})
             else:
                 result.append({"type": "text", "text": token[1:-1], "marks": [{"type": "italic"}]})
             cursor = match.end()
@@ -444,6 +536,9 @@ class StructuredDocumentCodec:
                 attrs = node.get("attrs") or {}
                 output.append(f"![{attrs.get('alt') or ''}]({attrs.get('src') or ''})")
                 continue
+            if node.get("type") == "mathInline":
+                output.append(f"${(node.get('attrs') or {}).get('latex') or ''}$")
+                continue
             text = str(node.get("text") or "")
             for mark in node.get("marks") or []:
                 kind = mark.get("type")
@@ -457,6 +552,14 @@ class StructuredDocumentCodec:
                     text = f"~~{text}~~"
                 elif kind == "underline":
                     text = f"<u>{text}</u>"
+                elif kind == "superscript":
+                    text = f"<sup>{text}</sup>"
+                elif kind == "subscript":
+                    text = f"<sub>{text}</sub>"
+                elif kind == "citation":
+                    # Citations are a presentation mark.  Their Markdown projection
+                    # remains byte-for-byte compatible with the source document.
+                    pass
                 elif kind == "link":
                     text = f"[{text}]({(mark.get('attrs') or {}).get('href') or ''})"
             output.append(text)
@@ -477,7 +580,17 @@ class StructuredDocumentCodec:
             return "---"
         if kind == "image":
             title = f' "{attrs.get("title")}"' if attrs.get("title") else ""
-            return f"![{attrs.get('alt') or ''}]({attrs.get('src') or ''}{title})"
+            dimensions = " ".join(
+                f'{key}={value}' for key in ("width", "height") if (value := attrs.get(key))
+            )
+            suffix = f"{{{dimensions}}}" if dimensions else ""
+            return f"![{attrs.get('alt') or ''}]({attrs.get('src') or ''}{title}){suffix}"
+        if kind == "mathBlock":
+            source = str(attrs.get("sourceMarkdown") or "")
+            if source:
+                return source
+            suffix = f" {attrs.get('suffix')}" if attrs.get("suffix") else ""
+            return f"$$\n{attrs.get('latex') or ''}\n$${suffix}"
         if kind == "codeBlock":
             content = self._render_inline(block.get("content") or [])
             return f"```{attrs.get('language') or ''}\n{content}\n```"
@@ -493,6 +606,8 @@ class StructuredDocumentCodec:
                 lines.append(f"{marker} {body}".rstrip())
             return "\n".join(lines)
         if kind == "table":
+            if attrs.get("sourceMarkdown"):
+                return str(attrs["sourceMarkdown"])
             rows = []
             alignments: list[str] = []
             for row_index, row in enumerate(block.get("content") or []):
@@ -513,6 +628,8 @@ class StructuredDocumentCodec:
     def _inline_text(self, node: dict[str, Any]) -> str:
         if node.get("type") == "text":
             return str(node.get("text") or "")
+        if node.get("type") in {"mathInline", "mathBlock"}:
+            return str((node.get("attrs") or {}).get("latex") or "")
         return "".join(self._inline_text(child) for child in node.get("content") or [])
 
     def _plain_text(self, document: dict[str, Any]) -> str:
@@ -525,6 +642,8 @@ class StructuredDocumentCodec:
                 parts.append(raw)
             elif block.get("type") == "image":
                 parts.append(str((block.get("attrs") or {}).get("alt") or ""))
+            elif block.get("type") == "mathBlock":
+                parts.append(str((block.get("attrs") or {}).get("latex") or ""))
             else:
                 parts.append(self._inline_text(block))
         return re.sub(r"\s+", " ", " ".join(parts)).strip()

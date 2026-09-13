@@ -201,7 +201,7 @@
     <el-drawer
       v-model="drawerVisible"
       :title="drawerTitle"
-      size="min(480px, 100vw)"
+      size="min(680px, 100vw)"
       direction="rtl"
     >
       <template v-if="selectedAgent">
@@ -290,6 +290,159 @@
           </el-descriptions>
         </div>
 
+        <div class="drawer-section graph-memory-section">
+          <div class="memory-heading">
+            <h3>🧠 Graph Memory</h3>
+            <el-tag v-if="memorySummary" size="small" :type="memoryStateType(memorySummary.state)">
+              {{ memoryStateLabel(memorySummary.state) }}
+            </el-tag>
+          </div>
+          <el-alert
+            title="私有记忆仅对授权管理员可见；其他智能体只能召回明确批准共享给自己的快照。"
+            type="info"
+            :closable="false"
+            show-icon
+            class="memory-boundary"
+          />
+          <div v-if="memoryLoading" class="memory-loading">
+            <el-icon class="loading-spinner"><Loading /></el-icon>
+            <span>正在读取记忆结构...</span>
+          </div>
+          <el-alert v-else-if="memoryError" :title="memoryError" type="error" :closable="false" show-icon />
+          <template v-else-if="memorySummary">
+            <div class="memory-summary-grid">
+              <div><strong>{{ memorySummary.totalNodes }}</strong><span>记忆节点</span></div>
+              <div><strong>{{ memorySummary.totalEdges }}</strong><span>关系</span></div>
+              <div><strong>{{ memorySummary.communities }}</strong><span>社区</span></div>
+              <div><strong>{{ memorySummary.vectorCount ?? 0 }}</strong><span>向量</span></div>
+              <div><strong>{{ memorySummary.pendingMessages }}</strong><span>待提取消息</span></div>
+            </div>
+
+            <el-alert
+              v-if="memorySummary.state === 'backlog'"
+              :title="memoryBacklogLabel(memorySummary)"
+              type="warning"
+              :closable="false"
+              show-icon
+              class="memory-state-alert"
+            />
+            <el-alert
+              v-else-if="memorySummary.state === 'attention'"
+              :title="memoryAttentionLabel(memorySummary)"
+              type="error"
+              :closable="false"
+              show-icon
+              class="memory-state-alert"
+            />
+
+            <div class="memory-meta-row">
+              <span>类型结构</span>
+              <el-tag v-for="(count, type) in memorySummary.byType" :key="type" size="small" effect="plain">
+                {{ memoryTypeLabel(type) }} {{ count }}
+              </el-tag>
+              <span v-if="Object.keys(memorySummary.byType).length === 0" class="muted">暂无节点</span>
+            </div>
+
+            <div class="memory-meta-row">
+              <span>关系结构</span>
+              <el-tag v-for="(count, type) in memorySummary.byEdgeType" :key="type" size="small" type="warning" effect="plain">
+                {{ memoryEdgeLabel(type) }} {{ count }}
+              </el-tag>
+              <span v-if="Object.keys(memorySummary.byEdgeType).length === 0" class="muted">暂无关系</span>
+            </div>
+
+            <el-descriptions :column="1" size="small" border class="memory-health">
+              <el-descriptions-item label="最后更新">
+                {{ formatMemoryTime(memorySummary.lastUpdatedAt) }}
+              </el-descriptions-item>
+              <el-descriptions-item label="最后提取">
+                {{ extractionLabel(memorySummary.lastExtraction) }}
+              </el-descriptions-item>
+              <el-descriptions-item label="最后成功提取">
+                {{ successfulExtractionLabel(memorySummary.lastSuccessfulExtraction) }}
+              </el-descriptions-item>
+              <el-descriptions-item label="提取队列">
+                {{ queueStateLabel(memorySummary.queueState) }}
+                <span v-if="memorySummary.pendingSessions"> · {{ memorySummary.pendingSessions }} 个会话</span>
+                <span v-if="memorySummary.oldestPendingAt"> · 最老 {{ formatMemoryAge(memorySummary.oldestPendingAt) }}</span>
+              </el-descriptions-item>
+              <el-descriptions-item label="下次重试">
+                {{ formatMemoryTime(memorySummary.nextRetryAt) }}
+              </el-descriptions-item>
+              <el-descriptions-item label="检索模式">
+                {{ retrievalModeLabel(memorySummary.retrievalMode) }}
+              </el-descriptions-item>
+            </el-descriptions>
+
+            <div class="memory-toolbar">
+              <el-select v-model="memoryType" clearable placeholder="全部类型" size="small" @change="loadMemoryNodes(0)">
+                <el-option label="任务" value="TASK" />
+                <el-option label="技能" value="SKILL" />
+                <el-option label="事件" value="EVENT" />
+              </el-select>
+              <el-input
+                v-model="memoryQuery"
+                clearable
+                size="small"
+                placeholder="仅搜索当前智能体"
+                @keyup.enter="loadMemoryNodes(0)"
+                @clear="loadMemoryNodes(0)"
+              />
+              <el-button size="small" type="primary" @click="loadMemoryNodes(0)">搜索</el-button>
+            </div>
+
+            <el-empty v-if="memoryNodes.length === 0" :description="memoryEmptyLabel" :image-size="72" />
+            <div v-else class="memory-node-list">
+              <button v-for="node in memoryNodes" :key="node.id" class="memory-node" @click="showMemoryNode(node)">
+                <span class="memory-node-main">
+                  <span class="memory-node-title">
+                    <el-tag size="small" :type="memoryNodeType(node.type)">{{ memoryTypeLabel(node.type) }}</el-tag>
+                    <strong>{{ node.name }}</strong>
+                  </span>
+                  <small>{{ node.description || '暂无摘要' }}</small>
+                </span>
+                <span class="memory-node-meta">验证 {{ node.validatedCount }} 次<br>{{ formatMemoryTime(node.updatedAt) }}</span>
+              </button>
+            </div>
+            <el-pagination
+              v-if="memoryTotal > memoryPageSize"
+              small
+              background
+              layout="prev, pager, next"
+              :page-size="memoryPageSize"
+              :current-page="memoryPage"
+              :total="memoryTotal"
+              @current-change="changeMemoryPage"
+            />
+
+            <div class="memory-subsection">
+              <h4>图谱连接</h4>
+              <div v-if="memoryGraph.edges.length" class="memory-edge-list">
+                <div v-for="edge in memoryGraph.edges.slice(0, 20)" :key="edge.id">
+                  <span>{{ graphNodeName(edge.fromId) }}</span>
+                  <el-tag size="small" type="warning" effect="plain">{{ memoryEdgeLabel(edge.type) }}</el-tag>
+                  <span>{{ graphNodeName(edge.toId) }}</span>
+                </div>
+              </div>
+              <span v-else class="muted">暂无可展示的图谱连接</span>
+            </div>
+
+            <div class="memory-subsection">
+              <h4>明确批准的共享记忆</h4>
+              <div v-if="memoryShares.length" class="memory-share-list">
+                <div v-for="share in memoryShares" :key="share.id" class="memory-share">
+                  <div>
+                    <strong>{{ share.nodeName }}</strong>
+                    <small>{{ share.direction === 'incoming' ? `来自 ${share.sourceAgent}` : `共享给 ${share.audience.join('、')}` }}</small>
+                  </div>
+                  <el-tag size="small" :type="memoryShareType(share.state)">{{ memoryShareLabel(share.state) }}</el-tag>
+                </div>
+              </div>
+              <span v-else class="muted">当前没有共享记忆记录</span>
+            </div>
+          </template>
+        </div>
+
         <!-- 状态变更历史 -->
         <div v-if="agentsStore.selectedAgentHistory?.length" class="drawer-section">
           <h3>📜 状态变更历史</h3>
@@ -312,6 +465,26 @@
         </div>
       </template>
     </el-drawer>
+
+    <el-dialog v-model="memoryDetailVisible" :title="memoryDetail?.name || '记忆内容'" width="min(720px, 96vw)">
+      <div v-loading="memoryDetailLoading" class="memory-detail">
+        <template v-if="memoryDetail">
+          <div class="memory-detail-tags">
+            <el-tag :type="memoryNodeType(memoryDetail.type)">{{ memoryTypeLabel(memoryDetail.type) }}</el-tag>
+            <el-tag type="info" effect="plain">私有</el-tag>
+            <span>验证 {{ memoryDetail.validatedCount }} 次</span>
+          </div>
+          <p class="memory-detail-description">{{ memoryDetail.description }}</p>
+          <pre>{{ memoryDetail.content || '暂无正文' }}</pre>
+          <el-alert
+            v-if="memoryDetail.contentTruncated"
+            title="内容较长，当前仅显示前 20000 字符。"
+            type="warning"
+            :closable="false"
+          />
+        </template>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -321,6 +494,18 @@ import { useRoute, useRouter } from 'vue-router'
 import { Loading, Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useAgentsStore, type Agent } from '@/stores/agents'
+import {
+  getAgentGraphMemoryGraph,
+  getAgentGraphMemoryNode,
+  getAgentGraphMemoryNodes,
+  getAgentGraphMemoryShares,
+  getAgentGraphMemorySummary,
+  type GraphMemoryExtraction,
+  type GraphMemoryGraph,
+  type GraphMemoryNode,
+  type GraphMemoryShare,
+  type GraphMemorySummary,
+} from '@/api/openclaw'
 import AgentChat from './AgentChat.vue'
 
 const agentsStore = useAgentsStore()
@@ -331,6 +516,20 @@ const router = useRouter()
 const activeTab = ref(route.query.tab === 'chat' ? 'chat' : 'team')
 const activeFilter = ref<'all' | 'online' | 'busy' | 'offline' | 'idle'>('all')
 const drawerVisible = ref(false)
+const memoryLoading = ref(false)
+const memoryError = ref('')
+const memorySummary = ref<GraphMemorySummary | null>(null)
+const memoryNodes = ref<GraphMemoryNode[]>([])
+const memoryTotal = ref(0)
+const memoryPage = ref(1)
+const memoryPageSize = 20
+const memoryType = ref('')
+const memoryQuery = ref('')
+const memoryShares = ref<GraphMemoryShare[]>([])
+const memoryGraph = ref<GraphMemoryGraph>({ agentId: '', nodes: [], edges: [], limited: false })
+const memoryDetailVisible = ref(false)
+const memoryDetailLoading = ref(false)
+const memoryDetail = ref<GraphMemoryNode | null>(null)
 
 const filterOptions = [
   { label: '全部', value: 'all' as const, icon: '📊' },
@@ -383,6 +582,11 @@ const organizationGroups = computed(() => {
 const drawerTitle = computed(() => {
   if (!selectedAgent.value) return '智能体详情'
   return `${agentEmoji(selectedAgent.value.agent_id)} ${selectedAgent.value.agent_name || selectedAgent.value.agent_id}`
+})
+const memoryEmptyLabel = computed(() => {
+  if (memorySummary.value?.state === 'not_initialized') return '该智能体尚未初始化私有记忆库'
+  if (memorySummary.value?.state === 'empty') return '私有记忆库已初始化，暂无有效节点'
+  return memoryQuery.value || memoryType.value ? '没有匹配的记忆' : '暂无记忆节点'
 })
 
 function filterCount(value: string): number {
@@ -491,6 +695,84 @@ function formatTime(iso: string): string {
   }
 }
 
+function formatMemoryTime(value?: number | null): string {
+  if (!value) return '暂无'
+  return new Date(value).toLocaleString('zh-CN', { hour12: false })
+}
+
+function memoryStateLabel(state: GraphMemorySummary['state']): string {
+  return ({ not_initialized: '尚未初始化', empty: '已初始化·暂无记忆', ready: '正常', backlog: '待处理', attention: '需检查' })[state]
+}
+
+function memoryStateType(state: GraphMemorySummary['state']): '' | 'success' | 'warning' | 'info' | 'danger' {
+  return ({ not_initialized: 'info', empty: 'info', ready: 'success', backlog: 'warning', attention: 'danger' } as const)[state]
+}
+
+function formatMemoryAge(value?: number | null): string {
+  if (!value) return '无积压'
+  const seconds = Math.max(0, Math.floor((Date.now() - value) / 1000))
+  if (seconds < 60) return `${seconds}秒`
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}分钟`
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}小时`
+  return `${Math.floor(seconds / 86400)}天`
+}
+
+function queueStateLabel(state?: string): string {
+  return ({
+    idle: '空闲', processing: '提取中', pending: '待处理', retrying: '等待重试', backlog: '已积压', stalled: '已停滞',
+    blocked: '已阻塞', dead_letter: '有死信', failed: '失败', error: '异常', unknown: '未知',
+  } as Record<string, string>)[state || 'unknown'] || state || '未知'
+}
+
+function retrievalModeLabel(mode?: string): string {
+  return ({ fts5: '关键词 FTS5', vector: '向量', hybrid: '关键词 + 向量', unavailable: '不可用' } as Record<string, string>)[mode || ''] || mode || '未报告'
+}
+
+function memoryBacklogLabel(summary: GraphMemorySummary): string {
+  const age = summary.oldestPendingAt ? `，最老已等待 ${formatMemoryAge(summary.oldestPendingAt)}` : ''
+  return `记忆提取待处理：${summary.pendingMessages} 条消息 / ${summary.pendingSessions ?? 0} 个会话${age}`
+}
+
+function memoryAttentionLabel(summary: GraphMemorySummary): string {
+  const failures = summary.extractionFailureCount ?? 0
+  const deadLetters = summary.deadLetterCount ?? 0
+  return `记忆提取需检查：失败 ${failures} 次，死信 ${deadLetters} 条`
+}
+
+function memoryTypeLabel(type: string): string {
+  return ({ TASK: '任务', SKILL: '技能', EVENT: '事件' } as Record<string, string>)[type] || type
+}
+
+function memoryNodeType(type: string): '' | 'success' | 'warning' | 'info' | 'danger' {
+  return ({ TASK: 'success', SKILL: 'warning', EVENT: 'info' } as Record<string, '' | 'success' | 'warning' | 'info' | 'danger'>)[type] || 'info'
+}
+
+function memoryEdgeLabel(type: string): string {
+  return ({ USED_SKILL: '使用技能', SOLVED_BY: '由其解决', REQUIRES: '依赖', PATCHES: '修复', CONFLICTS_WITH: '冲突' } as Record<string, string>)[type] || type
+}
+
+function memoryShareLabel(state: GraphMemoryShare['state']): string {
+  return ({ active: '有效', expired: '已过期', revoked: '已撤销', invalid: '已失效' })[state]
+}
+
+function memoryShareType(state: GraphMemoryShare['state']): '' | 'success' | 'warning' | 'info' | 'danger' {
+  return ({ active: 'success', expired: 'warning', revoked: 'info', invalid: 'danger' } as const)[state]
+}
+
+function extractionLabel(extraction?: GraphMemoryExtraction | null): string {
+  if (!extraction) return '暂无提取记录'
+  const outcome = ({ started: '进行中', succeeded: '成功', failed: '失败' })[extraction.outcome]
+  return `${outcome} · ${formatMemoryTime(extraction.createdAt)} · ${extraction.nodeCount} 节点 / ${extraction.edgeCount} 关系`
+}
+
+function successfulExtractionLabel(extraction?: number | null): string {
+  return formatMemoryTime(extraction)
+}
+
+function graphNodeName(nodeId: string): string {
+  return memoryGraph.value.nodes.find(node => node.id === nodeId)?.name || nodeId
+}
+
 function agentEmoji(id: string): string {
   const map: Record<string, string> = {
     optimus: '🤖',
@@ -528,6 +810,78 @@ function avatarColor(id: string): string {
 function selectAgent(agentId: string) {
   agentsStore.selectAgent(agentId)
   drawerVisible.value = true
+  void loadGraphMemory(agentId)
+}
+
+async function loadGraphMemory(agentId: string) {
+  memoryLoading.value = true
+  memoryError.value = ''
+  memorySummary.value = null
+  memoryNodes.value = []
+  memoryShares.value = []
+  memoryGraph.value = { agentId, nodes: [], edges: [], limited: false }
+  memoryTotal.value = 0
+  memoryPage.value = 1
+  memoryType.value = ''
+  memoryQuery.value = ''
+  try {
+    const [summary, nodes, graph, shares] = await Promise.all([
+      getAgentGraphMemorySummary(agentId),
+      getAgentGraphMemoryNodes(agentId, { limit: memoryPageSize, offset: 0 }),
+      getAgentGraphMemoryGraph(agentId),
+      getAgentGraphMemoryShares(agentId),
+    ])
+    if (selectedAgent.value?.agent_id !== agentId) return
+    memorySummary.value = summary
+    memoryNodes.value = nodes.nodes
+    memoryTotal.value = nodes.total
+    memoryGraph.value = graph
+    memoryShares.value = shares.shares
+  } catch (error: any) {
+    memoryError.value = error?.response?.data?.detail || '记忆服务暂时不可用'
+  } finally {
+    if (selectedAgent.value?.agent_id === agentId) memoryLoading.value = false
+  }
+}
+
+async function loadMemoryNodes(offset: number) {
+  const agentId = selectedAgent.value?.agent_id
+  if (!agentId) return
+  try {
+    const result = await getAgentGraphMemoryNodes(agentId, {
+      limit: memoryPageSize,
+      offset,
+      type: memoryType.value || undefined,
+      q: memoryQuery.value.trim() || undefined,
+    })
+    if (selectedAgent.value?.agent_id !== agentId) return
+    memoryNodes.value = result.nodes
+    memoryTotal.value = result.total
+    memoryPage.value = Math.floor(offset / memoryPageSize) + 1
+  } catch (error: any) {
+    ElMessage.error(error?.response?.data?.detail || '记忆列表读取失败')
+  }
+}
+
+function changeMemoryPage(page: number) {
+  void loadMemoryNodes((page - 1) * memoryPageSize)
+}
+
+async function showMemoryNode(node: GraphMemoryNode) {
+  const agentId = selectedAgent.value?.agent_id
+  if (!agentId) return
+  memoryDetail.value = null
+  memoryDetailVisible.value = true
+  memoryDetailLoading.value = true
+  try {
+    const result = await getAgentGraphMemoryNode(agentId, node.id)
+    memoryDetail.value = result.node
+  } catch (error: any) {
+    memoryDetailVisible.value = false
+    ElMessage.error(error?.response?.data?.detail || '记忆内容读取失败')
+  } finally {
+    memoryDetailLoading.value = false
+  }
 }
 
 async function refresh() {
@@ -1037,6 +1391,215 @@ onUnmounted(() => {
   font-size: 13px;
 }
 
+.graph-memory-section {
+  padding-top: 4px;
+}
+
+.memory-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.memory-boundary {
+  margin-bottom: 12px;
+}
+
+.memory-state-alert {
+  margin-bottom: 12px;
+}
+
+.memory-loading {
+  min-height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #888;
+}
+
+.memory-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.memory-summary-grid > div {
+  display: grid;
+  gap: 2px;
+  padding: 10px;
+  border: 1px solid #30363d;
+  border-radius: 7px;
+  background: #161b22;
+}
+
+.memory-summary-grid strong {
+  color: #409eff;
+  font-size: 20px;
+}
+
+.memory-summary-grid span {
+  color: #888;
+  font-size: 11px;
+}
+
+.memory-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0;
+  color: #aaa;
+  font-size: 12px;
+}
+
+.memory-meta-row > span:first-child {
+  min-width: 64px;
+  color: #888;
+}
+
+.memory-health {
+  margin: 12px 0;
+}
+
+.memory-toolbar {
+  display: grid;
+  grid-template-columns: 118px minmax(0, 1fr) auto;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.memory-node-list {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.memory-node {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid #30363d;
+  border-radius: 7px;
+  color: inherit;
+  background: #161b22;
+  cursor: pointer;
+  text-align: left;
+}
+
+.memory-node:hover {
+  border-color: #409eff;
+  background: rgba(64, 158, 255, 0.08);
+}
+
+.memory-node-main {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.memory-node-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.memory-node-main strong {
+  color: #e0e0e0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.memory-node-main small,
+.memory-share small {
+  color: #888;
+}
+
+.memory-node-meta {
+  color: #777;
+  font-size: 11px;
+  line-height: 1.55;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.memory-subsection {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #30363d;
+}
+
+.memory-subsection h4 {
+  margin: 0 0 9px;
+  color: #d8d8d8;
+  font-size: 13px;
+}
+
+.memory-edge-list,
+.memory-share-list {
+  display: grid;
+  gap: 7px;
+}
+
+.memory-edge-list > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+  color: #b0b0b0;
+  font-size: 12px;
+}
+
+.memory-share {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid #30363d;
+  border-radius: 7px;
+  background: #161b22;
+}
+
+.memory-share > div {
+  display: grid;
+  gap: 3px;
+}
+
+.memory-detail-tags {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: #888;
+  font-size: 12px;
+}
+
+.memory-detail-description {
+  margin: 14px 0;
+  color: #b0b0b0;
+  line-height: 1.6;
+}
+
+.memory-detail pre {
+  max-height: 55vh;
+  overflow: auto;
+  margin: 0 0 12px;
+  padding: 14px;
+  border: 1px solid #30363d;
+  border-radius: 7px;
+  color: #d8dee9;
+  background: #0d1117;
+  font: inherit;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .history-item {
   display: flex;
   flex-direction: column;
@@ -1069,6 +1632,14 @@ onUnmounted(() => {
   }
 
   .organization-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .memory-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .memory-toolbar {
     grid-template-columns: 1fr;
   }
 

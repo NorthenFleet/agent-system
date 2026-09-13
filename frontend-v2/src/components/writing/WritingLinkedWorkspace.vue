@@ -4,7 +4,7 @@
       <div class="workbench-title">
         <span class="eyebrow">HUMAN × AI WORKBENCH</span>
         <h3>协同工作台</h3>
-        <p>左右窗口可以独立显示文档、PPT 或 AI，对同一资源执行单写多读。</p>
+        <p>左右窗口可以独立显示文档、PPT、画图或 AI，对同一资源执行单写多读。</p>
       </div>
 
       <div class="workbench-controls">
@@ -33,7 +33,9 @@
         <span class="diff-deleted">删除 {{ comparison.summary.deleted }}</span>
         <span class="diff-modified">修改 {{ comparison.summary.modified }}</span>
         <span>未变化 {{ comparison.summary.unchanged }}</span>
-        <el-switch v-model="syncComparisonSections" inline-prompt active-text="同步" inactive-text="独立" />
+        <el-tooltip content="仅联动章节与差异定位，左右正文始终独立滚动" placement="bottom">
+          <el-switch v-model="syncComparisonSections" inline-prompt active-text="章节" inactive-text="独立" />
+        </el-tooltip>
       </div>
       <div v-if="activeDifference" class="difference-row" :class="`is-${activeDifference.change.operation}`">
         <div><small>{{ activeDifference.section.left_title || '无对应章节' }}</small><p>{{ activeDifference.change.left_text || '本版本无此段落' }}</p></div>
@@ -99,6 +101,16 @@
             <el-option v-for="document in presentationOptions" :key="document.id" :label="document.title" :value="document.id" />
           </el-select>
           <el-select
+            v-else-if="leftPane.module === 'diagram'"
+            :model-value="leftPane.resource_id"
+            size="small"
+            placeholder="选择图表"
+            @change="changeResource('left', String($event || ''))"
+          >
+            <el-option v-for="document in diagramOptions" :key="document.id" :label="document.title" :value="document.id" />
+          </el-select>
+          <el-button v-if="leftPane.module === 'diagram'" type="primary" plain size="small" @click="openDiagramCreator('left')">新建</el-button>
+          <el-select
             v-if="leftPane.module === 'document'"
             v-model="leftPane.section_id"
             size="small"
@@ -120,11 +132,17 @@
           <el-button :icon="Refresh" circle size="small" @click="refreshPane('left')" />
         </div>
         <WritingWorkspacePane
+          v-if="leftPane.module !== 'document' || paneReady.left"
           ref="leftPaneComponent"
           :mode="leftPane.module"
           :project-id="projectId"
           :source-document="leftSource"
           :presentation-document="leftPresentation"
+          :diagram-id="leftPane.module === 'diagram' ? leftPane.resource_id : undefined"
+          :document-target-id="oppositeDocumentId('left')"
+          :document-target-section-id="oppositeDocumentSectionId('left')"
+          :presentation-target-id="oppositePresentationId('left')"
+          :presentation-target-slide="oppositePresentationSlide('left')"
           :section-id="leftPane.section_id || ''"
           :outline="outlineFor('left')"
           :selected-node-id="leftPane.section_id || ''"
@@ -138,11 +156,12 @@
           @context-changed="leftContext = $event"
           @ai-lock-changed="setAiLock('left', $event)"
           @conversation-changed="setConversation('left', $event)"
+          @document-changed="handleAiDocumentChanged"
           @select-outline="handleOutlineSelection('left', $event)"
           @navigate-to-thesis="emit('navigate-to-thesis', $event)"
           @slide-changed="handleSlideChanged('left', $event)"
-          @content-scroll="syncPaneScroll('left', $event)"
         />
+        <el-skeleton v-else class="pane-loading" animated :rows="8" />
       </article>
 
       <button
@@ -195,6 +214,16 @@
             <el-option v-for="document in presentationOptions" :key="document.id" :label="document.title" :value="document.id" />
           </el-select>
           <el-select
+            v-else-if="rightPane.module === 'diagram'"
+            :model-value="rightPane.resource_id"
+            size="small"
+            placeholder="选择图表"
+            @change="changeResource('right', String($event || ''))"
+          >
+            <el-option v-for="document in diagramOptions" :key="document.id" :label="document.title" :value="document.id" />
+          </el-select>
+          <el-button v-if="rightPane.module === 'diagram'" type="primary" plain size="small" @click="openDiagramCreator('right')">新建</el-button>
+          <el-select
             v-if="rightPane.module === 'document'"
             v-model="rightPane.section_id"
             size="small"
@@ -216,11 +245,17 @@
           <el-button :icon="Refresh" circle size="small" @click="refreshPane('right')" />
         </div>
         <WritingWorkspacePane
+          v-if="rightPane.module !== 'document' || paneReady.right"
           ref="rightPaneComponent"
           :mode="rightPane.module"
           :project-id="projectId"
           :source-document="rightSource"
           :presentation-document="rightPresentation"
+          :diagram-id="rightPane.module === 'diagram' ? rightPane.resource_id : undefined"
+          :document-target-id="oppositeDocumentId('right')"
+          :document-target-section-id="oppositeDocumentSectionId('right')"
+          :presentation-target-id="oppositePresentationId('right')"
+          :presentation-target-slide="oppositePresentationSlide('right')"
           :section-id="rightPane.section_id || ''"
           :outline="outlineFor('right')"
           :selected-node-id="rightPane.section_id || ''"
@@ -234,13 +269,32 @@
           @context-changed="rightContext = $event"
           @ai-lock-changed="setAiLock('right', $event)"
           @conversation-changed="setConversation('right', $event)"
+          @document-changed="handleAiDocumentChanged"
           @select-outline="handleOutlineSelection('right', $event)"
           @navigate-to-thesis="emit('navigate-to-thesis', $event)"
           @slide-changed="handleSlideChanged('right', $event)"
-          @content-scroll="syncPaneScroll('right', $event)"
         />
+        <el-skeleton v-else class="pane-loading" animated :rows="8" />
       </article>
     </div>
+
+    <el-dialog v-model="diagramCreatorVisible" title="新建结构化图表" width="min(520px, 92vw)" destroy-on-close>
+      <el-form label-position="top">
+        <el-form-item label="图表名称"><el-input v-model="diagramDraft.title" maxlength="120" /></el-form-item>
+        <el-form-item label="起始模板">
+          <el-radio-group v-model="diagramDraft.template_id" class="template-radio-group">
+            <el-radio-button label="blank">空白画布</el-radio-button>
+            <el-radio-button label="thesis-roadmap">论文技术路线</el-radio-button>
+            <el-radio-button label="system-architecture">系统架构</el-radio-button>
+            <el-radio-button label="ooda">OODA 流程</el-radio-button>
+          </el-radio-group>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="diagramCreatorVisible = false">取消</el-button>
+        <el-button type="primary" :loading="creatingDiagram" :disabled="!diagramDraft.title.trim()" @click="createDiagram">创建并打开</el-button>
+      </template>
+    </el-dialog>
   </section>
 </template>
 
@@ -253,6 +307,8 @@ import WritingWorkspacePane, {
   type WritingPaneMode
 } from './WritingWorkspacePane.vue'
 import {
+  createWritingDiagram,
+  getWritingDiagrams,
   getWritingWorkbenchPreference,
   getDocumentWritingWorkspace,
   compareWritingDocuments,
@@ -265,7 +321,16 @@ import {
 } from '@/api/writing'
 
 type PaneSide = 'left' | 'right'
-type WorkbenchPreset = 'writing' | 'presentation' | 'document_compare' | 'document_presentation' | 'custom'
+type WorkbenchPreset =
+  | 'writing'
+  | 'presentation'
+  | 'document_compare'
+  | 'document_presentation'
+  | 'diagramming'
+  | 'document_diagram'
+  | 'presentation_diagram'
+  | 'diagram_compare'
+  | 'custom'
 
 const props = defineProps<{
   projectId: string
@@ -282,7 +347,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  changed: [kind: 'document' | 'presentation']
+  changed: [kind: 'document' | 'presentation' | 'diagram']
   'select-outline': [node: WritingDirectoryNode]
   'navigate-to-thesis': [payload: { sourceDocumentId: string; section: string }]
   'slide-changed': [slide: number]
@@ -290,6 +355,11 @@ const emit = defineEmits<{
 
 const sourceOptions = computed(() => props.sourceDocuments?.length ? props.sourceDocuments : props.sourceDocument ? [props.sourceDocument] : [])
 const presentationOptions = computed(() => props.presentationDocuments?.length ? props.presentationDocuments : props.presentationDocument ? [props.presentationDocument] : [])
+const diagramOptions = ref<WritingProjectDocument[]>([])
+const diagramCreatorVisible = ref(false)
+const creatingDiagram = ref(false)
+const diagramCreatorSide = ref<PaneSide>('right')
+const diagramDraft = ref({ title: '新建论文插图', template_id: 'blank' })
 const preset = ref<WorkbenchPreset>(props.initialPreset || 'writing')
 const splitPercent = ref(42)
 const maximizedPane = ref<PaneSide>()
@@ -309,17 +379,24 @@ const documentOutlines = ref<Record<string, WritingDirectoryNode[]>>({})
 const comparison = ref<WritingDocumentComparison>()
 const comparisonLoading = ref(false)
 const differenceIndex = ref(0)
-const syncComparisonSections = ref(true)
+const syncComparisonSections = ref(false)
+const paneReady = ref<Record<PaneSide, boolean>>({ left: false, right: false })
+const outlineLoads = new Map<string, Promise<void>>()
+const paneOutlineGeneration: Record<PaneSide, number> = { left: 0, right: 0 }
 let persistTimer: ReturnType<typeof setTimeout> | undefined
+let persistInFlight = false
+let persistQueued = false
 
 function defaultPane(module: WritingPaneMode, _side: PaneSide): WritingWorkbenchPaneState {
   return {
     module,
     resource_id: module === 'document'
-      ? (props.sourceDocument?.id || sourceOptions.value[0]?.id)
+      ? props.sourceDocument?.id
       : module === 'presentation'
-        ? (props.presentationDocument?.id || presentationOptions.value[0]?.id)
-        : undefined,
+        ? props.presentationDocument?.id
+        : module === 'diagram'
+          ? diagramOptions.value[0]?.id
+          : undefined,
     section_id: props.sectionId || undefined,
     slide: Math.max(1, Number(props.presentationSlide || 1)),
     ai_target_locked: false,
@@ -335,11 +412,15 @@ const presetOptions = [
   { label: 'PPT 制作', value: 'presentation' },
   { label: '版本比对', value: 'document_compare' },
   { label: '文档/PPT校验', value: 'document_presentation' },
+  { label: '图表创作', value: 'diagramming' },
+  { label: '论文插图', value: 'document_diagram' },
+  { label: 'PPT配图', value: 'presentation_diagram' },
   { label: '自定义', value: 'custom' }
 ]
 const paneModeOptions = [
   { label: '文档', value: 'document' },
   { label: 'PPT', value: 'presentation' },
+  { label: '画图', value: 'diagram' },
   { label: 'AI', value: 'ai' }
 ]
 const mobilePaneOptions = [
@@ -347,14 +428,53 @@ const mobilePaneOptions = [
   { label: '右窗口', value: 'right' }
 ]
 
+type OutlineOption = { id: string; title: string }
+
 function flattenOutline(outline: WritingDirectoryNode[]) {
   const rows: Array<{ id: string; title: string }> = []
+  const seen = new Set<string>()
   const visit = (nodes: WritingDirectoryNode[]) => nodes.forEach(node => {
-    if (node.section_id || node.target_id) rows.push({ id: node.section_id || node.target_id, title: node.title })
+    const id = node.section_id || node.target_id
+    if (id && !seen.has(id)) {
+      seen.add(id)
+      rows.push({ id, title: String(node.title || '') })
+    }
     if (node.children?.length) visit(node.children)
   })
   visit(outline || [])
   return rows
+}
+
+function sectionOrdinal(id: string | null | undefined = '') {
+  const normalizedId = String(id || '')
+  const match = normalizedId.match(/(?:^|-)section-(\d+)(?:-|$)/i) || normalizedId.match(/^section-(\d+)(?:-|$)/i)
+  return match ? Number(match[1]) : undefined
+}
+
+function chineseChapterNumber(value: string) {
+  const digits: Record<string, number> = { 零: 0, 一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9 }
+  if (value === '十') return 10
+  if (value.includes('十')) {
+    const [tens, units] = value.split('十')
+    return (tens ? digits[tens] : 1) * 10 + (units ? digits[units] : 0)
+  }
+  return digits[value]
+}
+
+function normalizedSectionTitle(title: string | null | undefined = '') {
+  return String(title || '')
+    .replace(/第([零一二三四五六七八九十]+)章/g, (_whole, number: string) => `第${chineseChapterNumber(number)}章`)
+    .replace(/\s+/g, '')
+}
+
+function equivalentSection(options: OutlineOption[], reference: Partial<OutlineOption>) {
+  const ordinal = sectionOrdinal(reference.id)
+  if (ordinal !== undefined) {
+    const byOrdinal = options.find(row => sectionOrdinal(row.id) === ordinal)
+    if (byOrdinal) return byOrdinal
+  }
+  const title = normalizedSectionTitle(reference.title)
+  return title ? options.find(row => normalizedSectionTitle(row.title) === title) : undefined
 }
 function outlineFor(side: PaneSide) {
   const documentId = pane(side).value.resource_id || ''
@@ -367,14 +487,21 @@ const leftSource = computed(() => sourceOptions.value.find(row => row.id === lef
 const rightSource = computed(() => sourceOptions.value.find(row => row.id === rightPane.value.resource_id) || props.sourceDocument || sourceOptions.value[0])
 const leftPresentation = computed(() => presentationOptions.value.find(row => row.id === leftPane.value.resource_id) || props.presentationDocument || presentationOptions.value[0])
 const rightPresentation = computed(() => presentationOptions.value.find(row => row.id === rightPane.value.resource_id) || props.presentationDocument || presentationOptions.value[0])
+const leftDiagram = computed(() => diagramOptions.value.find(row => row.id === leftPane.value.resource_id))
+const rightDiagram = computed(() => diagramOptions.value.find(row => row.id === rightPane.value.resource_id))
 const sameWritableResource = computed(() => (
   leftPane.value.module === rightPane.value.module
   && leftPane.value.module !== 'ai'
   && Boolean(leftPane.value.resource_id)
   && leftPane.value.resource_id === rightPane.value.resource_id
 ))
-const leftReadOnly = computed(() => leftSource.value?.edit_policy === 'read_only')
-const rightReadOnly = computed(() => rightSource.value?.edit_policy === 'read_only' || sameWritableResource.value)
+const leftReadOnly = computed(() => (
+  leftPane.value.module === 'diagram' ? leftDiagram.value?.edit_policy === 'read_only' : leftSource.value?.edit_policy === 'read_only'
+))
+const rightReadOnly = computed(() => (
+  (rightPane.value.module === 'diagram' ? rightDiagram.value?.edit_policy === 'read_only' : rightSource.value?.edit_policy === 'read_only')
+  || sameWritableResource.value
+))
 const differences = computed(() => (comparison.value?.sections || []).flatMap(section =>
   section.changes.filter(change => change.operation !== 'unchanged').map(change => ({ section, change }))
 ))
@@ -392,42 +519,133 @@ function paneComponent(side: PaneSide) {
   return side === 'left' ? leftPaneComponent.value : rightPaneComponent.value
 }
 
-function syncPaneScroll(source: PaneSide, ratio: number) {
-  if (!syncComparisonSections.value
-    || leftPane.value.module !== 'document'
-    || rightPane.value.module !== 'document') return
-  const target: PaneSide = source === 'left' ? 'right' : 'left'
-  paneComponent(target)?.setContentScrollRatio?.(ratio)
-}
-
 function paneTitle(state: WritingWorkbenchPaneState) {
   if (state.module === 'document') return sourceOptions.value.find(row => row.id === state.resource_id)?.title || '文档'
   if (state.module === 'presentation') return presentationOptions.value.find(row => row.id === state.resource_id)?.title || 'PPT'
+  if (state.module === 'diagram') return diagramOptions.value.find(row => row.id === state.resource_id)?.title || '画图'
   return state.ai_target_locked ? 'AI 协作 · 已锁定目标' : 'AI 协作 · 跟随焦点'
+}
+
+function oppositeDocumentId(side: PaneSide) {
+  const target = side === 'left' ? rightPane.value : leftPane.value
+  return target.module === 'document' ? target.resource_id : undefined
+}
+
+function oppositeDocumentSectionId(side: PaneSide) {
+  const target = side === 'left' ? rightPane.value : leftPane.value
+  return target.module === 'document' ? target.section_id : undefined
+}
+
+function oppositePresentationId(side: PaneSide) {
+  const target = side === 'left' ? rightPane.value : leftPane.value
+  return target.module === 'presentation' ? target.resource_id : undefined
+}
+
+function oppositePresentationSlide(side: PaneSide) {
+  const target = side === 'left' ? rightPane.value : leftPane.value
+  return target.module === 'presentation' ? target.slide : undefined
 }
 
 function documentOptionLabel(document: WritingProjectDocument) {
   const edition = document.lineage?.edition_label ? `${document.lineage.edition_label} · ` : ''
-  const policy = document.edit_policy === 'read_only' ? '（只读）' : document.lineage?.sequence === 3 ? '（当前权威）' : ''
+  const policy = document.edit_policy === 'read_only'
+    ? document.delivery_role === 'deliverable'
+      ? '（冻结交付基线，只读）'
+      : '（只读）'
+    : document.is_primary
+      ? document.delivery_role === 'candidate'
+        ? '（当前正文权威，交付待冻结）'
+        : '（当前正文权威）'
+      : document.delivery_role === 'candidate'
+        ? '（候选，不进入交付包）'
+        : ''
   return `${edition}${document.title}${policy}`
+}
+
+async function loadDiagrams() {
+  try {
+    const result = await getWritingDiagrams(props.projectId)
+    diagramOptions.value = result.diagrams.map(row => ({
+      ...row,
+      ...(row.diagram ? { revision: row.diagram.revision } : {})
+    }))
+  } catch {
+    diagramOptions.value = []
+  }
+}
+
+function openDiagramCreator(side: PaneSide) {
+  diagramCreatorSide.value = side
+  diagramDraft.value = { title: '新建论文插图', template_id: 'blank' }
+  diagramCreatorVisible.value = true
+}
+
+async function createDiagram() {
+  creatingDiagram.value = true
+  try {
+    const result = await createWritingDiagram(props.projectId, {
+      title: diagramDraft.value.title.trim(),
+      template_id: diagramDraft.value.template_id,
+      diagram_type: diagramDraft.value.template_id === 'ooda' ? 'flowchart' : 'architecture'
+    })
+    await loadDiagrams()
+    const target = pane(diagramCreatorSide.value)
+    target.value = {
+      ...defaultPane('diagram', diagramCreatorSide.value),
+      resource_id: result.document.id
+    }
+    diagramCreatorVisible.value = false
+    preset.value = 'custom'
+    schedulePersist()
+  } catch (error: any) {
+    ElMessage.error(error?.response?.data?.detail || '创建图表失败')
+  } finally {
+    creatingDiagram.value = false
+  }
 }
 
 async function loadDocumentOutline(documentId?: string) {
   if (!documentId || documentOutlines.value[documentId]) return
-  try {
-    const workspace = await getDocumentWritingWorkspace(props.projectId, documentId)
-    documentOutlines.value = { ...documentOutlines.value, [documentId]: workspace.directory || [] }
-  } catch {
-    documentOutlines.value = { ...documentOutlines.value, [documentId]: [] }
-  }
+  const existing = outlineLoads.get(documentId)
+  if (existing) return existing
+  const projectId = props.projectId
+  let load!: Promise<void>
+  load = (async () => {
+    try {
+      const workspace = await getDocumentWritingWorkspace(projectId, documentId)
+      if (projectId === props.projectId) {
+        documentOutlines.value = { ...documentOutlines.value, [documentId]: workspace.directory || [] }
+      }
+    } catch {
+      if (projectId === props.projectId) {
+        documentOutlines.value = { ...documentOutlines.value, [documentId]: [] }
+      }
+    } finally {
+      if (outlineLoads.get(documentId) === load) outlineLoads.delete(documentId)
+    }
+  })()
+  outlineLoads.set(documentId, load)
+  return load
 }
 
 async function ensurePaneOutline(side: PaneSide) {
+  const generation = ++paneOutlineGeneration[side]
   const state = pane(side).value
-  if (state.module !== 'document') return
-  await loadDocumentOutline(state.resource_id)
+  if (state.module !== 'document') {
+    paneReady.value[side] = true
+    return
+  }
+  const resourceId = state.resource_id
+  paneReady.value[side] = false
+  await loadDocumentOutline(resourceId)
+  if (generation !== paneOutlineGeneration[side]
+    || state.module !== 'document'
+    || state.resource_id !== resourceId) return
   const options = sectionOptionsFor(side)
-  if (!options.some(row => row.id === state.section_id)) state.section_id = options[0]?.id
+  if (!options.some(row => row.id === state.section_id)) {
+    state.section_id = equivalentSection(options, { id: state.section_id })?.id || options[0]?.id
+  }
+  paneReady.value[side] = true
 }
 
 async function refreshComparison() {
@@ -476,6 +694,8 @@ async function changePaneModule(side: PaneSide, module: WritingPaneMode) {
     return
   }
   target.value = defaultPane(module, side)
+  paneReady.value[side] = module !== 'document'
+  await ensurePaneOutline(side)
   preset.value = 'custom'
   schedulePersist()
 }
@@ -489,11 +709,7 @@ async function changeResource(side: PaneSide, resourceId: string) {
   }
   target.value.section_id = undefined
   target.value.resource_id = resourceId
-  await loadDocumentOutline(resourceId)
-  if (target.value.module === 'document') {
-    const options = sectionOptionsFor(side)
-    target.value.section_id = options[0]?.id
-  }
+  await ensurePaneOutline(side)
   preset.value = 'custom'
   schedulePersist()
 }
@@ -520,22 +736,37 @@ async function applyPreset(nextPreset: WorkbenchPreset) {
     rightPane.value = defaultPane('presentation', 'right')
     splitPercent.value = 38
   } else if (nextPreset === 'document_compare') {
+    const candidate = sourceOptions.value.find(row => row.delivery_role === 'candidate')
     const historical = [...sourceOptions.value]
       .filter(row => row.delivery_role === 'historical_reference')
       .sort((a, b) => Number(b.lineage?.sequence || 0) - Number(a.lineage?.sequence || 0))[0]
     const current = sourceOptions.value.find(row => row.edit_policy !== 'read_only' && row.lineage?.sequence === 3)
       || props.sourceDocument || sourceOptions.value.find(row => row.edit_policy !== 'read_only')
-    leftPane.value = { ...defaultPane('document', 'left'), resource_id: historical?.id || sourceOptions.value[0]?.id, section_id: undefined }
+    leftPane.value = { ...defaultPane('document', 'left'), resource_id: candidate?.id || historical?.id || sourceOptions.value[0]?.id, section_id: undefined }
     rightPane.value = { ...defaultPane('document', 'right'), resource_id: current?.id || sourceOptions.value[sourceOptions.value.length - 1]?.id, section_id: undefined }
-    await Promise.all([loadDocumentOutline(leftPane.value.resource_id), loadDocumentOutline(rightPane.value.resource_id)])
-    leftPane.value.section_id = sectionOptionsFor('left')[0]?.id
-    rightPane.value.section_id = sectionOptionsFor('right')[0]?.id
     splitPercent.value = 50
-  } else {
+  } else if (nextPreset === 'document_presentation') {
     leftPane.value = defaultPane('document', 'left')
     rightPane.value = defaultPane('presentation', 'right')
     splitPercent.value = 50
+  } else if (nextPreset === 'diagramming') {
+    leftPane.value = defaultPane('ai', 'left')
+    rightPane.value = defaultPane('diagram', 'right')
+    splitPercent.value = 36
+  } else if (nextPreset === 'document_diagram') {
+    leftPane.value = defaultPane('document', 'left')
+    rightPane.value = defaultPane('diagram', 'right')
+    splitPercent.value = 45
+  } else if (nextPreset === 'presentation_diagram') {
+    leftPane.value = defaultPane('presentation', 'left')
+    rightPane.value = defaultPane('diagram', 'right')
+    splitPercent.value = 45
+  } else {
+    leftPane.value = defaultPane('diagram', 'left')
+    rightPane.value = defaultPane('document', 'right')
+    splitPercent.value = 50
   }
+  await Promise.all([ensurePaneOutline('left'), ensurePaneOutline('right')])
   schedulePersist()
 }
 
@@ -609,20 +840,27 @@ function setConversation(side: PaneSide, conversationId: string) {
 }
 
 function handleOutlineSelection(side: PaneSide, node: WritingDirectoryNode) {
-  pane(side).value.section_id = node.section_id || node.target_id || node.id
+  const selectedId = node.section_id || node.target_id || node.id
+  pane(side).value.section_id = selectedId
   if (syncComparisonSections.value && comparison.value) {
-    const title = node.title.replace(/\s+/g, '')
+    const title = normalizedSectionTitle(node.title)
     const mapped = comparison.value.sections.find(row =>
-      row.left_title.replace(/\s+/g, '') === title || row.right_title.replace(/\s+/g, '') === title
+      normalizedSectionTitle(row.left_title) === title || normalizedSectionTitle(row.right_title) === title
     )
-    if (mapped) {
-      const other: PaneSide = side === 'left' ? 'right' : 'left'
+    const other: PaneSide = side === 'left' ? 'right' : 'left'
+    const options = sectionOptionsFor(other)
+    const direct = equivalentSection(options, { id: selectedId, title: node.title })
+    if (direct) {
+      pane(other).value.section_id = direct.id
+    } else if (mapped) {
       const targetTitle = side === 'left' ? mapped.right_title : mapped.left_title
-      const target = sectionOptionsFor(other).find(row => row.title.replace(/\s+/g, '') === targetTitle.replace(/\s+/g, ''))
+      const target = equivalentSection(options, { title: targetTitle })
       if (target) pane(other).value.section_id = target.id
     }
   }
-  emit('select-outline', node)
+  if (pane(side).value.resource_id === props.sourceDocument?.id) {
+    emit('select-outline', node)
+  }
   schedulePersist()
 }
 
@@ -632,9 +870,21 @@ function handleSlideChanged(side: PaneSide, slide: number) {
   schedulePersist()
 }
 
-function handleChanged(kind: 'document' | 'presentation') {
+function handleChanged(kind: 'document' | 'presentation' | 'diagram') {
   emit('changed', kind)
   if (kind === 'document') void refreshComparison()
+  if (kind === 'diagram') void loadDiagrams()
+}
+
+function handleAiDocumentChanged(documentId: string) {
+  ;(['left', 'right'] as PaneSide[]).forEach(side => {
+    const state = pane(side).value
+    if (state.module === 'document' && state.resource_id === documentId) refreshPane(side)
+  })
+  const remaining = Object.entries(documentOutlines.value)
+    .filter(([id]) => id !== documentId)
+  documentOutlines.value = Object.fromEntries(remaining)
+  emit('changed', 'document')
 }
 
 function refreshPane(side: PaneSide) {
@@ -650,7 +900,7 @@ function markCustomAndPersist() {
 function preferencePayload() {
   return {
     expected_revision: preferenceRevision.value,
-    schema_version: 2,
+    schema_version: 3,
     preset: preset.value,
     split_percent: splitPercent.value,
     maximized_pane: maximizedPane.value,
@@ -661,13 +911,57 @@ function preferencePayload() {
   }
 }
 
-function applyStoredPreference(value: any) {
+function normalizeStoredPane(
+  value: WritingWorkbenchPaneState | undefined,
+  side: PaneSide,
+  oppositeResourceId?: string
+) {
+  const module = value?.module || (side === 'left' ? 'ai' : 'document')
+  const normalized = { ...defaultPane(module, side), ...(value || {}) }
+  if (module === 'document' && !sourceOptions.value.some(row => row.id === normalized.resource_id)) {
+    const historical = [...sourceOptions.value]
+      .filter(row => row.delivery_role === 'historical_reference' && row.id !== oppositeResourceId)
+      .sort((a, b) => Number(b.lineage?.sequence || 0) - Number(a.lineage?.sequence || 0))[0]
+    const fallback = historical
+      || sourceOptions.value.find(row => row.id !== oppositeResourceId)
+      || props.sourceDocument
+      || sourceOptions.value[0]
+    return {
+      pane: { ...normalized, resource_id: fallback?.id, section_id: undefined },
+      repaired: true
+    }
+  }
+  if (module === 'presentation' && !presentationOptions.value.some(row => row.id === normalized.resource_id)) {
+    return {
+      pane: { ...normalized, resource_id: props.presentationDocument?.id, slide: 1 },
+      repaired: true
+    }
+  }
+  if (module === 'diagram' && !diagramOptions.value.some(row => row.id === normalized.resource_id)) {
+    return {
+      pane: { ...normalized, resource_id: diagramOptions.value[0]?.id },
+      repaired: true
+    }
+  }
+  return { pane: normalized, repaired: false }
+}
+
+function applyStoredPreference(value: any, hydratePanes = true) {
   preferenceRevision.value = Number(value.revision || 0)
+  if (!hydratePanes) return false
   preset.value = value.preset === 'comparison' ? 'document_presentation' : value.preset || props.initialPreset || 'writing'
   splitPercent.value = Math.max(28, Math.min(72, Number(value.split_percent || 42)))
   maximizedPane.value = value.maximized_pane || undefined
-  leftPane.value = { ...defaultPane('ai', 'left'), ...(value.panes?.left || {}) }
-  rightPane.value = { ...defaultPane('document', 'right'), ...(value.panes?.right || {}) }
+  const storedLeft = value.panes?.left as WritingWorkbenchPaneState | undefined
+  const storedRight = value.panes?.right as WritingWorkbenchPaneState | undefined
+  const left = normalizeStoredPane(storedLeft, 'left', storedRight?.resource_id)
+  const right = normalizeStoredPane(storedRight, 'right', left.pane.resource_id)
+  leftPane.value = left.pane
+  rightPane.value = right.pane
+  paneReady.value.left = leftPane.value.module !== 'document'
+  paneReady.value.right = rightPane.value.module !== 'document'
+  void Promise.all([ensurePaneOutline('left'), ensurePaneOutline('right')])
+  return left.repaired || right.repaired
 }
 
 async function loadPreference() {
@@ -677,7 +971,10 @@ async function loadPreference() {
       preferenceRevision.value = Number(value.revision || 0)
       await applyPreset(props.initialPreset || 'writing')
     }
-    else if (Number(value.revision || 0) > 0) applyStoredPreference(value)
+    else if (Number(value.revision || 0) > 0) {
+      const repaired = applyStoredPreference(value)
+      if (repaired) schedulePersist()
+    }
     else await applyPreset(props.initialPreset || 'writing')
   } catch {
     preferenceState.value = 'error'
@@ -692,9 +989,15 @@ function schedulePersist() {
 }
 
 async function persistPreference() {
+  persistTimer = undefined
+  if (persistInFlight) {
+    persistQueued = true
+    return
+  }
+  persistInFlight = true
   try {
     const saved = await updateWritingWorkbenchPreference(props.projectId, preferencePayload())
-    applyStoredPreference(saved)
+    applyStoredPreference(saved, false)
     preferenceState.value = 'saved'
   } catch (error: any) {
     preferenceState.value = 'error'
@@ -702,6 +1005,13 @@ async function persistPreference() {
       const current = await getWritingWorkbenchPreference(props.projectId)
       applyStoredPreference(current)
       ElMessage.warning('布局已由另一设备更新，已载入最新版本')
+    }
+  } finally {
+    persistInFlight = false
+    if (persistQueued) {
+      persistQueued = false
+      preferenceState.value = 'saving'
+      await persistPreference()
     }
   }
 }
@@ -721,14 +1031,15 @@ watch(differences, rows => {
 
 watch(activeDifference, value => {
   if (!value || !syncComparisonSections.value) return
-  const left = sectionOptionsFor('left').find(row => row.title.replace(/\s+/g, '') === value.section.left_title.replace(/\s+/g, ''))
-  const right = sectionOptionsFor('right').find(row => row.title.replace(/\s+/g, '') === value.section.right_title.replace(/\s+/g, ''))
+  const left = equivalentSection(sectionOptionsFor('left'), { title: value.section.left_title })
+  const right = equivalentSection(sectionOptionsFor('right'), { title: value.section.right_title })
   if (left) leftPane.value.section_id = left.id
   if (right) rightPane.value.section_id = right.id
 })
 
 onMounted(async () => {
   if (props.sourceDocument?.id) documentOutlines.value[props.sourceDocument.id] = props.outline || []
+  await loadDiagrams()
   await loadPreference()
   await Promise.all([ensurePaneOutline('left'), ensurePaneOutline('right')])
   await refreshComparison()
@@ -766,6 +1077,7 @@ onBeforeUnmount(() => {
 .difference-actions { display: grid; align-content: center; justify-items: center; gap: 5px; min-width: 74px; color: var(--text-secondary); font-size: 9px; }
 .linked-panes { display: grid; min-width: 0; align-items: stretch; }
 .linked-pane { display: grid; grid-template-rows: auto auto minmax(0, 1fr); min-width: 0; overflow: hidden; border: 1px solid var(--line-color); border-radius: 7px; background: var(--card-bg); box-shadow: 0 12px 30px rgb(0 0 0 / 18%); }
+.pane-loading { min-height: 700px; padding: 22px; background: var(--content-bg); }
 .pane-divider { display: flex; align-items: center; justify-content: center; width: 8px; padding: 0; border: 0; background: transparent; cursor: col-resize; touch-action: none; }
 .pane-divider span { width: 2px; height: 54px; border-radius: 2px; background: var(--line-color); transition: background .15s, width .15s; }
 .pane-divider:hover span, .pane-divider:focus-visible span { width: 4px; background: var(--view-color-primary); }

@@ -22,6 +22,7 @@ from routers._slim_helpers import _is_legacy_admin_write, require_admin_request
 from routers.auth_router import router as auth_router
 from routers.scheduler_router import router as scheduler_router
 from routers.memory_router import router as memory_router
+from routers.graph_memory_router import router as graph_memory_router
 
 app = FastAPI(title="团队状态看板 API")
 FD2 = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend-v2", "dist")
@@ -69,7 +70,7 @@ def _module_for_path(path: str):
         (("/api/v3/projects", "/api/v2/projects"), "projects"),
         (("/api/v2/tasks", "/api/tasks", "/api/v2/task-recommend"), "tasks"),
         (("/api/admin/data", "/api/v2/data", "/api/v3/data"), "data-admin"),
-        (("/api/v3/agents", "/api/v2/agents", "/api/agents", "/api/v2/agent-health"), "agents"),
+        (("/api/v3/agents", "/api/v2/agents", "/api/agents", "/api/v2/agent-health", "/api/v2/memory"), "agents"),
         (("/api/v2/codex", "/api/v2/codex-jobs"), "development"),
         (("/api/v2/chat", "/api/chat"), "agents"),
         (("/api/knowledge", "/api/v3/knowledge"), "knowledge"),
@@ -127,6 +128,7 @@ register_api_routes(app)
 app.include_router(auth_router)
 app.include_router(scheduler_router)
 app.include_router(memory_router)
+app.include_router(graph_memory_router)
 
 # Pages
 app.get("/")(lambda: _r(_fe()))
@@ -138,6 +140,8 @@ if os.path.isdir(os.path.join(FD2, "vendor")):
     app.mount("/vendor", StaticFiles(directory=os.path.join(FD2, "vendor")), name="v2-vendor")
 if os.path.isdir(os.path.join(FD2, "icons")):
     app.mount("/icons", StaticFiles(directory=os.path.join(FD2, "icons")), name="v2-icons")
+if os.path.isdir(os.path.join(FD2, "word-addin")):
+    app.mount("/word-addin", StaticFiles(directory=os.path.join(FD2, "word-addin"), html=True), name="word-addin")
 
 
 @app.get("/manifest.json")

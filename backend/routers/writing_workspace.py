@@ -27,7 +27,9 @@ from services.document_evaluation_service import (
     document_evaluation_service,
 )
 from services.document_layout_service import document_layout_service
+from services.document_fidelity_service import document_fidelity_service
 from services.document_comparison_service import document_comparison_service
+from services.diagram_service import diagram_service
 from services.multi_document_service import multi_document_service
 from services.product_delivery_service import register_document_export
 from services.product_service import product_registry_service
@@ -40,6 +42,7 @@ from services.writing_workbench_service import (
     writing_workbench_service,
 )
 from services.writing_research_service import writing_research_service
+from services.word_addin_bridge_service import word_addin_bridge_service
 
 
 router = APIRouter(prefix="/api/v3/writing", tags=["writing-workspace"])
@@ -81,10 +84,23 @@ class CollaborationAiJobCreate(BaseModel):
 class WritingClaimCreate(BaseModel):
     claim_text: str = Field(min_length=1, max_length=20000)
     claim_type: str = Field(default="argument", max_length=32)
+    claim_key: str = Field(default="", max_length=160)
+    rhetorical_role: str = Field(
+        default="fact",
+        pattern="^(fact|trend|comparison|limitation|gap|definition|contribution)$",
+    )
+    evidence_policy: dict[str, Any] = Field(default_factory=dict)
+    temporal_scope: str = Field(default="", max_length=80)
+    geographic_scope: str = Field(
+        default="global",
+        pattern="^(domestic|international|comparative|global)$",
+    )
+    supersedes_claim_id: str = Field(default="", max_length=64)
     minimum_evidence_level: str = Field(default="diagnostic", pattern="^(diagnostic|G1|G2|A)$")
     document_revision: int | None = Field(default=None, ge=1)
     section_id: str = Field(default="", max_length=128)
     block_id: str = Field(default="", max_length=96)
+    gap_type: str | None = Field(default=None, pattern="^(literature|experiment|mixed)$")
     research_matrix: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -95,8 +111,100 @@ class WritingEvidenceRefCreate(BaseModel):
     artifact_sha256: str = Field(min_length=64, max_length=64)
     perspective_scope: str = Field(default="project", max_length=64)
     evidence_level: str = Field(default="diagnostic", pattern="^(diagnostic|G1|G2|A)$")
+    evidence_kind: str = Field(
+        default="simulation",
+        pattern="^(literature|simulation|dataset|policy|system_record)$",
+    )
+    source_quality: str = Field(
+        default="internal",
+        pattern="^(peer_reviewed|official|standard|preprint|secondary|internal)$",
+    )
+    support_role: str = Field(
+        default="supports",
+        pattern="^(supports|contradicts|contextualizes|method_basis)$",
+    )
+    directness: str = Field(default="direct", pattern="^(direct|indirect|metadata_only)$")
+    published_at: str | None = None
+    license_or_access: str = Field(default="", max_length=2000)
+    retrieval_ref_id: str = Field(default="", max_length=64)
+    locator: dict[str, Any] = Field(default_factory=dict)
+    excerpt_sha256: str = Field(default="", max_length=64)
     allowed_claim_scope: str = Field(default="", max_length=12000)
     provenance: dict[str, Any] = Field(default_factory=dict)
+
+
+class WritingRetrievalRefCreate(BaseModel):
+    base_revision: int = Field(ge=1)
+    idempotency_key: str = Field(min_length=1, max_length=96)
+    run_id: str = Field(default="", max_length=64)
+    iteration_id: str = Field(default="", max_length=64)
+    provider: str = Field(min_length=1, max_length=48)
+    provider_record_id: str = Field(min_length=1, max_length=200)
+    query_id: str = Field(default="", max_length=96)
+    query_text: str = Field(default="", max_length=12000)
+    rank: int = Field(default=0, ge=0)
+    retrieval_score: float = 0
+    title: str = Field(min_length=1, max_length=4000)
+    authors: list[str] = Field(default_factory=list, max_length=200)
+    year: int | None = Field(default=None, ge=1000, le=2100)
+    venue: str = Field(default="", max_length=2000)
+    doi: str = Field(default="", max_length=300)
+    url: str = Field(default="", max_length=4000)
+    abstract_snapshot: str = Field(default="", max_length=100000)
+    metadata_snapshot: dict[str, Any] = Field(default_factory=dict)
+    metadata_sha256: str = Field(default="", max_length=64)
+    access_status: str = Field(
+        default="metadata_only",
+        pattern="^(metadata_only|abstract|fulltext|unavailable)$",
+    )
+
+
+class WritingRetrievalScreeningDecision(BaseModel):
+    expected_revision: int = Field(ge=1)
+    decision: str = Field(pattern="^(include|exclude|uncertain|duplicate)$")
+    reason: str = Field(default="", max_length=4000)
+    canonical_ref_id: str = Field(default="", max_length=64)
+    actor_type: str = Field(default="human", pattern="^(human|agent)$")
+    idempotency_key: str = Field(min_length=1, max_length=96)
+
+
+class WritingRetrievalPromote(BaseModel):
+    expected_revision: int = Field(ge=1)
+    artifact_path: str = Field(min_length=1, max_length=4000)
+    artifact_sha256: str = Field(min_length=64, max_length=64)
+    perspective_scope: str = Field(default="project", max_length=64)
+    evidence_level: str = Field(default="diagnostic", pattern="^(diagnostic|G1|G2|A)$")
+    evidence_kind: str = Field(default="literature", pattern="^(literature|policy|dataset)$")
+    source_quality: str = Field(
+        default="peer_reviewed",
+        pattern="^(peer_reviewed|official|standard|preprint|secondary|internal)$",
+    )
+    support_role: str = Field(
+        default="supports",
+        pattern="^(supports|contradicts|contextualizes|method_basis)$",
+    )
+    directness: str = Field(default="direct", pattern="^(direct|indirect|metadata_only)$")
+    published_at: str | None = None
+    license_or_access: str = Field(default="", max_length=2000)
+    locator: dict[str, Any] = Field(default_factory=dict)
+    excerpt_sha256: str = Field(default="", max_length=64)
+    allowed_claim_scope: str = Field(default="", max_length=12000)
+    provenance: dict[str, Any] = Field(default_factory=dict)
+
+
+class WritingLiteratureRunCreate(BaseModel):
+    base_revision: int = Field(ge=1)
+    idempotency_key: str = Field(min_length=1, max_length=96)
+    scope_section_ids: list[str] = Field(min_length=1, max_length=20)
+    evaluator_version: str = Field(default="literature-baseline-v1", max_length=48)
+    max_results_per_query: int = Field(default=12, ge=1, le=50)
+    source_whitelist: list[str] = Field(
+        default_factory=lambda: ["local_knowledge", "bibliography"],
+        min_length=1,
+        max_length=6,
+    )
+    external_request_budget: int = Field(default=0, ge=0, le=10)
+    research_matrix: dict[str, Any] | None = None
 
 
 class WritingEvidenceBindingCreate(BaseModel):
@@ -126,6 +234,26 @@ class WritingChangeSetCreate(BaseModel):
 class WritingChangeSetDecision(BaseModel):
     decision: str = Field(pattern="^(approve|reject)$")
     comment: str = Field(default="", max_length=4000)
+
+
+class WordAddinApplyValidation(BaseModel):
+    base_revision: int = Field(ge=1)
+    current_paragraph_sha256: str = Field(min_length=64, max_length=64)
+    office_session_id: str = Field(min_length=1, max_length=96)
+    document_session_fingerprint: str = Field(min_length=64, max_length=64)
+
+
+class WordAddinParagraphResolve(BaseModel):
+    text: str = Field(min_length=1, max_length=120000)
+    text_sha256: str = Field(min_length=64, max_length=64)
+
+
+class WordAddinApplyReceipt(BaseModel):
+    apply_token: str = Field(min_length=1, max_length=4096)
+    before_sha256: str = Field(min_length=64, max_length=64)
+    after_sha256: str = Field(min_length=64, max_length=64)
+    office_session_id: str = Field(min_length=1, max_length=96)
+    document_session_fingerprint: str = Field(min_length=64, max_length=64)
 
 
 class WritingJarvisRunDecision(BaseModel):
@@ -182,7 +310,7 @@ class PresentationSlideProposalCreate(BaseModel):
 
 
 class WorkbenchPaneState(BaseModel):
-    module: str = Field(pattern="^(document|presentation|ai)$")
+    module: str = Field(pattern="^(document|presentation|diagram|ai)$")
     resource_id: str | None = Field(default=None, max_length=64)
     section_id: str | None = Field(default=None, max_length=128)
     slide: int | None = Field(default=None, ge=1)
@@ -197,8 +325,10 @@ class WorkbenchPanePair(BaseModel):
 
 class WorkbenchPreferenceUpdate(BaseModel):
     expected_revision: int = Field(ge=0)
-    schema_version: int = Field(default=2, ge=1, le=2)
-    preset: str = Field(pattern="^(writing|presentation|comparison|document_compare|document_presentation|custom)$")
+    schema_version: int = Field(default=3, ge=1, le=3)
+    preset: str = Field(
+        pattern="^(writing|presentation|comparison|document_compare|document_presentation|diagramming|document_diagram|presentation_diagram|diagram_compare|custom)$"
+    )
     split_percent: int = Field(ge=25, le=75)
     maximized_pane: str | None = Field(default=None, pattern="^(left|right)$")
     panes: WorkbenchPanePair
@@ -210,10 +340,10 @@ class WritingAiConversationCreate(BaseModel):
 
 
 class WritingAiTarget(BaseModel):
-    kind: str = Field(pattern="^(document|presentation)$")
+    kind: str = Field(pattern="^(document|presentation|diagram)$")
     document_id: str = Field(min_length=1, max_length=64)
     document_title: str = Field(default="", max_length=200)
-    scope: str = Field(default="section", pattern="^(selection|block|section|document)$")
+    scope: str = Field(default="section", pattern="^(selection|block|section|document|cells|diagram)$")
     section_id: str = Field(default="", max_length=128)
     section_title: str = Field(default="", max_length=300)
     block_id: str | None = Field(default=None, max_length=96)
@@ -222,6 +352,8 @@ class WritingAiTarget(BaseModel):
     selection: dict[str, Any] | None = None
     slide: int | None = Field(default=None, ge=1)
     structure_revision: int | None = Field(default=None, ge=1)
+    diagram_revision: int | None = Field(default=None, ge=1)
+    cell_ids: list[str] = Field(default_factory=list, max_length=200)
     draft: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -253,7 +385,7 @@ class WritingProjectCreate(BaseModel):
 
 class ProjectDocumentCreate(BaseModel):
     title: str = Field(min_length=1, max_length=120)
-    kind: str = Field(pattern="^(rich_text|workbook|presentation)$")
+    kind: str = Field(pattern="^(rich_text|workbook|presentation|diagram)$")
     outline: list[str] = Field(default_factory=list)
     source_path: str = ""
     is_primary: bool = False
@@ -270,7 +402,7 @@ class ProjectDocumentCreate(BaseModel):
     rules_version: str = ""
     data_version: str = ""
     edit_policy: str = Field(default="editable", pattern="^(editable|read_only)$")
-    delivery_role: str = Field(default="deliverable", pattern="^(deliverable|historical_reference)$")
+    delivery_role: str = Field(default="deliverable", pattern="^(deliverable|historical_reference|candidate)$")
     lineage: dict[str, Any] | None = None
 
 
@@ -292,7 +424,7 @@ class ProjectDocumentUpdate(BaseModel):
     rules_version: str | None = None
     data_version: str | None = None
     edit_policy: str | None = Field(default=None, pattern="^(editable|read_only)$")
-    delivery_role: str | None = Field(default=None, pattern="^(deliverable|historical_reference)$")
+    delivery_role: str | None = Field(default=None, pattern="^(deliverable|historical_reference|candidate)$")
     lineage: dict[str, Any] | None = None
 
 
@@ -302,6 +434,65 @@ class DocumentComparisonCreate(BaseModel):
     left_revision: int | None = Field(default=None, ge=1)
     right_revision: int | None = Field(default=None, ge=1)
     section_key: str | None = Field(default=None, max_length=160)
+
+
+class DiagramCreate(BaseModel):
+    title: str = Field(default="新建图表", min_length=1, max_length=120)
+    template_id: str = Field(default="blank", max_length=64)
+    diagram_type: str = Field(default="flowchart", max_length=48)
+    theme_id: str = Field(default="academic", max_length=48)
+    page_settings: dict[str, Any] = Field(default_factory=dict)
+    cells: list[dict[str, Any]] | None = Field(default=None, max_length=1000)
+
+
+class DiagramDraftPatch(BaseModel):
+    expected_revision: int = Field(ge=1)
+    title: str = Field(default="", max_length=200)
+    diagram_type: str = Field(default="flowchart", max_length=48)
+    theme_id: str = Field(default="academic", max_length=48)
+    page_settings: dict[str, Any] = Field(default_factory=dict)
+    cells: list[dict[str, Any]] = Field(default_factory=list, max_length=1000)
+
+
+class DiagramVersionCreate(BaseModel):
+    label: str = Field(default="人工版本", max_length=160)
+    reason: str = Field(default="manual", max_length=40)
+
+
+class DiagramExportCreate(BaseModel):
+    format: str = Field(default="svg", pattern="^(svg|png|pdf|json)$")
+
+
+class DiagramAiJobCreate(BaseModel):
+    client_request_id: str = Field(default="", max_length=96)
+    agent_id: str = Field(default="ultra-magnus", min_length=1, max_length=64)
+    instruction: str = Field(min_length=1, max_length=12000)
+    target_cell_ids: list[str] = Field(default_factory=list, max_length=200)
+
+
+class DiagramReferenceCreate(BaseModel):
+    diagram_version: int | None = Field(default=None, ge=1)
+    export_format: str = Field(default="svg", pattern="^(svg|png)$")
+    crop_or_viewbox: dict[str, Any] = Field(default_factory=dict)
+    caption: str = Field(default="", max_length=1000)
+    target_kind: str = Field(pattern="^(rich_text|presentation)$")
+    target_document_id: str = Field(min_length=1, max_length=64)
+    target_section_id: str = Field(default="", max_length=128)
+    target_slide: int | None = Field(default=None, ge=1)
+
+
+class DiagramPublishToDocument(BaseModel):
+    target_document_id: str = Field(min_length=1, max_length=64)
+    target_section_id: str = Field(default="", max_length=128)
+    expected_document_revision: int = Field(ge=1)
+    expected_diagram_revision: int = Field(ge=1)
+    anchor_block_id: str = Field(default="", max_length=128)
+    replace_block_ids: list[str] = Field(default_factory=list, max_length=20)
+    figure_label: str = Field(default="", max_length=40)
+    caption: str = Field(default="", max_length=1000)
+    width: str = Field(default="145mm", max_length=32)
+    export_format: str = Field(default="svg", pattern="^(svg|png)$")
+    client_change_id: str = Field(default="", max_length=96)
 
 
 class ProjectDocumentOrder(BaseModel):
@@ -523,13 +714,20 @@ def list_writing_ai_messages(
     "/projects/{project_id}/ai-conversations/{conversation_id}/messages",
     status_code=202,
 )
-def create_writing_ai_message(
+async def create_writing_ai_message(
     project_id: str,
     conversation_id: str,
     req: WritingAiConversationMessageCreate,
     user: dict = Depends(require_role("admin")),
 ):
     try:
+        if req.target.kind == "diagram":
+            return await writing_workbench_service.submit_diagram_message(
+                _project(project_id),
+                _owner_id(user),
+                conversation_id,
+                req.model_dump(exclude_none=True),
+            )
         return writing_workbench_service.submit_message(
             _project(project_id),
             _owner_id(user),
@@ -636,6 +834,219 @@ def list_project_documents(
 ):
     try:
         return multi_document_service.list_documents(_project(project_id), include_archived)
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.get("/projects/{project_id}/diagrams")
+def list_project_diagrams(
+    project_id: str,
+    _user: dict = Depends(get_current_user),
+):
+    try:
+        return diagram_service.list(_project(project_id))
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.post("/projects/{project_id}/diagrams", status_code=201)
+def create_project_diagram(
+    project_id: str,
+    req: DiagramCreate,
+    user: dict = Depends(require_role("admin")),
+):
+    try:
+        return diagram_service.create(
+            _project(project_id),
+            req.model_dump(exclude_none=True),
+            _owner_id(user),
+        )
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.get("/projects/{project_id}/diagrams/{diagram_id}")
+def get_project_diagram(
+    project_id: str,
+    diagram_id: str,
+    _user: dict = Depends(get_current_user),
+):
+    try:
+        return diagram_service.get(_project(project_id), diagram_id)
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.patch("/projects/{project_id}/diagrams/{diagram_id}/draft")
+def update_project_diagram_draft(
+    project_id: str,
+    diagram_id: str,
+    req: DiagramDraftPatch,
+    user: dict = Depends(require_role("admin")),
+):
+    try:
+        return diagram_service.update_draft(
+            _project(project_id), diagram_id, req.model_dump(), _owner_id(user)
+        )
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.get("/projects/{project_id}/diagrams/{diagram_id}/versions")
+def list_project_diagram_versions(
+    project_id: str,
+    diagram_id: str,
+    _user: dict = Depends(get_current_user),
+):
+    try:
+        return {"versions": diagram_service.list_versions(_project(project_id), diagram_id)}
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.post("/projects/{project_id}/diagrams/{diagram_id}/versions", status_code=201)
+def create_project_diagram_version(
+    project_id: str,
+    diagram_id: str,
+    req: DiagramVersionCreate,
+    user: dict = Depends(require_role("admin")),
+):
+    try:
+        return diagram_service.create_version(
+            _project(project_id), diagram_id, req.model_dump(), _owner_id(user)
+        )
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.post("/projects/{project_id}/diagrams/{diagram_id}/exports")
+def export_project_diagram(
+    project_id: str,
+    diagram_id: str,
+    req: DiagramExportCreate,
+    user: dict = Depends(require_role("admin")),
+):
+    try:
+        export_path = diagram_service.export(
+            _project(project_id), diagram_id, req.format, _owner_id(user)
+        )
+        media_types = {
+            "svg": "image/svg+xml",
+            "png": "image/png",
+            "pdf": "application/pdf",
+            "json": "application/json",
+        }
+        return FileResponse(
+            export_path,
+            media_type=media_types[req.format],
+            filename=export_path.name,
+        )
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.post("/projects/{project_id}/diagrams/{diagram_id}/ai-jobs", status_code=202)
+async def create_project_diagram_ai_job(
+    project_id: str,
+    diagram_id: str,
+    req: DiagramAiJobCreate,
+    user: dict = Depends(require_role("admin")),
+):
+    try:
+        return await diagram_service.submit_ai_job(
+            _project(project_id), diagram_id, req.model_dump(), _owner_id(user)
+        )
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.get("/projects/{project_id}/diagrams/{diagram_id}/ai-jobs/{job_id}")
+def get_project_diagram_ai_job(
+    project_id: str,
+    diagram_id: str,
+    job_id: str,
+    _user: dict = Depends(get_current_user),
+):
+    try:
+        return diagram_service.get_ai_job(_project(project_id), diagram_id, job_id)
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.post("/projects/{project_id}/diagrams/{diagram_id}/proposals/{proposal_id}/accept")
+def accept_project_diagram_proposal(
+    project_id: str,
+    diagram_id: str,
+    proposal_id: str,
+    user: dict = Depends(require_role("admin")),
+):
+    try:
+        return diagram_service.accept_proposal(
+            _project(project_id), diagram_id, proposal_id, _owner_id(user)
+        )
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.post("/projects/{project_id}/diagrams/{diagram_id}/proposals/{proposal_id}/reject")
+def reject_project_diagram_proposal(
+    project_id: str,
+    diagram_id: str,
+    proposal_id: str,
+    user: dict = Depends(require_role("admin")),
+):
+    try:
+        return diagram_service.reject_proposal(
+            _project(project_id), diagram_id, proposal_id, _owner_id(user)
+        )
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.get("/projects/{project_id}/diagrams/{diagram_id}/references")
+def list_project_diagram_references(
+    project_id: str,
+    diagram_id: str,
+    _user: dict = Depends(get_current_user),
+):
+    try:
+        return {"references": diagram_service.list_references(_project(project_id), diagram_id)}
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.post("/projects/{project_id}/diagrams/{diagram_id}/references", status_code=201)
+def create_project_diagram_reference(
+    project_id: str,
+    diagram_id: str,
+    req: DiagramReferenceCreate,
+    user: dict = Depends(require_role("admin")),
+):
+    try:
+        return diagram_service.create_reference(
+            _project(project_id), diagram_id, req.model_dump(exclude_none=True), _owner_id(user)
+        )
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.post(
+    "/projects/{project_id}/diagrams/{diagram_id}/publish-to-document",
+    status_code=201,
+)
+def publish_project_diagram_to_document(
+    project_id: str,
+    diagram_id: str,
+    req: DiagramPublishToDocument,
+    user: dict = Depends(require_role("admin")),
+):
+    try:
+        return diagram_service.publish_to_document(
+            _project(project_id),
+            diagram_id,
+            req.model_dump(exclude_none=True),
+            _owner_id(user),
+        )
     except DocumentWorkspaceError as exc:
         raise _handle(exc) from exc
 
@@ -935,6 +1346,83 @@ def get_document_research_workflow(
         raise _handle(exc) from exc
 
 
+@router.post(
+    "/projects/{project_id}/documents/{document_id}/literature-runs",
+    status_code=201,
+)
+def create_document_literature_run(
+    project_id: str,
+    document_id: str,
+    req: WritingLiteratureRunCreate,
+    user: dict = Depends(require_role("admin")),
+):
+    try:
+        _project(project_id)
+        return writing_research_service.start_literature_run(
+            project_id,
+            document_id,
+            req.model_dump(exclude_none=True),
+            _actor(user),
+        )
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.get("/projects/{project_id}/documents/{document_id}/literature-runs")
+def list_document_literature_runs(
+    project_id: str,
+    document_id: str,
+    limit: int = Query(default=50, ge=1, le=200),
+    _user: dict = Depends(require_role("admin")),
+):
+    try:
+        _project(project_id)
+        return writing_research_service.list_literature_runs(
+            project_id,
+            document_id,
+            limit=limit,
+        )
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.get("/projects/{project_id}/documents/{document_id}/literature-runs/{run_id}")
+def get_document_literature_run(
+    project_id: str,
+    document_id: str,
+    run_id: str,
+    _user: dict = Depends(require_role("admin")),
+):
+    try:
+        _project(project_id)
+        result = writing_research_service.get_run(project_id, document_id, run_id)
+        if result.get("run_type") != "literature_review_optimization":
+            raise DocumentWorkspaceError("文献研究运行不存在")
+        return result
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.get("/projects/{project_id}/documents/{document_id}/research-iterations")
+def list_document_research_iterations(
+    project_id: str,
+    document_id: str,
+    run_id: str = Query(default="", max_length=64),
+    limit: int = Query(default=100, ge=1, le=500),
+    _user: dict = Depends(require_role("admin")),
+):
+    try:
+        _project(project_id)
+        return writing_research_service.list_research_iterations(
+            project_id,
+            document_id,
+            run_id=run_id,
+            limit=limit,
+        )
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
 @router.post("/projects/{project_id}/documents/{document_id}/claims", status_code=201)
 def create_document_claim(
     project_id: str,
@@ -946,6 +1434,92 @@ def create_document_claim(
         _project(project_id)
         return writing_research_service.create_claim(
             project_id, document_id, req.model_dump(exclude_none=True), _actor(user)
+        )
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.get("/projects/{project_id}/documents/{document_id}/retrieval-refs")
+def list_document_retrieval_refs(
+    project_id: str,
+    document_id: str,
+    screening_status: str = Query(default="", max_length=24),
+    limit: int = Query(default=200, ge=1, le=500),
+    _user: dict = Depends(require_role("admin")),
+):
+    try:
+        _project(project_id)
+        return writing_research_service.list_retrievals(
+            project_id,
+            document_id,
+            screening_status=screening_status,
+            limit=limit,
+        )
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.post("/projects/{project_id}/documents/{document_id}/retrieval-refs", status_code=201)
+def create_document_retrieval_ref(
+    project_id: str,
+    document_id: str,
+    req: WritingRetrievalRefCreate,
+    user: dict = Depends(require_role("admin")),
+):
+    try:
+        _project(project_id)
+        return writing_research_service.register_retrieval(
+            project_id,
+            document_id,
+            req.model_dump(exclude_none=True),
+            _actor(user),
+        )
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.post(
+    "/projects/{project_id}/documents/{document_id}/retrieval-refs/{retrieval_ref_id}/screening-decision"
+)
+def decide_document_retrieval_ref(
+    project_id: str,
+    document_id: str,
+    retrieval_ref_id: str,
+    req: WritingRetrievalScreeningDecision,
+    user: dict = Depends(require_role("admin")),
+):
+    try:
+        _project(project_id)
+        return writing_research_service.decide_retrieval(
+            project_id,
+            document_id,
+            retrieval_ref_id,
+            req.model_dump(exclude_none=True),
+            _actor(user),
+        )
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.post(
+    "/projects/{project_id}/documents/{document_id}/retrieval-refs/{retrieval_ref_id}/promote",
+    status_code=201,
+)
+def promote_document_retrieval_ref(
+    project_id: str,
+    document_id: str,
+    retrieval_ref_id: str,
+    req: WritingRetrievalPromote,
+    user: dict = Depends(require_role("admin")),
+):
+    try:
+        _project(project_id)
+        return writing_research_service.promote_retrieval(
+            project_id,
+            document_id,
+            retrieval_ref_id,
+            req.model_dump(exclude_none=True),
+            _actor(user),
         )
     except DocumentWorkspaceError as exc:
         raise _handle(exc) from exc
@@ -1107,6 +1681,95 @@ def decide_document_change_set(
             req.decision,
             actor,
             result_revision=result_revision,
+        )
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.get("/projects/{project_id}/documents/{document_id}/word-addin/context")
+def get_word_addin_context(
+    project_id: str,
+    document_id: str,
+    _user: dict = Depends(require_role("admin")),
+):
+    try:
+        _project(project_id)
+        return word_addin_bridge_service.context(project_id, document_id)
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.post(
+    "/projects/{project_id}/documents/{document_id}/word-addin/resolve-paragraph"
+)
+def resolve_word_addin_paragraph(
+    project_id: str,
+    document_id: str,
+    req: WordAddinParagraphResolve,
+    _user: dict = Depends(require_role("admin")),
+):
+    try:
+        _project(project_id)
+        return word_addin_bridge_service.resolve_paragraph(
+            project_id,
+            document_id,
+            text=req.text,
+            text_sha256=req.text_sha256,
+        )
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.post(
+    "/projects/{project_id}/documents/{document_id}/word-addin/change-sets/{change_set_id}/validate-apply"
+)
+def validate_word_addin_apply(
+    project_id: str,
+    document_id: str,
+    change_set_id: str,
+    req: WordAddinApplyValidation,
+    _user: dict = Depends(require_role("admin")),
+):
+    try:
+        project = _project(project_id)
+        multi_document_service.assert_writable(project, document_id)
+        return word_addin_bridge_service.validate_apply(
+            project_id,
+            document_id,
+            change_set_id,
+            base_revision=req.base_revision,
+            current_paragraph_sha256=req.current_paragraph_sha256,
+            office_session_id=req.office_session_id,
+            document_session_fingerprint=req.document_session_fingerprint,
+        )
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.post(
+    "/projects/{project_id}/documents/{document_id}/word-addin/change-sets/{change_set_id}/receipts",
+    status_code=201,
+)
+def record_word_addin_receipt(
+    project_id: str,
+    document_id: str,
+    change_set_id: str,
+    req: WordAddinApplyReceipt,
+    user: dict = Depends(require_role("admin")),
+):
+    try:
+        project = _project(project_id)
+        multi_document_service.assert_writable(project, document_id)
+        return word_addin_bridge_service.record_receipt(
+            project_id,
+            document_id,
+            change_set_id,
+            apply_token=req.apply_token,
+            before_sha256=req.before_sha256,
+            after_sha256=req.after_sha256,
+            office_session_id=req.office_session_id,
+            document_session_fingerprint=req.document_session_fingerprint,
+            actor=_actor(user),
         )
     except DocumentWorkspaceError as exc:
         raise _handle(exc) from exc
@@ -1467,6 +2130,59 @@ def get_document_quality(project_id: str, document_id: str, _user: dict = Depend
         raise _handle(exc) from exc
 
 
+@router.get("/projects/{project_id}/documents/{document_id}/fidelity")
+def get_document_fidelity(
+    project_id: str,
+    document_id: str,
+    _user: dict = Depends(get_current_user),
+):
+    try:
+        return document_fidelity_service.latest(_project(project_id), document_id)
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.post("/projects/{project_id}/documents/{document_id}/fidelity/audit")
+def audit_document_fidelity(
+    project_id: str,
+    document_id: str,
+    _user: dict = Depends(require_role("admin")),
+):
+    try:
+        return document_fidelity_service._public(
+            document_fidelity_service.audit(_project(project_id), document_id)
+        )
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.post("/projects/{project_id}/documents/{document_id}/fidelity/migrate")
+def migrate_document_fidelity(
+    project_id: str,
+    document_id: str,
+    user: dict = Depends(require_role("admin")),
+):
+    try:
+        return document_fidelity_service.migrate(
+            _project(project_id), document_id, actor=_actor(user)
+        )
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.get("/projects/{project_id}/documents/{document_id}/fidelity/preview.pdf")
+def get_document_fidelity_preview(
+    project_id: str,
+    document_id: str,
+    _user: dict = Depends(get_current_user),
+):
+    try:
+        path = document_fidelity_service.preview_pdf(_project(project_id), document_id)
+        return FileResponse(path, filename=f"{path.parent.parent.parent.name}-WPS预览.pdf", media_type="application/pdf")
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
 @router.get("/evaluation/profiles")
 def get_evaluation_profiles(_user: dict = Depends(get_current_user)):
     return document_evaluation_service.catalog()
@@ -1775,6 +2491,37 @@ def update_document_layout(
         raise _handle(exc) from exc
 
 
+@router.post("/projects/{project_id}/documents/{document_id}/layout/reference-docx")
+async def upload_document_layout_reference(
+    project_id: str,
+    document_id: str,
+    file: UploadFile = File(...),
+    profile_name: str = Query("", max_length=120),
+    _user: dict = Depends(require_role("admin")),
+):
+    """Bind the current Word file as the explicit layout authority for one document."""
+    try:
+        project = _project(project_id)
+        context = multi_document_service.rich_project_context(project, document_id)
+        profile = document_layout_service.register_reference_template(
+            context,
+            data=await file.read(),
+            filename=file.filename or "current-word.docx",
+            profile_name=profile_name,
+        )
+        binding = document_layout_service.binding_patch(context, profile_id=str(profile["id"]))
+        multi_document_service.update_document_metadata(
+            project,
+            document_id,
+            {"layout_binding": binding},
+        )
+        return document_layout_service.state(
+            multi_document_service.rich_project_context(project, document_id)
+        )
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
 @router.get("/projects/{project_id}/documents/{document_id}/layout/sample/{format}")
 def get_document_layout_sample(
     project_id: str,
@@ -1790,6 +2537,30 @@ def get_document_layout_sample(
         if not path.is_file():
             raise HTTPException(status_code=404, detail="模板样张尚未生成")
         media_type = "application/pdf" if path.suffix.lower() == ".pdf" else "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        return FileResponse(path, filename=path.name, media_type=media_type)
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.get("/projects/{project_id}/documents/{document_id}/layout/templates/{profile_id}/preview/{format}")
+def get_document_layout_template_preview(
+    project_id: str,
+    document_id: str,
+    profile_id: str,
+    format: str,
+    page: int | None = Query(None, ge=1),
+    _user: dict = Depends(get_current_user),
+):
+    """Serve only an authenticated derivative of a registered Word template."""
+    try:
+        context = multi_document_service.rich_project_context(_project(project_id), document_id)
+        normalized = format.lower()
+        path = document_layout_service.preview_path(context, profile_id, normalized, page)
+        media_type = {
+            "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "pdf": "application/pdf",
+            "png": "image/png",
+        }.get(normalized, "application/octet-stream")
         return FileResponse(path, filename=path.name, media_type=media_type)
     except DocumentWorkspaceError as exc:
         raise _handle(exc) from exc

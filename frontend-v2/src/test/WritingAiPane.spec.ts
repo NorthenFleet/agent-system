@@ -154,4 +154,22 @@ describe('WritingAiPane', () => {
 
     wrapper.unmount()
   })
+
+  it('notifies the linked document pane after accepting an AI proposal', async () => {
+    mocks.getMessages.mockResolvedValue([
+      {
+        ...assistantMessage('review_required'),
+        proposal_ids: ['proposal-1']
+      }
+    ])
+    const wrapper = await mountPane()
+
+    await wrapper.get('.role-assistant footer .el-button--primary').trigger('click')
+    await flushPromises()
+
+    expect(mocks.acceptProposal).toHaveBeenCalledWith('project-1', 'document-1', 'proposal-1')
+    expect(wrapper.emitted('document-changed')?.[0]).toEqual(['document-1'])
+
+    wrapper.unmount()
+  })
 })

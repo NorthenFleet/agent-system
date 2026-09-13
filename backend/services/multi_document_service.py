@@ -1,4 +1,4 @@
-"""Project-level multi-document workspaces for rich text, workbooks and presentations."""
+"""Project-level multi-document workspaces for text, workbooks, presentations and diagrams."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ import fcntl
 import hashlib
 import io
 import json
+import posixpath
 import re
 import shutil
 import subprocess
@@ -16,6 +17,7 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
 from zipfile import BadZipFile, ZIP_DEFLATED, ZipFile
+from xml.etree import ElementTree
 
 from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
@@ -28,14 +30,21 @@ from services.document_workspace_service import (
 )
 
 
-DOCUMENT_KINDS = {"rich_text", "workbook", "presentation"}
+DOCUMENT_KINDS = {"rich_text", "workbook", "presentation", "diagram"}
 OUTPUT_FORMATS = {"docx", "pdf", "pptx"}
 PUBLICATION_STATUSES = {"draft", "review", "approved", "published", "internal"}
 STRUCTURE_BINDING_MODES = {"canonical", "derived", "mapped"}
 STRUCTURE_BINDING_STATUSES = {"aligned", "diverged", "stale", "missing"}
+REFERENCE_STATUSES = {"current", "document_updated"}
 EDIT_POLICIES = {"editable", "read_only"}
-DELIVERY_ROLES = {"deliverable", "historical_reference"}
-LINEAGE_SOURCE_TYPES = {"markdown", "chapter_bundle", "structured_authority"}
+DELIVERY_ROLES = {"deliverable", "historical_reference", "candidate"}
+LINEAGE_SOURCE_TYPES = {
+    "markdown",
+    "chapter_bundle",
+    "docx",
+    "structured_authority",
+    "structured_diagram",
+}
 MAX_UPLOAD_BYTES = 100 * 1024 * 1024
 MAX_ASSET_UPLOAD_BYTES = 20 * 1024 * 1024
 IMAGE_ASSET_TYPES = {
@@ -91,7 +100,192 @@ def _docx_table_markdown(table: Any) -> str:
     return "\n".join([header, divider, *body])
 
 
+_DOCX_XML_NAMESPACES = {
+    "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
+    "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
+    "rel": "http://schemas.openxmlformats.org/package/2006/relationships",
+    "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
+}
+_CHAPTER_NUMERALS = {
+    "一": 1, "二": 2, "三": 3, "四": 4, "五": 5,
+    "六": 6, "七": 7, "八": 8, "九": 9, "十": 10,
+}
+_CHAPTER_LABELS = ("", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十")
+
+
+def _chapter_heading_number(text: str) -> int:
+    match = re.match(r"^第\s*([0-9]+|[一二三四五六七八九十]+)\s*章", text.strip())
+    if not match:
+        return 0
+    token = match.group(1)
+    if token.isdigit():
+        return int(token)
+    return _CHAPTER_NUMERALS.get(token, 0)
+
+
+def _docx_fallback_heading_levels(archive: ZipFile) -> dict[str, int]:
+    """Read Word style IDs without constructing a python-docx package object."""
+    levels: dict[str, int] = {}
+    try:
+        root = ElementTree.fromstring(archive.read("word/styles.xml"))
+    except (KeyError, ElementTree.ParseError):
+        return levels
+    style_id_attr = "{" + _DOCX_XML_NAMESPACES["w"] + "}styleId"
+    value_attr = "{" + _DOCX_XML_NAMESPACES["w"] + "}val"
+    for style in root.findall("w:style", _DOCX_XML_NAMESPACES):
+        style_id = str(style.get(style_id_attr) or "")
+        if not style_id:
+            continue
+        name_node = style.find("w:name", _DOCX_XML_NAMESPACES)
+        name = str(name_node.get(value_attr) if name_node is not None else style_id)
+        level = _docx_heading_level(name) or _docx_heading_level(style_id)
+        outline = style.find("w:pPr/w:outlineLvl", _DOCX_XML_NAMESPACES)
+        if outline is not None:
+            try:
+                level = int(outline.get(value_attr) or "0") + 1
+            except ValueError:
+                pass
+        if level:
+            levels[style_id] = min(level, 6)
+    return levels
+
+
+def _convert_docx_fallback(data: bytes, title: str, parse_error: Exception) -> dict[str, Any]:
+    """Extract readable Word content when a malformed relationship blocks python-docx.
+
+    Some office applications leave dangling relationship targets (for example
+    ``Target=\"NULL\"``).  The source package remains immutable; this parser reads
+    the main document XML directly and skips only the dangling object.
+    """
+    try:
+        archive = ZipFile(io.BytesIO(data))
+        root = ElementTree.fromstring(archive.read("word/document.xml"))
+    except (BadZipFile, KeyError, ElementTree.ParseError) as exc:
+        raise DocumentWorkspaceError("Word 文件解析失败") from exc
+
+    value_attr = "{" + _DOCX_XML_NAMESPACES["w"] + "}val"
+    embed_attr = "{" + _DOCX_XML_NAMESPACES["r"] + "}embed"
+    styles = _docx_fallback_heading_levels(archive)
+    relationships: dict[str, str] = {}
+    try:
+        rel_root = ElementTree.fromstring(archive.read("word/_rels/document.xml.rels"))
+        for relation in rel_root.findall("rel:Relationship", _DOCX_XML_NAMESPACES):
+            relationship_id = str(relation.get("Id") or "")
+            target = str(relation.get("Target") or "")
+            if relationship_id and target:
+                relationships[relationship_id] = target
+    except (KeyError, ElementTree.ParseError):
+        pass
+
+    lines = ["---", f"title: {json.dumps(title, ensure_ascii=False)}", "status: imported", "---", ""]
+    assets: dict[str, bytes] = {}
+    warnings = [f"python-docx 解析失败，已使用兼容解析：{str(parse_error)[:240]}"]
+    paragraph_count = heading_count = table_count = list_count = image_count = 0
+    last_chapter_number = 0
+
+    def text_of(node: Any) -> str:
+        return "".join(fragment.text or "" for fragment in node.findall(".//w:t", _DOCX_XML_NAMESPACES)).strip()
+
+    def image_markdown(paragraph: Any) -> list[str]:
+        nonlocal image_count
+        result: list[str] = []
+        for blip in paragraph.findall(".//a:blip", _DOCX_XML_NAMESPACES):
+            relationship_id = str(blip.get(embed_attr) or "")
+            target = relationships.get(relationship_id, "")
+            if not target or target.upper() == "NULL":
+                warnings.append(f"已跳过无效图片关系：{relationship_id or 'unknown'}")
+                continue
+            target_path = posixpath.normpath(posixpath.join("word", target)).lstrip("/")
+            if not target_path.startswith("word/") or target_path not in archive.namelist():
+                warnings.append(f"已跳过不存在的图片资源：{target}")
+                continue
+            raw = archive.read(target_path)
+            filename = Path(target_path).name
+            safe_name = f"{hashlib.sha256(raw).hexdigest()[:12]}-{filename}"
+            assets.setdefault(safe_name, raw)
+            image_count += 1
+            result.append(f"![{filename}](assets/{safe_name})")
+        return result
+
+    body = root.find("w:body", _DOCX_XML_NAMESPACES)
+    if body is None:
+        raise DocumentWorkspaceError("Word 文件缺少正文")
+    for child in list(body):
+        if child.tag == "{" + _DOCX_XML_NAMESPACES["w"] + "}p":
+            text = " ".join(text_of(child).split())
+            images = image_markdown(child)
+            if not text and not images:
+                continue
+            style = child.find("w:pPr/w:pStyle", _DOCX_XML_NAMESPACES)
+            style_id = str(style.get(value_attr) or "") if style is not None else ""
+            level = styles.get(style_id) or _docx_heading_level(style_id)
+            numbered = child.find("w:pPr/w:numPr", _DOCX_XML_NAMESPACES) is not None
+            if text:
+                if level:
+                    chapter_number = _chapter_heading_number(text) if level == 1 else 0
+                    # Some formal Word templates use a numbered Heading 1 style
+                    # while omitting the visible number in the paragraph text.
+                    # Recover only the single missing item in an established
+                    # chapter sequence; do not invent numbers for appendices.
+                    if level == 1 and not chapter_number and 0 < last_chapter_number < 10:
+                        chapter_number = last_chapter_number + 1
+                        text = f"第{_CHAPTER_LABELS[chapter_number]}章 {text}"
+                    if chapter_number:
+                        last_chapter_number = chapter_number
+                    lines.extend([f"{'#' * min(level, 6)} {text}", ""])
+                    heading_count += 1
+                elif numbered:
+                    lines.extend([f"- {text}", ""])
+                    list_count += 1
+                else:
+                    lines.extend([text, ""])
+                    paragraph_count += 1
+            if images:
+                lines.extend(images + [""])
+        elif child.tag == "{" + _DOCX_XML_NAMESPACES["w"] + "}tbl":
+            rows = []
+            for row in child.findall("w:tr", _DOCX_XML_NAMESPACES):
+                values = [" ".join(text_of(cell).split()).replace("|", "\\|") for cell in row.findall("w:tc", _DOCX_XML_NAMESPACES)]
+                if values:
+                    rows.append(values)
+            if rows:
+                width = max(len(row) for row in rows)
+                rows = [row + [""] * (width - len(row)) for row in rows]
+                lines.extend([
+                    "| " + " | ".join(rows[0]) + " |",
+                    "| " + " | ".join(["---"] * width) + " |",
+                    *["| " + " | ".join(row) + " |" for row in rows[1:]],
+                    "",
+                ])
+                table_count += 1
+
+    markdown = "\n".join(lines).strip() + "\n"
+    return {
+        "markdown": markdown,
+        "assets": assets,
+        "stats": {
+            "paragraph_count": paragraph_count,
+            "heading_count": heading_count,
+            "table_count": table_count,
+            "list_count": list_count,
+            "image_count": image_count,
+            "size_chars": len(markdown),
+        },
+        "warnings": warnings,
+    }
+
+
 def _convert_docx(data: bytes, title: str) -> dict[str, Any]:
+    # DOCX contains OMML equations, merged cells and inline media that
+    # python-docx's paragraph API cannot faithfully project.  Pandoc's typed
+    # JSON AST is the only production import path; failures are explicit so a
+    # lossy fallback can never silently replace the source document.
+    from services.pandoc_document_importer import pandoc_docx_importer
+
+    return pandoc_docx_importer.convert(data, title)
+
+
+def _convert_docx_legacy(data: bytes, title: str) -> dict[str, Any]:
     try:
         from docx import Document
         from docx.table import Table
@@ -103,7 +297,7 @@ def _convert_docx(data: bytes, title: str) -> dict[str, Any]:
     try:
         document = Document(io.BytesIO(data))
     except Exception as exc:
-        raise DocumentWorkspaceError("Word 文件解析失败") from exc
+        return _convert_docx_fallback(data, title, exc)
 
     lines = ["---", f"title: {json.dumps(title, ensure_ascii=False)}", "status: imported", "---", ""]
     assets: dict[str, bytes] = {}
@@ -335,6 +529,8 @@ class MultiDocumentService:
         value = copy.deepcopy(binding) if isinstance(binding, dict) else {}
         mode = str(value.get("mode") or "mapped").lower()
         status = str(value.get("status") or "missing").lower()
+        integrity_status = str(value.get("integrity_status") or status).lower()
+        reference_status = str(value.get("reference_status") or "current").lower()
         try:
             mapped_items = max(int(value.get("mapped_items") or 0), 0)
         except (TypeError, ValueError):
@@ -345,6 +541,21 @@ class MultiDocumentService:
             "source_version": str(value.get("source_version") or ""),
             "source_sha256": str(value.get("source_sha256") or "").lower(),
             "status": status if status in STRUCTURE_BINDING_STATUSES else "missing",
+            "integrity_status": (
+                integrity_status
+                if integrity_status in STRUCTURE_BINDING_STATUSES
+                else "missing"
+            ),
+            "reference_status": (
+                reference_status if reference_status in REFERENCE_STATUSES else "current"
+            ),
+            "referenced_document_revision": str(
+                value.get("referenced_document_revision") or value.get("source_version") or ""
+            ),
+            "referenced_document_sha256": str(
+                value.get("referenced_document_sha256") or value.get("source_sha256") or ""
+            ).lower(),
+            "ppt_sha256": str(value.get("ppt_sha256") or "").lower(),
             "mapped_items": mapped_items,
             "unmapped_items": [
                 _json_value(item) for item in (value.get("unmapped_items") or [])
@@ -365,8 +576,15 @@ class MultiDocumentService:
         path = self._content_path(project, record)
         return hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else ""
 
-    def _record_structure_version(self, record: dict[str, Any]) -> str:
-        return str(record.get("data_version") or f"v{int(record.get('revision') or 1)}")
+    def _record_structure_version(
+        self, project: dict[str, Any], record: dict[str, Any]
+    ) -> str:
+        if record.get("kind") == "rich_text":
+            manifest = document_workspace_service.ensure_workspace(
+                self._rich_project(project, record)
+            )
+            return f"v{max(int(manifest.get('version') or 1), 1)}"
+        return f"v{max(int(record.get('revision') or 1), 1)}"
 
     def _read_presentation_manifest(
         self, project: dict[str, Any], document_id: str
@@ -389,6 +607,7 @@ class MultiDocumentService:
         binding = self._normalise_structure_binding(metadata.get("structure_binding"))
         if not binding["source_document_id"]:
             binding["status"] = "missing"
+            binding["integrity_status"] = "missing"
             return binding
 
         index = self.ensure_index(project)
@@ -402,18 +621,20 @@ class MultiDocumentService:
         )
         if source is None:
             binding["status"] = "missing"
+            binding["integrity_status"] = "missing"
             return binding
 
         source_sha256 = self._record_checksum(project, source)
-        source_version = self._record_structure_version(source)
-        stale = (
-            not binding["source_sha256"]
-            or binding["source_sha256"] != source_sha256
-            or (
-                bool(binding["source_version"])
-                and binding["source_version"] != source_version
-            )
+        source_version = self._record_structure_version(project, source)
+        reference_outdated = (
+            not binding["referenced_document_sha256"]
+            or binding["referenced_document_sha256"] != source_sha256
+            or not binding["referenced_document_revision"]
+            or binding["referenced_document_revision"] != source_version
         )
+        integrity_status = "diverged" if (
+            binding["unmapped_items"] or binding["changed_sections"]
+        ) else "aligned"
         if record.get("kind") == "presentation":
             manifest = self._read_presentation_manifest(project, str(record.get("id") or ""))
             manifest_output = (
@@ -423,14 +644,16 @@ class MultiDocumentService:
             )
             expected_ppt_sha256 = str(manifest_output.get("sha256") or "").lower()
             current_ppt_sha256 = self._record_checksum(project, record)
-            stale = stale or not expected_ppt_sha256 or expected_ppt_sha256 != current_ppt_sha256
+            binding["ppt_sha256"] = current_ppt_sha256
+            if not expected_ppt_sha256 or expected_ppt_sha256 != current_ppt_sha256:
+                integrity_status = "stale"
 
-        if stale:
-            binding["status"] = "stale"
-        elif binding["unmapped_items"] or binding["changed_sections"]:
-            binding["status"] = "diverged"
-        else:
-            binding["status"] = "aligned"
+        binding["reference_status"] = (
+            "document_updated" if reference_outdated else "current"
+        )
+        binding["integrity_status"] = integrity_status
+        # `status` remains for existing consumers, but only denotes binding/PPT integrity.
+        binding["status"] = integrity_status
         return binding
 
     def _validate_presentation_manifest(self, manifest: dict[str, Any]) -> dict[str, Any]:
@@ -537,6 +760,10 @@ class MultiDocumentService:
             working_spec = spec.get("working_markdown") if isinstance(spec.get("working_markdown"), dict) else {}
             working_spec = {**working_spec, "path": str(source)}
             spec["working_markdown"] = working_spec
+            # Every secondary rich-text document owns an isolated asset
+            # namespace.  Inheriting the parent project's asset_base_dir makes
+            # valid source/assets files look missing to the download endpoint.
+            spec["asset_base_dir"] = str(source.parent)
             source_word = root / "source" / "original.docx"
             if source_word.is_file():
                 spec["source_word"] = {"path": str(source_word)}
@@ -578,6 +805,7 @@ class MultiDocumentService:
                 "rich_text": sum(1 for row in rows if row["kind"] == "rich_text"),
                 "workbook": sum(1 for row in rows if row["kind"] == "workbook"),
                 "presentation": sum(1 for row in rows if row["kind"] == "presentation"),
+                "diagram": sum(1 for row in rows if row["kind"] == "diagram"),
                 "output_products": sum(1 for row in rows if row["is_output_product"]),
                 "internal_sources": sum(1 for row in rows if not row["is_output_product"]),
             },
@@ -792,7 +1020,12 @@ class MultiDocumentService:
         })
 
     def _install_source(self, project: dict[str, Any], record: dict[str, Any], source: Path) -> None:
-        expected = {"rich_text": ".md", "workbook": ".xlsx", "presentation": ".pptx"}[record["kind"]]
+        expected = {
+            "rich_text": ".md",
+            "workbook": ".xlsx",
+            "presentation": ".pptx",
+            "diagram": ".json",
+        }[record["kind"]]
         if source.suffix.lower() != expected:
             raise DocumentWorkspaceError(f"{record['kind']} 文档只支持 {expected} 文件")
         root = self._document_root(project, record["id"])
@@ -854,6 +1087,7 @@ class MultiDocumentService:
         root = self._document_root(project, document_id)
         source = root / "source" / "document.md"
         original = root / "source" / "original.docx"
+        structured_source = root / "source" / "structured.json"
         working = root / "working" / "document.md"
         versions = root / "versions"
         assets_dir = root / "source" / "assets"
@@ -864,6 +1098,10 @@ class MultiDocumentService:
         original.write_bytes(data)
         source.write_text(converted["markdown"], encoding="utf-8")
         working.write_text(converted["markdown"], encoding="utf-8")
+        structured_source.write_text(
+            json.dumps(converted["document"], ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
         for asset_name, asset_data in converted["assets"].items():
             (assets_dir / asset_name).write_bytes(asset_data)
 
@@ -897,6 +1135,7 @@ class MultiDocumentService:
                     "docx_import": {
                         **converted["stats"],
                         "warnings": converted["warnings"],
+                        "structured_source": str(structured_source),
                     },
                 },
             },
@@ -908,6 +1147,23 @@ class MultiDocumentService:
             "original_retained": True,
         }
         return result
+
+    def structured_source_document(
+        self,
+        project: dict[str, Any],
+        document_id: str,
+    ) -> dict[str, Any] | None:
+        """Return an audited structured import sidecar when one exists."""
+        path = self._document_root(project, document_id) / "source" / "structured.json"
+        if not path.is_file():
+            return None
+        try:
+            value = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise DocumentWorkspaceError("结构化导入源损坏，已阻止有损迁移") from exc
+        if not isinstance(value, dict) or value.get("type") != "doc":
+            raise DocumentWorkspaceError("结构化导入源格式无效")
+        return value
 
     def get_document(self, project: dict[str, Any], document_id: str) -> dict[str, Any]:
         _, record = self._get_record(project, document_id)
@@ -1128,7 +1384,7 @@ class MultiDocumentService:
         for dependent in index["documents"]:
             binding = (dependent.get("metadata") or {}).get("structure_binding")
             if isinstance(binding, dict) and binding.get("source_document_id") == document_id:
-                binding["status"] = "stale"
+                binding["reference_status"] = "document_updated"
         self._write_index(project, index)
         return self._public_record(project, record)
 
@@ -1313,8 +1569,15 @@ class MultiDocumentService:
         return package
 
     def _content_path(self, project: dict[str, Any], record: dict[str, Any]) -> Path:
-        suffix = ".xlsx" if record.get("kind") == "workbook" else ".pptx"
-        name = "workbook" if record.get("kind") == "workbook" else "presentation"
+        kind = str(record.get("kind") or "")
+        if kind == "workbook":
+            name, suffix = "workbook", ".xlsx"
+        elif kind == "presentation":
+            name, suffix = "presentation", ".pptx"
+        elif kind == "diagram":
+            name, suffix = "diagram", ".json"
+        else:
+            raise DocumentWorkspaceError(f"文档类型 {kind} 没有独立二进制内容文件")
         return self._document_root(project, record["id"]) / "working" / f"{name}{suffix}"
 
     def _workbook_summary(self, path: Path) -> dict[str, Any]:
@@ -1545,6 +1808,7 @@ class MultiDocumentService:
             record["metadata"]["render"] = self._render_presentation(project, record)
             if isinstance(record["metadata"].get("structure_binding"), dict):
                 record["metadata"]["structure_binding"]["status"] = "stale"
+                record["metadata"]["structure_binding"]["integrity_status"] = "stale"
         elif kind == "workbook":
             record["metadata"]["recalculation"] = self._recalculate_workbook(path)
         self._write_index(project, index)
@@ -1645,12 +1909,15 @@ class MultiDocumentService:
         )
         if source is None:
             raise DocumentWorkspaceError("结构绑定源文档不存在")
-        normalised["source_sha256"] = (
-            normalised["source_sha256"] or self._record_checksum(project, source)
-        )
-        normalised["source_version"] = (
-            normalised["source_version"] or self._record_structure_version(source)
-        )
+        source_sha256 = self._record_checksum(project, source)
+        source_version = self._record_structure_version(project, source)
+        # Binding explicitly acknowledges the current document. Caller-supplied
+        # historic checksums must not make a new link look stale immediately.
+        normalised["source_sha256"] = source_sha256
+        normalised["source_version"] = source_version
+        normalised["referenced_document_sha256"] = source_sha256
+        normalised["referenced_document_revision"] = source_version
+        normalised["reference_status"] = "current"
 
         presentation_summary: dict[str, Any] = {}
         if manifest is not None:
@@ -1959,6 +2226,7 @@ class MultiDocumentService:
             record["metadata"]["render"] = self._render_presentation(project, record)
             if isinstance(record["metadata"].get("structure_binding"), dict):
                 record["metadata"]["structure_binding"]["status"] = "stale"
+                record["metadata"]["structure_binding"]["integrity_status"] = "stale"
         else:
             record["metadata"]["recalculation"] = self._recalculate_workbook(current)
         self._write_index(project, index)

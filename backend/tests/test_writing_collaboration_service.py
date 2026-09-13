@@ -1,5 +1,7 @@
 import asyncio
 import copy
+import hashlib
+import json
 from datetime import timedelta
 
 import pytest
@@ -10,10 +12,16 @@ from sqlalchemy.pool import StaticPool
 from database import Base
 from models.writing_collaboration import (
     WritingAiJob,
+    WritingAiMessage,
     WritingAiProposal,
     WritingChangeSet,
+    WritingChangeEvent,
     WritingDocumentState,
     WritingDocumentVersion,
+    WritingEvidenceRef,
+    WritingJarvisRun,
+    WritingResearchEvaluation,
+    WritingResearchIteration,
 )
 from services.document_workspace_service import DocumentVersionConflict, DocumentWorkspaceError
 from services.structured_document_service import StructuredDocumentCodec
@@ -42,6 +50,9 @@ class FakeWorkspace:
 
     def fulltext(self, _project):
         return {"content": self.markdown, "version": self.version}
+
+    def ensure_workspace(self, _project):
+        return {"structured_projection_revision": self.version}
 
     def section(self, _project, section_id):
         if section_id != "section-01-first":
@@ -119,6 +130,17 @@ def test_initialization_assigns_stable_ids_and_switches_only_projection_authorit
         assert stored.projection_revision == stored.document_revision == 1
 
 
+def test_title_derived_section_id_is_remapped_to_stable_heading_id():
+    service, _, _ = _service()
+    project = {"id": "project-1", "name": "项目"}
+
+    state = service.get_state(project, "document-1", "section-01-renamed-heading")
+
+    assert state["section"]["legacy_id"] == "section-01-renamed-heading"
+    assert state["section"]["id"].startswith("block-")
+    assert state["document"]["content"][0]["attrs"]["blockId"] == state["section"]["id"]
+
+
 def test_runtime_version_lineage_uses_previous_existing_revision():
     service, sessions, _ = _service()
     with sessions() as session:
@@ -138,6 +160,52 @@ def test_runtime_version_lineage_uses_previous_existing_revision():
         )).scalar_one()
         assert version.parent_revision == 1
 
+
+def test_authority_import_advances_past_a_newer_existing_projection():
+    service, sessions, workspace = _service()
+    project = {"id": "project-1", "name": "项目"}
+    workspace.version = 5
+
+    migrated = service.replace_authority_from_markdown(
+        project,
+        "document-1",
+        "# 第一章\n\n来自 Word 的权威正文。\n",
+        label="Word 母稿导入",
+        actor="migration",
+    )
+
+    assert migrated["revision"] == 6
+    assert workspace.version == 6
+    with sessions() as session:
+        state = session.execute(select(WritingDocumentState)).scalar_one()
+        assert state.document_revision == 6
+        assert state.projection_revision == 6
+        event = session.execute(select(WritingChangeEvent)).scalar_one()
+        assert event.client_change_id.startswith("authority-import-r6-")
+
+
+def test_fidelity_import_marks_the_supplied_markdown_projection_current():
+    service, sessions, workspace = _service()
+    project = {"id": "project-1", "name": "项目"}
+    markdown = "# 第一章\n\n$$\n\\Phi_A=1\n$$ （1）\n"
+    document = service.codec.from_markdown(markdown, namespace="fidelity-test")
+
+    response = service.replace_authority_from_document(
+        project,
+        "document-1",
+        document,
+        markdown,
+        label="内容高保真结构迁移",
+        actor="test-migration",
+    )
+
+    assert response["projection"]["status"] == "current"
+    assert workspace.markdown == markdown
+    with sessions() as session:
+        state = session.execute(select(WritingDocumentState)).scalar_one()
+        assert state.schema_version == "tiptap-json-v2"
+        assert state.projection_status == "current"
+        assert state.projection_revision == state.document_revision == response["revision"]
 
 def test_get_is_side_effect_free_before_explicit_initialization():
     service, sessions, workspace = _service(initialize=False)
@@ -382,6 +450,48 @@ def test_ai_job_database_claim_allows_only_one_worker():
     assert service.get_ai_job(project, "document-1", job["id"])["attempt_count"] == 1
 
 
+def test_ai_job_includes_bounded_prior_conversation_without_expanding_scope():
+    project = {"id": "project-1", "name": "项目"}
+    service, sessions, _ = _service()
+    state = service.get_state(project, "document-1", "section-01-first")
+    first = _paragraphs(state)[0]
+    captured: list[str] = []
+
+    async def requester(_agent, prompt):
+        captured.append(prompt)
+        return '{"summary":"无修改","operations":[]}'
+
+    service.ai_requester = requester
+    with sessions() as session:
+        session.add_all([
+            WritingAiMessage(
+                id="old-user", project_id="project-1", conversation_id="conversation-1",
+                role="user", content="上一轮请保留课程编号。", status="completed",
+                client_message_id="old-user-message",
+            ),
+            WritingAiMessage(
+                id="old-assistant", project_id="project-1", conversation_id="conversation-1",
+                role="assistant", content="会保留课程编号，仅修改指定段落。", status="completed",
+                client_message_id="old-assistant-message",
+            ),
+        ])
+        session.commit()
+    job = service.submit_ai_job(project, "document-1", {
+        "agent_id": "ultra-magnus",
+        "scope": "block",
+        "block_id": first["attrs"]["blockId"],
+        "instruction": "继续润色本段。",
+        "conversation_id": "conversation-1",
+    }, "human")
+
+    asyncio.run(service.process_ai_job(project, "document-1", job["id"]))
+
+    assert captured
+    assert "上一轮请保留课程编号" in captured[0]
+    assert "当前指令与下列作用范围优先" in captured[0]
+    assert f"BLOCK {first['attrs']['blockId']}" in captured[0]
+
+
 def test_expired_ai_job_lease_can_be_recovered_by_new_worker():
     service, sessions, _ = _service()
     project = {"id": "project-1", "name": "项目"}
@@ -615,6 +725,196 @@ def test_evidence_sensitive_ai_change_requires_approval_without_concurrency_conf
         change_set = session.execute(select(WritingChangeSet)).scalar_one()
         assert change_set.status == "review_required"
         assert change_set.evidence_ref_ids == []
+
+
+def test_approved_research_candidate_applies_exact_text_and_creates_revision(tmp_path):
+    project = {"id": "project-1", "name": "项目"}
+    service, sessions, workspace = _service()
+    state = service.get_state(project, "document-1", "section-01-first")
+    block = _paragraphs(state)[0]
+    block_id = block["attrs"]["blockId"]
+    operation = {
+        "op": "replace_text",
+        "block_id": block_id,
+        "old_text": "第一段。",
+        "new_text": "第一段采用更保守的表述。",
+        "reason": "移除未经支持的具体限定",
+    }
+    candidate_payload = {
+        "schema": "writing.literature_candidate.v1",
+        "section_id": "section-01-first",
+        "operations": [operation],
+        "candidate_section_nodes": [block],
+    }
+    artifact = tmp_path / "candidate.json"
+    artifact.write_text(json.dumps(candidate_payload, ensure_ascii=False), encoding="utf-8")
+
+    with sessions() as session:
+        run = WritingJarvisRun(
+            id="run-research-1",
+            project_id="project-1",
+            document_id="document-1",
+            run_type="literature_review_optimization",
+            status="completed",
+            idempotency_key="run-research-1",
+        )
+        change_set = WritingChangeSet(
+            id="changeset-research-1",
+            project_id="project-1",
+            document_id="document-1",
+            base_revision=1,
+            operations=[operation],
+            evidence_ref_ids=[],
+            risk_level="high",
+            approval_policy="research_candidate",
+            status="review_required",
+            idempotency_key="changeset-research-1",
+            summary="研究候选",
+        )
+        iteration = WritingResearchIteration(
+            id="iteration-research-1",
+            project_id="project-1",
+            document_id="document-1",
+            run_id=run.id,
+            iteration_no=1,
+            base_revision=1,
+            base_section_sha256="a" * 64,
+            candidate_sha256="b" * 64,
+            candidate_payload=candidate_payload,
+            candidate_artifact_path=str(artifact),
+            status="review_required",
+            change_set_id=change_set.id,
+        )
+        evaluation = WritingResearchEvaluation(
+            id="evaluation-research-1",
+            iteration_id=iteration.id,
+            evaluator_version="literature-candidate-v1",
+            hard_gates={"scope_confined_to_section": True, "body_write_operations": 0},
+            dimension_scores={},
+            total_score=60,
+            baseline_delta=5,
+            decision="kept",
+            reasons=["test"],
+            input_sha256="c" * 64,
+        )
+        session.add_all([run, change_set, iteration, evaluation])
+        session.commit()
+
+    accepted = service.accept_research_change_set(
+        project, "document-1", "changeset-research-1", "admin"
+    )
+
+    assert accepted["revision"] == 2
+    assert "第一段采用更保守的表述。" in workspace.markdown
+    with sessions() as session:
+        stored_change_set = session.get(WritingChangeSet, "changeset-research-1")
+        stored_iteration = session.get(WritingResearchIteration, "iteration-research-1")
+        event = session.execute(select(WritingChangeEvent).where(
+            WritingChangeEvent.source == "research-candidate-accept"
+        )).scalar_one()
+        assert stored_change_set.status == "approved"
+        assert stored_change_set.result_revision == 2
+        assert stored_iteration.status == "kept"
+        assert event.document_revision == 2
+
+
+def test_research_candidate_rejects_missing_mixed_evidence_category(tmp_path):
+    project = {"id": "project-1", "name": "项目"}
+    service, sessions, _workspace = _service()
+    state = service.get_state(project, "document-1", "section-01-first")
+    block = _paragraphs(state)[0]
+    operation = {
+        "op": "replace_text",
+        "block_id": block["attrs"]["blockId"],
+        "old_text": "第一段。",
+        "new_text": "第一段采用联合证据限定。",
+        "reason": "联合证据约束",
+    }
+    evidence_file = tmp_path / "paper.json"
+    evidence_file.write_bytes(b"paper")
+    evidence_sha = hashlib.sha256(evidence_file.read_bytes()).hexdigest()
+    candidate_payload = {
+        "schema": "writing.literature_candidate.v1",
+        "section_id": "section-01-first",
+        "operations": [operation],
+        "evidence_ref_ids": ["evidence-paper"],
+        "required_evidence_categories": ["experiment", "literature"],
+        "selected_evidence_categories": ["literature"],
+        "candidate_section_nodes": [block],
+    }
+    artifact = tmp_path / "mixed-candidate.json"
+    artifact.write_text(json.dumps(candidate_payload, ensure_ascii=False), encoding="utf-8")
+
+    with sessions() as session:
+        run = WritingJarvisRun(
+            id="run-mixed-evidence",
+            project_id="project-1",
+            document_id="document-1",
+            run_type="literature_review_optimization",
+            status="completed",
+            idempotency_key="run-mixed-evidence",
+        )
+        evidence = WritingEvidenceRef(
+            id="evidence-paper",
+            project_id="project-1",
+            document_id="document-1",
+            source_system="journal",
+            source_record_id="paper-1",
+            artifact_path=str(evidence_file),
+            artifact_sha256=evidence_sha,
+            perspective_scope="paper",
+            evidence_level="diagnostic",
+            evidence_kind="literature",
+            source_quality="peer_reviewed",
+            support_role="supports",
+            directness="direct",
+            immutable=True,
+        )
+        change_set = WritingChangeSet(
+            id="changeset-mixed-evidence",
+            project_id="project-1",
+            document_id="document-1",
+            base_revision=1,
+            operations=[operation],
+            evidence_ref_ids=[evidence.id],
+            risk_level="high",
+            approval_policy="research_candidate",
+            status="review_required",
+            idempotency_key="changeset-mixed-evidence",
+        )
+        iteration = WritingResearchIteration(
+            id="iteration-mixed-evidence",
+            project_id="project-1",
+            document_id="document-1",
+            run_id=run.id,
+            iteration_no=1,
+            base_revision=1,
+            base_section_sha256="a" * 64,
+            candidate_sha256="b" * 64,
+            candidate_payload=candidate_payload,
+            candidate_artifact_path=str(artifact),
+            status="review_required",
+            change_set_id=change_set.id,
+        )
+        evaluation = WritingResearchEvaluation(
+            id="evaluation-mixed-evidence",
+            iteration_id=iteration.id,
+            evaluator_version="literature-candidate-v1",
+            hard_gates={"evidence_policy_satisfied": True, "body_write_operations": 0},
+            dimension_scores={},
+            total_score=60,
+            baseline_delta=5,
+            decision="kept",
+            reasons=["test"],
+            input_sha256="c" * 64,
+        )
+        session.add_all([run, evidence, change_set, iteration, evaluation])
+        session.commit()
+
+    with pytest.raises(DocumentWorkspaceError, match="证据约束已变化"):
+        service.accept_research_change_set(
+            project, "document-1", "changeset-mixed-evidence", "admin"
+        )
 
 
 def test_invalid_ai_response_fails_without_changing_document():

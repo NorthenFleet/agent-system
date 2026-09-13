@@ -627,6 +627,28 @@ class UserFeatureModule(Base):
         }
 
 
+class SystemSetting(Base):
+    __tablename__ = 'system_settings'
+
+    key = Column(String(128), primary_key=True)
+    value = Column(JSON, nullable=False, default=dict)
+    description = Column(Text, default='')
+    updated_by = Column(Integer, nullable=True)
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc),
+                        onupdate=lambda: datetime.now(timezone.utc))
+
+    def to_dict(self):
+        return {
+            'key': self.key,
+            'value': self.value or {},
+            'description': self.description,
+            'updated_by': self.updated_by,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
 # ==================== Agent 任务派发 ====================
 
 

@@ -145,6 +145,13 @@ const routes: RouteRecordRaw[] = [
         meta: { module: 'products' }
       },
       {
+        path: 'products/:productId',
+        name: 'ProductDetail',
+        component: () => import('@/views/ProductDetail.vue'),
+        props: true,
+        meta: { module: 'products' }
+      },
+      {
         path: 'monitoring',
         name: 'Monitoring',
         component: () => import('@/views/Monitoring.vue'),
@@ -180,13 +187,15 @@ const router = createRouter({
 // 路由守卫
 router.beforeEach(async (to) => {
   const auth = useAuthStore()
+  await auth.loadAuthSettings()
   if (to.meta.requiresAuth) {
-    const token = localStorage.getItem('jwt_token')
-    if (!token) {
-      return { path: '/login' }
-    }
-    if (!auth.user && token) {
-      await auth.fetchMe()
+    if (!auth.loginEnabled) {
+      const ready = await auth.ensureDevelopmentSession()
+      if (!ready) return false
+    } else {
+      const token = localStorage.getItem('jwt_token')
+      if (!token) return { path: '/login' }
+      if (!auth.user && !(await auth.fetchMe())) return { path: '/login' }
     }
     const moduleKey = to.meta.module as string | undefined
     if (moduleKey && !auth.canAccessModule(moduleKey)) {
@@ -195,6 +204,10 @@ router.beforeEach(async (to) => {
     }
   }
   if (to.path === '/login') {
+    if (!auth.loginEnabled) {
+      const ready = await auth.ensureDevelopmentSession()
+      if (ready) return { path: '/' }
+    }
     const token = localStorage.getItem('jwt_token')
     if (token) {
       return { path: '/' }

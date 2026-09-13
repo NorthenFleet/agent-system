@@ -250,6 +250,24 @@ describe('PresentationWorkspace', () => {
     expect(wrapper.text()).toContain('补充证据')
   })
 
+  it('keeps one PPT when the source document changes and marks optimization as pending', async () => {
+    mocks.manifest = {
+      ...manifest(),
+      structure_binding: {
+        ...document.structure_binding!,
+        status: 'aligned',
+        integrity_status: 'aligned',
+        reference_status: 'document_updated',
+        referenced_document_revision: 'v15'
+      }
+    }
+    const wrapper = await mountWorkspace()
+
+    expect(wrapper.text()).toContain('源文档已更新至 v15')
+    expect(wrapper.text()).toContain('当前 PPT 保持为同一份最新版本')
+    expect(wrapper.text()).toContain('正文更新待优化')
+  })
+
   it('saves current slide human edits back to the presentation manifest', async () => {
     const wrapper = await mountWorkspace()
     const tabs = wrapper.findAll('.el-tabs__item')

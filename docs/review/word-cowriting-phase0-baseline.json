@@ -1,0 +1,2383 @@
+{
+  "schema": "openclaw.word-fidelity-gold-baseline.v1",
+  "manifest_path": "../specs/active/word-cowriting-phase0-gold-documents.json",
+  "manifest_sha256": "b121d3f1a237efbf498315919dfc1bdee16ea7c23de3745b907deab965dc0ba4",
+  "status": "passed",
+  "documents": [
+    {
+      "id": "course-plan-original-20h",
+      "title": "《兵棋推演与智能决策》军兵种作战指挥专业20课时教学计划",
+      "authority_role": "content_and_layout_reference",
+      "authority_evidence": [
+        "project manifest source_word",
+        "documents.json source_path/source_sha256",
+        "restore_course_plan_authoritative_original.py SOURCE_WORD_SHA256"
+      ],
+      "notes": [
+        "The same-named Teaching library copy has a different SHA and is not this gold source."
+      ],
+      "path": "/Users/apple/工作桌面/knowledge/06-项目库-Projects/水面舰艇作战软件与兵棋推演课程--proj-16ca49b862/《兵棋推演与智能决策》-军兵种作战指挥专业-20课时-孙翼.docx",
+      "exists": true,
+      "expected_sha256": "625c5adc0d113828d4fa64b3bd7f6ee477cbc1f3335a67af6e9190c9b1347bc4",
+      "status": "passed",
+      "errors": [],
+      "size_bytes": 45619,
+      "sha256": "625c5adc0d113828d4fa64b3bd7f6ee477cbc1f3335a67af6e9190c9b1347bc4",
+      "package": {
+        "part_count": 16,
+        "missing_required_parts": [],
+        "has_macros": false,
+        "relationship_type_counts": {
+          "fontTable": 1,
+          "settings": 1,
+          "styles": 1,
+          "theme": 1
+        },
+        "external_relationship_count": 0,
+        "update_fields_on_open": "",
+        "font_names": [
+          "Arial",
+          "Calibri",
+          "Courier New",
+          "Symbol",
+          "Tahoma",
+          "Times New Roman",
+          "Wingdings",
+          "仿宋",
+          "仿宋_GB2312",
+          "华文中宋",
+          "宋体",
+          "微软雅黑",
+          "方正仿宋_GBK",
+          "方正小标宋简体",
+          "楷体",
+          "楷体_GB2312",
+          "汉仪书宋二KW",
+          "汉仪楷体简",
+          "黑体"
+        ]
+      },
+      "properties": {
+        "application": "WPS Office_12.1.0.24657_F1E327BC-269C-435d-A152-05C5408002CA",
+        "pages": 23,
+        "words": 9935,
+        "characters": 9982,
+        "paragraphs": 13
+      },
+      "metrics": {
+        "paragraph_count": 534,
+        "nonempty_paragraph_count": 465,
+        "heading_count": 32,
+        "heading_level_counts": {
+          "1": 1,
+          "2": 18,
+          "3": 13
+        },
+        "caption_paragraph_count": 0,
+        "table_count": 4,
+        "table_row_count": 30,
+        "table_cell_count": 163,
+        "grid_span_element_count": 2,
+        "horizontal_merged_cell_extra_count": 8,
+        "horizontal_merge_marker_count": 0,
+        "horizontal_merge_region_count": 2,
+        "vertical_merge_marker_count": 10,
+        "vertical_merge_region_count": 5,
+        "vertical_merge_continuation_count": 5,
+        "drawing_count": 0,
+        "inline_drawing_count": 0,
+        "anchored_drawing_count": 0,
+        "legacy_picture_count": 0,
+        "legacy_shape_count": 0,
+        "text_box_count": 0,
+        "alt_chunk_count": 0,
+        "media_part_count": 0,
+        "chart_part_count": 0,
+        "diagram_part_count": 0,
+        "custom_xml_part_count": 0,
+        "ole_object_count": 0,
+        "embedding_part_count": 0,
+        "math_paragraph_count": 0,
+        "math_object_count": 0,
+        "bookmark_count": 1,
+        "content_control_count": 0,
+        "hyperlink_count": 0,
+        "comment_count": 0,
+        "footnote_count": 0,
+        "endnote_count": 0,
+        "tracked_insertion_count": 0,
+        "tracked_deletion_count": 0,
+        "section_count": 1,
+        "explicit_page_break_count": 1,
+        "rendered_page_break_count": 0,
+        "header_part_count": 0,
+        "footer_part_count": 0,
+        "numbering_definition_count": 0,
+        "paragraph_style_count": 12,
+        "character_style_count": 4
+      },
+      "field_type_counts": {},
+      "field_instructions": [],
+      "paragraph_style_usage": {
+        "10": 1,
+        "17": 1,
+        "18": 8,
+        "2": 1,
+        "3": 18,
+        "4": 13,
+        "6": 3
+      },
+      "heading_sequence": [
+        {
+          "level": 1,
+          "style_id": "2",
+          "text": "一、教学目标"
+        },
+        {
+          "level": 2,
+          "style_id": "3",
+          "text": "（一）总体目标"
+        },
+        {
+          "level": 2,
+          "style_id": "3",
+          "text": "（二）分类目标"
+        },
+        {
+          "level": 3,
+          "style_id": "4",
+          "text": "1.知识目标"
+        },
+        {
+          "level": 3,
+          "style_id": "4",
+          "text": "2.能力目标"
+        },
+        {
+          "level": 3,
+          "style_id": "4",
+          "text": "3.素质目标"
+        },
+        {
+          "level": 2,
+          "style_id": "3",
+          "text": "第一章 兵棋概述（第1讲）"
+        },
+        {
+          "level": 3,
+          "style_id": "4",
+          "text": "1.基本内容（扩展后的完整描述）"
+        },
+        {
+          "level": 3,
+          "style_id": "4",
+          "text": "2. 基本要求（比原文更系统化、完整化的描述）"
+        },
+        {
+          "level": 2,
+          "style_id": "3",
+          "text": "第二章 兵棋推演流程及运用（第2讲）"
+        },
+        {
+          "level": 3,
+          "style_id": "4",
+          "text": "1.基本内容"
+        },
+        {
+          "level": 3,
+          "style_id": "4",
+          "text": "2.基本要求"
+        },
+        {
+          "level": 2,
+          "style_id": "3",
+          "text": "第三章 兵棋基本操作（第3讲）"
+        },
+        {
+          "level": 3,
+          "style_id": "4",
+          "text": "1.基本内容"
+        },
+        {
+          "level": 3,
+          "style_id": "4",
+          "text": "2.基本要求"
+        },
+        {
+          "level": 2,
+          "style_id": "3",
+          "text": "第四章 兵棋推演实作（第4讲）"
+        },
+        {
+          "level": 3,
+          "style_id": "4",
+          "text": "1.基本内容"
+        },
+        {
+          "level": 3,
+          "style_id": "4",
+          "text": "2.基本要求"
+        },
+        {
+          "level": 2,
+          "style_id": "3",
+          "text": "第五章 兵棋推演实作（第5讲）"
+        },
+        {
+          "level": 3,
+          "style_id": "4",
+          "text": "1.基本内容"
+        },
+        {
+          "level": 3,
+          "style_id": "4",
+          "text": "2.基本要求"
+        },
+        {
+          "level": 2,
+          "style_id": "3",
+          "text": "（一）内容设计"
+        },
+        {
+          "level": 2,
+          "style_id": "3",
+          "text": "（二）教学策略"
+        },
+        {
+          "level": 2,
+          "style_id": "3",
+          "text": "（三）教学总结与反思改进"
+        },
+        {
+          "level": 2,
+          "style_id": "3",
+          "text": "（一）开课时机"
+        },
+        {
+          "level": 2,
+          "style_id": "3",
+          "text": "（二）教学实施总体方案"
+        },
+        {
+          "level": 2,
+          "style_id": "3",
+          "text": ""
+        },
+        {
+          "level": 2,
+          "style_id": "3",
+          "text": ""
+        },
+        {
+          "level": 2,
+          "style_id": "3",
+          "text": "（三）课程实验（实作）实施方案"
+        },
+        {
+          "level": 2,
+          "style_id": "3",
+          "text": "（一）考核评价内容"
+        },
+        {
+          "level": 2,
+          "style_id": "3",
+          "text": "（二）考核评价形式"
+        },
+        {
+          "level": 2,
+          "style_id": "3",
+          "text": "（一）教材"
+        }
+      ],
+      "bookmark_names": [
+        "_GoBack"
+      ],
+      "section_geometry": [
+        {
+          "page_size_twips": {
+            "width": "11906",
+            "height": "16838",
+            "orientation": "portrait"
+          },
+          "margins_twips": {
+            "top": "2098",
+            "right": "1474",
+            "bottom": "1985",
+            "left": "1418",
+            "header": "851",
+            "footer": "992",
+            "gutter": "0"
+          },
+          "columns": "1"
+        }
+      ],
+      "text_sha256": "0175c091755b200607bb0a559f64b12c76383d6e93c69bb7a794286aaa630fab",
+      "structure_sha256": "a14890a065c6c3280f10ee1b85a9a0155e5188e879678849e1005ef069b987a7",
+      "native_object_sha256": {
+        "math": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "field_instructions": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "bookmarks": "2303ae6f209e5c3d89259cfdd4b6e69e59dd1277207213c013a081fe3ee49e41",
+        "content_controls": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "drawings": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "section_properties": "81d24b4a0bb32c857208b80a6b6fd581a5969df6bfe80d78657b819ed5f67af0",
+        "styles": "2a5007d5a28181e60f82c6531433dc2abab1dd69d42596ae989bda69eb71b63f",
+        "numbering": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "settings": "ce29771c1e1544495352da73f52ddde75766353f3af1ad97c20176fceeb25469",
+        "headers": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "footers": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "footnotes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "endnotes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "comments": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "relationships": "f307360d95e69c5029d6eae292965797c8c2017d1fec36fe307048bce24ffe58"
+      },
+      "media_sha256": {},
+      "embedding_sha256": {}
+    },
+    {
+      "id": "thesis-v25-r4.1-layout-reference",
+      "title": "博士论文第三版七章工作稿v25排版R4.1",
+      "authority_role": "historical_layout_reference_only",
+      "authority_evidence": [
+        "user-specified Results library R4.1 path",
+        "matches v25-to-v34 authority-switch backup SHA"
+      ],
+      "notes": [
+        "This file freezes the Word layout baseline; it is not the current structured thesis content authority.",
+        "The layout/staging/r4-v25 candidate has a different SHA and is excluded."
+      ],
+      "path": "/Users/apple/工作桌面/knowledge/10-成果库-Outputs/毕业论文/博士论文/博士论文-第三版-七章工作稿-v25-排版R4.1.docx",
+      "exists": true,
+      "expected_sha256": "7664c57c0f784ab9666bcdb76c1be6dac938d53e41638cbe0e77fa78a1410ecf",
+      "status": "passed",
+      "errors": [],
+      "size_bytes": 9694802,
+      "sha256": "7664c57c0f784ab9666bcdb76c1be6dac938d53e41638cbe0e77fa78a1410ecf",
+      "package": {
+        "part_count": 83,
+        "missing_required_parts": [],
+        "has_macros": false,
+        "relationship_type_counts": {
+          "comments": 1,
+          "fontTable": 1,
+          "footer": 3,
+          "footnotes": 1,
+          "header": 2,
+          "image": 52,
+          "numbering": 1,
+          "settings": 1,
+          "styles": 1,
+          "theme": 1,
+          "webSettings": 1
+        },
+        "external_relationship_count": 0,
+        "update_fields_on_open": "true",
+        "font_names": [
+          "Arial",
+          "Calibri",
+          "Cambria Math",
+          "Courier New",
+          "DejaVu Math TeX Gyre",
+          "MS Mincho",
+          "MS PGothic",
+          "Segoe Print",
+          "Symbol",
+          "Tahoma",
+          "Times New Roman",
+          "Times New Roman Bold",
+          "Times NewMan",
+          "Wingdings",
+          "仿宋",
+          "仿宋_GB2312",
+          "宋体",
+          "微软雅黑",
+          "方正公文小标宋",
+          "黑体"
+        ]
+      },
+      "properties": {
+        "application": "WPS Office_12.1.0.25225_F1E327BC-269C-435d-A152-05C5408002CA",
+        "pages": 121,
+        "words": 110320,
+        "characters": 137984,
+        "paragraphs": 0
+      },
+      "metrics": {
+        "paragraph_count": 3328,
+        "nonempty_paragraph_count": 2971,
+        "heading_count": 294,
+        "heading_level_counts": {
+          "1": 8,
+          "2": 58,
+          "3": 204,
+          "4": 24
+        },
+        "caption_paragraph_count": 90,
+        "table_count": 51,
+        "table_row_count": 344,
+        "table_cell_count": 1446,
+        "grid_span_element_count": 0,
+        "horizontal_merged_cell_extra_count": 0,
+        "horizontal_merge_marker_count": 0,
+        "horizontal_merge_region_count": 0,
+        "vertical_merge_marker_count": 0,
+        "vertical_merge_region_count": 0,
+        "vertical_merge_continuation_count": 0,
+        "drawing_count": 32,
+        "inline_drawing_count": 32,
+        "anchored_drawing_count": 0,
+        "legacy_picture_count": 0,
+        "legacy_shape_count": 0,
+        "text_box_count": 0,
+        "alt_chunk_count": 0,
+        "media_part_count": 52,
+        "chart_part_count": 0,
+        "diagram_part_count": 0,
+        "custom_xml_part_count": 0,
+        "ole_object_count": 0,
+        "embedding_part_count": 0,
+        "math_paragraph_count": 234,
+        "math_object_count": 1122,
+        "bookmark_count": 302,
+        "content_control_count": 1,
+        "hyperlink_count": 0,
+        "comment_count": 0,
+        "footnote_count": 1,
+        "endnote_count": 0,
+        "tracked_insertion_count": 0,
+        "tracked_deletion_count": 0,
+        "section_count": 1,
+        "explicit_page_break_count": 3,
+        "rendered_page_break_count": 0,
+        "header_part_count": 2,
+        "footer_part_count": 3,
+        "numbering_definition_count": 33,
+        "paragraph_style_count": 25,
+        "character_style_count": 39
+      },
+      "field_type_counts": {
+        "TOC": 1
+      },
+      "field_instructions": [
+        "TOC \\o \"1-3\" \\h \\z \\u"
+      ],
+      "paragraph_style_usage": {
+        "1": 2980,
+        "2": 8,
+        "26": 6,
+        "4": 58,
+        "6": 204,
+        "7": 24,
+        "8": 3,
+        "BlockText": 1,
+        "TOCHeading": 1
+      },
+      "heading_sequence": [
+        {
+          "level": 1,
+          "style_id": "2",
+          "text": "第1章 绪论"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "1.1 研究背景与意义"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "1.1.1 战略与技术背景"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "1.1.2 战术需求与核心矛盾"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "1.1.3 研究意义"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "1.2 研究对象、问题提出与范围边界"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "1.2.1 典型场景与研究对象"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "1.2.2 任务级规划产品及其指挥控制关系"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "1.2.3 基本特征、研究假设与范围边界"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "1.3 国内外研究现状"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "1.3.1 战术指挥控制、任务式指挥与人机权责配置研究现状"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "1.3.2 指挥意图形式化、任务分析与层次化任务分解研究现状"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "1.3.3 行动方案向任务级计划细化、可执行性校核与推演评估研究现状"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "1.3.4 任务编组、任务与资源分配及协同组织研究现状"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "1.3.5 计划执行控制、受扰通信与动态重规划研究现状"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "1.3.6 任务级自主决策与多平台协同机动研究现状"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "1.3.7 任务规划系统、兵棋仿真与战术效能评估研究现状"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "1.3.8 国内外研究比较、发展趋势与阶段性结论"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "1.4 研究评述与关键科学问题"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "1.4.1 现有研究的主要进展与不足"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "1.4.2 共同根源与理论突破口"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "1.4.3 拟解决的关键科学问题"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "1.4.4 科学问题、研究内容与验证证据映射"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "1.5 研究目标与研究内容"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "1.5.1 研究目标"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "1.5.2 研究内容"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "1.5.3 预期研究产出"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "1.6 研究思路、技术路线与验证框架"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "1.6.1 总体研究思路"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "1.6.2 技术路线与数据链"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "1.6.3 验证框架"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "1.6.4 论文结构安排"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "1.7 主要创新点"
+        },
+        {
+          "level": 1,
+          "style_id": "2",
+          "text": "第2章 无人集群任务规划的理论基础"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "2.1 指挥控制理论基础"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "2.1.1 指挥控制的概念与本质"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "2.1.2 人的主观决策与无人系统模型控制"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "2.1.3 指挥控制活动的构成与运行机理"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "2.2 任务规划在指挥控制中的作用机理"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "2.2.1 指挥控制闭环中的任务规划定位"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "2.2.2 指挥决心向规划变量和任务图的映射"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "2.2.3 预先规划、执行监控与临机重规划"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "2.2.4 传统任务规划方法的适用范围及局限"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "2.3 无人集群对指挥控制范式的重构"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "2.3.1 数量规模扩大对集中控制的冲击"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "2.3.2 任务多样性与异构能力耦合"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "2.3.3 集中、分层与分布式协同方式"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "2.3.4 从人工决策向模型与算法驱动演化"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "2.4 基于优势熵的全局态势评价理论"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "2.4.1 全局态势优势的概念与构成"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "2.4.2 红蓝兵力、空间位置与环境价值"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "2.4.3 多杀伤链闭合与体系协同效能"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "2.4.4 信念不确定性与组织复杂度修正"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "2.4.5 战术知识约束的全局态势价值函数"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "2.4.6 优势场及其多层级投影机制"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "2.5 无人集群任务规划问题建模"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "2.5.1 不确定认知条件下的POMDP与信念状态模型"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "2.5.2 大规模协同条件下的任务图与组合优化模型"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "2.5.3 动态对抗条件下的全局态势价值、优势场与学习机动模型"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "2.5.4 三类模型向后续算法章节的映射"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "2.6 本章小结"
+        },
+        {
+          "level": 1,
+          "style_id": "2",
+          "text": "第3章 海上无人集群协同任务规划总体模型"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "3.1 任务规划统一建模问题描述"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "3.1.1 问题形式化描述"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "3.1.2 规划输入、输出与约束定义"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "3.1.3 统一建模的基本要求"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "3.2 任务规划统一状态表征模型"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "3.2.1 信念状态表征"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "3.2.2 感知态势更新与优势评估传递机制"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "3.2.3 资源状态表征"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "3.2.4 环境状态表征"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "3.2.5 约束状态表征"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "3.2.6 任务意图表征"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "3.3 任务规划方案统一表达模型"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "3.3.1 任务链与任务图表达"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "3.3.2 任务分配关系表达"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "3.3.3 任务技能计划与协同目标点表达"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "3.3.4 目标点、可执行路径与执行时序表达"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "3.4 基于全局态势价值的统一目标函数构造"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "3.4.1 全局评价状态与任务收益"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "3.4.2 资源与空间代价建模"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "3.4.3 认知与组织修正建模"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "3.4.4 行动损失、敌方响应与风险建模"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "3.4.5 综合性能泛函构建"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "3.5 分层决策接口与章节级输入输出规范"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "3.5.1 主链映射关系"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "3.5.2 章节级输入输出接口"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "3.5.3 约束体系与分层含义"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "3.6 无人集群作战体系总体分层架构"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "3.6.1 L2 战术意图层：BDI 映射"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "3.6.2 L1 任务规划层"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "3.6.3 L0 执行控制层"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "3.6.4 层间耦合关系"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "3.6.5 信息流与控制流设计"
+        },
+        {
+          "level": 4,
+          "style_id": "7",
+          "text": "3.6.5.1 信念更新机制"
+        },
+        {
+          "level": 4,
+          "style_id": "7",
+          "text": "3.6.5.2 全局态势评价模块"
+        },
+        {
+          "level": 4,
+          "style_id": "7",
+          "text": "3.6.5.3 组织熵指数监测与控制回路"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "3.7 海上无人集群体系级作战对象与数据建模"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "3.7.1 作战对象分类与属性定义"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "3.7.2 对象实体关系与状态表达"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "3.7.3 对象模型与任务规划计算结构的层级关系"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "3.8 规划机制设计"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "3.8.1 预先规划"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "3.8.2 临机规划"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "3.8.3 扰动度量函数"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "3.8.4 分级触发规则"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "3.9 本章小结"
+        },
+        {
+          "level": 1,
+          "style_id": "2",
+          "text": "第4章 任务分解与任务分配方法"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "4.1 问题定义与分解—分配关系"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "4.1.1 前端规划问题定义"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "4.1.2 分解与分配的职责边界"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "4.1.3 耦合求解原则"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "4.2 任务分解形式化建模"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "4.2.1 任务分解定义"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "4.2.2 分解结果结构"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "4.2.3 分解目标"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "4.2.4 分解约束条件"
+        },
+        {
+          "level": 4,
+          "style_id": "7",
+          "text": "（1）完整性约束"
+        },
+        {
+          "level": 4,
+          "style_id": "7",
+          "text": "（2）逻辑约束"
+        },
+        {
+          "level": 4,
+          "style_id": "7",
+          "text": "（3）可执行性约束"
+        },
+        {
+          "level": 4,
+          "style_id": "7",
+          "text": "（4）时空边界约束"
+        },
+        {
+          "level": 4,
+          "style_id": "7",
+          "text": "（5）平台能力约束"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "4.2.5 计算结构映射"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "4.3 基于杀伤链的结构化任务分解模型"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "4.3.1 杀伤链模型"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "4.3.2 任务链结构"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "4.3.3 杀伤链的结构化表达"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "4.3.4 单目标任务分解模型"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "4.3.5 多目标任务分解模型"
+        },
+        {
+          "level": 4,
+          "style_id": "7",
+          "text": "（1）链内依赖（Intra-chain）"
+        },
+        {
+          "level": 4,
+          "style_id": "7",
+          "text": "（2）链间耦合（Inter-chain）"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "4.3.6 基于信念状态的动态分解机制"
+        },
+        {
+          "level": 4,
+          "style_id": "7",
+          "text": "（1）高不确定性目标"
+        },
+        {
+          "level": 4,
+          "style_id": "7",
+          "text": "（2）中等不确定性目标"
+        },
+        {
+          "level": 4,
+          "style_id": "7",
+          "text": "（3）低不确定性目标"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "4.3.7 基于意图的分解生成算子"
+        },
+        {
+          "level": 4,
+          "style_id": "7",
+          "text": "（1）目标解析"
+        },
+        {
+          "level": 4,
+          "style_id": "7",
+          "text": "（2）结构展开（杀伤链）"
+        },
+        {
+          "level": 4,
+          "style_id": "7",
+          "text": "（3）约束注入"
+        },
+        {
+          "level": 4,
+          "style_id": "7",
+          "text": "（4）任务图构建"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "4.3.8 分解结构、标准化输出与优势函数的关系"
+        },
+        {
+          "level": 4,
+          "style_id": "7",
+          "text": "（1）信息收益"
+        },
+        {
+          "level": 4,
+          "style_id": "7",
+          "text": "（2）任务收益"
+        },
+        {
+          "level": 4,
+          "style_id": "7",
+          "text": "（3）组织复杂度"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "4.4 任务分解求解方法"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "4.4.1 问题定义与求解目标"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "4.4.2 基于HTN的任务分解"
+        },
+        {
+          "level": 4,
+          "style_id": "7",
+          "text": "（1）任务类型"
+        },
+        {
+          "level": 4,
+          "style_id": "7",
+          "text": "（2）分解方法"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "4.4.3 优势驱动的分解选择机制"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "4.4.4 HTN + 启发式搜索的分解求解算法"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "4.4.5 任务分解层回退条件"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "4.4.6 复杂度与可扩展性分析"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "4.5 MARTA可行性门控的任务—资源分配模型"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "4.5.1 决策对象与承担矩阵"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "4.5.2 可行性门控"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "4.5.3 匹配评分与局部态势贡献"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "4.5.4 分配目标函数"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "4.5.5 约束体系"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "4.5.6 任务分配优化结构"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "4.6 优势驱动的MARTA求解算法"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "4.6.1 求解思路"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "4.6.2 任务关键度与稀缺度排序"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "4.6.3 增量分配与局部改进"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "4.6.4 分配算法"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "4.6.5 失败类型与显式输出"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "4.7 分解—分配耦合与反馈修正"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "4.7.1 双向耦合关系"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "4.7.2 局部修正规则"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "4.7.3 耦合迭代算法"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "4.7.4 向第5章的交接条件"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "4.8 复杂度、可扩展性与实验接口"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "4.8.1 复杂度分析"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "4.8.2 可扩展性机制"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "4.8.3 与仿真系统的数据接口"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "4.8.4 评价指标与实验设计入口"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "4.9 本章小结"
+        },
+        {
+          "level": 1,
+          "style_id": "2",
+          "text": "第5章 基于多技能调度与战术函数条件化共享策略的无人集群任务内协同规划方法"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "5.1 任务内规划的作用与总体架构"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.1.1 对第三章统一规划模型的承接"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.1.2 与第四章任务交接包的衔接"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.1.3 任务内感知—决策—行动闭环"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.1.4 职责边界、设计原则与证据门禁"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "5.2 面向任务执行的多技能包模型"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.2.1 技能与任务技能包定义"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.2.2 规则驱动的感知技能"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.2.3 规则驱动的火力技能"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.2.4 学习驱动的机动技能"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.2.5 技能组合、动作所有权与任务适配"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "5.3 多技能调用与战术函数条件化机制"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.3.1 技能调用图"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.3.2 前置条件、事件触发与技能调度"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.3.3 战术函数条件与共享机动技能调用"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.3.4 技能调用时序与命令合成"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.3.5 冲突消解、终止与失败回退"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "5.4 任务相对坐标、多模态输入与目标点输出"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.4.1 任务相对坐标系"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.4.2 多模态输入"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.4.3 目标热力图与连续偏移"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.4.4 合法动作掩码"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.4.5 观测—动作数据合同"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "5.5 战术函数条件化共享机动网络"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.5.1 空间编码器"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.5.2 实体Transformer"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.5.3 标量、技能状态与战术函数编码器"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.5.4 融合、LSTM与目标点输出"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.5.5 分散Actor与集中Critic"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "5.6 多任务PPO/MAPPO训练方法"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.6.1 多任务Dec-POMDP"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.6.2 全局态势价值一致的奖励构造"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.6.3 PPO裁剪目标与MAPPO价值估计"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.6.4 多任务平衡与稳定性"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.6.5 多任务MAPPO训练算法"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "5.7 规则示范预训练"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.7.1 示范来源与不可变数据集"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.7.2 示范质量门禁"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.7.3 预训练损失"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.7.4 预训练停止与验收"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "5.8 教师先验约束的三阶段课程训练与检查点晋级"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.8.1 对AlphaStar训练思想的适用性裁剪"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.8.2 任务尺度归一化的集中价值学习"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.8.3 三阶段课程与多种子检查点谱系"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.8.4 独立验证晋级与研究边界"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "5.9 多技能命令与目标点执行机制"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.9.1 命令包解码与一致性校核"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.9.2 规则命令、路径与控制执行"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.9.3 技能间同步与目标点冲突消解"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.9.4 执行反馈合同"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "5.10 四级重规划机制"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.10.1 触发量与最小影响原则"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.10.2 四级修复范围"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.10.3 全局态势价值与组织复杂度反馈"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.10.4 闭环算法"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "5.11 复杂度、泛化与安全性分析"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.11.1 推理与训练复杂度"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.11.2 可变规模与跨场景泛化"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.11.3 安全包络与动作所有权"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.11.4 可证伪的工程假设"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "5.12 实验设计与系统接口"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.12.1 可证伪研究假设"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.12.2 基线、消融与指标"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.12.3 AI Planning—Wargame接口"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.12.4 G1组件可训练性验证"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.12.5 G2任务内系统闭环验证"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.12.6 G3在线共享PPO训练与证据边界"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "5.12.7 长时域场景校准、模型晋级与独立检验"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "5.13 本章小结"
+        },
+        {
+          "level": 1,
+          "style_id": "2",
+          "text": "第6章 仿真验证与评估"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "6.1 仿真平台与裁决机制"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "6.1.1 仿真系统架构"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "6.1.2 作战裁决模型"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "6.1.3 关键参数设置"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "6.2 作战想定设计"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "6.2.1 想定背景与作战任务"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "6.2.2 作战兵力配置"
+        },
+        {
+          "level": 4,
+          "style_id": "7",
+          "text": "（1）红方兵力"
+        },
+        {
+          "level": 4,
+          "style_id": "7",
+          "text": "（2）蓝方兵力"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "6.2.3 作战空间与初始部署"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "6.2.4 任务约束与作战特性"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "6.2.5 想定特点分析"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "6.3 基线智能体设计"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "6.3.1 基线设计思想"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "6.3.2 决策流程与优先级结构"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "6.3.3 可行性判定机制"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "6.3.4 局部决策规则"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "6.4 评估指标体系"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "6.4.1 总指标与一级指标"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "6.4.2 关键模块指标"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "6.5 实验问题、基线与批量矩阵"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "6.5.1 研究问题与可证伪假设"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "6.5.2 方法组与消融组"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "6.5.3 场景与扰动因子"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "6.5.4 最小可发表实验矩阵"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "6.5.5 运行流程与停止条件"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "6.5.6 统计方法"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "6.6 系统联通与单次运行验证"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "6.6.1 系统关系与数据流"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "6.6.2 在线接口烟测结果"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "6.6.3 路径失败诊断"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "6.6.4 代表性界面的使用边界"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "6.7 实验记录、证据门禁与结果形成"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "6.7.1 单次运行目录"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "6.7.2 证据等级与发布门槛"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "6.7.3 与知识和证据治理平台的回写"
+        },
+        {
+          "level": 3,
+          "style_id": "6",
+          "text": "6.7.4 A级结果形成规则"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "6.8 当前证据支持的结论与限制"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "6.9 本章小结"
+        },
+        {
+          "level": 1,
+          "style_id": "2",
+          "text": "第7章 总结与展望"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "7.1 全文研究工作总结"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "7.2 统一总映射与闭环关系"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "7.3 主要研究结论"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "7.4 主要创新归纳"
+        },
+        {
+          "level": 2,
+          "style_id": "4",
+          "text": "7.5 研究不足与未来展望"
+        },
+        {
+          "level": 1,
+          "style_id": "2",
+          "text": "参考文献"
+        }
+      ],
+      "bookmark_names": [
+        "_Toc12315088",
+        "_Toc77524562",
+        "_Toc821253904",
+        "_Toc936965259",
+        "ai-planningwargame接口",
+        "a级结果形成规则",
+        "g1组件可训练性验证",
+        "g2任务内系统闭环验证",
+        "g3在线共享ppo训练与证据边界",
+        "htn-启发式搜索的分解求解算法",
+        "l0-执行控制层",
+        "l1-任务规划层",
+        "l2-战术意图层bdi-映射",
+        "marta可行性门控的任务资源分配模型",
+        "ppo裁剪目标与mappo价值估计",
+        "times64目标热力图与连续偏移",
+        "三类模型向后续算法章节的映射",
+        "三阶段课程与多种子检查点谱系",
+        "不确定认知条件下的pomdp与信念状态模型",
+        "与仿真系统的数据接口",
+        "与知识和证据治理平台的回写",
+        "与第四章任务交接包的衔接",
+        "中等不确定性目标",
+        "临机规划",
+        "主要创新归纳",
+        "主要创新点",
+        "主要研究结论",
+        "主链映射关系",
+        "人的主观决策与无人系统模型控制",
+        "从人工决策向模型与算法驱动演化",
+        "代表性界面的使用边界",
+        "任务关键度与稀缺度排序",
+        "任务内感知决策行动闭环",
+        "任务内规划的作用与总体架构",
+        "任务分解定义",
+        "任务分解层回退条件",
+        "任务分解形式化建模",
+        "任务分解求解方法",
+        "任务分配优化结构",
+        "任务分配关系表达",
+        "任务图构建",
+        "任务多样性与异构能力耦合",
+        "任务尺度归一化的集中价值学习",
+        "任务意图表征",
+        "任务技能计划与协同目标点表达",
+        "任务收益",
+        "任务相对坐标多模态输入与目标点输出",
+        "任务相对坐标系",
+        "任务类型",
+        "任务约束与作战特性",
+        "任务级自主决策与多平台协同机动研究现状",
+        "任务级规划产品及其指挥控制关系",
+        "任务编组任务与资源分配及协同组织研究现状",
+        "任务规划在指挥控制中的作用机理",
+        "任务规划方案统一表达模型",
+        "任务规划系统兵棋仿真与战术效能评估研究现状",
+        "任务规划统一建模问题描述",
+        "任务规划统一状态表征模型",
+        "任务链与任务图表达",
+        "任务链结构",
+        "仿真平台与裁决机制",
+        "仿真系统架构",
+        "优势场及其多层级投影机制",
+        "优势驱动的marta求解算法",
+        "优势驱动的分解选择机制",
+        "传统任务规划方法的适用范围及局限",
+        "低不确定性目标",
+        "作战兵力配置",
+        "作战对象分类与属性定义",
+        "作战想定设计",
+        "作战空间与初始部署",
+        "作战裁决模型",
+        "信念不确定性与组织复杂度修正",
+        "信念更新机制",
+        "信念状态表征",
+        "信息收益",
+        "信息流与控制流设计",
+        "全局态势价值一致的奖励构造",
+        "全局态势价值与组织复杂度反馈",
+        "全局态势优势的概念与构成",
+        "全局态势评价模块",
+        "全局评价状态与任务收益",
+        "全文研究工作总结",
+        "共同根源与理论突破口",
+        "关键参数设置",
+        "关键模块指标",
+        "典型场景与研究对象",
+        "冲突消解终止与失败回退",
+        "决策对象与承担矩阵",
+        "决策流程与优先级结构",
+        "分层决策接口与章节级输入输出规范",
+        "分散actor与集中critic",
+        "分级触发规则",
+        "分解与分配的职责边界",
+        "分解分配耦合与反馈修正",
+        "分解方法",
+        "分解目标",
+        "分解约束条件",
+        "分解结构标准化输出与优势函数的关系",
+        "分解结果结构",
+        "分配目标函数",
+        "分配算法",
+        "前端规划问题定义",
+        "前置条件事件触发与技能调度",
+        "动态对抗条件下的全局态势价值优势场与学习机动模型",
+        "匹配评分与局部态势贡献",
+        "单次运行目录",
+        "单目标任务分解模型",
+        "参考文献",
+        "双向耦合关系",
+        "可变规模与跨场景泛化",
+        "可执行性约束",
+        "可扩展性机制",
+        "可行性判定机制",
+        "可行性门控",
+        "可证伪的工程假设",
+        "可证伪研究假设",
+        "合法动作掩码",
+        "向第5章的交接条件",
+        "命令包解码与一致性校核",
+        "四级修复范围",
+        "四级重规划机制",
+        "国内外研究比较发展趋势与阶段性结论",
+        "国内外研究现状",
+        "在线接口烟测结果",
+        "场景与扰动因子",
+        "基于htn的任务分解",
+        "基于优势熵的全局态势评价理论",
+        "基于信念状态的动态分解机制",
+        "基于全局态势价值的统一目标函数构造",
+        "基于意图的分解生成算子",
+        "基于杀伤链的结构化任务分解模型",
+        "基本特征研究假设与范围边界",
+        "基线智能体设计",
+        "基线消融与指标",
+        "基线设计思想",
+        "增量分配与局部改进",
+        "复杂度与可扩展性分析",
+        "复杂度分析",
+        "复杂度可扩展性与实验接口",
+        "复杂度泛化与安全性分析",
+        "多任务dec-pomdp",
+        "多任务mappo训练算法",
+        "多任务ppomappo训练方法",
+        "多任务平衡与稳定性",
+        "多技能命令与目标点执行机制",
+        "多技能调用与战术函数条件化机制",
+        "多杀伤链闭合与体系协同效能",
+        "多模态输入",
+        "多目标任务分解模型",
+        "大规模协同条件下的任务图与组合优化模型",
+        "失败类型与显式输出",
+        "学习驱动的机动技能",
+        "安全包络与动作所有权",
+        "完整性约束",
+        "实体transformer",
+        "实验记录证据门禁与结果形成",
+        "实验设计与系统接口",
+        "实验问题基线与批量矩阵",
+        "对alphastar训练思想的适用性裁剪",
+        "对第三章统一规划模型的承接",
+        "对象实体关系与状态表达",
+        "对象模型与任务规划计算结构的层级关系",
+        "局部修正规则",
+        "局部决策规则",
+        "层间耦合关系",
+        "平台能力约束",
+        "当前证据支持的结论与限制",
+        "总体研究思路",
+        "总指标与一级指标",
+        "想定特点分析",
+        "想定背景与作战任务",
+        "感知态势更新与优势评估传递机制",
+        "战术函数条件与共享机动技能调用",
+        "战术函数条件化共享机动网络",
+        "战术指挥控制任务式指挥与人机权责配置研究现状",
+        "战术知识约束的全局态势价值函数",
+        "战术需求与核心矛盾",
+        "战略与技术背景",
+        "执行反馈合同",
+        "扰动度量函数",
+        "技术路线与数据链",
+        "技能与任务技能包定义",
+        "技能组合动作所有权与任务适配",
+        "技能调用图",
+        "技能调用时序与命令合成",
+        "技能间同步与目标点冲突消解",
+        "拟解决的关键科学问题",
+        "指挥决心向规划变量和任务图的映射",
+        "指挥意图形式化任务分析与层次化任务分解研究现状",
+        "指挥控制活动的构成与运行机理",
+        "指挥控制理论基础",
+        "指挥控制的概念与本质",
+        "指挥控制闭环中的任务规划定位",
+        "推理与训练复杂度",
+        "摘要",
+        "摘要原英文摘要中文化",
+        "教师先验约束的三阶段课程训练与检查点晋级",
+        "数量规模扩大对集中控制的冲击",
+        "方法组与消融组",
+        "无人集群任务规划问题建模",
+        "无人集群作战体系总体分层架构",
+        "无人集群对指挥控制范式的重构",
+        "时空边界约束",
+        "最小可发表实验矩阵",
+        "本章小结",
+        "本章小结-1",
+        "本章小结-2",
+        "本章小结-3",
+        "本章小结-4",
+        "杀伤链模型",
+        "杀伤链的结构化表达",
+        "标量技能状态与战术函数编码器",
+        "求解思路",
+        "海上无人集群体系级作战对象与数据建模",
+        "独立验证晋级与研究边界",
+        "环境状态表征",
+        "现有研究的主要进展与不足",
+        "目录",
+        "目标点可执行路径与执行时序表达",
+        "目标解析",
+        "研究不足与未来展望",
+        "研究内容",
+        "研究对象问题提出与范围边界",
+        "研究思路技术路线与验证框架",
+        "研究意义",
+        "研究目标",
+        "研究目标与研究内容",
+        "研究背景与意义",
+        "研究评述与关键科学问题",
+        "研究问题与可证伪假设",
+        "示范来源与不可变数据集",
+        "示范质量门禁",
+        "科学问题研究内容与验证证据映射",
+        "空间编码器",
+        "章节级输入输出接口",
+        "第1章-绪论",
+        "第2章-无人集群任务规划的理论基础",
+        "第3章-海上无人集群协同任务规划总体模型",
+        "第4章-任务分解与任务分配方法",
+        "第5章-基于多技能调度与战术函数条件化共享策略的无人集群任务内协同规划方法",
+        "第6章-仿真验证与评估",
+        "第7章-总结与展望",
+        "系统关系与数据流",
+        "系统联通与单次运行验证",
+        "红方兵力",
+        "红蓝兵力空间位置与环境价值",
+        "约束体系",
+        "约束体系与分层含义",
+        "约束注入",
+        "约束状态表征",
+        "组织复杂度",
+        "组织熵指数监测与控制回路",
+        "结构展开杀伤链",
+        "统一建模的基本要求",
+        "统一总映射与闭环关系",
+        "统计方法",
+        "综合性能泛函构建",
+        "耦合求解原则",
+        "耦合迭代算法",
+        "职责边界设计原则与证据门禁",
+        "蓝方兵力",
+        "融合lstm与目标点输出",
+        "行动损失敌方响应与风险建模",
+        "行动方案向任务级计划细化可执行性校核与推演评估研究现状",
+        "观测动作数据合同",
+        "规划机制设计",
+        "规划输入输出与约束定义",
+        "规则命令路径与控制执行",
+        "规则示范预训练",
+        "规则驱动的感知技能",
+        "规则驱动的火力技能",
+        "触发量与最小影响原则",
+        "计划执行控制受扰通信与动态重规划研究现状",
+        "计算结构映射",
+        "认知与组织修正建模",
+        "论文结构安排",
+        "证据等级与发布门槛",
+        "评价指标与实验设计入口",
+        "评估指标体系",
+        "资源与空间代价建模",
+        "资源状态表征",
+        "路径失败诊断",
+        "运行流程与停止条件",
+        "逻辑约束",
+        "链内依赖intra-chain",
+        "链间耦合inter-chain",
+        "长时域场景校准模型晋级与独立检验",
+        "闭环算法",
+        "问题定义与分解分配关系",
+        "问题定义与求解目标",
+        "问题形式化描述",
+        "集中分层与分布式协同方式",
+        "面向任务执行的多技能包模型",
+        "面向海上无人集群作战的智能协同任务规划理论与方法研究",
+        "预先规划",
+        "预先规划执行监控与临机重规划",
+        "预期研究产出",
+        "预训练停止与验收",
+        "预训练损失",
+        "验证框架",
+        "高不确定性目标"
+      ],
+      "section_geometry": [
+        {
+          "page_size_twips": {
+            "width": "11906",
+            "height": "16838",
+            "orientation": "portrait"
+          },
+          "margins_twips": {
+            "top": "2098",
+            "right": "1474",
+            "bottom": "1984",
+            "left": "1587",
+            "header": "851",
+            "footer": "907",
+            "gutter": "0"
+          },
+          "columns": "1"
+        }
+      ],
+      "text_sha256": "4b95dad2d30d8c3b454e4cb88c6e8bfe6bf537252b8fd55b7dc0c2aacf6799d7",
+      "structure_sha256": "bb8c44333666e768c414e0f3fb7e51373811b326bc7adcac289836c96d18dd65",
+      "native_object_sha256": {
+        "math": "af5bd7fde1a1929c17f595ed1177a60fb2ea43606c944de1847f4741f8a81789",
+        "field_instructions": "e86cb8e2e6a2120439580b2e3643e713c0e92cedc46ee164f8813d6f0e1c832b",
+        "bookmarks": "e2bd176699e5d39ed10f55a9b548522cf6cb3455100ee101b5f000121a7488f2",
+        "content_controls": "73e9861d16249bbcc04244069559259afbd6960991db437d08880cb52f4b7c56",
+        "drawings": "f72ca2a42fce91fc9421b9f905a937f14c54de647285d23c768418ff80304a44",
+        "section_properties": "824fd798a28eea64cee7d815e98c631e8bbc162afa894d63ec4a5b2c65d79acf",
+        "styles": "2feae6c65cd3110e371d6db0e0dbf12ca687633497ae6b69de0e095f3c6ffeaf",
+        "numbering": "b56dec1111e964d39988e8c2aaab8efcdbb4e3c369b9808ddcaa519233e0c1ea",
+        "settings": "cc0ef4b5ab6716b121a39926d87d71e03d201dd013169453fed032fd1b9a3288",
+        "headers": "bb6fd50f7e9ca287333423d15cd861a864d36652c8df2bbd9f4da061acb2b9fb",
+        "footers": "6d0bdaed1eb5e19a134ba888cb7e79ea4a9953fac025749041ccaaf1a789aa58",
+        "footnotes": "f5c201a766519414fec46ba4b15fbfcd1b155f25b7196034495d338014ced4a1",
+        "endnotes": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "comments": "9f4e1e0600dd8dce7d094b305236a6a2a63169989e210e575ff41891e7816814",
+        "relationships": "098374f4706cb8777db1c9cffbe107e049f21d575c7e221fb7fb808b554a7abf"
+      },
+      "media_sha256": {
+        "word/media/image1.jpeg": "1ec0f1ef6a01db3104adac315de441d19cc7395be52ca432eebaa6c816c624b8",
+        "word/media/image10.png": "9fd5e9e99be9c181fd1e045a3b8c0ed6898aef299ed6a889dec0cc1263afd07d",
+        "word/media/image11.png": "b5636deb3250b22cb48ce72df0cd2f96d893cf78dfebcdb5a9fcf590b8731e35",
+        "word/media/image12.png": "167ef0f9b5686741a336a9e3d262c0313a32a024a7a1a1df7b9bf68086441fc0",
+        "word/media/image13.png": "8df22d91f7bf3b1e63917e9f3e416a88692b7277f57af703cdb76797ae487035",
+        "word/media/image14.png": "1d1aef5e093206fac5562bb128b762fefec29cc8f3cf869e3c8a27d035f25904",
+        "word/media/image15.png": "4393f184512837c8f4081feef8fd0aa96932c3af3ca47ed9bfae8a0420acfa8f",
+        "word/media/image16.png": "63b51305bc2f9224c59fc2292274f4a304cb735342977a9f78d8c31f7a70c713",
+        "word/media/image18.svg": "fb8a6d567f1b1ea575bc03d084f9d8e3189bef26d4151b87aabfc9953b35f155",
+        "word/media/image19.svg": "dfece2071fa3b08e3a0bc465cb5199c1a89a46fd237e17a1ab8631a0473419fb",
+        "word/media/image2.jpeg": "bf4ec22fa518da672e8aee628bb56f46529ab19d222a205c86a8061fbda7a5d9",
+        "word/media/image20.svg": "c8a5fc73ba5e4e4ba5943302ec9fc458d87956ecc9881b88459c1219ec483a89",
+        "word/media/image21.svg": "025387214bcdc80c980bb15bd11b26a62e344286f5867a41d3f3d91788dae2bc",
+        "word/media/image3.png": "f4627aeb5442bc059a0cd6b1df585ae260287feb9eddca4ea9a5f3aa1b7f720c",
+        "word/media/image4.png": "4f9d967a163432a7f9b584719021a67d6e62dcc89574280fd9a1ce279bf64f69",
+        "word/media/image5.png": "7e9d75d7bdffb31c8ed4265a0a3a8c0c7e77a62663d857eb5ccf8b770e8c635f",
+        "word/media/image6.png": "3ef206bd8803ddb35ad2f50273ad8020ddaa217d51543416445b87e75d30f412",
+        "word/media/image7.jpeg": "6f79acb5f4bcc77a5c3912cd4595bf57dcfd5f9453f20a398a595d87491ac8fc",
+        "word/media/image8.png": "946aec70369433b08a457e449dfd0ff98728dae2c0a636899d6ce5ef0cacc8eb",
+        "word/media/image9.png": "7f2b99184f5fc7612b62536dd9106f3c7345e760fcb51710cc25c35937cd511a",
+        "word/media/rId101.png": "b091daf982ba5e228b16d63e62286a83178ee38fee6283b1288752265c503d8b",
+        "word/media/rId115.png": "b012b77257f7a515bd6bc6dac5ae6b6e5af1c78862b2b9f123a3f073618aa4a0",
+        "word/media/rId142.png": "95fd8e391c9b8f0c6927be50760cb172462312e2f390bc9118246f9df82f1594",
+        "word/media/rId149.png": "42ef8b563ceb08623b34c3f972b2648c684a4ab5f11bf5b5cfdfb66455b1f807",
+        "word/media/rId161.png": "96fa9567b2e7f4bae2ce05785fc7fabb9341b97355fd0146f37f4ed167f0005f",
+        "word/media/rId184.png": "b10b63ed68f1b0024ec5bad56756c3d69dc42da9fbfb6ae0f34cf16e3efd91ed",
+        "word/media/rId191.png": "edef65cc68a4afc4e4a5965ebf2a725b2f98a5a670f0643fb6eb761f06e71be4",
+        "word/media/rId195.png": "2e1021bbd56e285b5ff6fafb86ebabbd75a334a3359eb2414b6af23926a42eab",
+        "word/media/rId230.png": "9a486f29ceab0b1aa802adcbbbf782ea79205bff22b86a56dadd08c38bf9fd5e",
+        "word/media/rId255.png": "dcba8e6af435d193bc557809a585d45e83f0227e2bbbb1ddc567dd69ca5a344b",
+        "word/media/rId270.png": "6a52441a6e1d860c9e6ce2b71bc0aef5425bb76c2828f7019cc06b0ca729ae92",
+        "word/media/rId322.png": "cbd236b046e3ea83cd363db57ef848d994659ea2eec85ba83659fb63adadce8f",
+        "word/media/rId325.png": "388e0ac9630e2435c44c169e629ace89c003972a7378c318bfb519cee6779bdf",
+        "word/media/rId329.png": "9a3114888faca98c7fa26832f7877f5868ec6a6f23228fe4da214484d5971559",
+        "word/media/rId332.png": "541e790eac2b9cb660c83eca17a6440e9a27fe50a65605bc63c1bb6026bedaf6",
+        "word/media/rId336.png": "72508b8c1049fede05b3731dec3b1f53349b055c179d5a4269639f9cc0a5a8ae",
+        "word/media/rId339.png": "29b4873e08dbbbb6f184c09280729d385db402a740863cc02a03be37fb368368",
+        "word/media/rId342.png": "1e5fb7eb6af7822e21007bb9220737d9154e895c1c26e2b36f9f24c60d9d1ba7",
+        "word/media/rId345.png": "7666df58dceecd43e4603570ba299a04b0fb7ff9e78faf4d8132919db3320725",
+        "word/media/rId348.png": "c10eebf921f04b7ec9fb31993d1e742ba4f9b3895432e3ef4e7ac6f901605ae9",
+        "word/media/rId352.png": "8b32ef078b0ecda1f1957f91069045fb01e81f772ce7e6ee672ad0045f797085",
+        "word/media/rId355.png": "765219361e688aaf939a54389db931127a76c3d767788ee0b4b47413f154d7e8",
+        "word/media/rId358.png": "4413740e3f3daeb51ec3f817aa696dd143f9c3031c8edb693cf14349e717ce3d",
+        "word/media/rId361.png": "2f1ed2300963c742c445748c98b6cd401f9244318d0d16ed5ca2d5a878571a6c",
+        "word/media/rId364.png": "2d9fe0a86a5cf6c23fcd789b4c48ac742b6a0fc64aaaf9f58dbb28765ffcc050",
+        "word/media/rId367.png": "a44c08db8c3489968e6e9aedfa9b4f23fdc3338117486724e2d360e174aaa39f",
+        "word/media/rId401.png": "3a5d3f6c5d7203be9b885b8d4ca8d84bffc23f2370ab57fcf301cd0b1baaa37a",
+        "word/media/rId407.png": "6b4749a1bd6acda0620e3f19cdc4474ba39bcbc32029cd21588b0551cf7d576d",
+        "word/media/rId410.png": "d85d6d063e81dfb9f9cd279ca7ebb211c3f55d6abc0bb607fca7f6453d1b9908",
+        "word/media/rId67.png": "229e6a6a40c750e199cc7d21937642230c1b5069d023078a6e4ed121e6c5d064",
+        "word/media/rId80.png": "edb04164fd8b7f1a61af7e52addad600ed54da7c4079ddc2ca9abed2a749f3e6",
+        "word/media/rId84.png": "1bc54155a908dc7d6abc9202f41dab4c00ce72a22c7bfca303bc5b111438486c"
+      },
+      "embedding_sha256": {}
+    }
+  ],
+  "acceptance_profiles": {
+    "source_integrity": {
+      "required": true,
+      "rules": [
+        "exact source SHA-256",
+        "valid ZIP CRC",
+        "all required OOXML parts present"
+      ]
+    },
+    "no_op_roundtrip": {
+      "required_for_editor_poc": true,
+      "rules": [
+        "no repair prompt in Microsoft Word and WPS",
+        "visible text unchanged",
+        "tables, formulas, media, captions, bookmarks, fields, sections, headers and footers preserved",
+        "untouched media bytes preserved",
+        "page count and unchanged-page rendering remain within the approved visual tolerance"
+      ]
+    },
+    "surgical_edit": {
+      "required_for_editor_poc": true,
+      "rules": [
+        "edit applies only to the selected native office object",
+        "untouched style IDs and object relationships remain stable",
+        "undo and redo use the editor-native history",
+        "saved DOCX reopens in Microsoft Word and WPS without repair"
+      ]
+    },
+    "human_ai_concurrency": {
+      "required_for_editor_poc": true,
+      "rules": [
+        "human and AI share one current editor revision",
+        "stale selection is rejected or rebased explicitly",
+        "AI changes are reviewable and traceable to a WritingChangeSet"
+      ]
+    }
+  },
+  "report_sha256": "be94053cc1332ab55fd8821ce349789959935b41f48159cac29b96627e13aec9"
+}

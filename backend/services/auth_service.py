@@ -11,6 +11,10 @@ import bcrypt
 from jose import jwt, JWTError
 from functools import wraps
 from fastapi import HTTPException, Header, Depends
+from sqlalchemy.orm import Session
+
+from database import get_db
+from services.auth_settings_service import is_login_enabled
 
 # 从环境变量读取；缺失时使用进程级临时密钥，避免硬编码可预测签名密钥。
 SECRET_KEY = os.getenv("DASHBOARD_JWT_SECRET")
@@ -77,7 +81,10 @@ def generate_default_admin_password() -> str:
     return secrets.token_urlsafe(18)
 
 
-def get_current_user(authorization: Optional[str] = Header(None)) -> dict:
+def get_current_user(
+    authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db),
+) -> dict:
     """从 Authorization header 提取当前用户"""
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="未提供认证 token")
@@ -85,6 +92,8 @@ def get_current_user(authorization: Optional[str] = Header(None)) -> dict:
     payload = decode_access_token(token)
     if not payload:
         raise HTTPException(status_code=401, detail="token 无效或已过期")
+    if payload.get("auth_mode") == "development" and is_login_enabled(db):
+        raise HTTPException(status_code=401, detail="开发会话已失效，请登录")
     return payload
 
 

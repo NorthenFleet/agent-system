@@ -94,6 +94,7 @@ export interface WritingCollaborationState {
     revision?: number
   }
   revision: number
+  document_revision?: number
   approved_revision?: number
   published_revision?: number
   block_revision?: number
@@ -130,8 +131,17 @@ export interface WritingAiJob {
   updated_at?: string
 }
 
-export type WritingPaneModule = 'document' | 'presentation' | 'ai'
-export type WritingWorkbenchPreset = 'writing' | 'presentation' | 'document_compare' | 'document_presentation' | 'custom'
+export type WritingPaneModule = 'document' | 'presentation' | 'diagram' | 'ai'
+export type WritingWorkbenchPreset =
+  | 'writing'
+  | 'presentation'
+  | 'document_compare'
+  | 'document_presentation'
+  | 'diagramming'
+  | 'document_diagram'
+  | 'presentation_diagram'
+  | 'diagram_compare'
+  | 'custom'
 
 export interface WritingWorkbenchPaneState {
   module: WritingPaneModule
@@ -146,7 +156,7 @@ export interface WritingWorkbenchPaneState {
 export type WorkbenchPaneState = WritingWorkbenchPaneState
 
 export interface WritingWorkbenchPreference {
-  schema_version: 1 | 2
+  schema_version: 1 | 2 | 3
   revision: number
   preset: WritingWorkbenchPreset
   split_percent: number
@@ -175,10 +185,10 @@ export interface WritingAiSelectionSnapshot {
 }
 
 export interface WritingAiTarget {
-  kind: 'document' | 'presentation'
+  kind: 'document' | 'presentation' | 'diagram'
   document_id: string
   document_title?: string
-  scope?: 'selection' | 'block' | 'section' | 'document'
+  scope?: 'selection' | 'block' | 'section' | 'document' | 'cells' | 'diagram'
   section_id?: string
   section_title?: string
   block_id?: string
@@ -186,6 +196,8 @@ export interface WritingAiTarget {
   revision?: number
   selection?: WritingAiSelectionSnapshot
   slide?: number
+  diagram_revision?: number
+  cell_ids?: string[]
   draft?: Record<string, any>
 }
 
@@ -205,7 +217,7 @@ export interface WritingAiMessage {
   role: 'user' | 'assistant' | string
   content: string
   target_context: WritingAiTarget | Record<string, never>
-  job_kind?: 'document' | 'presentation' | string
+  job_kind?: 'document' | 'presentation' | 'diagram' | string
   job_id?: string
   proposal_ids: string[]
   status:
@@ -235,7 +247,7 @@ export interface WritingAiConversationMessageResult {
   request_message_id?: string
   response_message_id?: string
   idempotent_replay?: boolean
-  job?: WritingAiJob | PresentationSlideJob
+  job?: WritingAiJob | PresentationSlideJob | DiagramAiJob
 }
 
 export interface WritingAssetUploadResult {
@@ -296,6 +308,10 @@ export interface WritingEvidenceRef {
   artifact_sha256: string
   perspective_scope: string
   evidence_level: 'diagnostic' | 'G1' | 'G2' | 'A'
+  evidence_kind?: 'literature' | 'simulation' | 'dataset' | 'policy' | 'system_record'
+  source_quality?: 'peer_reviewed' | 'official' | 'standard' | 'preprint' | 'secondary' | 'internal'
+  support_role?: 'supports' | 'contradicts' | 'contextualizes' | 'method_basis'
+  directness?: 'direct' | 'indirect' | 'metadata_only'
   allowed_claim_scope: string
   immutable: boolean
 }
@@ -304,6 +320,7 @@ export interface WritingEvidenceGap {
   id: string
   claim_id: string
   required_level: 'diagnostic' | 'G1' | 'G2' | 'A'
+  gap_type: 'literature' | 'experiment' | 'mixed'
   reason: string
   research_matrix: Record<string, any>
   status: string
@@ -329,8 +346,58 @@ export interface WritingJarvisRun {
   status: string
   approval_reason: string
   error: string
+  input_payload?: Record<string, any>
+  result_payload?: Record<string, any>
   recovery_cursor: Record<string, any>
-  steps: Array<{ id: string; step_key: string; status: string; attempt_count: number; error: string }>
+  steps: Array<{
+    id: string
+    step_key: string
+    status: string
+    attempt_count: number
+    error: string
+    result_payload?: Record<string, any>
+  }>
+}
+
+export interface WritingRetrievalRef {
+  id: string
+  provider: string
+  provider_record_id: string
+  query_id: string
+  rank: number
+  retrieval_score: number
+  title: string
+  authors: string[]
+  year?: number | null
+  venue: string
+  doi: string
+  url: string
+  access_status: string
+  screening_status: 'pending' | 'include' | 'exclude' | 'uncertain' | 'duplicate'
+  screening_reason: string
+}
+
+export interface WritingResearchIteration {
+  id: string
+  run_id: string
+  iteration_no: number
+  base_revision: number
+  base_section_sha256: string
+  candidate_sha256: string
+  candidate_payload: Record<string, any>
+  candidate_artifact_path: string
+  status: string
+  change_set_id: string
+  evaluation?: {
+    id: string
+    evaluator_version: string
+    hard_gates: Record<string, boolean | number>
+    dimension_scores: Record<string, number>
+    total_score: number
+    baseline_delta: number
+    decision: string
+    reasons: string[]
+  }
 }
 
 export interface WritingResearchWorkflow {
@@ -529,7 +596,92 @@ export interface WritingWorkspace {
   document?: WritingProjectDocument
 }
 
-export type WritingDocumentKind = 'rich_text' | 'workbook' | 'presentation'
+export type WritingDocumentKind = 'rich_text' | 'workbook' | 'presentation' | 'diagram'
+
+export type DiagramCellType = 'node' | 'edge' | 'group' | 'text' | 'image'
+
+export interface DiagramCell {
+  id: string
+  cell_revision: number
+  type: DiagramCellType
+  shape?: string
+  x?: number
+  y?: number
+  width?: number
+  height?: number
+  label?: string
+  source?: string | { cell: string }
+  target?: string | { cell: string }
+  parent?: string
+  attrs?: Record<string, any>
+  data?: Record<string, any>
+  [key: string]: any
+}
+
+export interface DiagramDocumentState {
+  schema_version: number
+  project_id: string
+  document_id: string
+  revision: number
+  title: string
+  diagram_type: string
+  theme_id: string
+  page_settings: Record<string, any>
+  cells: DiagramCell[]
+  content_sha256: string
+  updated_at: string
+}
+
+export interface DiagramResource {
+  document: WritingProjectDocument
+  diagram: DiagramDocumentState
+}
+
+export interface DiagramReference {
+  id: string
+  diagram_document_id: string
+  diagram_revision: number
+  target_document_id: string
+  target_kind: 'rich_text' | 'presentation'
+  target_section_id?: string
+  target_slide?: number
+  export_format: 'svg' | 'png'
+  crop_or_viewbox: Record<string, any>
+  caption: string
+  status: 'current' | 'update_available' | string
+}
+
+export interface DiagramDocumentPublishResult {
+  idempotent_replay: boolean
+  diagram_revision: number
+  document_revision: number
+  inserted_block_ids: string[]
+  asset: { path: string; url: string; sha256: string }
+  reference: DiagramReference
+  document: WritingCollaborationState
+}
+
+export interface DiagramAiProposal {
+  id: string
+  job_id: string
+  status: string
+  base_revision: number
+  operations: Record<string, any>[]
+  summary: string
+  rationale: string
+  risk_level: 'low' | 'medium' | 'high'
+  conflicts: Array<{ cell_id?: string; reason: string }>
+}
+
+export interface DiagramAiJob {
+  id: string
+  document_id: string
+  status: string
+  base_revision: number
+  target_cell_ids: string[]
+  error?: string
+  proposal?: DiagramAiProposal
+}
 export type WritingPublicationStatus = 'draft' | 'review' | 'approved' | 'published' | 'internal'
 export type DocumentStructureBindingMode = 'canonical' | 'derived' | 'mapped'
 export type DocumentStructureBindingStatus = 'aligned' | 'diverged' | 'stale' | 'missing'
@@ -540,6 +692,13 @@ export interface DocumentStructureBinding {
   source_version: string
   source_sha256: string
   status: DocumentStructureBindingStatus
+  /** Structural integrity of the PPT mapping; retained separately from source freshness. */
+  integrity_status?: DocumentStructureBindingStatus
+  /** A document edit does not recreate the PPT; it only makes its content reference pending. */
+  reference_status?: 'current' | 'document_updated'
+  referenced_document_revision?: string
+  referenced_document_sha256?: string
+  ppt_sha256?: string
   mapped_items: number
   unmapped_items: Array<string | number | Record<string, any>>
   changed_sections: Array<string | number | Record<string, any>>
@@ -638,7 +797,7 @@ export interface DocumentLayoutProfile {
   name: string
   version: string
   applies_to: { kind: string; document_types: string[] }
-  authority_source: { path: string; sha256: string }
+  authority_source: { path?: string; sha256: string; filename?: string; role?: string; document_id?: string; document_title?: string }
   template_path: string
   template_sha256: string
   status: 'draft' | 'validated' | 'published'
@@ -647,6 +806,7 @@ export interface DocumentLayoutProfile {
   rules: Record<string, any>
   sample_docx_path?: string
   sample_pdf_path?: string
+  preview?: { pdf_path?: string; page_count: number; showcase_pages: Array<{ kind: string; label: string; page: number }> }
 }
 
 export interface DocumentLayoutBinding {
@@ -686,6 +846,28 @@ export interface DocumentLayoutState {
   audit?: DocumentLayoutAuditReport
   sample: { docx_path?: string; pdf_path?: string }
   display: { content: string; template: string; delivery: string; publication_status: string }
+  template_catalog?: { document_type: string; same_type_count: number; total_count: number }
+}
+
+export interface DocumentContentFidelityReport {
+  schema: 'openclaw.document-content-fidelity.v1'
+  project_id: string
+  document_id: string
+  document_title: string
+  source_kind: 'markdown' | 'docx'
+  source_sha256: string
+  structured_revision: number
+  structured_sha256: string
+  status: 'passed' | 'degraded' | 'blocked' | 'stale'
+  migration_safe: boolean
+  source_metrics: Record<string, number | string>
+  structured_metrics: Record<string, number | string>
+  differences: Record<string, { source: number; structured: number }>
+  unresolved_assets: string[]
+  empty_formulas: string[]
+  warnings: string[]
+  audited_at: string
+  collaboration_revision?: number
 }
 
 export interface WritingProjectDocument {
@@ -721,12 +903,12 @@ export interface WritingProjectDocument {
   source_path?: string
   source_checksum?: string
   edit_policy?: 'editable' | 'read_only'
-  delivery_role?: 'deliverable' | 'historical_reference'
+  delivery_role?: 'deliverable' | 'historical_reference' | 'candidate'
   lineage?: {
     series_id: string
     edition_label: string
     sequence: number
-    source_type: 'markdown' | 'chapter_bundle' | 'structured_authority'
+    source_type: 'markdown' | 'chapter_bundle' | 'docx' | 'structured_authority'
     parent_document_id?: string
     source_checksum: string
     generated_at?: string
@@ -786,6 +968,7 @@ export interface WritingProjectDocuments {
     rich_text: number
     workbook: number
     presentation: number
+    diagram: number
     output_products: number
     internal_sources: number
   }
@@ -1108,6 +1291,128 @@ export function updateWritingWorkbenchPreference(
   ).then(r => r.data)
 }
 
+function diagramBase(projectId: string, diagramId = '') {
+  const base = `${writingProjectBase(projectId)}/diagrams`
+  return diagramId ? `${base}/${encodeURIComponent(diagramId)}` : base
+}
+
+export function getWritingDiagrams(projectId: string) {
+  return apiClient.get<{ diagrams: Array<WritingProjectDocument & { diagram?: DiagramDocumentState }> }>(
+    diagramBase(projectId)
+  ).then(r => r.data)
+}
+
+export function createWritingDiagram(
+  projectId: string,
+  payload: {
+    title: string
+    template_id?: string
+    diagram_type?: string
+    theme_id?: string
+    page_settings?: Record<string, any>
+    cells?: DiagramCell[]
+  }
+) {
+  return apiClient.post<DiagramResource>(diagramBase(projectId), payload).then(r => r.data)
+}
+
+export function getWritingDiagram(projectId: string, diagramId: string) {
+  return apiClient.get<DiagramResource>(diagramBase(projectId, diagramId)).then(r => r.data)
+}
+
+export function updateWritingDiagramDraft(
+  projectId: string,
+  diagramId: string,
+  payload: Partial<DiagramDocumentState> & { expected_revision: number; cells: DiagramCell[] }
+) {
+  return apiClient.patch<DiagramDocumentState>(`${diagramBase(projectId, diagramId)}/draft`, payload).then(r => r.data)
+}
+
+export function createWritingDiagramVersion(
+  projectId: string,
+  diagramId: string,
+  payload: { label?: string; reason?: string } = {}
+) {
+  return apiClient.post(`${diagramBase(projectId, diagramId)}/versions`, payload).then(r => r.data)
+}
+
+export function exportWritingDiagram(
+  projectId: string,
+  diagramId: string,
+  format: 'svg' | 'png' | 'pdf' | 'json'
+) {
+  return apiClient.post<Blob>(`${diagramBase(projectId, diagramId)}/exports`, { format }, {
+    responseType: 'blob',
+    timeout: 120000
+  }).then(r => r.data)
+}
+
+export function createWritingDiagramAiJob(
+  projectId: string,
+  diagramId: string,
+  payload: { client_request_id?: string; agent_id?: string; instruction: string; target_cell_ids?: string[] }
+) {
+  return apiClient.post<DiagramAiJob>(`${diagramBase(projectId, diagramId)}/ai-jobs`, payload, {
+    timeout: 120000
+  }).then(r => r.data)
+}
+
+export function acceptWritingDiagramProposal(projectId: string, diagramId: string, proposalId: string) {
+  return apiClient.post<{ proposal: DiagramAiProposal; diagram: DiagramDocumentState }>(
+    `${diagramBase(projectId, diagramId)}/proposals/${encodeURIComponent(proposalId)}/accept`
+  ).then(r => r.data)
+}
+
+export function rejectWritingDiagramProposal(projectId: string, diagramId: string, proposalId: string) {
+  return apiClient.post<DiagramAiProposal>(
+    `${diagramBase(projectId, diagramId)}/proposals/${encodeURIComponent(proposalId)}/reject`
+  ).then(r => r.data)
+}
+
+export function getWritingDiagramReferences(projectId: string, diagramId: string) {
+  return apiClient.get<{ references: DiagramReference[] }>(
+    `${diagramBase(projectId, diagramId)}/references`
+  ).then(r => r.data)
+}
+
+export function createWritingDiagramReference(
+  projectId: string,
+  diagramId: string,
+  payload: {
+    target_kind: 'rich_text' | 'presentation'
+    target_document_id: string
+    target_section_id?: string
+    target_slide?: number
+    export_format?: 'svg' | 'png'
+    caption?: string
+  }
+) {
+  return apiClient.post<DiagramReference>(`${diagramBase(projectId, diagramId)}/references`, payload).then(r => r.data)
+}
+
+export function publishWritingDiagramToDocument(
+  projectId: string,
+  diagramId: string,
+  payload: {
+    target_document_id: string
+    target_section_id?: string
+    expected_document_revision: number
+    expected_diagram_revision: number
+    anchor_block_id: string
+    replace_block_ids?: string[]
+    figure_label?: string
+    caption?: string
+    width?: string
+    export_format?: 'svg' | 'png'
+    client_change_id?: string
+  }
+) {
+  return apiClient.post<DiagramDocumentPublishResult>(
+    `${diagramBase(projectId, diagramId)}/publish-to-document`,
+    payload
+  ).then(r => r.data)
+}
+
 export function compareWritingDocuments(
   projectId: string,
   payload: {
@@ -1211,6 +1516,45 @@ export function rejectWritingProposal(projectId: string, documentId: string, pro
 export function getWritingResearchWorkflow(projectId: string, documentId: string) {
   return apiClient.get<WritingResearchWorkflow>(
     `${documentBase(projectId, documentId)}/research-workflow`
+  ).then(r => r.data)
+}
+
+export function getWritingLiteratureRuns(projectId: string, documentId: string) {
+  return apiClient.get<WritingJarvisRun[]>(
+    `${documentBase(projectId, documentId)}/literature-runs`
+  ).then(r => r.data)
+}
+
+export function getWritingResearchIterations(projectId: string, documentId: string, runId = '') {
+  return apiClient.get<WritingResearchIteration[]>(
+    `${documentBase(projectId, documentId)}/research-iterations`,
+    { params: runId ? { run_id: runId } : {} }
+  ).then(r => r.data)
+}
+
+export function getWritingRetrievalRefs(projectId: string, documentId: string) {
+  return apiClient.get<WritingRetrievalRef[]>(
+    `${documentBase(projectId, documentId)}/retrieval-refs`,
+    { params: { limit: 500 } }
+  ).then(r => r.data)
+}
+
+export function createWritingLiteratureRun(
+  projectId: string,
+  documentId: string,
+  payload: {
+    base_revision: number
+    idempotency_key: string
+    scope_section_ids: string[]
+    evaluator_version?: string
+    max_results_per_query?: number
+    source_whitelist?: string[]
+    external_request_budget?: number
+  }
+) {
+  return apiClient.post<WritingJarvisRun>(
+    `${documentBase(projectId, documentId)}/literature-runs`,
+    payload
   ).then(r => r.data)
 }
 
@@ -1360,6 +1704,31 @@ export function getDocumentWritingQuality(projectId: string, documentId: string)
   }>(`${documentBase(projectId, documentId)}/quality`).then(r => r.data)
 }
 
+export function getDocumentContentFidelity(projectId: string, documentId: string) {
+  return apiClient.get<DocumentContentFidelityReport>(
+    `${documentBase(projectId, documentId)}/fidelity`
+  ).then(r => r.data)
+}
+
+export function auditDocumentContentFidelity(projectId: string, documentId: string) {
+  return apiClient.post<DocumentContentFidelityReport>(
+    `${documentBase(projectId, documentId)}/fidelity/audit`
+  ).then(r => r.data)
+}
+
+export function migrateDocumentContentFidelity(projectId: string, documentId: string) {
+  return apiClient.post<DocumentContentFidelityReport>(
+    `${documentBase(projectId, documentId)}/fidelity/migrate`
+  ).then(r => r.data)
+}
+
+export function getDocumentFidelityPreview(projectId: string, documentId: string) {
+  return apiClient.get<Blob>(
+    `${documentBase(projectId, documentId)}/fidelity/preview.pdf`,
+    { responseType: 'blob', timeout: 240000 }
+  ).then(r => r.data)
+}
+
 export function getEvaluationProfiles() {
   return apiClient.get<{
     schema: string
@@ -1480,7 +1849,8 @@ export function restoreWritingDocumentVersion(projectId: string, documentId: str
 export function getDocumentWritingAsset(projectId: string, documentId: string, path: string) {
   return apiClient.get<Blob>(`${documentBase(projectId, documentId)}/assets`, {
     params: { path },
-    responseType: 'blob'
+    responseType: 'blob',
+    suppressErrorToast: true
   }).then(r => r.data)
 }
 
@@ -1530,8 +1900,40 @@ export function updateDocumentLayout(
   return apiClient.patch<DocumentLayoutState>(`${documentBase(projectId, documentId)}/layout`, payload).then(r => r.data)
 }
 
+export function uploadDocumentLayoutReference(
+  projectId: string,
+  documentId: string,
+  file: File,
+  profileName = ''
+) {
+  const form = new FormData()
+  form.append('file', file)
+  return apiClient.post<DocumentLayoutState>(
+    `${documentBase(projectId, documentId)}/layout/reference-docx`,
+    form,
+    {
+      params: profileName ? { profile_name: profileName } : undefined,
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 120000
+    }
+  ).then(r => r.data)
+}
+
 export function getDocumentLayoutSample(projectId: string, documentId: string, format: 'docx' | 'pdf') {
   return apiClient.get<Blob>(`${documentBase(projectId, documentId)}/layout/sample/${format}`, {
+    responseType: 'blob'
+  }).then(r => r.data)
+}
+
+export function getDocumentLayoutTemplatePreview(
+  projectId: string,
+  documentId: string,
+  profileId: string,
+  format: 'docx' | 'pdf' | 'png',
+  page?: number
+) {
+  return apiClient.get<Blob>(`${documentBase(projectId, documentId)}/layout/templates/${encodeURIComponent(profileId)}/preview/${format}`, {
+    params: page ? { page } : undefined,
     responseType: 'blob'
   }).then(r => r.data)
 }

@@ -15,6 +15,7 @@ from services.document_workspace_service import DocumentWorkspaceError
 from services.writing_workbench_service import (
     WritingWorkbenchConflict,
     WritingWorkbenchService,
+    _public_error,
 )
 
 
@@ -134,7 +135,7 @@ def test_preference_uses_optimistic_revision_and_survives_service_restart(workbe
     restored = restarted.get_preference(PROJECT["id"], "user-1")
     assert restored["revision"] == 1
     assert restored["preset"] == "document_presentation"
-    assert restored["schema_version"] == 2
+    assert restored["schema_version"] == 3
 
 
 def test_presentation_conversation_is_idempotent_and_persistent(workbench):
@@ -226,3 +227,16 @@ def test_conversation_access_is_scoped_to_owner(workbench):
 
     with pytest.raises(DocumentWorkspaceError, match="会话不存在"):
         service.list_messages(PROJECT["id"], "user-2", conversation["id"])
+
+
+def test_public_error_hides_openclaw_runtime_metadata():
+    raw = (
+        'OpenClaw 未返回可显示文本：{"runId":"sensitive",'
+        '"result":{"meta":{"sessionFile":"/Users/private/session.jsonl"}}}'
+    )
+
+    message = _public_error(RuntimeError(raw))
+
+    assert message == "智能体本次未生成可审阅内容，请重试。"
+    assert "runId" not in message
+    assert "sessionFile" not in message

@@ -7,8 +7,16 @@
 import json
 import os
 import asyncio
+import logging
 from datetime import datetime
 from typing import Dict, List, Optional
+
+
+logger = logging.getLogger(__name__)
+
+
+class OpenClawEmptyResponseError(RuntimeError):
+    """OpenClaw completed a run without user-visible assistant content."""
 
 # 消息存储目录
 MESSAGES_DIR = os.path.expanduser("~/.openclaw/workspace/messages")
@@ -184,29 +192,59 @@ class AgentMessenger:
 
         response_text = self._extract_openclaw_text(result)
         if not response_text:
-            raise RuntimeError(f"OpenClaw 未返回可显示文本：{json.dumps(result, ensure_ascii=False)[:500]}")
+            logger.warning(
+                "OpenClaw returned no visible text: agent=%s run_id=%s status=%s summary=%s",
+                agent_id,
+                str(result.get("runId") or "")[:96],
+                str(result.get("status") or "")[:32],
+                str(result.get("summary") or "")[:160],
+            )
+            raise OpenClawEmptyResponseError("智能体本次未生成可审阅内容，请重试。")
         return response_text
 
+    @staticmethod
+    def _clean_openclaw_text(value: object) -> str:
+        if not isinstance(value, str):
+            return ""
+        text = value.replace("[[reply_to_current]]", "").strip()
+        if text.upper() in {"NO_REPLY", "HEARTBEAT_OK"}:
+            return ""
+        return text
+
     def _extract_openclaw_text(self, result: Dict) -> str:
-        payloads = result.get("result", {}).get("payloads", [])
+        result_payload = result.get("result") if isinstance(result.get("result"), dict) else {}
+        payloads = result_payload.get("payloads", [])
         if isinstance(payloads, list):
-            texts = [
-                str(item.get("text", "")).strip()
-                for item in payloads
-                if isinstance(item, dict) and item.get("text")
-            ]
+            texts = []
+            for item in payloads:
+                if not isinstance(item, dict):
+                    continue
+                text = self._clean_openclaw_text(item.get("text"))
+                if text:
+                    texts.append(text)
+                content = item.get("content")
+                if isinstance(content, list):
+                    texts.extend(
+                        nested
+                        for nested in (
+                            self._clean_openclaw_text(block.get("text"))
+                            for block in content
+                            if isinstance(block, dict)
+                        )
+                        if nested
+                    )
             if texts:
                 return "\n\n".join(texts)
 
         for key in ("finalAssistantVisibleText", "finalAssistantRawText"):
-            text = result.get("result", {}).get(key)
-            if isinstance(text, str) and text.strip():
-                return text.replace("[[reply_to_current]]", "").strip()
+            text = self._clean_openclaw_text(result_payload.get(key))
+            if text:
+                return text
 
         for key in ("response", "message", "text"):
-            text = result.get(key)
-            if isinstance(text, str) and text.strip():
-                return text.strip()
+            text = self._clean_openclaw_text(result.get(key))
+            if text:
+                return text
         return ""
     
     def get_conversations_list(self) -> List[Dict]:

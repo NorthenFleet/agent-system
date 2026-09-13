@@ -8,6 +8,7 @@ from sqlalchemy import (
     Boolean,
     Column,
     DateTime,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -173,6 +174,138 @@ class WritingWorkspacePreference(Base):
     )
 
 
+class WritingDiagramState(Base):
+    __tablename__ = "writing_diagram_states"
+
+    id = Column(String(64), primary_key=True)
+    project_id = Column(String(64), nullable=False, index=True)
+    document_id = Column(String(64), nullable=False, index=True)
+    schema_version = Column(Integer, nullable=False, default=1)
+    diagram_revision = Column(Integer, nullable=False, default=1)
+    title = Column(String(200), nullable=False)
+    diagram_type = Column(String(48), nullable=False, default="flowchart")
+    theme_id = Column(String(48), nullable=False, default="academic")
+    page_settings = Column(JSON, nullable=False, default=dict)
+    cells = Column(JSON, nullable=False, default=list)
+    content_sha256 = Column(String(64), nullable=False)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=_now)
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=_now, onupdate=_now)
+
+    __table_args__ = (
+        UniqueConstraint("project_id", "document_id", name="uq_writing_diagram_state"),
+    )
+
+
+class WritingDiagramVersion(Base):
+    __tablename__ = "writing_diagram_versions"
+
+    id = Column(String(64), primary_key=True)
+    project_id = Column(String(64), nullable=False, index=True)
+    document_id = Column(String(64), nullable=False, index=True)
+    diagram_revision = Column(Integer, nullable=False)
+    label = Column(String(160), nullable=False, default="")
+    reason = Column(String(40), nullable=False, default="checkpoint")
+    snapshot_json = Column(JSON, nullable=False)
+    content_sha256 = Column(String(64), nullable=False)
+    actor_type = Column(String(16), nullable=False, default="human")
+    actor_id = Column(String(64), nullable=False, default="")
+    created_at = Column(DateTime(timezone=True), nullable=False, default=_now)
+
+    __table_args__ = (
+        UniqueConstraint(
+            "project_id",
+            "document_id",
+            "diagram_revision",
+            name="uq_writing_diagram_version_revision",
+        ),
+    )
+
+
+class WritingDiagramAiJob(Base):
+    __tablename__ = "writing_diagram_ai_jobs"
+
+    id = Column(String(64), primary_key=True)
+    project_id = Column(String(64), nullable=False, index=True)
+    document_id = Column(String(64), nullable=False, index=True)
+    client_request_id = Column(String(96), nullable=False)
+    agent_id = Column(String(64), nullable=False, default="ultra-magnus")
+    instruction = Column(Text, nullable=False)
+    base_diagram_revision = Column(Integer, nullable=False)
+    target_cell_ids = Column(JSON, nullable=False, default=list)
+    target_snapshot = Column(JSON, nullable=False, default=dict)
+    status = Column(String(24), nullable=False, default="queued", index=True)
+    error = Column(Text, nullable=False, default="")
+    requested_by = Column(String(64), nullable=False, default="")
+    created_at = Column(DateTime(timezone=True), nullable=False, default=_now)
+    started_at = Column(DateTime(timezone=True), nullable=True)
+    finished_at = Column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint(
+            "project_id",
+            "document_id",
+            "client_request_id",
+            name="uq_writing_diagram_ai_job_client_request",
+        ),
+    )
+
+
+class WritingDiagramAiProposal(Base):
+    __tablename__ = "writing_diagram_ai_proposals"
+
+    id = Column(String(64), primary_key=True)
+    job_id = Column(
+        String(64),
+        ForeignKey("writing_diagram_ai_jobs.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    project_id = Column(String(64), nullable=False, index=True)
+    document_id = Column(String(64), nullable=False, index=True)
+    base_diagram_revision = Column(Integer, nullable=False)
+    base_cell_revisions = Column(JSON, nullable=False, default=dict)
+    operations = Column(JSON, nullable=False, default=list)
+    summary = Column(Text, nullable=False, default="")
+    rationale = Column(Text, nullable=False, default="")
+    risk_level = Column(String(16), nullable=False, default="medium", index=True)
+    conflicts = Column(JSON, nullable=False, default=list)
+    status = Column(String(24), nullable=False, default="pending", index=True)
+    decided_by = Column(String(64), nullable=False, default="")
+    created_at = Column(DateTime(timezone=True), nullable=False, default=_now)
+    decided_at = Column(DateTime(timezone=True), nullable=True)
+
+
+class WritingDiagramReference(Base):
+    __tablename__ = "writing_diagram_references"
+
+    id = Column(String(64), primary_key=True)
+    project_id = Column(String(64), nullable=False, index=True)
+    diagram_document_id = Column(String(64), nullable=False, index=True)
+    diagram_revision = Column(Integer, nullable=False)
+    target_document_id = Column(String(64), nullable=False, index=True)
+    target_kind = Column(String(24), nullable=False)
+    target_section_id = Column(String(128), nullable=False, default="")
+    target_slide = Column(Integer, nullable=True)
+    export_format = Column(String(16), nullable=False, default="svg")
+    crop_or_viewbox = Column(JSON, nullable=False, default=dict)
+    caption = Column(String(500), nullable=False, default="")
+    status = Column(String(24), nullable=False, default="current", index=True)
+    created_by = Column(String(64), nullable=False, default="")
+    created_at = Column(DateTime(timezone=True), nullable=False, default=_now)
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=_now, onupdate=_now)
+
+    __table_args__ = (
+        UniqueConstraint(
+            "diagram_document_id",
+            "diagram_revision",
+            "target_document_id",
+            "target_section_id",
+            "target_slide",
+            name="uq_writing_diagram_reference_target",
+        ),
+    )
+
+
 class WritingAiConversation(Base):
     __tablename__ = "writing_ai_conversations"
 
@@ -303,12 +436,113 @@ class WritingClaim(Base):
     block_id = Column(String(96), nullable=False, default="", index=True)
     claim_text = Column(Text, nullable=False)
     claim_type = Column(String(32), nullable=False, default="argument")
+    claim_key = Column(String(160), nullable=False, default="", index=True)
+    claim_fingerprint = Column(String(64), nullable=False, default="", index=True)
+    rhetorical_role = Column(String(24), nullable=False, default="fact", index=True)
+    evidence_policy = Column(JSON, nullable=False, default=dict)
+    temporal_scope = Column(String(80), nullable=False, default="")
+    geographic_scope = Column(String(24), nullable=False, default="global", index=True)
+    supersedes_claim_id = Column(
+        String(64),
+        ForeignKey("writing_claims.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     minimum_evidence_level = Column(String(16), nullable=False, default="diagnostic")
     evidence_status = Column(String(24), nullable=False, default="missing", index=True)
     status = Column(String(20), nullable=False, default="active", index=True)
     created_by = Column(String(64), nullable=False, default="")
     created_at = Column(DateTime(timezone=True), nullable=False, default=_now)
     updated_at = Column(DateTime(timezone=True), nullable=False, default=_now, onupdate=_now)
+
+
+class WritingResearchIteration(Base):
+    __tablename__ = "writing_research_iterations"
+
+    id = Column(String(64), primary_key=True)
+    project_id = Column(String(64), nullable=False, index=True)
+    document_id = Column(String(64), nullable=False, index=True)
+    run_id = Column(String(64), ForeignKey("writing_jarvis_runs.id", ondelete="CASCADE"), nullable=False, index=True)
+    iteration_no = Column(Integer, nullable=False)
+    base_revision = Column(Integer, nullable=False)
+    base_section_sha256 = Column(String(64), nullable=False)
+    candidate_sha256 = Column(String(64), nullable=False, default="")
+    candidate_payload = Column(JSON, nullable=False, default=dict)
+    candidate_artifact_path = Column(Text, nullable=False, default="")
+    status = Column(String(24), nullable=False, default="baseline", index=True)
+    parent_iteration_id = Column(
+        String(64),
+        ForeignKey("writing_research_iterations.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    change_set_id = Column(String(64), ForeignKey("writing_change_sets.id", ondelete="SET NULL"), nullable=True)
+    started_at = Column(DateTime(timezone=True), nullable=False, default=_now)
+    finished_at = Column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint("run_id", "iteration_no", name="uq_writing_research_iteration_run_no"),
+    )
+
+
+class WritingRetrievalRef(Base):
+    __tablename__ = "writing_retrieval_refs"
+
+    id = Column(String(64), primary_key=True)
+    project_id = Column(String(64), nullable=False, index=True)
+    document_id = Column(String(64), nullable=False, index=True)
+    document_revision = Column(Integer, nullable=False, index=True)
+    run_id = Column(String(64), ForeignKey("writing_jarvis_runs.id", ondelete="SET NULL"), nullable=True, index=True)
+    iteration_id = Column(
+        String(64),
+        ForeignKey("writing_research_iterations.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    provider = Column(String(48), nullable=False, index=True)
+    provider_record_id = Column(String(200), nullable=False)
+    query_id = Column(String(96), nullable=False, default="", index=True)
+    query_text = Column(Text, nullable=False, default="")
+    rank = Column(Integer, nullable=False, default=0)
+    retrieval_score = Column(Float, nullable=False, default=0.0)
+    title = Column(Text, nullable=False)
+    authors = Column(JSON, nullable=False, default=list)
+    year = Column(Integer, nullable=True, index=True)
+    venue = Column(Text, nullable=False, default="")
+    doi = Column(String(300), nullable=False, default="", index=True)
+    url = Column(Text, nullable=False, default="")
+    abstract_snapshot = Column(Text, nullable=False, default="")
+    metadata_snapshot = Column(JSON, nullable=False, default=dict)
+    metadata_sha256 = Column(String(64), nullable=False)
+    access_status = Column(String(24), nullable=False, default="metadata_only", index=True)
+    screening_status = Column(String(24), nullable=False, default="pending", index=True)
+    screening_reason = Column(Text, nullable=False, default="")
+    canonical_ref_id = Column(
+        String(64),
+        ForeignKey("writing_retrieval_refs.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    idempotency_key = Column(String(96), nullable=False)
+    retrieved_at = Column(DateTime(timezone=True), nullable=False, default=_now)
+    created_by = Column(String(64), nullable=False, default="")
+
+    __table_args__ = (
+        UniqueConstraint(
+            "project_id",
+            "document_id",
+            "provider",
+            "provider_record_id",
+            "metadata_sha256",
+            name="uq_writing_retrieval_identity",
+        ),
+        UniqueConstraint(
+            "project_id",
+            "document_id",
+            "idempotency_key",
+            name="uq_writing_retrieval_idempotency",
+        ),
+    )
 
 
 class WritingEvidenceRef(Base):
@@ -323,6 +557,21 @@ class WritingEvidenceRef(Base):
     artifact_sha256 = Column(String(64), nullable=False)
     perspective_scope = Column(String(64), nullable=False, default="project")
     evidence_level = Column(String(16), nullable=False, default="diagnostic", index=True)
+    evidence_kind = Column(String(24), nullable=False, default="simulation", index=True)
+    source_quality = Column(String(24), nullable=False, default="internal", index=True)
+    support_role = Column(String(24), nullable=False, default="supports", index=True)
+    directness = Column(String(24), nullable=False, default="direct", index=True)
+    published_at = Column(DateTime(timezone=True), nullable=True)
+    acquired_at = Column(DateTime(timezone=True), nullable=False, default=_now)
+    license_or_access = Column(Text, nullable=False, default="")
+    retrieval_ref_id = Column(
+        String(64),
+        ForeignKey("writing_retrieval_refs.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    locator = Column(JSON, nullable=False, default=dict)
+    excerpt_sha256 = Column(String(64), nullable=False, default="")
     allowed_claim_scope = Column(Text, nullable=False, default="")
     provenance = Column(JSON, nullable=False, default=dict)
     immutable = Column(Boolean, nullable=False, default=True)
@@ -365,6 +614,7 @@ class WritingEvidenceGap(Base):
     project_id = Column(String(64), nullable=False, index=True)
     document_id = Column(String(64), nullable=False, index=True)
     required_level = Column(String(16), nullable=False)
+    gap_type = Column(String(16), nullable=False, default="experiment", index=True)
     reason = Column(Text, nullable=False)
     research_matrix = Column(JSON, nullable=False, default=dict)
     status = Column(String(24), nullable=False, default="open", index=True)
@@ -483,4 +733,76 @@ class WritingJarvisStep(Base):
 
     __table_args__ = (
         UniqueConstraint("run_id", "step_key", name="uq_writing_jarvis_step"),
+    )
+
+
+class WritingResearchRunScope(Base):
+    __tablename__ = "writing_research_run_scopes"
+
+    id = Column(String(64), primary_key=True)
+    run_id = Column(String(64), ForeignKey("writing_jarvis_runs.id", ondelete="CASCADE"), nullable=False, index=True)
+    section_id = Column(String(128), nullable=False, default="", index=True)
+    claim_id = Column(String(64), ForeignKey("writing_claims.id", ondelete="CASCADE"), nullable=True, index=True)
+    gap_id = Column(String(64), ForeignKey("writing_evidence_gaps.id", ondelete="CASCADE"), nullable=True, index=True)
+    scope_role = Column(String(24), nullable=False, default="target", index=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=_now)
+
+    __table_args__ = (
+        UniqueConstraint("run_id", "section_id", "claim_id", "gap_id", name="uq_writing_research_run_scope"),
+    )
+
+
+class WritingResearchEvaluation(Base):
+    __tablename__ = "writing_research_evaluations"
+
+    id = Column(String(64), primary_key=True)
+    iteration_id = Column(
+        String(64),
+        ForeignKey("writing_research_iterations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    evaluator_version = Column(String(48), nullable=False)
+    hard_gates = Column(JSON, nullable=False, default=dict)
+    dimension_scores = Column(JSON, nullable=False, default=dict)
+    total_score = Column(Float, nullable=False, default=0.0)
+    baseline_delta = Column(Float, nullable=False, default=0.0)
+    decision = Column(String(24), nullable=False, default="pending", index=True)
+    reasons = Column(JSON, nullable=False, default=list)
+    input_sha256 = Column(String(64), nullable=False)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=_now)
+
+    __table_args__ = (
+        UniqueConstraint(
+            "iteration_id",
+            "evaluator_version",
+            "input_sha256",
+            name="uq_writing_research_evaluation_input",
+        ),
+    )
+
+
+class WritingScreeningDecision(Base):
+    __tablename__ = "writing_screening_decisions"
+
+    id = Column(String(64), primary_key=True)
+    retrieval_ref_id = Column(
+        String(64),
+        ForeignKey("writing_retrieval_refs.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    decision = Column(String(24), nullable=False, index=True)
+    reason = Column(Text, nullable=False, default="")
+    decided_by = Column(String(64), nullable=False, default="")
+    actor_type = Column(String(16), nullable=False, default="human")
+    idempotency_key = Column(String(96), nullable=False)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=_now)
+
+    __table_args__ = (
+        UniqueConstraint(
+            "retrieval_ref_id",
+            "idempotency_key",
+            name="uq_writing_screening_decision_idempotency",
+        ),
     )
