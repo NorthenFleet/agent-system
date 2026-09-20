@@ -1,0 +1,130 @@
+{
+  "schema_version": "command-center-worker-failover-drill.v1",
+  "checked_at": "2026-09-18T12:18:49.720974+00:00",
+  "healthy": true,
+  "target_worker": "command-center:worker-2",
+  "target_pid": 99854,
+  "active_leases_before_pause": {
+    "steps": 0,
+    "workflows": 0,
+    "compensations": 0,
+    "outbox": 0
+  },
+  "before": {
+    "status": "ready",
+    "workers_status": "ready",
+    "workers_live": 2,
+    "workers_required": 2,
+    "workers_stale": 0,
+    "workers": [
+      {
+        "id": "command-center:api-3021",
+        "role": "embedded",
+        "state": "running",
+        "started_at": "2026-09-18T12:14:53.563940+00:00",
+        "last_seen_at": "2026-09-18T12:18:23.961100+00:00",
+        "stopped_at": null,
+        "metadata": {
+          "hostname": "appledeMac-mini.local",
+          "pid": 99853,
+          "max_parallel": 3,
+          "poll_seconds": 2.0
+        },
+        "live": true
+      },
+      {
+        "id": "command-center:worker-2",
+        "role": "dedicated",
+        "state": "running",
+        "started_at": "2026-09-18T12:14:45.480737+00:00",
+        "last_seen_at": "2026-09-18T12:18:25.259362+00:00",
+        "stopped_at": null,
+        "metadata": {
+          "hostname": "appledeMac-mini.local",
+          "pid": 99854,
+          "max_parallel": 3,
+          "poll_seconds": 2.0
+        },
+        "live": true
+      }
+    ]
+  },
+  "degraded": {
+    "status": "degraded",
+    "workers_status": "degraded",
+    "workers_live": 1,
+    "workers_required": 2,
+    "workers_stale": 1,
+    "workers": [
+      {
+        "id": "command-center:api-3021",
+        "role": "embedded",
+        "state": "running",
+        "started_at": "2026-09-18T12:14:53.563940+00:00",
+        "last_seen_at": "2026-09-18T12:18:44.734226+00:00",
+        "stopped_at": null,
+        "metadata": {
+          "hostname": "appledeMac-mini.local",
+          "pid": 99853,
+          "max_parallel": 3,
+          "poll_seconds": 2.0
+        },
+        "live": true
+      },
+      {
+        "id": "command-center:worker-2",
+        "role": "dedicated",
+        "state": "running",
+        "started_at": "2026-09-18T12:14:45.480737+00:00",
+        "last_seen_at": "2026-09-18T12:18:25.259362+00:00",
+        "stopped_at": null,
+        "metadata": {
+          "hostname": "appledeMac-mini.local",
+          "pid": 99854,
+          "max_parallel": 3,
+          "poll_seconds": 2.0
+        },
+        "live": false
+      }
+    ]
+  },
+  "recovered": {
+    "status": "ready",
+    "workers_status": "ready",
+    "workers_live": 2,
+    "workers_required": 2,
+    "workers_stale": 0,
+    "workers": [
+      {
+        "id": "command-center:api-3021",
+        "role": "embedded",
+        "state": "running",
+        "started_at": "2026-09-18T12:14:53.563940+00:00",
+        "last_seen_at": "2026-09-18T12:18:44.734226+00:00",
+        "stopped_at": null,
+        "metadata": {
+          "hostname": "appledeMac-mini.local",
+          "pid": 99853,
+          "max_parallel": 3,
+          "poll_seconds": 2.0
+        },
+        "live": true
+      },
+      {
+        "id": "command-center:worker-2",
+        "role": "dedicated",
+        "state": "running",
+        "started_at": "2026-09-18T12:14:45.480737+00:00",
+        "last_seen_at": "2026-09-18T12:18:48.700897+00:00",
+        "stopped_at": null,
+        "metadata": {
+          "hostname": "appledeMac-mini.local",
+          "pid": 99854,
+          "max_parallel": 3,
+          "poll_seconds": 2.0
+        },
+        "live": true
+      }
+    ]
+  }
+}

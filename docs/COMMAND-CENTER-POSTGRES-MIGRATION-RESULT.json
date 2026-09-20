@@ -1,0 +1,255 @@
+{
+  "mode": "apply",
+  "source": "/Users/apple/工作桌面/Workspace/agent-system/backend/data/unified_dashboard.db",
+  "tables": {
+    "command_conversations": {
+      "source_count": 6,
+      "source_id_checksum": "8f9bc695e6ddf0e51d360f9571bfd86fae79582ea30b54a0dee1862004b5e5c7",
+      "target_before": {
+        "count": 0,
+        "id_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "target_after": {
+        "count": 6,
+        "id_checksum": "8f9bc695e6ddf0e51d360f9571bfd86fae79582ea30b54a0dee1862004b5e5c7"
+      },
+      "verified": true
+    },
+    "command_messages": {
+      "source_count": 55,
+      "source_id_checksum": "b0bfa6805e833520113447370040b8fa15412d051ce91a833a91a92bb6f8039b",
+      "target_before": {
+        "count": 0,
+        "id_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "target_after": {
+        "count": 55,
+        "id_checksum": "b0bfa6805e833520113447370040b8fa15412d051ce91a833a91a92bb6f8039b"
+      },
+      "verified": true
+    },
+    "command_external_user_bindings": {
+      "source_count": 2,
+      "source_id_checksum": "1856aa83065b3b099c7eb7b87680c86a1e9c8b3217c4663b47e74bf212047f5e",
+      "target_before": {
+        "count": 0,
+        "id_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "target_after": {
+        "count": 2,
+        "id_checksum": "1856aa83065b3b099c7eb7b87680c86a1e9c8b3217c4663b47e74bf212047f5e"
+      },
+      "verified": true
+    },
+    "orchestration_missions": {
+      "source_count": 11,
+      "source_id_checksum": "588496a482635d0065a90f85e13366f362fa63c79d81c8dbe6187324c26309a6",
+      "target_before": {
+        "count": 0,
+        "id_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "target_after": {
+        "count": 11,
+        "id_checksum": "588496a482635d0065a90f85e13366f362fa63c79d81c8dbe6187324c26309a6"
+      },
+      "verified": true
+    },
+    "mission_runs": {
+      "source_count": 11,
+      "source_id_checksum": "79436baa3f2aee41b862c1440464233024cf1e0abc58aa65bebab9342e15459b",
+      "target_before": {
+        "count": 0,
+        "id_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "target_after": {
+        "count": 11,
+        "id_checksum": "79436baa3f2aee41b862c1440464233024cf1e0abc58aa65bebab9342e15459b"
+      },
+      "verified": true
+    },
+    "mission_plan_versions": {
+      "source_count": 8,
+      "source_id_checksum": "b21296e7f33c792e774e20228ac2c76cef18b7812d757238a4904e1eecaf245b",
+      "target_before": {
+        "count": 0,
+        "id_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "target_after": {
+        "count": 8,
+        "id_checksum": "b21296e7f33c792e774e20228ac2c76cef18b7812d757238a4904e1eecaf245b"
+      },
+      "verified": true
+    },
+    "mission_steps": {
+      "source_count": 30,
+      "source_id_checksum": "3954dd943e21ae6ff8c3cbda1e8f180a2e4d381ed9d3d7d60b6dca9ef07a3d9d",
+      "target_before": {
+        "count": 0,
+        "id_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "target_after": {
+        "count": 30,
+        "id_checksum": "3954dd943e21ae6ff8c3cbda1e8f180a2e4d381ed9d3d7d60b6dca9ef07a3d9d"
+      },
+      "verified": true
+    },
+    "mission_step_approvals": {
+      "source_count": 0,
+      "source_id_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "target_before": {
+        "count": 0,
+        "id_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "target_after": {
+        "count": 0,
+        "id_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "verified": true
+    },
+    "mission_effects": {
+      "source_count": 0,
+      "source_id_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "target_before": {
+        "count": 0,
+        "id_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "target_after": {
+        "count": 0,
+        "id_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "verified": true
+    },
+    "mission_compensations": {
+      "source_count": 0,
+      "source_id_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "target_before": {
+        "count": 0,
+        "id_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "target_after": {
+        "count": 0,
+        "id_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "verified": true
+    },
+    "mission_approvals": {
+      "source_count": 8,
+      "source_id_checksum": "56b6f4d1a84efa5a3ad2fba55b54e36736de1f9b4804023632bd6d9224172790",
+      "target_before": {
+        "count": 0,
+        "id_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "target_after": {
+        "count": 8,
+        "id_checksum": "56b6f4d1a84efa5a3ad2fba55b54e36736de1f9b4804023632bd6d9224172790"
+      },
+      "verified": true
+    },
+    "mission_events": {
+      "source_count": 137,
+      "source_id_checksum": "38b6e99191d597cb04053a33d54f1dc4587bb5976771c053e4e62cac1146e5e1",
+      "target_before": {
+        "count": 0,
+        "id_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "target_after": {
+        "count": 137,
+        "id_checksum": "38b6e99191d597cb04053a33d54f1dc4587bb5976771c053e4e62cac1146e5e1"
+      },
+      "verified": true
+    },
+    "mission_context_bindings": {
+      "source_count": 24,
+      "source_id_checksum": "d7d2af50e846478e30097c4019ef6d699a89d7b03392a95ad2292c06ff1198fb",
+      "target_before": {
+        "count": 0,
+        "id_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "target_after": {
+        "count": 24,
+        "id_checksum": "d7d2af50e846478e30097c4019ef6d699a89d7b03392a95ad2292c06ff1198fb"
+      },
+      "verified": true
+    },
+    "workflow_runs": {
+      "source_count": 0,
+      "source_id_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "target_before": {
+        "count": 0,
+        "id_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "target_after": {
+        "count": 0,
+        "id_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "verified": true
+    },
+    "mission_artifacts": {
+      "source_count": 0,
+      "source_id_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "target_before": {
+        "count": 0,
+        "id_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "target_after": {
+        "count": 0,
+        "id_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "verified": true
+    },
+    "mission_evidence": {
+      "source_count": 0,
+      "source_id_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "target_before": {
+        "count": 0,
+        "id_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "target_after": {
+        "count": 0,
+        "id_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "verified": true
+    },
+    "mission_acceptance_gates": {
+      "source_count": 0,
+      "source_id_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "target_before": {
+        "count": 0,
+        "id_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "target_after": {
+        "count": 0,
+        "id_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "verified": true
+    },
+    "notification_outbox": {
+      "source_count": 20,
+      "source_id_checksum": "6054dde98c35077b48460f173735199e2e0b01ff93911beeb073f5b5fbab9003",
+      "target_before": {
+        "count": 0,
+        "id_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "target_after": {
+        "count": 20,
+        "id_checksum": "6054dde98c35077b48460f173735199e2e0b01ff93911beeb073f5b5fbab9003"
+      },
+      "verified": true
+    },
+    "notification_deliveries": {
+      "source_count": 20,
+      "source_id_checksum": "2dde40c0bcc9e6c6cdee7a26c48b0a1edc846afbea8242206c42b61619948f3d",
+      "target_before": {
+        "count": 0,
+        "id_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "target_after": {
+        "count": 20,
+        "id_checksum": "2dde40c0bcc9e6c6cdee7a26c48b0a1edc846afbea8242206c42b61619948f3d"
+      },
+      "verified": true
+    }
+  },
+  "target_revision": "20260918_command_center_pg",
+  "verified": true
+}

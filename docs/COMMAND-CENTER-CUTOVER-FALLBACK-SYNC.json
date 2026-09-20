@@ -1,0 +1,15 @@
+{
+  "sqlite_path": "/Users/apple/工作桌面/Workspace/agent-system/backend/data/unified_dashboard.db",
+  "run_ids": [
+    "wrun-63e71d98fc854de6",
+    "wrun-a806cc826e5e4fb0",
+    "wrun-ce7b829b02a3411a"
+  ],
+  "statuses": {
+    "wrun-63e71d98fc854de6": "blocked",
+    "wrun-a806cc826e5e4fb0": "blocked",
+    "wrun-ce7b829b02a3411a": "blocked"
+  },
+  "synced_events": 3,
+  "verified": true
+}

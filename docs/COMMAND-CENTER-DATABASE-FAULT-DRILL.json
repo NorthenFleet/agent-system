@@ -1,0 +1,222 @@
+{
+  "schema_version": "command-center-database-fault-drill.v1",
+  "checked_at": "2026-09-18T15:14:46.325683+00:00",
+  "healthy": true,
+  "scope": "agent-system-connections-only",
+  "auth_mode": "development-session",
+  "terminated_connections": 6,
+  "terminated_pids": [
+    16252,
+    16253,
+    16254,
+    16257,
+    16259,
+    16260
+  ],
+  "functional_recovery_seconds": 1.217,
+  "rpo_zero": true,
+  "active_leases_before": {
+    "steps": 0,
+    "workflows": 0,
+    "compensations": 0,
+    "outbox": 0
+  },
+  "active_leases_after": {
+    "steps": 0,
+    "workflows": 0,
+    "compensations": 0,
+    "outbox": 0
+  },
+  "facts_before": {
+    "orchestration_missions": {
+      "count": 11,
+      "id_checksum": "588496a482635d0065a90f85e13366f362fa63c79d81c8dbe6187324c26309a6"
+    },
+    "mission_steps": {
+      "count": 30,
+      "id_checksum": "3954dd943e21ae6ff8c3cbda1e8f180a2e4d381ed9d3d7d60b6dca9ef07a3d9d"
+    },
+    "mission_events": {
+      "count": 137,
+      "id_checksum": "38b6e99191d597cb04053a33d54f1dc4587bb5976771c053e4e62cac1146e5e1"
+    },
+    "workflow_runs": {
+      "count": 0,
+      "id_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "work_runs": {
+      "count": 24,
+      "id_checksum": "49f9c0e39f882615d12492c25cec75ccdc09ecc3c8c02d37930a9f7979e5d3d0"
+    },
+    "work_run_events": {
+      "count": 100,
+      "id_checksum": "6edc31c09763aead6b4628f3c766292a5be65857182936fedac4274038fc76b9"
+    },
+    "work_artifacts": {
+      "count": 6,
+      "id_checksum": "4fe8cca2ead5ff1d3c84b3e18c011587784bca26d52377829f0243595d1e48ef"
+    }
+  },
+  "facts_after": {
+    "orchestration_missions": {
+      "count": 11,
+      "id_checksum": "588496a482635d0065a90f85e13366f362fa63c79d81c8dbe6187324c26309a6"
+    },
+    "mission_steps": {
+      "count": 30,
+      "id_checksum": "3954dd943e21ae6ff8c3cbda1e8f180a2e4d381ed9d3d7d60b6dca9ef07a3d9d"
+    },
+    "mission_events": {
+      "count": 137,
+      "id_checksum": "38b6e99191d597cb04053a33d54f1dc4587bb5976771c053e4e62cac1146e5e1"
+    },
+    "workflow_runs": {
+      "count": 0,
+      "id_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "work_runs": {
+      "count": 24,
+      "id_checksum": "49f9c0e39f882615d12492c25cec75ccdc09ecc3c8c02d37930a9f7979e5d3d0"
+    },
+    "work_run_events": {
+      "count": 100,
+      "id_checksum": "6edc31c09763aead6b4628f3c766292a5be65857182936fedac4274038fc76b9"
+    },
+    "work_artifacts": {
+      "count": 6,
+      "id_checksum": "4fe8cca2ead5ff1d3c84b3e18c011587784bca26d52377829f0243595d1e48ef"
+    }
+  },
+  "baseline": {
+    "observed_at": "2026-09-18T15:14:45.101474+00:00",
+    "elapsed_ms": 46.774,
+    "functional": true,
+    "http_status": {
+      "public": 200,
+      "command": 200,
+      "production": 200,
+      "workflow": 200
+    },
+    "production_status": "ready",
+    "workers_live": 2,
+    "workers_required": 2,
+    "workers_stale": 0,
+    "expired_active_leases": 0,
+    "checkpoint_status": "ready",
+    "mission_total": 11,
+    "pool": {
+      "pre_ping": true,
+      "connection_failures_total": 0,
+      "stale_connections_discarded_total": 0,
+      "reconnects_total": 0,
+      "acquire_timeouts_total": 0
+    }
+  },
+  "final": {
+    "observed_at": "2026-09-18T15:14:46.320971+00:00",
+    "elapsed_ms": 67.987,
+    "functional": true,
+    "http_status": {
+      "public": 200,
+      "command": 200,
+      "production": 200,
+      "workflow": 200
+    },
+    "production_status": "degraded",
+    "workers_live": 2,
+    "workers_required": 2,
+    "workers_stale": 0,
+    "expired_active_leases": 0,
+    "checkpoint_status": "ready",
+    "mission_total": 11,
+    "pool": {
+      "pre_ping": true,
+      "connection_failures_total": 1,
+      "stale_connections_discarded_total": 1,
+      "reconnects_total": 1,
+      "acquire_timeouts_total": 0
+    },
+    "since_injection_seconds": 1.217
+  },
+  "observations": [
+    {
+      "observed_at": "2026-09-18T15:14:45.176179+00:00",
+      "elapsed_ms": 72.231,
+      "functional": true,
+      "http_status": {
+        "public": 200,
+        "command": 200,
+        "production": 200,
+        "workflow": 200
+      },
+      "production_status": "degraded",
+      "workers_live": 2,
+      "workers_required": 2,
+      "workers_stale": 0,
+      "expired_active_leases": 0,
+      "checkpoint_status": "ready",
+      "mission_total": 11,
+      "pool": {
+        "pre_ping": true,
+        "connection_failures_total": 1,
+        "stale_connections_discarded_total": 1,
+        "reconnects_total": 1,
+        "acquire_timeouts_total": 0
+      },
+      "since_injection_seconds": 0.072
+    },
+    {
+      "observed_at": "2026-09-18T15:14:45.752034+00:00",
+      "elapsed_ms": 65.807,
+      "functional": true,
+      "http_status": {
+        "public": 200,
+        "command": 200,
+        "production": 200,
+        "workflow": 200
+      },
+      "production_status": "degraded",
+      "workers_live": 2,
+      "workers_required": 2,
+      "workers_stale": 0,
+      "expired_active_leases": 0,
+      "checkpoint_status": "ready",
+      "mission_total": 11,
+      "pool": {
+        "pre_ping": true,
+        "connection_failures_total": 1,
+        "stale_connections_discarded_total": 1,
+        "reconnects_total": 1,
+        "acquire_timeouts_total": 0
+      },
+      "since_injection_seconds": 0.648
+    },
+    {
+      "observed_at": "2026-09-18T15:14:46.320971+00:00",
+      "elapsed_ms": 67.987,
+      "functional": true,
+      "http_status": {
+        "public": 200,
+        "command": 200,
+        "production": 200,
+        "workflow": 200
+      },
+      "production_status": "degraded",
+      "workers_live": 2,
+      "workers_required": 2,
+      "workers_stale": 0,
+      "expired_active_leases": 0,
+      "checkpoint_status": "ready",
+      "mission_total": 11,
+      "pool": {
+        "pre_ping": true,
+        "connection_failures_total": 1,
+        "stale_connections_discarded_total": 1,
+        "reconnects_total": 1,
+        "acquire_timeouts_total": 0
+      },
+      "since_injection_seconds": 1.217
+    }
+  ],
+  "note": "production_status may remain degraded during the five-minute incident visibility window even after functional recovery"
+}

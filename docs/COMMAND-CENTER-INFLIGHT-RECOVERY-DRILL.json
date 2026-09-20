@@ -1,0 +1,50 @@
+{
+  "schema_version": "1.0",
+  "drill": "command_center_inflight_recovery",
+  "drill_id": "2f795351a42f",
+  "started_at": "2026-09-18T16:03:04.436116+00:00",
+  "finished_at": "2026-09-18T16:03:04.858872+00:00",
+  "duration_seconds": 0.532,
+  "database": "isolated_postgresql",
+  "mission_id": "mission-0f0ab95e6af4",
+  "mission_run_id": "mrun-ab392626829f4a2f",
+  "step_id": "step-2784917b10ed",
+  "work_run_id": "wrun-a373f0220a284164",
+  "idempotency_key": "inflight:2f795351a42f:step-1",
+  "fault": {
+    "type": "worker_heartbeat_loss_after_side_effect",
+    "injected_at": "2026-09-18T16:03:04.436116+00:00",
+    "old_owner": "worker-a",
+    "recovery_owner": "worker-b"
+  },
+  "counts": {
+    "work_runs": 1,
+    "lease_reclaims": 1,
+    "step_requeued": 1,
+    "step_completed": 1,
+    "mission_completed": 1,
+    "artifacts": 2,
+    "artifact_fingerprints": 2,
+    "evidence": 1,
+    "evidence_fingerprints": 1,
+    "effects": 1,
+    "effect_fingerprints": 1
+  },
+  "checkpoint": {
+    "thread_id": "inflight-checkpoint-2f795351a42f",
+    "initial_status": "awaiting_approval",
+    "resumed_status": "ready",
+    "replayed_status": "ready"
+  },
+  "checks": {
+    "stale_step_requeued_once": true,
+    "same_work_run_reclaimed": true,
+    "old_lease_token_fenced": true,
+    "side_effect_applied_once": true,
+    "step_completed_once": true,
+    "records_persisted_once": true,
+    "mission_delivered_once": true,
+    "checkpoint_resumed_idempotently": true
+  },
+  "status": "passed"
+}

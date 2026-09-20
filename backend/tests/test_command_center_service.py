@@ -1,10 +1,12 @@
 import asyncio
 import json
+import sqlite3
 
 import pytest
 
 import services.openclaw_cli as openclaw_cli_module
 import services.command_center_worker as command_worker_module
+from services.agent_capability_registry import agent_capability_registry
 from services.command_center_service import (
     CommandCenterError,
     CommandCenterService,
@@ -16,6 +18,7 @@ from services.command_center_worker import (
     normalize_plan,
 )
 from services.openclaw_task_executor import ExecutionResult, _agent_visible_output
+from services.plan_quality_service import PlanQualityService
 from services.work_run_service import WorkRunService
 
 
@@ -43,6 +46,33 @@ def _sample_plan():
             },
         ],
     }
+
+
+def test_mission_run_backfill_links_legacy_events(tmp_path):
+    db_path = str(tmp_path / "mission-run-backfill.db")
+    service = CommandCenterService(db_path)
+    mission = service.create_mission(
+        objective="迁移旧任务运行记录",
+        requested_by="admin",
+    )
+    with sqlite3.connect(db_path) as conn:
+        conn.execute(
+            "UPDATE mission_events SET mission_run_id=NULL, correlation_id=NULL, run_sequence=0"
+        )
+        conn.execute("DELETE FROM mission_runs WHERE mission_id=?", (mission["id"],))
+
+    restarted = CommandCenterService(db_path)
+    ledger = restarted.get_mission_run_ledger(mission["id"])
+
+    assert ledger["run"]["id"].startswith("mrun-")
+    assert ledger["events"]
+    assert all(
+        event["mission_run_id"] == ledger["run"]["id"]
+        for event in ledger["events"]
+    )
+    assert [event["run_sequence"] for event in ledger["events"]] == list(
+        range(1, len(ledger["events"]) + 1)
+    )
 
 
 def _test_projects():
@@ -82,6 +112,47 @@ def _bind_external(
         internal_user_id=internal_user_id,
         profile_user_id=internal_user_id,
     )
+
+
+def test_enqueue_step_notification_uses_conversation_metadata_column(tmp_path):
+    service = _routed_service(tmp_path, "step-notification.db")
+    _bind_external(service, "ou_step_notify")
+    inbound = service.process_inbound(
+        channel="feishu",
+        external_conversation_id="oc_step_notify",
+        user_external_id="ou_step_notify",
+        content="创建一个需要独立审校的任务",
+        external_message_id="om_step_notify",
+        metadata={
+            "target": "oc_step_notify",
+            "intent_type": "software_project",
+            "intent_confidence": 0.99,
+            "execution_requested": True,
+            "project_id": "project-software",
+        },
+    )
+    mission = inbound["mission"]
+
+    service.enqueue_step_notification(
+        step={"id": "step-notify", "agent_id": "optimus", "title": "独立审校"},
+        mission=mission,
+        result={"success": True, "output": "审校完成"},
+    )
+
+    with service.connect() as conn:
+        queued = conn.execute(
+            """
+            SELECT account_id, target, status, message_text
+            FROM notification_outbox
+            WHERE mission_id=? AND idempotency_key LIKE 'step-done:%'
+            """,
+            (mission["id"],),
+        ).fetchone()
+    assert queued is not None
+    assert queued["account_id"] == "optimus"
+    assert queued["target"] == "oc_step_notify"
+    assert queued["status"] == "pending"
+    assert "独立审校" in queued["message_text"]
 
 
 def test_mission_is_idempotent_approval_gated_and_dependency_aware(tmp_path):
@@ -195,6 +266,228 @@ def test_preplanned_mission_reserves_planning_and_saves_supplied_plan(tmp_path):
         "optimus",
         "shockwave",
     ]
+    assert planned["plan"]["plan_quality"]["status"] in {"pass", "warning"}
+    assert planned["plan"]["raw_plan"]["steps"][0]["acceptance_criteria"]
+    assert planned["plan"]["raw_plan"]["steps"][0]["evidence_required"]
+    assert planned["steps"][0]["required_tools"]
+    assert planned["steps"][0]["tool_requirements"]
+    assert planned["steps"][0]["deliverables"]
+
+
+def test_completed_mission_can_be_reopened_into_new_auditable_plan_version(tmp_path):
+    db_path = str(tmp_path / "recovery-plan.db")
+    service = CommandCenterService(db_path)
+    mission = service.create_mission(objective="验证恢复计划", requested_by="admin")
+    service.claim_planning_mission("planner")
+    service.save_plan(mission["id"], _sample_plan())
+    service.approve(mission["id"], decided_by="admin")
+    service.activate_approved_missions()
+    while True:
+        steps = service.claim_ready_steps("runner", limit=1)
+        if not steps:
+            break
+        step = steps[0]
+        service.complete_step(
+            step["id"],
+            result={"success": True, "output": "done"},
+            success=True,
+            actor=step["agent_id"],
+            lease_token=step["lease_token"],
+        )
+    assert service.claim_evaluation_mission("evaluator") is not None
+    assert service.complete_mission(
+        mission["id"], summary="首轮完成", success=True
+    )["status"] == "completed"
+
+    reopened = service.reopen_for_recovery(
+        mission["id"],
+        actor="admin",
+        reason="发现历史计划存在假完成，保留证据并重新规划",
+    )
+    recovered = service.save_plan(
+        mission["id"],
+        {
+            "summary": "恢复计划",
+            "risk_level": "medium",
+            "steps": [
+                {
+                    "order_index": 1,
+                    "title": "从有效交付点恢复",
+                    "description": "复用旧版交付物",
+                    "task_type": "coordination",
+                    "agent_id": "optimus",
+                    "depends_on": [],
+                }
+            ],
+        },
+    )
+
+    assert reopened["status"] == "waiting_feedback"
+    assert reopened["completed_at"] is None
+    assert recovered["plan_version"] == 2
+    assert recovered["status"] == "awaiting_approval"
+    with service.connect() as conn:
+        versions = conn.execute(
+            "SELECT plan_version, COUNT(*) AS count FROM mission_steps "
+            "WHERE mission_id=? GROUP BY plan_version ORDER BY plan_version",
+            (mission["id"],),
+        ).fetchall()
+    assert [(row["plan_version"], row["count"]) for row in versions] == [(1, 2), (2, 1)]
+    assert any(
+        event["event_type"] == "mission_reopened_for_recovery"
+        for event in recovered["events"]
+    )
+
+
+def test_ready_step_claim_ignores_stale_plan_versions(tmp_path):
+    service = CommandCenterService(str(tmp_path / "current-plan-claim.db"))
+    mission = service.create_mission(objective="验证只领取当前计划", requested_by="admin")
+    service.claim_planning_mission("planner")
+    service.save_plan(
+        mission["id"],
+        {
+            "summary": "旧计划",
+            "risk_level": "low",
+            "steps": [
+                {
+                    "order_index": 1,
+                    "title": "旧版步骤",
+                    "description": "用于制造旧版本残留",
+                    "task_type": "coordination",
+                    "agent_id": "optimus",
+                    "depends_on": [],
+                }
+            ],
+        },
+    )
+    service.approve(mission["id"], decided_by="admin")
+    service.activate_approved_missions()
+    old_step = service.claim_ready_steps("runner-v1", limit=1)[0]
+    service.complete_step(
+        old_step["id"],
+        result={"success": True, "output": "done"},
+        success=True,
+        actor="optimus",
+        lease_token=old_step["lease_token"],
+    )
+    service.claim_evaluation_mission("evaluator")
+    service.complete_mission(mission["id"], summary="首轮完成", success=True)
+
+    service.reopen_for_recovery(mission["id"], actor="admin", reason="创建第二版计划")
+    service.save_plan(
+        mission["id"],
+        {
+            "summary": "当前计划",
+            "risk_level": "low",
+            "steps": [
+                {
+                    "order_index": 1,
+                    "title": "当前版本步骤",
+                    "description": "必须被领取",
+                    "task_type": "coordination",
+                    "agent_id": "optimus",
+                    "depends_on": [],
+                }
+            ],
+        },
+    )
+    service.approve(mission["id"], decided_by="admin")
+    service.activate_approved_missions()
+    with service.connect(immediate=True) as conn:
+        conn.execute(
+            "UPDATE mission_steps SET status='ready', order_index=0 WHERE id=?",
+            (old_step["id"],),
+        )
+
+    claimed = service.claim_ready_steps("runner-v2", limit=1)
+
+    assert len(claimed) == 1
+    assert claimed[0]["plan_version"] == 2
+    assert claimed[0]["title"] == "当前版本步骤"
+
+def test_plan_quality_blocks_unknown_agent_before_approval(tmp_path):
+    service = CommandCenterService(str(tmp_path / "plan-quality.db"))
+    mission = service.create_mission(
+        objective="执行一个安全计划",
+        requested_by="admin",
+    )
+    service.claim_planning_mission("planner")
+    bad_plan = _sample_plan()
+    bad_plan["steps"][0]["agent_id"] = "unknown-agent"
+
+    with pytest.raises(CommandCenterError, match="计划质量检查未通过"):
+        service.save_plan(mission["id"], bad_plan)
+
+    latest = service.get_mission(mission["id"])
+    assert latest["status"] == "planning"
+    assert latest["plan"] is None
+
+
+def test_plan_quality_service_enriches_plan_v2_fields():
+    enriched = PlanQualityService().enrich_plan(_sample_plan())
+
+    assert enriched["schema_version"] == "2.0"
+    assert enriched["plan_quality"]["checked_rules"]
+    assert enriched["plan_quality"]["tool_summary"]["total"] >= 1
+    assert enriched["capability_registry"]["version"] == "p1-local"
+    for step in enriched["steps"]:
+        assert step["required_tools"]
+        assert step["tool_requirements"]
+        assert step["deliverables"]
+        assert step["acceptance_criteria"]
+        assert step["evidence_required"]
+
+
+def test_capability_registry_catalog_exposes_agents_and_tools():
+    catalog = agent_capability_registry.catalog()
+
+    assert any(agent["id"] == "optimus" for agent in catalog["agents"])
+    assert any(tool["id"] == "codex" for tool in catalog["tools"])
+    assert catalog["task_agent_defaults"]["backend"] == "raphael"
+    assert catalog["task_type_defaults"]["frontend"]["required_tools"] == ["codex", "build_runner"]
+
+
+def test_plan_quality_blocks_unregistered_required_tool(tmp_path):
+    service = CommandCenterService(str(tmp_path / "plan-tool-quality.db"))
+    mission = service.create_mission(
+        objective="开发 API",
+        requested_by="admin",
+    )
+    service.claim_planning_mission("planner")
+    bad_plan = _sample_plan()
+    bad_plan["steps"][0]["required_tools"] = ["unknown_tool"]
+
+    with pytest.raises(CommandCenterError, match="未注册工具"):
+        service.save_plan(mission["id"], bad_plan)
+
+
+def test_ready_step_and_completion_include_execution_quality(tmp_path):
+    service = CommandCenterService(str(tmp_path / "execution-quality.db"))
+    mission = service.create_mission(
+        objective="开发 API",
+        requested_by="admin",
+    )
+    service.claim_planning_mission("planner")
+    service.save_plan(mission["id"], _sample_plan())
+    service.approve(mission["id"], decided_by="admin")
+    service.activate_approved_missions()
+
+    step = service.claim_ready_steps("runner", limit=1)[0]
+    assert step["required_tools"]
+    assert step["evidence_required"]
+    assert step["tool_requirements"]
+
+    completed = service.complete_step(
+        step["id"],
+        result={"success": True, "output": "任务输出：完成目标；风险说明：无；证据：context_pack"},
+        success=True,
+        actor=step["agent_id"],
+        lease_token=step["lease_token"],
+    )
+
+    assert completed["result"]["execution_quality"]["status"] in {"pass", "warning"}
+    assert completed["result"]["execution_quality"]["checked_rules"]
+    assert completed["required_tools"]
 
 
 def test_rejection_and_feedback_resume_without_creating_another_mission(tmp_path):
@@ -533,6 +826,211 @@ def test_stale_step_and_persisted_mission_recover_after_restart(tmp_path):
     )
 
 
+def test_inflight_recovery_reuses_work_run_and_delivers_once(tmp_path):
+    db_path = str(tmp_path / "inflight-idempotency.db")
+    service = CommandCenterService(db_path, project_provider=_test_projects)
+    work_runs = WorkRunService(db_path)
+    _bind_external(service, "reliability-drill")
+    mission = service.process_inbound(
+        channel="feishu",
+        external_conversation_id="oc_reliability_drill",
+        user_external_id="reliability-drill",
+        content="验证在途任务故障恢复与幂等续跑",
+        external_message_id="om_inflight_recovery",
+        metadata={
+            "target": "oc_reliability_drill",
+            "intent_type": "software_project",
+            "intent_confidence": 0.99,
+            "intent_reason": "明确的任务可靠性演练",
+            "execution_requested": True,
+            "project_id": "project-software",
+        },
+    )["mission"]
+    service.claim_planning_mission("planner")
+    service.save_plan(
+        mission["id"],
+        {
+            "summary": "单步骤故障恢复演练",
+            "rationale": "验证租约接管、执行幂等和单次交付",
+            "risk_level": "low",
+            "steps": [
+                {
+                    "order_index": 1,
+                    "title": "写入受控演练回执",
+                    "description": "使用固定幂等键生成一次受控回执",
+                    "task_type": "coordination",
+                    "agent_id": "optimus",
+                    "depends_on": [],
+                    "side_effect": True,
+                    "resources": ["drill://inflight-receipt"],
+                    "idempotency_key": f"inflight:{mission['id']}:step-1",
+                }
+            ],
+        },
+    )
+    service.approve(mission["id"], decided_by="reliability-drill")
+    service.activate_approved_missions()
+    first_claim = service.claim_ready_steps("worker-a", limit=1)[0]
+    idempotency_key = first_claim["idempotency_key"]
+    mission_run_id = service.get_mission_run_ledger(mission["id"])["run"]["id"]
+    first_run = work_runs.claim(
+        dispatch_id=first_claim["id"],
+        agent_id="worker-a",
+        executor="controlled-drill",
+        mission_id=mission["id"],
+        mission_run_id=mission_run_id,
+        idempotency_key=idempotency_key,
+        lease_seconds=60,
+    )
+    work_runs.transition(first_run["id"], "running", actor="worker-a", lease_seconds=60)
+    service.attach_work_run(
+        first_claim["id"],
+        first_run["id"],
+        lease_token=first_claim["lease_token"],
+    )
+
+    # Fault injection: worker-a disappeared after applying its effect and both
+    # durable leases subsequently expired.
+    with service.connect(immediate=True) as conn:
+        conn.execute(
+            "UPDATE mission_steps SET lease_expires_at='2000-01-01T00:00:00+00:00' WHERE id=?",
+            (first_claim["id"],),
+        )
+        conn.execute(
+            "UPDATE work_runs SET lease_expires_at='2000-01-01T00:00:00+00:00' WHERE id=?",
+            (first_run["id"],),
+        )
+
+    restarted = CommandCenterService(db_path)
+    resumed_runs = WorkRunService(db_path)
+    assert restarted.requeue_stale_steps() == 1
+    second_claim = restarted.claim_ready_steps("worker-b", limit=1)[0]
+    second_run = resumed_runs.claim(
+        dispatch_id=second_claim["id"],
+        agent_id="worker-b",
+        executor="controlled-drill",
+        mission_id=mission["id"],
+        mission_run_id=mission_run_id,
+        idempotency_key=idempotency_key,
+        lease_seconds=60,
+    )
+    assert second_run["id"] == first_run["id"]
+    assert second_run["attempt"] == 1
+
+    with pytest.raises(InvalidMissionTransition):
+        restarted.complete_step(
+            first_claim["id"],
+            result={"summary": "stale completion"},
+            success=True,
+            actor="worker-a",
+            lease_token=first_claim["lease_token"],
+        )
+
+    restarted.attach_work_run(
+        second_claim["id"],
+        second_run["id"],
+        lease_token=second_claim["lease_token"],
+    )
+    result = {
+        "summary": "恢复后复用首次副作用回执并完成",
+        "artifacts": [
+            {
+                "artifact_type": "receipt",
+                "title": "幂等执行回执",
+                "uri": "drill://inflight-receipt/once",
+                "content_hash": "a" * 64,
+            }
+        ],
+        "evidence": [
+            {
+                "evidence_type": "test_output",
+                "source_ref": "drill://inflight-receipt/once",
+                "summary": "适配器第二次调用返回首次回执，apply_count=1",
+            }
+        ],
+        "side_effects": [
+            {
+                "effect_key": "controlled-receipt",
+                "resource": "drill://inflight-receipt",
+                "action": "write-once",
+                "status": "applied",
+                "idempotency_key": idempotency_key,
+                "receipt_ref": "drill://inflight-receipt/once",
+                "evidence_refs": ["drill://inflight-receipt/once"],
+            }
+        ],
+    }
+    completed_step = restarted.complete_step(
+        second_claim["id"],
+        result=result,
+        success=True,
+        actor="worker-b",
+        lease_token=second_claim["lease_token"],
+    )
+    assert completed_step["status"] == "completed"
+    resumed_runs.transition(
+        second_run["id"],
+        "review",
+        actor="worker-b",
+        result_summary=result["summary"],
+        execution_result=result,
+    )
+    resumed_runs.transition(
+        second_run["id"],
+        "completed",
+        actor="worker-b",
+        result_summary=result["summary"],
+        execution_result=result,
+    )
+    assert restarted.claim_evaluation_mission("evaluator") is not None
+    first_completion = restarted.complete_mission(
+        mission["id"], summary="故障恢复演练通过", success=True, actor="evaluator"
+    )
+    replayed_completion = restarted.complete_mission(
+        mission["id"], summary="重复完成命令", success=True, actor="evaluator-replay"
+    )
+    assert first_completion["status"] == "completed"
+    assert replayed_completion["updated_at"] == first_completion["updated_at"]
+
+    with restarted.connect() as conn:
+        assert conn.execute(
+            "SELECT COUNT(*) AS count FROM work_runs WHERE idempotency_key=?",
+            (idempotency_key,),
+        ).fetchone()["count"] == 1
+        assert conn.execute(
+            "SELECT COUNT(*) AS count FROM work_run_events WHERE run_id=? AND event_type='lease_reclaimed'",
+            (first_run["id"],),
+        ).fetchone()["count"] == 1
+        assert conn.execute(
+            "SELECT COUNT(*) AS count FROM mission_events WHERE mission_id=? AND event_type='step_requeued'",
+            (mission["id"],),
+        ).fetchone()["count"] == 1
+        assert conn.execute(
+            "SELECT COUNT(*) AS count FROM mission_events WHERE mission_id=? AND event_type='step_completed'",
+            (mission["id"],),
+        ).fetchone()["count"] == 1
+        assert conn.execute(
+            "SELECT COUNT(*) AS count FROM mission_events WHERE mission_id=? AND event_type='mission_completed'",
+            (mission["id"],),
+        ).fetchone()["count"] == 1
+        assert conn.execute(
+            "SELECT COUNT(*) AS count FROM notification_outbox WHERE mission_id=? AND idempotency_key LIKE 'result:%'",
+            (mission["id"],),
+        ).fetchone()["count"] == 1
+        assert conn.execute(
+            "SELECT COUNT(*) AS count FROM mission_artifacts WHERE mission_id=?",
+            (mission["id"],),
+        ).fetchone()["count"] == 1
+        assert conn.execute(
+            "SELECT COUNT(*) AS count FROM mission_evidence WHERE mission_id=?",
+            (mission["id"],),
+        ).fetchone()["count"] == 1
+        assert conn.execute(
+            "SELECT COUNT(*) AS count FROM mission_effects WHERE mission_id=?",
+            (mission["id"],),
+        ).fetchone()["count"] == 1
+
+
 def test_context_packs_bind_to_plan_versions_and_steps(tmp_path):
     service = CommandCenterService(str(tmp_path / "context-binding.db"))
     mission = service.create_mission(
@@ -611,6 +1109,7 @@ class FakeExecutor:
                 output=json.dumps(
                     {
                         "summary": "目标已完成，证据完整。",
+                        "verdict": "passed",
                         "memory_candidates": [
                             {
                                 "target_scope": "profile",
@@ -639,6 +1138,7 @@ class FakeContextService:
     def __init__(self):
         self.calls = []
         self.packs = {}
+        self.effect_calls = []
 
     def retrieve(self, **kwargs):
         self.calls.append(kwargs)
@@ -693,6 +1193,10 @@ class FakeContextService:
             "[C1] 孙总工作档案\n计划必须先批准再执行。\n"
             "[C2] 系统架构\n统一数据库是状态事实源。"
         )[:max_chars]
+
+    def record_memory_effect(self, **kwargs):
+        self.effect_calls.append(kwargs)
+        return {"id": f"effect-fake-{len(self.effect_calls)}", **kwargs}
 
 class FakeMemoryService:
     def __init__(self):
@@ -891,7 +1395,31 @@ def test_worker_completes_approved_mission_with_work_runs(tmp_path):
         assert {
             call["agent_id"] for call in context_service.calls[1:]
         } == {"optimus", "shockwave"}
+        assert len(context_service.effect_calls) == 8
+        assert [call["event_type"] for call in context_service.effect_calls].count("used") == 4
+        assert [call["event_type"] for call in context_service.effect_calls].count("task_outcome") == 4
+        assert all(call["user_id"] == "1" for call in context_service.effect_calls)
+        assert {
+            call["outcome"]
+            for call in context_service.effect_calls
+            if call["event_type"] == "task_outcome"
+        } == {"success"}
         assert WorkRunService(db_path).summary()["counts"]["completed"] == 2
+        ledger = service.get_mission_run_ledger(mission["id"])
+        mission_run = ledger["run"]
+        assert mission_run["status"] == "completed"
+        assert mission_run["outcome"] == "completed"
+        assert mission_run["id"].startswith("mrun-")
+        assert len(ledger["step_runs"]) == 2
+        assert {
+            row["mission_run_id"] for row in ledger["step_runs"]
+        } == {mission_run["id"]}
+        assert {
+            row["correlation_id"] for row in ledger["step_runs"]
+        } == {mission_run["correlation_id"]}
+        assert [event["run_sequence"] for event in ledger["events"]] == list(
+            range(1, len(ledger["events"]) + 1)
+        )
 
     asyncio.run(scenario())
 
@@ -1017,6 +1545,229 @@ def test_plan_normalization_rejects_unknown_agents_and_forward_dependencies():
     assert [step["title"] for step in filtered["steps"]] == ["实现"]
 
 
+def test_plan_normalization_preserves_plan_v2_fields():
+    plan = normalize_plan(
+        {
+            "schema_version": "2.0",
+            "summary": "开发任务",
+            "steps": [
+                {
+                    "title": "实现接口",
+                    "task_type": "backend",
+                    "agent_id": "raphael",
+                    "depends_on": [],
+                    "required_tools": ["codex", "test_runner"],
+                    "deliverables": ["接口实现", "测试结果"],
+                    "acceptance_criteria": ["接口返回正确"],
+                    "evidence_required": ["test_output"],
+                    "risk_level": "high",
+                    "rollback_plan": "验证失败则停止合并",
+                }
+            ],
+        },
+        "开发 API",
+    )
+    step = plan["steps"][0]
+    assert plan["schema_version"] == "2.0"
+    assert step["required_tools"] == ["codex", "test_runner"]
+    assert step["deliverables"] == ["接口实现", "测试结果"]
+    assert step["acceptance_criteria"] == ["接口返回正确"]
+    assert step["evidence_required"] == ["test_output"]
+    assert step["risk_level"] == "high"
+    assert step["rollback_plan"] == "验证失败则停止合并"
+
+
+def test_planning_prompt_requests_plan_v2_quality_fields():
+    prompt = CommandCenterWorker._planning_prompt(
+        {"id": "mission-test", "objective": "开发 API", "events": []},
+        "[C1] 背景",
+    )
+    assert "schema_version" in prompt
+    assert "required_tools" in prompt
+    assert "deliverables" in prompt
+    assert "acceptance_criteria" in prompt
+    assert "evidence_required" in prompt
+    assert "rollback_plan" in prompt
+
+
+def test_step_prompt_includes_execution_contract():
+    prompt = CommandCenterWorker._step_prompt(
+        {
+            "id": "mission-test",
+            "objective": "开发 API",
+            "steps": [],
+        },
+        {
+            "id": "step-test",
+            "title": "实现接口",
+            "description": "完成 API",
+            "input": {},
+            "required_tools": ["codex", "test_runner"],
+            "deliverables": ["API 实现"],
+            "acceptance_criteria": ["测试通过"],
+            "evidence_required": ["test_output"],
+            "rollback_plan": "验证失败则停止合并",
+        },
+        "[C1] 背景",
+    )
+
+    assert "<EXECUTION_CONTRACT>" in prompt
+    assert "codex" in prompt
+    assert "test_output" in prompt
+    assert "工具使用" in prompt
+    assert "不得指向目录" in prompt
+    assert "测试结果必须写入独立报告文件" in prompt
+    assert "artifact_type=build_artifact" in prompt
+    assert "不得再返回 dist/ 目录" in prompt
+
+
+def test_execution_context_uses_bounded_default_memory_budget(monkeypatch):
+    worker = object.__new__(CommandCenterWorker)
+    captured = {}
+
+    async def fake_ensure_context_pack(mission, **kwargs):
+        captured.update(kwargs)
+        return None, ""
+
+    worker._ensure_context_pack = fake_ensure_context_pack
+    monkeypatch.delenv("COMMAND_CENTER_EXECUTION_CONTEXT_LIMIT", raising=False)
+    monkeypatch.delenv("COMMAND_CENTER_EXECUTION_CONTEXT_MAX_CHARS", raising=False)
+
+    asyncio.run(
+        worker._execution_context(
+            {"id": "mission-test", "objective": "verify", "plan_version": 3},
+            {
+                "id": "step-test",
+                "title": "build",
+                "description": "run checks",
+                "task_type": "testing",
+                "agent_id": "michelangelo",
+            },
+        )
+    )
+
+    assert captured["limit"] == 8
+    assert captured["max_chars"] == 4000
+
+
+def test_step_prompt_prioritizes_dependency_handoffs_over_large_old_results():
+    copy_uri = "/tmp/one-sim-website-copy.md"
+    mission = {
+        "id": "mission-handoff",
+        "objective": "构建 One-Sim 网站",
+        "steps": [
+            {
+                "id": "step-1",
+                "order_index": 1,
+                "title": "事实盘点",
+                "agent_id": "ironhide",
+                "status": "completed",
+                "dependencies": [],
+                "result": {"summary": "x" * 20000, "outcome": "succeeded"},
+            },
+            {
+                "id": "step-3",
+                "order_index": 3,
+                "title": "技术方案",
+                "agent_id": "leonardo",
+                "status": "completed",
+                "dependencies": ["step-1"],
+                "result": {"summary": "技术方案已完成", "outcome": "succeeded"},
+            },
+            {
+                "id": "step-4",
+                "order_index": 4,
+                "title": "内容撰写",
+                "agent_id": "ironhide",
+                "status": "completed",
+                "dependencies": ["step-1", "step-3"],
+                "result": {
+                    "summary": "One-Sim 网站文案已完成",
+                    "outcome": "succeeded",
+                    "artifacts": [
+                        {
+                            "artifact_key": "copy",
+                            "artifact_type": "content_docs",
+                            "title": "One-Sim 网站文案",
+                            "uri": copy_uri,
+                            "content_hash": "a" * 64,
+                        }
+                    ],
+                },
+            },
+        ],
+    }
+    step = {
+        "id": "step-5",
+        "title": "前端实现",
+        "description": "使用步骤 4 文案",
+        "input": {},
+        "dependencies": ["step-3", "step-4"],
+    }
+
+    prompt = CommandCenterWorker._step_prompt(mission, step)
+
+    assert "direct_dependencies_then_transitive_ancestors" in prompt
+    assert copy_uri in prompt
+    assert "One-Sim 网站文案已完成" in prompt
+    assert "x" * 2000 not in prompt
+    assert '"outcome":"succeeded|blocked|failed|needs_input"' in prompt
+
+
+class BlockedEvaluationExecutor:
+    async def execute(self, command, command_args=None, timeout_seconds=300):
+        return ExecutionResult(
+            success=True,
+            output=json.dumps(
+                {
+                    "verdict": "blocked",
+                    "summary": "交付物不完整，等待修复",
+                    "blockers": ["前端交付物缺失"],
+                    "memory_candidates": [],
+                },
+                ensure_ascii=False,
+            ),
+        )
+
+
+def test_blocked_evaluation_cannot_complete_mission(tmp_path):
+    async def scenario():
+        db_path = str(tmp_path / "blocked-evaluation.db")
+        service = CommandCenterService(db_path)
+        mission = service.create_mission(objective="验证最终阻塞", requested_by="admin")
+        service.claim_planning_mission("planner")
+        service.save_plan(mission["id"], _sample_plan())
+        service.approve(mission["id"], decided_by="admin")
+        service.activate_approved_missions()
+        while True:
+            steps = service.claim_ready_steps("runner", limit=1)
+            if not steps:
+                break
+            claimed = steps[0]
+            service.complete_step(
+                claimed["id"],
+                result={"success": True, "output": "done"},
+                success=True,
+                actor=claimed["agent_id"],
+                lease_token=claimed["lease_token"],
+            )
+        worker = CommandCenterWorker(
+            service=service,
+            executor=BlockedEvaluationExecutor(),
+            work_runs=WorkRunService(db_path),
+            sender=FakeSender(),
+        )
+
+        await worker._evaluate_one()
+
+        blocked = service.get_mission(mission["id"])
+        assert blocked["status"] == "waiting_feedback"
+        assert blocked["completed_at"] is None
+        assert blocked["last_error"] == "交付物不完整，等待修复"
+
+    asyncio.run(scenario())
+
+
 def test_memory_candidate_normalization_enforces_scopes_and_evidence():
     mission = {
         "project_id": "project-1",
@@ -1139,3 +1890,73 @@ def test_task_workbench_projects_mission_steps_and_agent(tmp_path, monkeypatch):
     assert item["current_agent_name"] == "擎天柱"
     assert item["steps_summary"]["total"] == 2
     assert item["linked_tasks"][0]["source"] == "command-center"
+
+
+def test_agent_space_enforces_optimus_single_entry(tmp_path, monkeypatch):
+    service = _routed_service(tmp_path, "space.db")
+    monkeypatch.setattr(service, "_load_task_ledger", lambda: [])
+    monkeypatch.setattr(
+        "services.command_center_service.unified_data_manager.get_agent_organization_document",
+        lambda: {
+            "root": {"id": "sun", "name": "孙总", "node_type": "person"},
+            "nodes": [
+                {
+                    "id": "optimus",
+                    "parent_id": "executive-office",
+                    "node_type": "agent",
+                    "agent_id": "optimus",
+                    "name": "擎天柱",
+                    "title": "总项目管理",
+                },
+                {
+                    "id": "leonardo",
+                    "parent_id": "development",
+                    "node_type": "agent",
+                    "agent_id": "leonardo",
+                    "name": "李奥纳多",
+                    "title": "架构师",
+                },
+                {
+                    "id": "raphael",
+                    "parent_id": "development",
+                    "node_type": "agent",
+                    "agent_id": "raphael",
+                    "name": "拉斐尔",
+                    "title": "后端开发",
+                },
+            ],
+            "relations": [],
+        },
+    )
+    mission = service.create_mission(
+        objective="实现擎天柱空间视图",
+        requested_by="admin",
+        project_id="project-software",
+        mission_type="software",
+    )
+    service.claim_planning_mission("optimus")
+    service.save_plan(mission["id"], {
+        "summary": "擎天柱拆分后交给架构师",
+        "rationale": "用户只和擎天柱交互，执行交由内部智能体",
+        "risk_level": "low",
+        "steps": [
+            {
+                "order_index": 1,
+                "title": "生成开发级拆解",
+                "description": "细化空间视图实现范围",
+                "task_type": "architecture",
+                "agent_id": "leonardo",
+                "depends_on": [],
+            },
+        ],
+    })
+
+    space = service.agent_space(mission_id=mission["id"])
+
+    assert space["single_entry"] is True
+    assert space["commander"] == "optimus"
+    nodes = {node["id"]: node for node in space["nodes"]}
+    assert nodes["optimus"]["can_direct_command"] is True
+    assert nodes["leonardo"]["can_direct_command"] is False
+    assert nodes["raphael"]["can_direct_command"] is False
+    assert any(edge["from"] == "optimus" and edge["type"] == "delegates" for edge in space["edges"])

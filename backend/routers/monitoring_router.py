@@ -9,7 +9,8 @@ GET  /api/v2/monitoring/stats   — 任务统计 + 系统指标
 
 @author 🟥 拉斐尔 (后端开发)
 """
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import func as sql_func
 from datetime import datetime, timezone, timedelta
@@ -17,13 +18,32 @@ from typing import Optional, Dict, Any, List
 
 from database import get_db
 from models.v2_models import AgentHeartbeat, Agent, Task, AgentDispatch
-from routers.auth_router import get_current_user
+from routers.auth_router import get_current_user, require_role
+from services.memory_system_health_status import (
+    read_memory_system_health,
+    read_memory_system_matrix,
+)
+from services.memory_system_slo import calculate_memory_slo, read_memory_system_drill
+from services.memory_release_governance import (
+    MemoryReleaseGovernanceError,
+    current_release_gate,
+    read_latest_release_execution,
+    read_release_audit,
+    record_release_decision,
+    summarize_release_history,
+    update_release_candidate_approval,
+)
+from services.memory_runtime_config import memory_runtime_configuration
 
 router = APIRouter(prefix="/api/v2/monitoring", tags=["v2-monitoring"])
 
 # Agent 在线判定阈值（秒）
 HEARTBEAT_TIMEOUT = 60       # 超过 60s 标记为 timeout
 HEARTBEAT_OFFLINE = 300      # 超过 300s 标记为 offline
+
+
+class MemoryReleaseApprovalRequest(BaseModel):
+    expected_digest: str
 
 
 def _compute_display_status(heartbeat_at: str) -> str:
@@ -42,6 +62,130 @@ def _compute_display_status(heartbeat_at: str) -> str:
 
 def _get_service(db: Session) -> Session:
     return db
+
+
+@router.get("/memory-system")
+def get_memory_system_health(
+    _user: dict = Depends(get_current_user),
+):
+    """Return the latest end-to-end memory gate state, failing closed when stale."""
+    result = read_memory_system_health()
+    result["matrix"] = read_memory_system_matrix()
+    result["slo"] = calculate_memory_slo(days=7)
+    result["drill"] = read_memory_system_drill()
+    result["release"] = current_release_gate()
+    result["release_history"] = summarize_release_history(
+        read_release_audit(limit=1000),
+        limit=8,
+    )
+    return result
+
+
+@router.get("/memory-system/slo")
+def get_memory_system_slo(
+    days: int = Query(7, ge=1, le=90),
+    _user: dict = Depends(get_current_user),
+):
+    """Return sanitized historical reliability indicators for the selected window."""
+    return calculate_memory_slo(days=days)
+
+
+@router.get("/memory-system/configuration")
+def get_memory_system_configuration(
+    _user: dict = Depends(get_current_user),
+):
+    """Return a secret-free summary of the effective memory runtime settings."""
+    return memory_runtime_configuration()
+
+
+@router.get("/memory-system/drill")
+def get_memory_system_drill(
+    _user: dict = Depends(get_current_user),
+):
+    """Return the latest non-destructive failure-drill result."""
+    return read_memory_system_drill()
+
+
+@router.get("/memory-system/release")
+def get_memory_system_release_gate(
+    _user: dict = Depends(get_current_user),
+):
+    """Return the current memory release decision and canary/rollback plan."""
+    result = current_release_gate()
+    result["latest_execution"] = read_latest_release_execution()
+    return result
+
+
+@router.get("/memory-system/release/audit")
+def get_memory_system_release_audit(
+    limit: int = Query(20, ge=1, le=100),
+    _user: dict = Depends(get_current_user),
+):
+    """Return recent sanitized release decisions and executions."""
+    rows = read_release_audit(limit=limit)
+    return {"items": rows, "total": len(rows)}
+
+
+@router.get("/memory-system/release/history")
+def get_memory_system_release_history(
+    limit: int = Query(10, ge=1, le=50),
+    _user: dict = Depends(get_current_user),
+):
+    """Return release-level history collapsed from the append-only audit log."""
+    items = summarize_release_history(read_release_audit(limit=1000), limit=limit)
+    return {"items": items, "total": len(items)}
+
+
+def _release_actor(user: dict) -> str:
+    return str(user.get("username") or user.get("sub") or "")
+
+
+def _change_release_approval(
+    request: MemoryReleaseApprovalRequest,
+    user: dict,
+    *,
+    approve: bool,
+) -> dict[str, Any]:
+    try:
+        preflight = current_release_gate()
+        if not approve and preflight.get("release_completed") is True:
+            raise MemoryReleaseGovernanceError("completed release approval is immutable")
+        if approve:
+            if preflight.get("candidate_digest") != request.expected_digest:
+                raise MemoryReleaseGovernanceError("candidate digest changed before approval")
+            if preflight.get("technical_ready") is not True:
+                failures = ", ".join(preflight.get("blocking_failures") or []) or "unknown"
+                raise MemoryReleaseGovernanceError(f"release is not technically ready: {failures}")
+        update_release_candidate_approval(
+            actor=_release_actor(user),
+            expected_digest=request.expected_digest,
+            approve=approve,
+        )
+        decision = current_release_gate()
+        record_release_decision(decision)
+        return decision
+    except MemoryReleaseGovernanceError as exc:
+        detail = str(exc)
+        status_code = 404 if "missing" in detail else 409
+        raise HTTPException(status_code=status_code, detail=detail) from exc
+
+
+@router.post("/memory-system/release/approve")
+def approve_memory_system_release(
+    request: MemoryReleaseApprovalRequest,
+    user: dict = Depends(require_role("admin")),
+):
+    """Approve the exact validated candidate; approval never performs deployment."""
+    return _change_release_approval(request, user, approve=True)
+
+
+@router.post("/memory-system/release/revoke")
+def revoke_memory_system_release(
+    request: MemoryReleaseApprovalRequest,
+    user: dict = Depends(require_role("admin")),
+):
+    """Revoke approval for the exact candidate without invalidating validation evidence."""
+    return _change_release_approval(request, user, approve=False)
 
 
 # ============================================================

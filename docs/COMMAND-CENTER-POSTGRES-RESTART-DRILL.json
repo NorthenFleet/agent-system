@@ -1,0 +1,341 @@
+{
+  "schema_version": "command-center-postgres-restart-drill.v1",
+  "checked_at": "2026-09-18T15:43:31.877122+00:00",
+  "healthy": true,
+  "scope": "homebrew-postgresql-service-restart",
+  "service": "postgresql@17",
+  "auth_mode": "development-session",
+  "restart_command": {
+    "returncode": 0,
+    "stdout": "Stopping `postgresql@17`... (might take a while)\n==> Successfully stopped `postgresql@17` (label: homebrew.mxcl.postgresql@17)\n==> Successfully started `postgresql@17` (label: sh.brew.postgresql@17)",
+    "stderr": ""
+  },
+  "postmaster_started_at_before": "2026-09-13T20:02:41.350562+08:00",
+  "postmaster_started_at_after": "2026-09-18T23:43:29.786824+08:00",
+  "postmaster_generation_changed": true,
+  "database_recovery_seconds": 7.254,
+  "functional_recovery_seconds": 8.467,
+  "rpo_zero": true,
+  "active_leases_before": {
+    "steps": 0,
+    "workflows": 0,
+    "compensations": 0,
+    "outbox": 0
+  },
+  "active_leases_after": {
+    "steps": 0,
+    "workflows": 0,
+    "compensations": 0,
+    "outbox": 0
+  },
+  "connections_before": [
+    {
+      "datname": "team_dashboard",
+      "application_name": "",
+      "usename": "apple",
+      "state": "idle",
+      "connections": 1
+    },
+    {
+      "datname": "team_dashboard",
+      "application_name": "agent-system-command-center",
+      "usename": "apple",
+      "state": "idle",
+      "connections": 5
+    }
+  ],
+  "connections_after": [
+    {
+      "datname": "team_dashboard",
+      "application_name": "agent-system-command-center",
+      "usename": "apple",
+      "state": "idle",
+      "connections": 4
+    }
+  ],
+  "facts_before": {
+    "orchestration_missions": {
+      "count": 11,
+      "id_checksum": "588496a482635d0065a90f85e13366f362fa63c79d81c8dbe6187324c26309a6"
+    },
+    "mission_steps": {
+      "count": 30,
+      "id_checksum": "3954dd943e21ae6ff8c3cbda1e8f180a2e4d381ed9d3d7d60b6dca9ef07a3d9d"
+    },
+    "mission_events": {
+      "count": 137,
+      "id_checksum": "38b6e99191d597cb04053a33d54f1dc4587bb5976771c053e4e62cac1146e5e1"
+    },
+    "workflow_runs": {
+      "count": 0,
+      "id_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "work_runs": {
+      "count": 24,
+      "id_checksum": "49f9c0e39f882615d12492c25cec75ccdc09ecc3c8c02d37930a9f7979e5d3d0"
+    },
+    "work_run_events": {
+      "count": 100,
+      "id_checksum": "6edc31c09763aead6b4628f3c766292a5be65857182936fedac4274038fc76b9"
+    },
+    "work_artifacts": {
+      "count": 6,
+      "id_checksum": "4fe8cca2ead5ff1d3c84b3e18c011587784bca26d52377829f0243595d1e48ef"
+    }
+  },
+  "facts_after": {
+    "orchestration_missions": {
+      "count": 11,
+      "id_checksum": "588496a482635d0065a90f85e13366f362fa63c79d81c8dbe6187324c26309a6"
+    },
+    "mission_steps": {
+      "count": 30,
+      "id_checksum": "3954dd943e21ae6ff8c3cbda1e8f180a2e4d381ed9d3d7d60b6dca9ef07a3d9d"
+    },
+    "mission_events": {
+      "count": 137,
+      "id_checksum": "38b6e99191d597cb04053a33d54f1dc4587bb5976771c053e4e62cac1146e5e1"
+    },
+    "workflow_runs": {
+      "count": 0,
+      "id_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "work_runs": {
+      "count": 24,
+      "id_checksum": "49f9c0e39f882615d12492c25cec75ccdc09ecc3c8c02d37930a9f7979e5d3d0"
+    },
+    "work_run_events": {
+      "count": 100,
+      "id_checksum": "6edc31c09763aead6b4628f3c766292a5be65857182936fedac4274038fc76b9"
+    },
+    "work_artifacts": {
+      "count": 6,
+      "id_checksum": "4fe8cca2ead5ff1d3c84b3e18c011587784bca26d52377829f0243595d1e48ef"
+    }
+  },
+  "baseline": {
+    "observed_at": "2026-09-18T15:43:23.306839+00:00",
+    "elapsed_ms": 76.965,
+    "functional": true,
+    "http_status": {
+      "public": 200,
+      "command": 200,
+      "production": 200,
+      "workflow": 200
+    },
+    "production_status": "ready",
+    "workers_live": 2,
+    "workers_required": 2,
+    "workers_stale": 0,
+    "expired_active_leases": 0,
+    "checkpoint_status": "ready",
+    "mission_total": 11,
+    "pool": {
+      "pre_ping": true,
+      "connection_failures_total": 1,
+      "stale_connections_discarded_total": 1,
+      "reconnects_total": 1,
+      "acquire_timeouts_total": 0
+    }
+  },
+  "final": {
+    "observed_at": "2026-09-18T15:43:31.849579+00:00",
+    "elapsed_ms": 74.397,
+    "functional": true,
+    "http_status": {
+      "public": 200,
+      "command": 200,
+      "production": 200,
+      "workflow": 200
+    },
+    "production_status": "degraded",
+    "workers_live": 2,
+    "workers_required": 2,
+    "workers_stale": 0,
+    "expired_active_leases": 0,
+    "checkpoint_status": "ready",
+    "mission_total": 11,
+    "pool": {
+      "pre_ping": true,
+      "connection_failures_total": 17,
+      "stale_connections_discarded_total": 17,
+      "reconnects_total": 1,
+      "acquire_timeouts_total": 0
+    }
+  },
+  "observations": [
+    {
+      "observed_at": "2026-09-18T15:43:29.424190+00:00",
+      "since_restart_seconds": 5.987,
+      "database": {
+        "ready": false,
+        "error_type": "OperationalError",
+        "error": "connection to server on socket \"/tmp/.s.PGSQL.5432\" failed: Connection refused\n\tIs the server running locally and accepting connections on that socket?\n",
+        "elapsed_ms": 0.155
+      },
+      "application": {
+        "observed_at": "2026-09-18T15:43:29.424160+00:00",
+        "elapsed_ms": 128.913,
+        "functional": false,
+        "http_status": {
+          "public": 200,
+          "command": 500,
+          "production": 500,
+          "workflow": 500
+        },
+        "production_status": null,
+        "workers_live": null,
+        "workers_required": null,
+        "workers_stale": null,
+        "expired_active_leases": null,
+        "checkpoint_status": null,
+        "mission_total": null,
+        "pool": {
+          "pre_ping": null,
+          "connection_failures_total": null,
+          "stale_connections_discarded_total": null,
+          "reconnects_total": null,
+          "acquire_timeouts_total": null
+        }
+      }
+    },
+    {
+      "observed_at": "2026-09-18T15:43:30.043753+00:00",
+      "since_restart_seconds": 6.627,
+      "database": {
+        "ready": false,
+        "error_type": "OperationalError",
+        "error": "connection to server on socket \"/tmp/.s.PGSQL.5432\" failed: FATAL:  the database system is starting up\n",
+        "elapsed_ms": 0.885
+      },
+      "application": {
+        "observed_at": "2026-09-18T15:43:30.043718+00:00",
+        "elapsed_ms": 108.573,
+        "functional": false,
+        "http_status": {
+          "public": 200,
+          "command": 500,
+          "production": 500,
+          "workflow": 500
+        },
+        "production_status": null,
+        "workers_live": null,
+        "workers_required": null,
+        "workers_stale": null,
+        "expired_active_leases": null,
+        "checkpoint_status": null,
+        "mission_total": null,
+        "pool": {
+          "pre_ping": null,
+          "connection_failures_total": null,
+          "stale_connections_discarded_total": null,
+          "reconnects_total": null,
+          "acquire_timeouts_total": null
+        }
+      }
+    },
+    {
+      "observed_at": "2026-09-18T15:43:30.664144+00:00",
+      "since_restart_seconds": 7.254,
+      "database": {
+        "ready": true,
+        "postmaster_started_at": "2026-09-18T23:43:29.786824+08:00",
+        "elapsed_ms": 8.392
+      },
+      "application": {
+        "observed_at": "2026-09-18T15:43:30.664079+00:00",
+        "elapsed_ms": 102.602,
+        "functional": true,
+        "http_status": {
+          "public": 200,
+          "command": 200,
+          "production": 200,
+          "workflow": 200
+        },
+        "production_status": "degraded",
+        "workers_live": 2,
+        "workers_required": 2,
+        "workers_stale": 0,
+        "expired_active_leases": 0,
+        "checkpoint_status": "ready",
+        "mission_total": 11,
+        "pool": {
+          "pre_ping": true,
+          "connection_failures_total": 17,
+          "stale_connections_discarded_total": 17,
+          "reconnects_total": 1,
+          "acquire_timeouts_total": 0
+        }
+      }
+    },
+    {
+      "observed_at": "2026-09-18T15:43:31.258341+00:00",
+      "since_restart_seconds": 7.872,
+      "database": {
+        "ready": true,
+        "postmaster_started_at": "2026-09-18T23:43:29.786824+08:00",
+        "elapsed_ms": 7.22
+      },
+      "application": {
+        "observed_at": "2026-09-18T15:43:31.258277+00:00",
+        "elapsed_ms": 78.165,
+        "functional": true,
+        "http_status": {
+          "public": 200,
+          "command": 200,
+          "production": 200,
+          "workflow": 200
+        },
+        "production_status": "degraded",
+        "workers_live": 2,
+        "workers_required": 2,
+        "workers_stale": 0,
+        "expired_active_leases": 0,
+        "checkpoint_status": "ready",
+        "mission_total": 11,
+        "pool": {
+          "pre_ping": true,
+          "connection_failures_total": 17,
+          "stale_connections_discarded_total": 17,
+          "reconnects_total": 1,
+          "acquire_timeouts_total": 0
+        }
+      }
+    },
+    {
+      "observed_at": "2026-09-18T15:43:31.849651+00:00",
+      "since_restart_seconds": 8.467,
+      "database": {
+        "ready": true,
+        "postmaster_started_at": "2026-09-18T23:43:29.786824+08:00",
+        "elapsed_ms": 7.418
+      },
+      "application": {
+        "observed_at": "2026-09-18T15:43:31.849579+00:00",
+        "elapsed_ms": 74.397,
+        "functional": true,
+        "http_status": {
+          "public": 200,
+          "command": 200,
+          "production": 200,
+          "workflow": 200
+        },
+        "production_status": "degraded",
+        "workers_live": 2,
+        "workers_required": 2,
+        "workers_stale": 0,
+        "expired_active_leases": 0,
+        "checkpoint_status": "ready",
+        "mission_total": 11,
+        "pool": {
+          "pre_ping": true,
+          "connection_failures_total": 17,
+          "stale_connections_discarded_total": 17,
+          "reconnects_total": 1,
+          "acquire_timeouts_total": 0
+        }
+      }
+    }
+  ],
+  "note": "production_status may remain degraded during the five-minute incident visibility window after functional recovery"
+}

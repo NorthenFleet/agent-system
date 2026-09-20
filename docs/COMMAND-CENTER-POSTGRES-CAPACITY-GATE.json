@@ -1,0 +1,80 @@
+{
+  "schema_version": "command-center-postgres-capacity-gate.v1",
+  "checked_at": "2026-09-17T18:01:30.399684+00:00",
+  "healthy": true,
+  "checks": {
+    "alembic_at_phase5_head": true,
+    "checkpoint_schema_ready": true,
+    "normal_load_completed": true,
+    "pool_bound_respected": true,
+    "no_normal_load_timeouts": true,
+    "saturation_failed_closed": true,
+    "pool_recovered_after_saturation": true,
+    "unavailable_database_failed_closed": true
+  },
+  "database": {
+    "alembic_revision": "20260920_langgraph_pg",
+    "counts": {
+      "missions": 11,
+      "steps": 30,
+      "work_runs": 24,
+      "work_run_events": 97,
+      "work_artifacts": 6
+    },
+    "checkpoint": {
+      "missing_tables": [],
+      "installed_version": 9,
+      "required_version": 9
+    }
+  },
+  "normal_load": {
+    "requests": 24,
+    "completed": 24,
+    "unique_results": 24,
+    "errors": [],
+    "elapsed_ms": 207.036,
+    "pool": {
+      "min_size": 1,
+      "max_size": 4,
+      "acquire_timeout_seconds": 2.0,
+      "acquisitions_total": 24,
+      "transactions_committed_total": 24,
+      "transactions_rolled_back_total": 0,
+      "acquire_timeouts_total": 0,
+      "connection_failures_total": 0,
+      "in_use": 0,
+      "peak_in_use": 4,
+      "acquire_wait_ms_total": 1245.754,
+      "acquire_wait_ms_max": 173.901,
+      "acquire_wait_ms_average": 51.906
+    }
+  },
+  "saturation": {
+    "failed_closed": true,
+    "recovered": true,
+    "error": "PostgreSQL connection pool exhausted after 0.05s",
+    "holder_errors": [],
+    "pool": {
+      "min_size": 1,
+      "max_size": 1,
+      "acquire_timeout_seconds": 0.05,
+      "acquisitions_total": 2,
+      "transactions_committed_total": 2,
+      "transactions_rolled_back_total": 0,
+      "acquire_timeouts_total": 1,
+      "connection_failures_total": 0,
+      "in_use": 0,
+      "peak_in_use": 1,
+      "acquire_wait_ms_total": 58.606,
+      "acquire_wait_ms_max": 58.598,
+      "acquire_wait_ms_average": 29.303
+    }
+  },
+  "unavailable_database": {
+    "failed_closed": true,
+    "failed_within_limit": true,
+    "elapsed_ms": 171.18,
+    "error_type": "OperationalError",
+    "connection_failures_total": 1
+  }
+}

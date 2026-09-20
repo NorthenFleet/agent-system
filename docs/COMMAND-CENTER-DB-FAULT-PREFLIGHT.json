@@ -1,0 +1,112 @@
+{
+  "schema_version": "command-center-cutover-smoke.v1",
+  "checked_at": "2026-09-18T15:13:44.351780+00:00",
+  "healthy": true,
+  "checks": {
+    "public_health_ok": true,
+    "live_storage_postgresql": true,
+    "production_health_ready": true,
+    "pool_ready": true,
+    "expired_leases_zero": true,
+    "checkpoint_ready": true,
+    "workflow_checkpoint_postgresql": true,
+    "required_workers_live": true,
+    "stale_workers_zero": true,
+    "transient_write_succeeded": true,
+    "transient_write_cleaned": true
+  },
+  "live": {
+    "public_health": {
+      "status": "ok",
+      "port": 3021
+    },
+    "auth_mode": "development-session",
+    "command_center": {
+      "status": "ready",
+      "storage_backend": "postgresql",
+      "mission_total": 11,
+      "active": 1
+    },
+    "production": {
+      "status": "ready",
+      "storage_backend": "postgresql",
+      "pool_status": "ready",
+      "expired_active_leases": 0,
+      "checkpoint_status": "ready",
+      "workers": {
+        "status": "ready",
+        "required": 2,
+        "live": 2,
+        "stale": 0,
+        "stale_after_seconds": 20,
+        "workers": [
+          {
+            "id": "command-center:api-3021",
+            "role": "embedded",
+            "state": "running",
+            "started_at": "2026-09-18T15:13:41.425718+00:00",
+            "last_seen_at": "2026-09-18T15:13:41.425718+00:00",
+            "stopped_at": null,
+            "metadata": {
+              "hostname": "appledeMac-mini.local",
+              "pid": 16247,
+              "max_parallel": 3,
+              "poll_seconds": 2.0
+            },
+            "live": true
+          },
+          {
+            "id": "command-center:worker-2",
+            "role": "dedicated",
+            "state": "running",
+            "started_at": "2026-09-18T15:13:33.463783+00:00",
+            "last_seen_at": "2026-09-18T15:13:43.494090+00:00",
+            "stopped_at": null,
+            "metadata": {
+              "hostname": "appledeMac-mini.local",
+              "pid": 16249,
+              "max_parallel": 3,
+              "poll_seconds": 2.0
+            },
+            "live": true
+          }
+        ]
+      }
+    },
+    "workflow": {
+      "checkpoint_backend": "postgresql",
+      "checkpoint_status": "ready"
+    }
+  },
+  "write": {
+    "insert_observed": true,
+    "cleanup_verified": true,
+    "canary_persisted": false
+  },
+  "storage_runtime": {
+    "backend": "postgresql",
+    "connection_mode": "threaded_pool",
+    "pre_ping": true,
+    "status": "ready",
+    "health_window_seconds": 300,
+    "pool": {
+      "min_size": 1,
+      "max_size": 5,
+      "acquire_timeout_seconds": 5.0,
+      "acquisitions_total": 3,
+      "transactions_committed_total": 3,
+      "transactions_rolled_back_total": 0,
+      "acquire_timeouts_total": 0,
+      "connection_failures_total": 0,
+      "stale_connections_discarded_total": 0,
+      "reconnects_total": 0,
+      "in_use": 0,
+      "peak_in_use": 1,
+      "acquire_wait_ms_total": 0.022,
+      "acquire_wait_ms_max": 0.014,
+      "last_acquire_timeout_epoch": 0.0,
+      "last_connection_failure_epoch": 0.0,
+      "acquire_wait_ms_average": 0.007
+    }
+  }
+}

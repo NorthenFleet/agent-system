@@ -179,6 +179,7 @@ class OpenClawTaskExecutor:
         """通过 OpenClaw CLI 触发 Agent 执行"""
         agent_id = args.get("agent_id", "")
         message = args.get("message", "")
+        session_key = str(args.get("session_key") or "").strip()
 
         if not agent_id:
             return ExecutionResult(
@@ -191,7 +192,12 @@ class OpenClawTaskExecutor:
 
         # 优先尝试 CLI 方式
         try:
-            return await self._execute_via_cli(agent_id, message, timeout_seconds)
+            return await self._execute_via_cli(
+                agent_id,
+                message,
+                timeout_seconds,
+                session_key=session_key,
+            )
         except FileNotFoundError:
             logger.warning("openclaw CLI 不可用，回退到 HTTP API")
 
@@ -199,22 +205,29 @@ class OpenClawTaskExecutor:
         return await self._execute_via_http_api(agent_id, message, timeout_seconds)
 
     async def _execute_via_cli(
-        self, agent_id: str, message: str, timeout_seconds: int
+        self,
+        agent_id: str,
+        message: str,
+        timeout_seconds: int,
+        *,
+        session_key: str = "",
     ) -> ExecutionResult:
         """
         使用 `openclaw agent` CLI 命令触发 Agent
 
         命令格式: openclaw agent --agent <id> "<message>"
         """
-        cmd = openclaw_command(
-            "agent",
-            "--agent",
-            agent_id,
-            "--message",
-            message,
-            "--json",
-            "--timeout",
-            str(max(30, timeout_seconds)),
+        cmd = openclaw_command("agent", "--agent", agent_id)
+        if session_key:
+            cmd.extend(["--session-key", session_key])
+        cmd.extend(
+            [
+                "--message",
+                message,
+                "--json",
+                "--timeout",
+                str(max(30, timeout_seconds)),
+            ]
         )
         logger.info(f"CLI 执行: {' '.join(cmd)}")
 

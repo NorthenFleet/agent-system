@@ -11,7 +11,12 @@ from typing import Any, Optional
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
+from database import get_db
 from routers.auth_router import get_current_user, require_role
+from services.agent_capability_registry import agent_capability_registry
+from services.business_flow_service import business_flow_registry
+from services.execution_evidence_service import execution_evidence_service
+from services.compensation_service import compensation_service
 from services.command_center_service import (
     CommandCenterError,
     InvalidMissionTransition,
@@ -23,6 +28,13 @@ from services.finance_review_orchestrator import finance_review_orchestrator
 from services.memory_feedback_service import (
     MemoryFeedbackError,
     memory_feedback_service,
+)
+from services.context_retrieval_service import context_retrieval_service
+from services.memory_awareness_service import MemoryAwarenessService
+from services.work_run_service import WorkRunService, work_run_service
+from services.memory_system_health_status import (
+    MemorySystemHealthStatusError,
+    publish_memory_health_notification,
 )
 
 
@@ -52,6 +64,10 @@ class MissionCreateRequest(BaseModel):
     title: str = Field("", max_length=160)
     project_id: str = Field(..., min_length=1, max_length=160)
     mission_type: str = Field(..., pattern="^(software|document)$")
+    flow_key: str = Field(
+        "",
+        pattern="^(|general|software|document|finance|research|operations)$",
+    )
     context: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -94,6 +110,17 @@ class DecisionRequest(BaseModel):
     comment: str = Field("", max_length=4000)
 
 
+class StepApprovalDecisionRequest(BaseModel):
+    approval_id: str = Field(..., min_length=1, max_length=160)
+    contract_hash: str = Field(..., pattern="^[a-f0-9]{64}$")
+    comment: str = Field("", max_length=4000)
+
+
+class CompensationDecisionRequest(BaseModel):
+    contract_hash: str = Field(..., pattern="^[a-f0-9]{64}$")
+    comment: str = Field("", max_length=4000)
+
+
 class FeedbackRequest(BaseModel):
     content: str = Field(..., min_length=1, max_length=10000)
 
@@ -113,6 +140,26 @@ class ExternalUserBindingRequest(BaseModel):
     profile_user_id: str = Field(..., min_length=1, max_length=160)
     display_name: str = Field("", max_length=200)
     status: str = Field("active", pattern="^(active|disabled)$")
+
+
+class AgentMemoryContextRequest(BaseModel):
+    channel: str = Field("feishu", min_length=1, max_length=80)
+    external_user_id: str = Field(..., min_length=1, max_length=200)
+    query: str = Field(..., min_length=1, max_length=20000)
+    agent_id: str = Field("optimus", pattern=r"^[A-Za-z0-9_.-]{1,160}$")
+    project_id: str = Field("", max_length=160)
+    limit: int = Field(12, ge=1, le=50)
+    persist: bool = True
+
+
+class MemoryHealthEventRequest(BaseModel):
+    monitor_key: str = Field("primary", pattern="^(primary|matrix)$")
+    schema_version: str = Field("memory-system-health.v1", max_length=80)
+    checked_at: str = Field(..., min_length=1, max_length=80)
+    healthy: bool
+    case_id: str = Field("", max_length=160)
+    failures: list[dict[str, Any]] = Field(default_factory=list, max_length=50)
+    summary: dict[str, Any] = Field(default_factory=dict)
 
 
 def _actor(user: dict) -> str:
@@ -158,6 +205,54 @@ def _translate_error(exc: Exception) -> HTTPException:
     if isinstance(exc, InvalidMissionTransition):
         return HTTPException(409, str(exc))
     return HTTPException(400, str(exc))
+
+
+@router.post("/api/v3/command-center/agent/memory-context")
+def agent_memory_context(
+    body: AgentMemoryContextRequest,
+    request: Request,
+    x_command_center_token: str = Header("", alias="X-Command-Center-Token"),
+):
+    """Resolve a bound external identity before returning scoped memory."""
+    _verify_ingress(request, x_command_center_token)
+    try:
+        binding = command_center_service.get_external_user_binding(
+            channel=body.channel,
+            external_user_id=body.external_user_id,
+        )
+        if str(binding.get("status") or "") != "active":
+            raise CommandCenterError("external user binding is disabled")
+        result = MemoryAwarenessService(context_retrieval_service).inspect(
+            user_id=str(binding["profile_user_id"]),
+            query=body.query,
+            agent_id=body.agent_id,
+            project_id=body.project_id,
+            limit=body.limit,
+            persist=body.persist,
+        )
+        result["identity"] = {
+            "channel": body.channel,
+            "display_name": binding.get("display_name") or "",
+            "bound": True,
+        }
+        return result
+    except (CommandCenterError, ValueError) as exc:
+        raise _translate_error(exc) from exc
+
+
+@router.post("/api/v3/command-center/agent/memory-health")
+def ingest_memory_health(
+    body: MemoryHealthEventRequest,
+    request: Request,
+    x_command_center_token: str = Header("", alias="X-Command-Center-Token"),
+    db=Depends(get_db),
+):
+    """Turn memory gate state changes into deduplicated administrator notifications."""
+    _verify_ingress(request, x_command_center_token)
+    try:
+        return publish_memory_health_notification(db, body.model_dump())
+    except MemorySystemHealthStatusError as exc:
+        raise HTTPException(503, str(exc)) from exc
 
 
 @router.post("/api/v3/command-center/inbox")
@@ -582,6 +677,30 @@ def reject_memory_candidate(
     )
 
 
+@router.get("/api/v3/command-center/capabilities")
+def command_center_capabilities(_user: dict = Depends(get_current_user)):
+    return {
+        **agent_capability_registry.catalog(),
+        "business_flow_contract": business_flow_registry.catalog(),
+        "workflow_runtime": command_center_service.workflow_runtime_status(),
+        "execution_evidence": execution_evidence_service.catalog(),
+        "step_approval": command_center_service.step_approval_policy(),
+        "compensation": compensation_service.catalog(),
+    }
+
+
+@router.get("/api/v3/command-center/business-flows")
+def command_center_business_flows(_user: dict = Depends(get_current_user)):
+    """Expose versioned flow, lifecycle and risk contracts to planners and UI."""
+    return business_flow_registry.catalog()
+
+
+@router.get("/api/v3/command-center/workflow-runtime")
+def command_center_workflow_runtime(_user: dict = Depends(get_current_user)):
+    """Expose rollout configuration and durable workflow-run health."""
+    return command_center_service.workflow_runtime_status()
+
+
 @router.get("/api/v3/command-center/task-workbench")
 def task_workbench(
     status: str = Query("", description="按 mission 状态筛选"),
@@ -603,6 +722,17 @@ def task_workbench(
         search=search,
         limit=limit,
         offset=offset,
+        owner_user_id=_owner_scope(user),
+    )
+
+
+@router.get("/api/v3/command-center/space")
+def command_center_agent_space(
+    mission_id: str = Query("", description="按任务聚焦空间态势"),
+    user: dict = Depends(get_current_user),
+):
+    return command_center_service.agent_space(
+        mission_id=mission_id,
         owner_user_id=_owner_scope(user),
     )
 
@@ -639,7 +769,11 @@ def create_mission(
             project_id=body.project_id,
             mission_type=body.mission_type,
             title=body.title,
-            context={**body.context, "mission_type": body.mission_type},
+            context={
+                **body.context,
+                "mission_type": body.mission_type,
+                "business_flow_key": body.flow_key or body.mission_type,
+            },
             profile_user_id=_profile_user_id(user),
         )
         return {"success": True, "mission": mission}
@@ -656,6 +790,156 @@ def get_mission(
         return command_center_service.get_mission(
             mission_id,
             owner_user_id=_owner_scope(user),
+        )
+    except CommandCenterError as exc:
+        raise _translate_error(exc) from exc
+
+
+@router.get("/api/v3/command-center/missions/{mission_id}/delivery-evidence")
+def get_mission_delivery_evidence(
+    mission_id: str,
+    user: dict = Depends(get_current_user),
+):
+    try:
+        return command_center_service.get_delivery_evidence(
+            mission_id,
+            owner_user_id=_owner_scope(user),
+        )
+    except CommandCenterError as exc:
+        raise _translate_error(exc) from exc
+
+
+@router.get("/api/v3/command-center/missions/{mission_id}/run-ledger")
+def get_mission_run_ledger(
+    mission_id: str,
+    user: dict = Depends(get_current_user),
+):
+    try:
+        return command_center_service.get_mission_run_ledger(
+            mission_id,
+            owner_user_id=_owner_scope(user),
+        )
+    except CommandCenterError as exc:
+        raise _translate_error(exc) from exc
+
+
+@router.get("/api/v3/command-center/missions/{mission_id}/step-approvals")
+def get_mission_step_approvals(
+    mission_id: str,
+    user: dict = Depends(get_current_user),
+):
+    try:
+        return command_center_service.list_step_approvals(
+            mission_id,
+            owner_user_id=_owner_scope(user),
+        )
+    except CommandCenterError as exc:
+        raise _translate_error(exc) from exc
+
+
+@router.post(
+    "/api/v3/command-center/missions/{mission_id}/steps/{step_id}/approve"
+)
+def approve_mission_step(
+    mission_id: str,
+    step_id: str,
+    body: StepApprovalDecisionRequest,
+    user: dict = Depends(require_role("admin")),
+):
+    try:
+        _assert_mission_access(mission_id, user)
+        return command_center_service.decide_step_approval(
+            mission_id,
+            step_id,
+            approval_id=body.approval_id,
+            contract_hash=body.contract_hash,
+            decision="approved",
+            decided_by=_actor(user),
+            comment=body.comment,
+        )
+    except CommandCenterError as exc:
+        raise _translate_error(exc) from exc
+
+
+@router.post(
+    "/api/v3/command-center/missions/{mission_id}/steps/{step_id}/reject"
+)
+def reject_mission_step(
+    mission_id: str,
+    step_id: str,
+    body: StepApprovalDecisionRequest,
+    user: dict = Depends(require_role("admin")),
+):
+    try:
+        _assert_mission_access(mission_id, user)
+        return command_center_service.decide_step_approval(
+            mission_id,
+            step_id,
+            approval_id=body.approval_id,
+            contract_hash=body.contract_hash,
+            decision="rejected",
+            decided_by=_actor(user),
+            comment=body.comment,
+        )
+    except CommandCenterError as exc:
+        raise _translate_error(exc) from exc
+
+
+@router.get("/api/v3/command-center/missions/{mission_id}/compensations")
+def get_mission_compensations(
+    mission_id: str,
+    user: dict = Depends(get_current_user),
+):
+    try:
+        return command_center_service.list_compensations(
+            mission_id,
+            owner_user_id=_owner_scope(user),
+        )
+    except CommandCenterError as exc:
+        raise _translate_error(exc) from exc
+
+
+@router.post(
+    "/api/v3/command-center/missions/{mission_id}/compensations/{compensation_id}/approve"
+)
+def approve_mission_compensation(
+    mission_id: str,
+    compensation_id: str,
+    body: CompensationDecisionRequest,
+    user: dict = Depends(require_role("admin")),
+):
+    try:
+        _assert_mission_access(mission_id, user)
+        return command_center_service.decide_compensation(
+            compensation_id,
+            expected_mission_id=mission_id,
+            contract_hash=body.contract_hash,
+            decision="approved",
+            decided_by=_actor(user),
+            comment=body.comment,
+        )
+    except CommandCenterError as exc:
+        raise _translate_error(exc) from exc
+
+
+@router.post(
+    "/api/v3/command-center/missions/{mission_id}/compensations/{compensation_id}/reject"
+)
+def reject_mission_compensation(
+    mission_id: str,
+    compensation_id: str,
+    body: CompensationDecisionRequest,
+    user: dict = Depends(require_role("admin")),
+):
+    try:
+        _assert_mission_access(mission_id, user)
+        return command_center_service.decide_compensation(
+            compensation_id,
+            expected_mission_id=mission_id,
+            contract_hash=body.contract_hash,
+            decision="rejected",
+            decided_by=_actor(user),
+            comment=body.comment,
         )
     except CommandCenterError as exc:
         raise _translate_error(exc) from exc
@@ -732,11 +1016,44 @@ def mission_feedback(
 @router.get("/api/v3/command-center/health")
 def command_center_health(_user: dict = Depends(get_current_user)):
     summary = command_center_service.summary(owner_user_id=_owner_scope(_user))
+    storage = command_center_service.storage_info()
     return {
         "status": "ready",
-        "source_of_truth": command_center_service.db_path,
+        "source_of_truth": storage["source_of_truth"],
+        "storage": storage,
+        "storage_runtime": command_center_service.storage_runtime_metrics(),
         "optimus_entry": True,
         **summary,
+    }
+
+
+@router.get("/api/v3/command-center/production-health")
+def command_center_production_health(_user: dict = Depends(require_role("admin"))):
+    """Expose sanitized persistence, lease and checkpoint reliability indicators."""
+    storage = command_center_service.storage_info()
+    workflow = command_center_service.workflow_runtime_status()
+    runtime_work_runs = work_run_service
+    if (
+        command_center_service.repository.backend == "postgresql"
+        and work_run_service.repository.backend != "postgresql"
+    ):
+        runtime_work_runs = WorkRunService(repository=command_center_service.repository)
+    work_runs = runtime_work_runs.operational_metrics()
+    pool = command_center_service.storage_runtime_metrics()
+    workers = command_center_service.worker_runtime_status()
+    degraded = bool(
+        workflow.get("checkpoint_storage", {}).get("status") == "degraded"
+        or int(work_runs.get("expired_active_leases") or 0) > 0
+        or pool.get("status") == "degraded"
+        or workers.get("status") == "degraded"
+    )
+    return {
+        "status": "degraded" if degraded else "ready",
+        "storage": storage,
+        "storage_runtime": pool,
+        "work_runs": work_runs,
+        "workflow_runtime": workflow,
+        "workers": workers,
     }
 
 

@@ -43,6 +43,126 @@
       </el-col>
     </el-row>
 
+    <div
+      v-if="memoryHealth"
+      class="memory-health-card"
+      :class="`memory-${memoryHealth.status}`"
+    >
+      <div class="memory-health-header">
+        <div>
+          <div class="memory-health-title">🧠 记忆系统健康门禁</div>
+          <div class="memory-health-subtitle">
+            端到端验证飞书身份、3021 权威记忆、检索通道与 graph-memory 部署
+          </div>
+        </div>
+        <el-tag :type="memoryTagType" effect="dark" round>
+          {{ memoryStatusLabel(memoryHealth.status) }}
+        </el-tag>
+      </div>
+
+      <div class="memory-health-metrics">
+        <div class="memory-health-metric">
+          <span>最后检查</span>
+          <strong>{{ memoryHealth.checked_at ? formatDateTime(memoryHealth.checked_at) : '无记录' }}</strong>
+          <small>{{ formatAge(memoryHealth.age_seconds) }}</small>
+        </div>
+        <div class="memory-health-metric">
+          <span>权威来源</span>
+          <strong>{{ memoryHealth.summary.authority || '未知' }}</strong>
+          <small>{{ memoryHealth.summary.identity_bound ? '身份已绑定' : '身份未确认' }}</small>
+        </div>
+        <div class="memory-health-metric">
+          <span>可用记忆</span>
+          <strong>{{ memoryHealth.summary.remembered_items ?? 0 }} 条</strong>
+          <small>{{ memoryCountsText }}</small>
+        </div>
+        <div class="memory-health-metric">
+          <span>桥接部署</span>
+          <strong>{{ memoryHealth.summary.bridge_deployment?.plugin_version || '未知版本' }}</strong>
+          <small>{{ memoryHealth.summary.bridge_deployment?.ready ? '版本与哈希已验证' : '部署校验未通过' }}</small>
+        </div>
+      </div>
+
+      <div class="memory-channel-list">
+        <span
+          class="memory-channel-chip"
+          :class="memoryHealth.matrix?.healthy ? 'channel-ready' : 'channel-failed'"
+        >
+          <i></i>多 Agent 矩阵 · {{ memoryHealth.matrix?.summary.passed_cases ?? 0 }}/{{ memoryHealth.matrix?.summary.total_cases ?? 0 }}
+        </span>
+        <span
+          v-for="channel in memoryChannelRows"
+          :key="channel.name"
+          class="memory-channel-chip"
+          :class="channel.ready ? 'channel-ready' : 'channel-failed'"
+        >
+          <i></i>{{ channel.label }} · {{ channel.status }}
+        </span>
+      </div>
+
+      <div class="memory-operations-row">
+        <div class="memory-operation-item" :class="`slo-${primarySlo?.status || 'insufficient_data'}`">
+          <span>7 天主门禁 SLO</span>
+          <strong>{{ formatPercent(primarySlo?.success_rate_percent) }}</strong>
+          <small>
+            目标 {{ primarySlo?.target_percent ?? 99 }}% · {{ primarySlo?.sample_count ?? 0 }} 个样本
+            <template v-if="memoryHealth.slo?.data_quality.excluded_samples">
+              · 排除 {{ memoryHealth.slo.data_quality.excluded_samples }} 个环境无效样本
+            </template>
+          </small>
+        </div>
+        <div class="memory-operation-item">
+          <span>P95 门禁耗时</span>
+          <strong>{{ formatDuration(primarySlo?.p95_duration_ms) }}</strong>
+          <small>事件 {{ primarySlo?.incident_count ?? 0 }} · 错误预算 {{ formatPercent(primarySlo?.error_budget_remaining_percent) }}</small>
+        </div>
+        <div class="memory-operation-item" :class="memoryHealth.drill?.healthy ? 'slo-healthy' : 'slo-breached'">
+          <span>非破坏性故障演练</span>
+          <strong>{{ memoryHealth.drill?.summary.passed_scenarios ?? 0 }}/{{ memoryHealth.drill?.summary.total_scenarios ?? 0 }}</strong>
+          <small>{{ memoryHealth.drill?.checked_at ? `${formatAge(memoryHealth.drill.age_seconds)}完成` : '尚未执行' }}</small>
+        </div>
+        <div class="memory-operation-item" :class="releaseStatusClass">
+          <span>记忆变更发布门禁</span>
+          <strong>{{ releaseStatusLabel }}</strong>
+          <small v-if="memoryHealth.release?.risk?.label">
+            {{ memoryHealth.release.risk.label }} · {{ releaseApprovalModeLabel }}
+          </small>
+          <small v-if="memoryHealth.release?.status === 'completed'">
+            {{ memoryHealth.release.version }} · {{ formatDateTime(memoryHealth.release.completed_at!) }} 完成
+          </small>
+          <small v-else>{{ memoryHealth.release?.version || '无候选版本' }} · Optimus 灰度后全矩阵</small>
+          <el-button
+            v-if="canChangeReleaseApproval"
+            class="release-approval-button"
+            :type="memoryHealth.release?.promotion_ready ? 'danger' : 'warning'"
+            plain
+            size="small"
+            :loading="releaseApproving"
+            @click="changeReleaseApproval"
+          >
+            {{ memoryHealth.release?.promotion_ready ? '撤销审批' : '审批候选' }}
+          </el-button>
+          <el-button
+            class="release-history-button"
+            plain
+            size="small"
+            @click="releaseHistoryVisible = true"
+          >
+            发布历史
+          </el-button>
+        </div>
+      </div>
+
+      <el-alert
+        v-if="memoryHealth.failures.length"
+        class="memory-health-alert"
+        type="error"
+        :closable="false"
+        show-icon
+        :title="`门禁失败：${memoryFailureText}`"
+      />
+    </div>
+
     <!-- Agent 实时状态卡片 -->
     <div class="section-header">
       <h2>🤖 Agent 实时状态</h2>
@@ -220,22 +340,69 @@
         </div>
       </el-col>
     </el-row>
+
+    <el-drawer
+      v-model="releaseHistoryVisible"
+      title="记忆系统发布历史"
+      size="min(520px, 92vw)"
+    >
+      <el-empty
+        v-if="!memoryHealth?.release_history?.length"
+        description="暂无发布历史"
+      />
+      <el-timeline v-else class="release-timeline">
+        <el-timeline-item
+          v-for="item in memoryHealth.release_history"
+          :key="item.release_id"
+          :timestamp="item.updated_at ? formatDateTime(item.updated_at) : '时间未知'"
+          :type="releaseHistoryType(item.status)"
+          placement="top"
+        >
+          <div class="release-history-card">
+            <div class="release-history-title">
+              <strong>{{ item.version || item.release_id }}</strong>
+              <el-tag :type="releaseHistoryType(item.status)" size="small">
+                {{ releaseHistoryStatusLabel(item.status) }}
+              </el-tag>
+            </div>
+            <div>{{ item.risk?.label || '未分级' }} · {{ item.change_type || '未知变更' }}</div>
+            <div>发布 ID：{{ item.release_id.slice(-12) }}</div>
+            <div>审批：{{ item.approved_by || '未审批' }} · 审计事件 {{ item.event_count }}</div>
+            <div v-if="item.execution_status">执行结果：{{ item.execution_status }}</div>
+          </div>
+        </el-timeline-item>
+      </el-timeline>
+    </el-drawer>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { Refresh, Loading } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox, ElNotification } from 'element-plus'
 import * as echarts from 'echarts'
 import type { EChartsOption } from 'echarts'
-import { getMonitoringLive, createMonitoringWs, type MonitoringAgent } from '@/api/monitoring'
+import {
+  getMonitoringLive,
+  getMemorySystemHealth,
+  approveMemoryRelease,
+  createMonitoringWs,
+  revokeMemoryRelease,
+  type MemorySystemHealth,
+  type MonitoringAgent
+} from '@/api/monitoring'
 import { getDevices, type DeviceItem } from '@/api/openclaw'
+import { useAuthStore } from '@/stores/auth'
 
 // ─── Reactive State ─────────────────────────────────────────────────────────
 
 const agents = ref<MonitoringAgent[]>([])
 const devices = ref<DeviceItem[]>([])
+const memoryHealth = ref<MemorySystemHealth | null>(null)
+const lastMemoryStatus = ref<string | null>(null)
+const authStore = useAuthStore()
+const releaseApproving = ref(false)
+const releaseHistoryVisible = ref(false)
 const loading = ref(false)
 const wsConnected = ref(false)
 const wsConnecting = ref(false)
@@ -370,6 +537,71 @@ const avgCpu = computed(() => {
   return `${(sum / withCpu.length).toFixed(1)}%`
 })
 
+const memoryTagType = computed(() => {
+  if (memoryHealth.value?.status === 'healthy') return 'success'
+  if (memoryHealth.value?.status === 'stale') return 'warning'
+  return 'danger'
+})
+
+const memoryChannelLabels: Record<string, string> = {
+  local_markdown: 'Markdown',
+  openclaw_lexical_index: '词法索引',
+  approved_graph_projection: '审批图谱投影',
+  native_private_graph: '私有图谱'
+}
+
+const memoryChannelRows = computed(() => Object.entries(memoryHealth.value?.summary.channels || {}).map(
+  ([name, status]) => ({
+    name,
+    label: memoryChannelLabels[name] || name,
+    status,
+    ready: status === 'ready'
+  })
+))
+
+const memoryCountsText = computed(() => {
+  const counts = memoryHealth.value?.summary.counts || {}
+  return `事实 ${counts.profile_facts ?? 0} · 项目 ${counts.project_memories ?? 0} · Agent ${counts.agent_memories ?? 0}`
+})
+
+const memoryFailureText = computed(() => memoryHealth.value?.failures
+  .map(item => item.check || '未知检查')
+  .join('、') || '')
+
+const primarySlo = computed(() => memoryHealth.value?.slo?.monitors.primary)
+
+const releaseStatusLabel = computed(() => {
+  const release = memoryHealth.value?.release
+  if (!release) return '未配置'
+  if (release.status === 'completed') return '已验证发布'
+  if (release.status === 'execution_failed') return '发布验证失败'
+  if (release.promotion_ready) return '允许发布'
+  if (release.technical_ready) return '技术就绪 · 待审批'
+  return `已阻断 · ${release.blocking_failures.length} 项`
+})
+
+const releaseStatusClass = computed(() => {
+  const release = memoryHealth.value?.release
+  if (release?.status === 'completed') return 'slo-healthy'
+  if (release?.status === 'execution_failed') return 'slo-breached'
+  if (release?.promotion_ready) return 'slo-healthy'
+  if (release?.technical_ready) return 'slo-at_risk'
+  return 'slo-breached'
+})
+
+const canChangeReleaseApproval = computed(() => {
+  const release = memoryHealth.value?.release
+  return authStore.isAdmin
+    && !!release?.candidate_digest
+    && release.technical_ready
+    && !release.release_completed
+})
+
+const releaseApprovalModeLabel = computed(() => {
+  const mode = memoryHealth.value?.release?.risk?.approval_mode
+  return mode === 'human-admin-separated' ? '创建与管理员分离审批' : (mode || '人工审批')
+})
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function statusLabel(status: string): string {
@@ -385,6 +617,60 @@ function statusLabel(status: string): string {
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString('zh-CN', { hour12: false })
+}
+
+function formatDateTime(iso: string): string {
+  return new Date(iso).toLocaleString('zh-CN', { hour12: false })
+}
+
+function formatAge(age: number | null): string {
+  if (age == null) return '时间不可用'
+  if (age < 60) return `${age} 秒前`
+  if (age < 3600) return `${Math.floor(age / 60)} 分钟前`
+  return `${(age / 3600).toFixed(1)} 小时前`
+}
+
+function formatPercent(value: number | null | undefined): string {
+  return value == null ? '数据不足' : `${value.toFixed(value >= 99 ? 2 : 1)}%`
+}
+
+function formatDuration(value: number | null | undefined): string {
+  if (value == null) return '数据不足'
+  if (value < 1000) return `${Math.round(value)} ms`
+  return `${(value / 1000).toFixed(1)} 秒`
+}
+
+function memoryStatusLabel(status: MemorySystemHealth['status']): string {
+  const labels: Record<MemorySystemHealth['status'], string> = {
+    healthy: '健康',
+    unhealthy: '异常',
+    stale: '过期',
+    missing: '缺失',
+    invalid: '无效'
+  }
+  return labels[status]
+}
+
+function releaseHistoryStatusLabel(status: string): string {
+  const labels: Record<string, string> = {
+    completed: '已完成',
+    rolled_back: '已回滚',
+    rollback_failed: '回滚失败',
+    failed: '失败',
+    ready: '可发布',
+    awaiting_approval: '待审批',
+    blocked: '已阻断',
+    unknown: '未知'
+  }
+  return labels[status] || status
+}
+
+function releaseHistoryType(status: string): 'success' | 'warning' | 'danger' | 'primary' | 'info' {
+  if (status === 'completed') return 'success'
+  if (status === 'awaiting_approval' || status === 'rolled_back') return 'warning'
+  if (status === 'failed' || status === 'rollback_failed' || status === 'blocked') return 'danger'
+  if (status === 'ready') return 'primary'
+  return 'info'
 }
 
 function heartbeatAgeText(age: number | null): string {
@@ -487,6 +773,68 @@ async function fetchDevices() {
   }
 }
 
+async function fetchMemoryHealth() {
+  try {
+    const next = await getMemorySystemHealth()
+    const previous = lastMemoryStatus.value
+    memoryHealth.value = next
+    lastMemoryStatus.value = next.status
+    if (previous && previous !== next.status) {
+      ElNotification({
+        title: next.healthy ? '记忆系统已恢复' : '记忆系统状态变更',
+        message: next.healthy ? '所有记忆通道和部署校验已恢复。' : `当前状态：${memoryStatusLabel(next.status)}`,
+        type: next.healthy ? 'success' : 'error',
+        duration: 8000
+      })
+    }
+  } catch {
+    memoryHealth.value = {
+      schema_version: 'memory-system-monitor.v1',
+      status: 'missing',
+      healthy: false,
+      checked_at: null,
+      age_seconds: null,
+      stale_after_seconds: 0,
+      summary: {},
+      failures: [{ check: 'monitoring_api' }]
+    }
+  }
+}
+
+async function changeReleaseApproval() {
+  const release = memoryHealth.value?.release
+  if (!release?.candidate_digest || releaseApproving.value) return
+  const revoke = release.promotion_ready
+  const action = revoke ? '撤销审批' : '审批候选'
+  const effect = revoke
+    ? '撤销后该候选将恢复为“待审批”，不会改变已验证的代码。'
+    : '审批只授权候选进入发布流程，不会立即部署或重启服务。'
+  try {
+    await ElMessageBox.confirm(
+      `${effect}\n\n版本：${release.version}\n风险：${release.risk?.label || '未分级'}\n审批：${releaseApprovalModeLabel.value}\n摘要：${release.candidate_digest.slice(0, 12)}…`,
+      action,
+      {
+        confirmButtonText: `确认${action}`,
+        cancelButtonText: '取消',
+        type: revoke ? 'warning' : 'info',
+        distinguishCancelAndClose: true
+      }
+    )
+  } catch {
+    return
+  }
+  releaseApproving.value = true
+  try {
+    const decision = revoke
+      ? await revokeMemoryRelease(release.candidate_digest)
+      : await approveMemoryRelease(release.candidate_digest)
+    if (memoryHealth.value) memoryHealth.value.release = decision
+    ElMessage.success(revoke ? '已撤销候选审批' : '候选已审批，等待独立发布执行')
+  } finally {
+    releaseApproving.value = false
+  }
+}
+
 function computeHealth(ageSeconds: number | null | undefined): MonitoringAgent['health'] {
   if (ageSeconds == null) return 'offline'
   if (ageSeconds <= 60) return 'healthy'
@@ -497,6 +845,7 @@ function computeHealth(ageSeconds: number | null | undefined): MonitoringAgent['
 function refreshData() {
   fetchMonitoringData()
   fetchDevices()
+  fetchMemoryHealth()
 }
 
 // ─── Auto Refresh (3s interval) ──────────────────────────────────────────────
@@ -519,7 +868,10 @@ function stopAutoRefresh() {
 
 function startDeviceRefresh() {
   stopDeviceRefresh()
-  deviceRefreshTimer = setInterval(fetchDevices, 15000)
+  deviceRefreshTimer = setInterval(() => {
+    fetchDevices()
+    fetchMemoryHealth()
+  }, 15000)
 }
 
 function stopDeviceRefresh() {
@@ -737,8 +1089,7 @@ function updateHealthPie() {
 // ─── Lifecycle ───────────────────────────────────────────────────────────────
 
 onMounted(async () => {
-  await fetchMonitoringData()
-  await fetchDevices()
+  await Promise.all([fetchMonitoringData(), fetchDevices(), fetchMemoryHealth()])
   initCharts()
   startAutoRefresh()
   startDeviceRefresh()
@@ -892,6 +1243,137 @@ onUnmounted(() => {
 .stat-idle .stat-value,
 .stat-avg-cpu .stat-value { color: #d29922; }
 .stat-offline .stat-value { color: var(--text-secondary); }
+
+/* ─── Memory System Gate ─── */
+.memory-health-card {
+  margin-bottom: 28px;
+  padding: 18px;
+  color: var(--text-primary);
+  background: var(--card-bg);
+  border: 1px solid var(--line-color);
+  border-left: 4px solid var(--text-secondary);
+  border-radius: 10px;
+}
+
+.memory-health-card.memory-healthy { border-left-color: #3fb950; }
+.memory-health-card.memory-stale { border-left-color: #d29922; }
+.memory-health-card.memory-unhealthy,
+.memory-health-card.memory-missing,
+.memory-health-card.memory-invalid { border-left-color: #f85149; }
+
+.memory-health-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.memory-health-title { font-size: 17px; font-weight: 700; }
+.memory-health-subtitle { margin-top: 4px; color: var(--text-secondary); font-size: 12px; }
+
+.memory-health-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.memory-health-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  padding: 12px;
+  background: var(--panel-bg);
+  border: 1px solid var(--line-color);
+  border-radius: 8px;
+}
+
+.memory-health-metric span,
+.memory-health-metric small { color: var(--text-secondary); font-size: 11px; }
+.memory-health-metric strong {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.memory-channel-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.memory-channel-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 9px;
+  color: var(--text-secondary);
+  background: var(--panel-bg);
+  border: 1px solid var(--line-color);
+  border-radius: 12px;
+  font-size: 11px;
+}
+.memory-channel-chip i {
+  width: 7px;
+  height: 7px;
+  background: var(--text-secondary);
+  border-radius: 50%;
+}
+.memory-channel-chip.channel-ready i { background: #3fb950; }
+.memory-channel-chip.channel-failed i { background: #f85149; }
+.memory-health-alert { margin-top: 14px; }
+
+.memory-operations-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+.memory-operation-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  background: var(--panel-bg);
+  border: 1px solid var(--line-color);
+  border-radius: 8px;
+}
+.memory-operation-item span,
+.memory-operation-item small { color: var(--text-secondary); font-size: 11px; }
+.memory-operation-item strong { color: var(--text-primary); font-size: 15px; }
+.release-approval-button,
+.release-history-button { align-self: flex-start; margin-top: 4px; margin-left: 0; }
+.memory-operation-item.slo-healthy { border-color: rgba(63, 185, 80, 0.35); }
+.memory-operation-item.slo-at_risk { border-color: rgba(210, 153, 34, 0.45); }
+.memory-operation-item.slo-breached { border-color: rgba(248, 81, 73, 0.45); }
+
+.release-timeline { padding: 4px 8px; }
+.release-history-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  color: var(--text-secondary);
+  background: var(--panel-bg);
+  border: 1px solid var(--line-color);
+  border-radius: 8px;
+  font-size: 12px;
+}
+.release-history-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--text-primary);
+}
+
+@media (max-width: 900px) {
+  .memory-health-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .memory-operations-row { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 560px) {
+  .memory-health-metrics { grid-template-columns: 1fr; }
+  .memory-health-header { align-items: flex-start; }
+}
 
 /* ─── Section Header ──────────────────────────────────────────── */
 .section-header {

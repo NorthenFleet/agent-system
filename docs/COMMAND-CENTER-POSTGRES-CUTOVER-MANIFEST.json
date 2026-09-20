@@ -1,0 +1,37 @@
+{
+  "schema_version": "command-center-postgres-cutover-manifest.v1",
+  "cutover_date": "2026-09-18",
+  "service": "ai.openclaw.agent-system-3021",
+  "scope": "single-instance-controlled-canary",
+  "source_backend": "sqlite",
+  "target_backend": "postgresql",
+  "database": "team_dashboard",
+  "old_pid": 7287,
+  "new_pid": 20333,
+  "snapshot": {
+    "path": "backups/command-center-cutover-20260918-phase6/unified_dashboard.before-cutover.db",
+    "sha256": "c6bcdc608d01a2c772ebbcb79c3eed2a4c236579d1dde06030cdadcba477c561",
+    "integrity_check": "ok"
+  },
+  "post_cutover_counts": {
+    "orchestration_missions": 11,
+    "mission_steps": 30,
+    "work_runs": 24,
+    "work_run_events": 100,
+    "work_artifacts": 6
+  },
+  "stale_lease_remediation": {
+    "work_runs_blocked": 3,
+    "fallback_events_synchronized": 3,
+    "expired_active_leases": 0
+  },
+  "verification": {
+    "live_smoke": "docs/COMMAND-CENTER-POSTGRES-CUTOVER-SMOKE.json",
+    "observation": "docs/COMMAND-CENTER-POSTGRES-CUTOVER-OBSERVATION.json",
+    "command_center_reconciliation": "docs/COMMAND-CENTER-POSTGRES-CUTOVER-RECONCILIATION.json",
+    "work_run_reconciliation": "docs/WORK-RUN-POSTGRES-CUTOVER-RECONCILIATION.json",
+    "fallback_sync": "docs/COMMAND-CENTER-CUTOVER-FALLBACK-SYNC.json",
+    "ui_gate": "ready"
+  },
+  "result": "passed_with_single_instance_limit"
+}

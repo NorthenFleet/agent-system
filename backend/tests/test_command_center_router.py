@@ -6,6 +6,7 @@ from routers.auth_router import get_current_user
 from services.command_center_service import CommandCenterService
 from services.context_retrieval_service import ContextRetrievalService
 from services.memory_feedback_service import MemoryFeedbackService
+from services.work_run_service import WorkRunService
 
 
 def _projects():
@@ -106,7 +107,9 @@ def _client(tmp_path, monkeypatch):
     memory_service = MemoryFeedbackService(service.db_path)
     context_service.upsert_profile(user_id="1", display_name="管理员")
     monkeypatch.setattr(router_module, "command_center_service", service)
+    monkeypatch.setattr(router_module, "context_retrieval_service", context_service)
     monkeypatch.setattr(router_module, "memory_feedback_service", memory_service)
+    monkeypatch.setattr(router_module, "work_run_service", WorkRunService(service.db_path))
     monkeypatch.setattr(router_module, "finance_intake_coordinator", _FinanceIntakeStub())
     monkeypatch.setattr(router_module, "finance_review_orchestrator", _FinanceReviewOrchestratorStub())
     monkeypatch.setenv("COMMAND_CENTER_INGRESS_TOKEN", "test-secret")
@@ -118,6 +121,221 @@ def _client(tmp_path, monkeypatch):
         "role": "admin",
     }
     return TestClient(app), service, context_service, memory_service
+
+
+def test_health_exposes_storage_backend_and_production_capabilities(tmp_path, monkeypatch):
+    client, service, _context_service, _memory_service = _client(tmp_path, monkeypatch)
+    service.register_worker("router-test-worker", role="embedded")
+
+    response = client.get("/api/v3/command-center/health")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["source_of_truth"] == service.db_path
+    assert payload["storage"] == {
+        "backend": "sqlite",
+        "source_of_truth": service.db_path,
+        "capabilities": {
+            "durable": True,
+            "transactional_claims": True,
+            "multi_instance": False,
+            "runtime_schema_management": True,
+        },
+    }
+    assert payload["storage_runtime"]["connection_mode"] == "direct"
+
+    production = client.get("/api/v3/command-center/production-health")
+    assert production.status_code == 200
+    production_payload = production.json()
+    assert production_payload["status"] == "ready"
+    assert production_payload["work_runs"]["expired_active_leases"] == 0
+    assert production_payload["workflow_runtime"]["checkpoint_storage"]["status"] == "local"
+    assert production_payload["workers"]["status"] == "ready"
+    assert production_payload["workers"]["live"] == 1
+    assert production_payload["workers"]["required"] == 1
+
+
+def test_agent_memory_context_resolves_bound_identity_and_3021_scope(tmp_path, monkeypatch):
+    client, command_service, context_service, _memory_service = _client(tmp_path, monkeypatch)
+    context_service.upsert_fact(
+        user_id="1",
+        fact_type="decision",
+        fact_key="decision.single_entry",
+        fact_value="擎天柱是唯一任务入口。",
+        importance="critical",
+        source_ref="router-test",
+    )
+    command_service.upsert_external_user_binding(
+        channel="feishu",
+        external_user_id="ou_test",
+        internal_user_id="1",
+        profile_user_id="1",
+        display_name="管理员",
+    )
+
+    response = client.post(
+        "/api/v3/command-center/agent/memory-context",
+        headers={"X-Command-Center-Token": "test-secret"},
+        json={
+            "channel": "feishu",
+            "external_user_id": "ou_test",
+            "query": "你记住了哪些内容",
+            "agent_id": "optimus",
+            "persist": False,
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["identity"] == {
+        "channel": "feishu",
+        "display_name": "管理员",
+        "bound": True,
+    }
+    assert payload["authority"]["system"] == "3021-unified-memory"
+    assert payload["counts"]["profile_facts"] == 1
+    assert payload["remembered_items"][0]["content"] == "擎天柱是唯一任务入口。"
+
+
+def test_agent_memory_context_isolates_users_on_same_channel(tmp_path, monkeypatch):
+    client, command_service, context_service, _memory_service = _client(tmp_path, monkeypatch)
+    context_service.upsert_profile(user_id="2", display_name="第二用户")
+    context_service.upsert_fact(
+        user_id="1",
+        fact_type="preference",
+        fact_key="preference.private_workspace",
+        fact_value="仅用户一可见的私有工作偏好。",
+        importance="critical",
+        source_ref="cross-user-isolation-test",
+    )
+    command_service.upsert_external_user_binding(
+        channel="feishu",
+        external_user_id="ou_user_one",
+        internal_user_id="1",
+        profile_user_id="1",
+        display_name="管理员",
+    )
+    command_service.upsert_external_user_binding(
+        channel="feishu",
+        external_user_id="ou_user_two",
+        internal_user_id="2",
+        profile_user_id="2",
+        display_name="第二用户",
+    )
+
+    response = client.post(
+        "/api/v3/command-center/agent/memory-context",
+        headers={"X-Command-Center-Token": "test-secret"},
+        json={
+            "channel": "feishu",
+            "external_user_id": "ou_user_two",
+            "query": "私有工作偏好",
+            "agent_id": "optimus",
+            "persist": False,
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["identity"] == {
+        "channel": "feishu",
+        "display_name": "第二用户",
+        "bound": True,
+    }
+    assert payload["counts"]["profile_facts"] == 0
+    assert all(
+        "仅用户一可见" not in str(item.get("content") or "")
+        for item in payload["remembered_items"]
+    )
+
+
+def test_agent_memory_context_rejects_unbound_identity(tmp_path, monkeypatch):
+    client, _command_service, _context_service, _memory_service = _client(tmp_path, monkeypatch)
+
+    response = client.post(
+        "/api/v3/command-center/agent/memory-context",
+        headers={"X-Command-Center-Token": "test-secret"},
+        json={
+            "channel": "feishu",
+            "external_user_id": "ou_unknown",
+            "query": "你记住了什么",
+        },
+    )
+
+    assert response.status_code == 400
+    assert "not mapped" in response.json()["detail"]
+
+
+def test_memory_health_ingress_publishes_sanitized_transition(tmp_path, monkeypatch):
+    client, _command_service, _context_service, _memory_service = _client(tmp_path, monkeypatch)
+    captured = {}
+
+    def publish(_db, payload):
+        captured.update(payload)
+        return {"status": "published", "notifications_created": 1}
+
+    monkeypatch.setattr(router_module, "publish_memory_health_notification", publish)
+    response = client.post(
+        "/api/v3/command-center/agent/memory-health",
+        headers={"X-Command-Center-Token": "test-secret"},
+        json={
+            "schema_version": "memory-system-health.v1",
+            "checked_at": "2026-09-17T00:00:00+00:00",
+            "healthy": False,
+            "case_id": "optimus-memory-inventory-system-gate",
+            "failures": [{"check": "identity.bound"}],
+            "summary": {"channels": {"approved_graph_projection": "ready"}},
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["notifications_created"] == 1
+    assert captured["healthy"] is False
+    assert captured["failures"] == [{"check": "identity.bound"}]
+
+
+def test_memory_health_ingress_rejects_invalid_token(tmp_path, monkeypatch):
+    client, _command_service, _context_service, _memory_service = _client(tmp_path, monkeypatch)
+    response = client.post(
+        "/api/v3/command-center/agent/memory-health",
+        headers={"X-Command-Center-Token": "wrong"},
+        json={
+            "checked_at": "2026-09-17T00:00:00+00:00",
+            "healthy": True,
+        },
+    )
+
+    assert response.status_code == 401
+
+
+def test_command_center_capabilities_catalog(tmp_path, monkeypatch):
+    client, _service, _context_service, _memory_service = _client(tmp_path, monkeypatch)
+
+    response = client.get("/api/v3/command-center/capabilities")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert any(agent["id"] == "optimus" for agent in payload["agents"])
+    assert any(tool["id"] == "codex" for tool in payload["tools"])
+    assert payload["task_agent_defaults"]["backend"] == "raphael"
+    assert any(
+        flow["flow_key"] == "software"
+        for flow in payload["business_flow_contract"]["flows"]
+    )
+    assert payload["business_flow_contract"]["risk_levels"]["L3"]["step_approval"] is True
+    assert payload["workflow_runtime"]["default_runtime"] == "legacy"
+    assert payload["workflow_runtime"]["ownership"]["business_state"] == "command_center"
+    assert payload["execution_evidence"]["schema_version"] == "1.0"
+    assert payload["step_approval"]["single_use"] is True
+    assert payload["compensation"]["policy"]["automatic_execution"] is False
+
+    flow_response = client.get("/api/v3/command-center/business-flows")
+    assert flow_response.status_code == 200
+    assert "artifact" in flow_response.json()["contracts"]
+
+    runtime_response = client.get("/api/v3/command-center/workflow-runtime")
+    assert runtime_response.status_code == 200
+    assert runtime_response.json()["langgraph"]["checkpoint_backend"] == "sqlite"
 
 
 def test_dashboard_mission_crud_and_approval_contract(tmp_path, monkeypatch):
@@ -158,6 +376,20 @@ def test_dashboard_mission_crud_and_approval_contract(tmp_path, monkeypatch):
     assert approved.status_code == 200
     assert approved.json()["status"] == "dispatching"
 
+    delivery = client.get(
+        f"/api/v3/command-center/missions/{mission_id}/delivery-evidence"
+    )
+    assert delivery.status_code == 200
+    assert delivery.json()["summary"]["artifact_count"] == 0
+
+    ledger = client.get(
+        f"/api/v3/command-center/missions/{mission_id}/run-ledger"
+    )
+    assert ledger.status_code == 200
+    assert ledger.json()["run"]["id"].startswith("mrun-")
+    assert ledger.json()["run"]["correlation_id"].startswith("mission-")
+    assert ledger.json()["summary"]["event_count"] >= 3
+
     listed = client.get("/api/v3/command-center/missions")
     assert listed.status_code == 200
     assert listed.json()["missions"][0]["id"] == mission_id
@@ -165,6 +397,156 @@ def test_dashboard_mission_crud_and_approval_contract(tmp_path, monkeypatch):
     summary = client.get("/api/v3/command-center/summary")
     assert summary.status_code == 200
     assert summary.json()["total"] == 1
+
+
+def test_high_risk_step_approval_api_requires_current_contract(tmp_path, monkeypatch):
+    client, service, _context_service, _memory_service = _client(tmp_path, monkeypatch)
+    mission = service.create_mission(
+        objective="执行生产发布",
+        requested_by="admin",
+        project_id="project-1",
+        mission_type="software",
+        profile_user_id="1",
+    )
+    service.claim_planning_mission("planner")
+    service.save_plan(
+        mission["id"],
+        {
+            "summary": "高风险发布",
+            "steps": [
+                {
+                    "title": "生产发布",
+                    "description": "发布至生产环境",
+                    "agent_id": "optimus",
+                    "task_type": "operations",
+                    "risk_class": "L3",
+                    "approval_required": True,
+                    "side_effect": True,
+                    "resources": ["production"],
+                    "rollback_plan": "恢复上一稳定版本",
+                    "depends_on": [],
+                }
+            ],
+        },
+    )
+    service.approve(mission["id"], decided_by="admin")
+    service.activate_approved_missions()
+    assert service.claim_ready_steps("runner", limit=1) == []
+
+    listed = client.get(
+        f"/api/v3/command-center/missions/{mission['id']}/step-approvals"
+    )
+    assert listed.status_code == 200
+    approval = listed.json()["current"][0]
+
+    stale = client.post(
+        f"/api/v3/command-center/missions/{mission['id']}/steps/{approval['step_id']}/approve",
+        json={
+            "approval_id": approval["id"],
+            "contract_hash": "0" * 64,
+            "comment": "错误快照",
+        },
+    )
+    assert stale.status_code == 409
+
+    approved = client.post(
+        f"/api/v3/command-center/missions/{mission['id']}/steps/{approval['step_id']}/approve",
+        json={
+            "approval_id": approval["id"],
+            "contract_hash": approval["contract_hash"],
+            "comment": "批准当前合同快照",
+        },
+    )
+    assert approved.status_code == 200
+    assert approved.json()["approval"]["status"] == "approved"
+
+
+def test_compensation_api_requires_admin_contract_approval(tmp_path, monkeypatch):
+    client, service, _context_service, _memory_service = _client(tmp_path, monkeypatch)
+    mission = service.create_mission(
+        objective="执行生产配置变更",
+        requested_by="admin",
+        project_id="project-1",
+        mission_type="software",
+        profile_user_id="1",
+    )
+    service.claim_planning_mission("planner")
+    service.save_plan(
+        mission["id"],
+        {
+            "summary": "生产变更",
+            "steps": [
+                {
+                    "title": "生产配置变更",
+                    "task_type": "operations",
+                    "agent_id": "optimus",
+                    "risk_class": "L3",
+                    "approval_required": True,
+                    "side_effect": True,
+                    "resources": ["production-config"],
+                    "rollback_plan": "恢复上一配置",
+                    "depends_on": [],
+                }
+            ],
+        },
+    )
+    service.approve(mission["id"], decided_by="admin")
+    service.activate_approved_missions()
+    service.claim_ready_steps("runner", limit=1)
+    current = service.get_mission(mission["id"])
+    step = current["steps"][0]
+    approval = step["step_approval"]
+    service.decide_step_approval(
+        mission["id"],
+        step["id"],
+        approval_id=approval["id"],
+        contract_hash=approval["contract_hash"],
+        decision="approved",
+        decided_by="admin",
+    )
+    running = service.claim_ready_steps("runner", limit=1)[0]
+    service.complete_step(
+        running["id"],
+        result={
+            "error": "健康检查失败",
+            "side_effects": [
+                {
+                    "effect_key": "config-change",
+                    "resource": "production-config",
+                    "action": "更新配置",
+                    "status": "applied",
+                    "idempotency_key": running["idempotency_key"],
+                    "receipt_ref": "ops:change-1",
+                    "evidence_refs": ["health:failed"],
+                }
+            ],
+        },
+        success=False,
+        actor="optimus",
+        lease_token=running["lease_token"],
+    )
+
+    listed = client.get(
+        f"/api/v3/command-center/missions/{mission['id']}/compensations"
+    )
+    assert listed.status_code == 200
+    compensation = listed.json()["compensations"][0]
+
+    stale = client.post(
+        f"/api/v3/command-center/missions/{mission['id']}/compensations/{compensation['id']}/approve",
+        json={"contract_hash": "0" * 64, "comment": "wrong"},
+    )
+    assert stale.status_code == 409
+
+    approved = client.post(
+        f"/api/v3/command-center/missions/{mission['id']}/compensations/{compensation['id']}/approve",
+        json={
+            "contract_hash": compensation["contract_hash"],
+            "comment": "批准补偿",
+        },
+    )
+    assert approved.status_code == 200
+    assert approved.json()["compensation"]["status"] == "ready"
 
 
 def test_normalized_inbox_requires_secret_and_is_idempotent(tmp_path, monkeypatch):
