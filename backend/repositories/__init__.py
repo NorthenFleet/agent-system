@@ -23,6 +23,14 @@ from repositories.agent_status_history_repository import AgentStatusHistoryRepos
 from repositories.task_comment_repository import TaskCommentRepository
 from repositories.task_history_repository import TaskHistoryRepository
 from repositories.task_template_repository import TaskTemplateRepository
+from repositories.command_center_repository import (
+    CommandCenterRepository,
+    CommandCenterStorageCapabilities,
+    PostgresCommandCenterRepository,
+    SQLiteCommandCenterRepository,
+    UnsupportedCommandCenterBackend,
+    create_command_center_repository,
+)
 
 __all__ = [
     "BaseRepository",
@@ -42,4 +50,10 @@ __all__ = [
     "TaskCommentRepository",
     "TaskHistoryRepository",
     "TaskTemplateRepository",
+    "CommandCenterRepository",
+    "CommandCenterStorageCapabilities",
+    "PostgresCommandCenterRepository",
+    "SQLiteCommandCenterRepository",
+    "UnsupportedCommandCenterBackend",
+    "create_command_center_repository",
 ]

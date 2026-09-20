@@ -27,6 +27,8 @@ if [ -f "$PROJECT_DIR/.env" ]; then
     source "$PROJECT_DIR/.env"
     set +a
 fi
+export AGENT_SYSTEM_ENV_FILE="$PROJECT_DIR/.env"
+export AGENT_SYSTEM_RUNTIME_KIND="manual"
 
 # 默认配置
 API_PORT="${API_PORT:-3021}"
@@ -43,6 +45,8 @@ AI_PLANNING_REMOTE_PORT="${AI_PLANNING_REMOTE_PORT:-5130}"
 AI_PLANNING_REMOTE_USER="${AI_PLANNING_REMOTE_USER:-sunyi}"
 AI_PLANNING_BASE_URL="${AI_PLANNING_BASE_URL:-http://127.0.0.1:$AI_PLANNING_TUNNEL_PORT}"
 AI_PLANNING_PUBLIC_URL="${AI_PLANNING_PUBLIC_URL:-http://$AI_PLANNING_REMOTE_HOST:$AI_PLANNING_REMOTE_PORT}"
+MEMORY_VECTOR_ENABLED="${MEMORY_VECTOR_ENABLED:-false}"
+MEMORY_VECTOR_PREFLIGHT_REQUIRED="${MEMORY_VECTOR_PREFLIGHT_REQUIRED:-false}"
 
 # 打印带颜色的信息
 print_info() {
@@ -127,6 +131,29 @@ ensure_jwt_secret() {
     export DASHBOARD_JWT_SECRET="$(cat "$JWT_SECRET_FILE")"
 }
 
+run_memory_vector_preflight() {
+    if [ "$MEMORY_VECTOR_ENABLED" != "true" ]; then
+        print_info "长期记忆向量检索未启用，跳过 pgvector 上线预检"
+        return
+    fi
+    local report_file="$BACKEND_DIR/data/memory-vector-preflight.json"
+    mkdir -p "$BACKEND_DIR/data"
+    print_info "检查 pgvector、Embedding 模型和索引队列..."
+    if "$BACKEND_DIR/venv/bin/python" \
+        "$BACKEND_DIR/scripts/memory_vector_preflight.py" \
+        --env-file "$AGENT_SYSTEM_ENV_FILE" \
+        --probe-embedding --require-infrastructure --require-config-source > "$report_file"; then
+        print_success "长期记忆向量检索基础设施预检通过"
+        return
+    fi
+    if [ "$MEMORY_VECTOR_PREFLIGHT_REQUIRED" = "true" ]; then
+        print_error "长期记忆向量检索预检失败，报告: $report_file"
+        exit 1
+    fi
+    print_warning "长期记忆向量检索预检未通过，将自动降级到现有检索通道"
+    print_warning "预检报告: $report_file"
+}
+
 start_crawler() {
     local crawler_python="$CRAWLER_DIR/venv/bin/python"
     local crawler_uvicorn="$CRAWLER_DIR/venv/bin/uvicorn"
@@ -195,6 +222,7 @@ start_backend() {
     # 检查环境
     check_python
     check_venv
+    run_memory_vector_preflight
     start_crawler
     start_ai_planning_tunnel
     

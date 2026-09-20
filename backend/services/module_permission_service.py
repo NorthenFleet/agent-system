@@ -14,7 +14,7 @@ from models.v2_models import FeatureModule, User, UserFeatureModule
 
 DEFAULT_MODULES = [
     {"module_key": "dashboard", "name": "仪表盘", "route_path": "/", "icon": "Monitor", "sort_order": 10, "description": "系统概览与近期协作状态"},
-    {"module_key": "command-center", "name": "指挥中心", "route_path": "/command-center", "icon": "Platform", "sort_order": 15, "description": "通过擎天柱接收目标、审批计划、跟踪多智能体异步执行与反馈"},
+    {"module_key": "command-center", "name": "擎天柱指挥中心", "route_path": "/command-center", "icon": "Platform", "sort_order": 15, "description": "唯一任务入口；由擎天柱接收目标、拆分任务、调度智能体、汇总并汇报"},
     {"module_key": "projects", "name": "项目中枢", "route_path": "/projects", "icon": "FolderOpened", "sort_order": 20, "description": "完整项目画像与产品侧模块入口"},
     {"module_key": "development", "name": "程序开发", "route_path": "/development", "icon": "Promotion", "sort_order": 30, "description": "软件项目开发、任务拆解和执行反馈"},
     {"module_key": "writing", "name": "文档管理", "route_path": "/writing", "icon": "EditPen", "sort_order": 40, "description": "文档类项目管理、撰写和交付工作区"},
@@ -22,8 +22,9 @@ DEFAULT_MODULES = [
     {"module_key": "products", "name": "产品矩阵", "route_path": "/products", "icon": "Grid", "sort_order": 60, "description": "产品、依赖和推进状态"},
     {"module_key": "data-admin", "name": "数据管理", "route_path": "/data-admin", "icon": "Coin", "sort_order": 110, "description": "统一数据源、备份和数据健康"},
     {"module_key": "agents", "name": "智能体团队", "route_path": "/agents", "icon": "Cpu", "sort_order": 120, "description": "智能体组织、状态和能力"},
-    {"module_key": "agent-chat", "name": "智能体对话", "route_path": "/agent-chat", "icon": "ChatLineRound", "sort_order": 140, "description": "与智能体进行上下文对话"},
+    {"module_key": "agent-chat", "name": "旧智能体对话", "route_path": "/agent-chat", "icon": "ChatLineRound", "sort_order": 140, "description": "已并入擎天柱指挥中心；历史路径会重定向到唯一任务入口"},
     {"module_key": "knowledge", "name": "知识库", "route_path": "/knowledge", "icon": "Collection", "sort_order": 150, "description": "知识节点和资料上下文"},
+    {"module_key": "discussions", "name": "讨论与研究", "route_path": "/discussions", "icon": "ChatLineRound", "sort_order": 145, "description": "记录灵感与疑问，并将成熟讨论转化为研究项目"},
     {"module_key": "tools", "name": "工具管理", "route_path": "/tools", "icon": "Tools", "sort_order": 160, "description": "智能体技能、工具和定时任务"},
     {"module_key": "community", "name": "活动社区", "route_path": "/community", "icon": "ChatLineRound", "sort_order": 180, "description": "社区、论坛和互动信息"},
     {"module_key": "intelligence", "name": "情报信息", "route_path": "/intelligence", "icon": "MapLocation", "sort_order": 190, "description": "特定领域长期数据积累、空间态势和专题情报"},
@@ -31,6 +32,7 @@ DEFAULT_MODULES = [
     {"module_key": "tasks", "name": "任务列表", "route_path": "/tasks", "icon": "List", "sort_order": 200, "description": "独立任务列表和详情"},
     {"module_key": "monitoring", "name": "系统监视", "route_path": "/monitoring", "icon": "Monitor", "sort_order": 170, "description": "系统监视、设备清单、健康检查和运行指标"},
     {"module_key": "analytics", "name": "数据分析", "route_path": "/analytics", "icon": "TrendCharts", "sort_order": 175, "description": "团队效率、任务趋势、Sprint燃尽和Agent产出分析"},
+    {"module_key": "memory-evaluation", "name": "记忆评测", "route_path": "/memory-evaluation", "icon": "TrendCharts", "sort_order": 176, "description": "Shadow 指标、标注用例审核与检索切流门禁"},
     {"module_key": "user-admin", "name": "用户管理", "route_path": "/user-admin", "icon": "User", "sort_order": 900, "description": "用户、角色和模块授权"},
 ]
 
@@ -40,9 +42,9 @@ ROLE_DEFAULT_MODULES = {
     "admin": [m["module_key"] for m in DEFAULT_MODULES],
     "agent": [
         "dashboard", "command-center", "projects", "development", "writing", "agents",
-        "knowledge", "tools", "intelligence", "tasks", "products", "monitoring",
+        "knowledge", "discussions", "tools", "intelligence", "tasks", "products", "monitoring",
     ],
-    "viewer": ["dashboard", "command-center", "projects", "development", "writing", "knowledge", "intelligence", "news-center", "products"],
+    "viewer": ["dashboard", "command-center", "projects", "development", "writing", "knowledge", "discussions", "intelligence", "news-center", "products"],
 }
 
 

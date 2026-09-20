@@ -10,6 +10,7 @@ from fastapi import FastAPI
 from routers import (
     agent_os,
     data_admin,
+    discussions_router,
     finance,
     intelligence,
     knowledge,
@@ -26,6 +27,7 @@ from routers import (
     writing_workspace,
 )
 from routers.agent_health_router import router as agent_health_router
+from routers.agent_team_router import router as agent_team_router
 from routers.agents_router import router as agents_router
 from routers.auth_router import router as auth_router
 from routers.codex_jobs_router import router as codex_jobs_router
@@ -92,6 +94,7 @@ ACTIVE_ROUTERS = (
     knowledge.router,
     knowledge_stack.router,
     data_admin.router,
+    discussions_router.router,
     products_router.router,
     product_invocation_router.router,
     agent_os.router,
@@ -111,6 +114,7 @@ ACTIVE_ROUTERS = (
     development_automation_router,
     task_recommend_router,
     agent_health_router,
+    agent_team_router,
     monitoring_router,
     modules_router,
     task_webhook_router,

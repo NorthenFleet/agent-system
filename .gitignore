@@ -36,6 +36,9 @@ logs/
 .env.local
 .env.*.local
 
+# Local production snapshots and environment backups
+backups/
+
 # Temporary files
 tmp/
 temp/

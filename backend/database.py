@@ -130,6 +130,71 @@ def ensure_v2_schema_compatibility():
             ))
 
 
+def ensure_task_table_ownership_compatibility(target_engine=None):
+    """Separate the legacy planning aggregate from the canonical task ledger.
+
+    Older SQLite boot order allowed ``models.task_plan.Task`` to create a
+    structurally incompatible table named ``tasks`` before the V2 ledger.  The
+    migration is lossless: the old table and any incompatible dependent audit
+    tables are renamed, after which V2 metadata can create its canonical tables.
+    """
+
+    selected_engine = target_engine or engine
+    if selected_engine.dialect.name != "sqlite":
+        return False
+    inspector = inspect(selected_engine)
+    tables = set(inspector.get_table_names())
+    legacy_dependents = {
+        "legacy_incompatible_task_history",
+        "legacy_incompatible_task_comments",
+    }
+    with selected_engine.begin() as conn:
+        for table_name in sorted(legacy_dependents & tables):
+            indexes = conn.execute(
+                text(f'PRAGMA index_list("{table_name}")')
+            ).fetchall()
+            for index in indexes:
+                index_name = str(index[1])
+                if index_name.startswith("sqlite_autoindex"):
+                    continue
+                safe_name = index_name.replace('"', '""')
+                conn.execute(text(f'DROP INDEX IF EXISTS "{safe_name}"'))
+    if "tasks" not in tables:
+        return False
+    columns = {column["name"] for column in inspector.get_columns("tasks")}
+    if "task_id" in columns:
+        return False
+    if "active_plan_id" not in columns:
+        raise RuntimeError(
+            "tasks table is neither the canonical ledger nor the known legacy plan schema"
+        )
+    if "legacy_plan_tasks" in tables:
+        raise RuntimeError(
+            "cannot migrate legacy tasks: legacy_plan_tasks already exists"
+        )
+
+    with selected_engine.begin() as conn:
+        conn.execute(text("ALTER TABLE tasks RENAME TO legacy_plan_tasks"))
+        for dependent in ("task_history", "task_comments"):
+            if dependent not in tables:
+                continue
+            target = f"legacy_incompatible_{dependent}"
+            if target in tables:
+                raise RuntimeError(f"cannot preserve {dependent}: {target} already exists")
+            conn.execute(text(f"ALTER TABLE {dependent} RENAME TO {target}"))
+            indexes = conn.execute(text(f'PRAGMA index_list("{target}")')).fetchall()
+            for index in indexes:
+                index_name = str(index[1])
+                if index_name.startswith("sqlite_autoindex"):
+                    continue
+                safe_name = index_name.replace('"', '""')
+                conn.execute(text(f'DROP INDEX IF EXISTS "{safe_name}"'))
+    logger.warning(
+        "migrated legacy planning tasks to legacy_plan_tasks; canonical tasks will be recreated"
+    )
+    return True
+
+
 def ensure_db_initialized():
     global _initialized
     if _initialized:
@@ -137,11 +202,13 @@ def ensure_db_initialized():
     if DATABASE_URL.startswith("sqlite"):
         # SQLite remains a self-contained development/test option. Production
         # PostgreSQL schemas are owned exclusively by Alembic.
+        from models import v2_models  # noqa: F401 - register V2 metadata
         from models.task_plan import Base as TaskPlanBase
         from models import writing_collaboration  # noqa: F401
 
-        TaskPlanBase.metadata.create_all(bind=engine)
+        ensure_task_table_ownership_compatibility()
         Base.metadata.create_all(bind=engine)
+        TaskPlanBase.metadata.create_all(bind=engine)
         ensure_v2_schema_compatibility()
     _initialized = True
 
@@ -169,13 +236,15 @@ def init_db():
     
     注意：生产环境应使用 Alembic 进行数据库迁移
     """
+    from models import v2_models  # noqa: F401 - register V2 metadata
     from models.task_plan import Base as TaskPlanBase
     from models import writing_collaboration  # noqa: F401
     
     # 创建所有表
-    TaskPlanBase.metadata.create_all(bind=engine)
     if DATABASE_URL.startswith("sqlite"):
+        ensure_task_table_ownership_compatibility()
         Base.metadata.create_all(bind=engine)
+        TaskPlanBase.metadata.create_all(bind=engine)
     ensure_v2_schema_compatibility()
     print("数据库表已创建")
 

@@ -23,6 +23,7 @@ from routers.auth_router import router as auth_router
 from routers.scheduler_router import router as scheduler_router
 from routers.memory_router import router as memory_router
 from routers.graph_memory_router import router as graph_memory_router
+from services.memory_runtime_config import public_memory_runtime_configuration
 
 app = FastAPI(title="团队状态看板 API")
 FD2 = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend-v2", "dist")
@@ -65,6 +66,7 @@ def _module_for_path(path: str):
     if path.startswith("/api/v2/auth") or path == "/api/v2/modules/me":
         return None
     mapping = [
+        (("/api/v3/context/evaluations/retrieval", "/api/v3/context/vector-memory"), "memory-evaluation"),
         (("/api/v3/writing",), "writing"),
         (("/api/v2/users", "/api/v2/modules"), "user-admin"),
         (("/api/v3/projects", "/api/v2/projects"), "projects"),
@@ -74,6 +76,7 @@ def _module_for_path(path: str):
         (("/api/v2/codex", "/api/v2/codex-jobs"), "development"),
         (("/api/v2/chat", "/api/chat"), "agents"),
         (("/api/knowledge", "/api/v3/knowledge"), "knowledge"),
+        (("/api/v3/discussions",), "discussions"),
         (("/api/finance",), "finance"),
         (("/api/skills",), "skills"),
         (("/api/scheduled",), "scheduled"),
@@ -134,7 +137,13 @@ app.include_router(graph_memory_router)
 app.get("/")(lambda: _r(_fe()))
 app.get("/login")(lambda: _r(_fe()))
 app.get("/favicon.ico")(lambda: JSONResponse(status_code=204, content=None))
-app.get("/health")(lambda: {"status": "ok", "port": int(os.getenv("API_PORT", os.getenv("PORT", "3021")))})
+app.get("/health")(
+    lambda: {
+        "status": "ok",
+        "port": int(os.getenv("API_PORT", os.getenv("PORT", "3021"))),
+        "memory_runtime": public_memory_runtime_configuration(),
+    }
+)
 if os.path.isdir(FD2): app.mount("/assets", StaticFiles(directory=os.path.join(FD2, "assets")), name="v2")
 if os.path.isdir(os.path.join(FD2, "vendor")):
     app.mount("/vendor", StaticFiles(directory=os.path.join(FD2, "vendor")), name="v2-vendor")

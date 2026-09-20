@@ -85,7 +85,9 @@ class Task(Base):
     
     表示一个完整的工作任务，可关联多个开发计划
     """
-    __tablename__ = 'tasks'
+    # This legacy planning aggregate must not share the canonical ``tasks``
+    # table owned by models.v2_models.Task.
+    __tablename__ = 'legacy_plan_tasks'
 
     # 基础信息
     id = Column(String(32), primary_key=True)
@@ -192,7 +194,12 @@ class DevelopmentPlan(Base):
     # The task table is owned by the V2 model metadata; keep this reference
     # application-enforced so PostgreSQL startup does not build an invalid
     # cross-metadata foreign key against the integer legacy tasks.id column.
-    task_id = Column(String(64), nullable=False, index=True)
+    task_id = Column(
+        String(64),
+        ForeignKey('legacy_plan_tasks.id', ondelete='CASCADE'),
+        nullable=False,
+        index=True,
+    )
     title = Column(String(500), nullable=False)
     version = Column(Integer, nullable=False, default=1)
     type = Column(portable_enum(PlanTypeEnum), nullable=False, default=PlanTypeEnum.GENERAL)

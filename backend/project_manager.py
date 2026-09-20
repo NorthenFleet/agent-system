@@ -59,6 +59,8 @@ def _normalize_name(value: Any) -> str:
 
 def _normalize_project_type(value: Any) -> str:
     value = str(value or "").strip().lower()
+    if value in {"research", "study", "research_project"}:
+        return "research"
     if value in {"document", "doc", "writing", "paper"}:
         return "document"
     return "software"
