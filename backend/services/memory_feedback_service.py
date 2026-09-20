@@ -10,6 +10,19 @@ from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from typing import Any, Iterator, Optional
 
+from services.graph_memory_client import GraphMemoryClient, graph_memory_client
+from services.memory_lifecycle_service import (
+    MemoryLifecycleService,
+    ensure_memory_lifecycle_schema,
+    register_canonical_memory,
+    transition_canonical_memory,
+)
+from services.memory_vector_service import (
+    ApprovedMemoryVectorService,
+    candidate_vector_document,
+    enqueue_vector_document,
+    ensure_vector_queue_schema,
+)
 from unified_data_manager import UNIFIED_DB_PATH
 
 
@@ -21,6 +34,7 @@ IMPORTANCE_SCORES = {
 }
 MEMORY_TARGETS = {"profile", "project", "agent"}
 MEMORY_CANDIDATE_STATUSES = {"pending_review", "published", "rejected"}
+GRAPH_SYNC_MAX_ATTEMPTS = 8
 
 
 class MemoryFeedbackError(RuntimeError):
@@ -49,9 +63,16 @@ def _hash(value: Any) -> str:
 
 
 class MemoryFeedbackService:
-    def __init__(self, db_path: str = UNIFIED_DB_PATH):
+    def __init__(
+        self,
+        db_path: str = UNIFIED_DB_PATH,
+        *,
+        vector_index_service: Optional[ApprovedMemoryVectorService] = None,
+    ):
         self.db_path = db_path
+        self.vector_index_service = vector_index_service or ApprovedMemoryVectorService(db_path)
         self.ensure_schema()
+        self.lifecycle_service = MemoryLifecycleService(db_path)
 
     @contextmanager
     def connect(self, *, immediate: bool = False) -> Iterator[sqlite3.Connection]:
@@ -174,6 +195,34 @@ class MemoryFeedbackService:
                 CREATE INDEX IF NOT EXISTS idx_memory_candidate_jobs_pending
                     ON memory_candidate_jobs(status, next_attempt_at, created_at);
 
+                CREATE TABLE IF NOT EXISTS memory_graph_outbox (
+                    id TEXT PRIMARY KEY,
+                    event_type TEXT NOT NULL,
+                    aggregate_type TEXT NOT NULL,
+                    aggregate_id TEXT NOT NULL,
+                    candidate_id TEXT NOT NULL,
+                    user_id TEXT NOT NULL,
+                    project_id TEXT NOT NULL DEFAULT '',
+                    agent_id TEXT NOT NULL DEFAULT '',
+                    payload TEXT NOT NULL,
+                    idempotency_key TEXT NOT NULL UNIQUE,
+                    status TEXT NOT NULL DEFAULT 'pending',
+                    attempts INTEGER NOT NULL DEFAULT 0,
+                    next_attempt_at TEXT NOT NULL,
+                    locked_at TEXT,
+                    lock_owner TEXT,
+                    lock_token TEXT,
+                    lease_expires_at TEXT,
+                    last_error TEXT,
+                    delivered_at TEXT,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    FOREIGN KEY(candidate_id) REFERENCES memory_candidates(id)
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_memory_graph_outbox_pending
+                    ON memory_graph_outbox(status, next_attempt_at, created_at);
+
                 CREATE TABLE IF NOT EXISTS audit_logs (
                     id TEXT PRIMARY KEY,
                     actor TEXT NOT NULL DEFAULT 'system',
@@ -204,12 +253,35 @@ class MemoryFeedbackService:
                     _now(),
                 ),
             )
+            conn.execute(
+                """
+                INSERT OR IGNORE INTO schema_migrations (id, description, applied_at)
+                VALUES (?, ?, ?)
+                """,
+                (
+                    "015_memory_graph_outbox",
+                    "Create transactional graph projection outbox for approved memories",
+                    _now(),
+                ),
+            )
             self._ensure_column(conn, "memory_candidate_jobs", "lock_token", "TEXT")
             self._ensure_column(
                 conn,
                 "memory_candidate_jobs",
                 "lease_expires_at",
                 "TEXT",
+            )
+            conn.execute(
+                """
+                UPDATE memory_graph_outbox
+                SET status='retry', locked_at=NULL, lock_owner=NULL,
+                    lock_token=NULL, lease_expires_at=NULL,
+                    next_attempt_at=?, updated_at=?
+                WHERE status='processing'
+                  AND (lock_token IS NULL OR lock_token=''
+                       OR lease_expires_at IS NULL OR lease_expires_at='')
+                """,
+                (_now(), _now()),
             )
             conn.execute(
                 """
@@ -271,6 +343,19 @@ class MemoryFeedbackService:
                 ON agent_memories(agent_id, user_id, project_id, memory_key)
                 WHERE status='active' AND user_id!='' AND memory_key!=''
                 """
+            )
+            ensure_vector_queue_schema(conn)
+            ensure_memory_lifecycle_schema(conn)
+            conn.execute(
+                """
+                INSERT OR IGNORE INTO schema_migrations (id, description, applied_at)
+                VALUES (?, ?, ?)
+                """,
+                (
+                    "016_approved_memory_vector_queue",
+                    "Create durable vector indexing queue for approved long-term memory",
+                    _now(),
+                ),
             )
 
     @staticmethod
@@ -564,6 +649,165 @@ class MemoryFeedbackService:
                 continue
         return results
 
+    def process_graph_sync_job(
+        self,
+        job_id: str,
+        *,
+        sync_client: Optional[GraphMemoryClient] = None,
+        owner: str = "memory-graph-sync",
+        lease_seconds: int = 300,
+    ) -> dict[str, Any]:
+        """Deliver one durable graph projection event with a leased claim."""
+        now_dt = datetime.now(timezone.utc)
+        now = now_dt.isoformat()
+        lease_expires_at = (
+            now_dt + timedelta(seconds=max(60, int(lease_seconds)))
+        ).isoformat()
+        lock_token = f"graph-sync-lease-{uuid.uuid4().hex}"
+        with self.connect(immediate=True) as conn:
+            row = conn.execute(
+                "SELECT * FROM memory_graph_outbox WHERE id=?", (str(job_id),)
+            ).fetchone()
+            if not row:
+                raise MemoryFeedbackError(f"memory graph sync job not found: {job_id}")
+            if row["status"] == "delivered":
+                return {"job": self._serialize_graph_job(row), "delivered": False}
+            if row["status"] == "dead_letter":
+                raise MemoryFeedbackError(f"memory graph sync job is dead: {job_id}")
+            cursor = conn.execute(
+                """
+                UPDATE memory_graph_outbox
+                SET status='processing', attempts=attempts+1, locked_at=?,
+                    lock_owner=?, lock_token=?, lease_expires_at=?, updated_at=?
+                WHERE id=?
+                  AND (
+                    (status IN ('pending', 'retry') AND next_attempt_at <= ?)
+                    OR
+                    (status='processing' AND lease_expires_at IS NOT NULL
+                     AND lease_expires_at <= ?)
+                  )
+                """,
+                (
+                    now,
+                    str(owner or "memory-graph-sync")[:160],
+                    lock_token,
+                    lease_expires_at,
+                    now,
+                    str(job_id),
+                    now,
+                    now,
+                ),
+            )
+            if cursor.rowcount != 1:
+                raise MemoryFeedbackError(f"memory graph sync job is already leased: {job_id}")
+            claimed = conn.execute(
+                "SELECT * FROM memory_graph_outbox WHERE id=?", (str(job_id),)
+            ).fetchone()
+
+        try:
+            client = sync_client or graph_memory_client
+            result = client.upsert_projection(_loads(claimed["payload"], {}))
+        except Exception as exc:
+            with self.connect(immediate=True) as conn:
+                current = conn.execute(
+                    "SELECT attempts FROM memory_graph_outbox WHERE id=?", (str(job_id),)
+                ).fetchone()
+                attempts = int(current["attempts"] or 0) if current else 1
+                next_status = "dead_letter" if attempts >= GRAPH_SYNC_MAX_ATTEMPTS else "retry"
+                retry_at = (
+                    datetime.now(timezone.utc)
+                    + timedelta(seconds=min(900, 2 ** min(attempts, 9)))
+                ).isoformat()
+                conn.execute(
+                    """
+                    UPDATE memory_graph_outbox
+                    SET status=?, next_attempt_at=?, locked_at=NULL, lock_owner=NULL,
+                        lock_token=NULL, lease_expires_at=NULL, last_error=?, updated_at=?
+                    WHERE id=? AND status='processing' AND lock_token=?
+                    """,
+                    (
+                        next_status,
+                        retry_at,
+                        str(exc)[:4000],
+                        _now(),
+                        str(job_id),
+                        lock_token,
+                    ),
+                )
+            raise
+
+        with self.connect(immediate=True) as conn:
+            delivered_at = _now()
+            cursor = conn.execute(
+                """
+                UPDATE memory_graph_outbox
+                SET status='delivered', locked_at=NULL, lock_owner=NULL,
+                    lock_token=NULL, lease_expires_at=NULL, last_error=NULL,
+                    delivered_at=?, updated_at=?
+                WHERE id=? AND status='processing' AND lock_token=?
+                """,
+                (delivered_at, delivered_at, str(job_id), lock_token),
+            )
+            completed = conn.execute(
+                "SELECT * FROM memory_graph_outbox WHERE id=?", (str(job_id),)
+            ).fetchone()
+            if cursor.rowcount != 1 and completed["status"] != "delivered":
+                raise MemoryFeedbackError(f"memory graph sync job lease was lost: {job_id}")
+        return {
+            "job": self._serialize_graph_job(completed),
+            "delivered": True,
+            "result": result,
+        }
+
+    def process_pending_graph_sync_jobs(
+        self,
+        *,
+        sync_client: Optional[GraphMemoryClient] = None,
+        owner: str = "memory-graph-sync",
+        limit: int = 10,
+    ) -> list[dict[str, Any]]:
+        with self.connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT id FROM memory_graph_outbox
+                WHERE (
+                    status IN ('pending', 'retry') AND next_attempt_at <= ?
+                ) OR (
+                    status='processing' AND lease_expires_at IS NOT NULL
+                    AND lease_expires_at <= ?
+                )
+                ORDER BY created_at
+                LIMIT ?
+                """,
+                (_now(), _now(), max(1, min(int(limit), 50))),
+            ).fetchall()
+        delivered: list[dict[str, Any]] = []
+        for row in rows:
+            try:
+                delivered.append(
+                    self.process_graph_sync_job(
+                        row["id"], sync_client=sync_client, owner=owner
+                    )
+                )
+            except Exception:
+                continue
+        return delivered
+
+    def process_pending_vector_index_jobs(
+        self,
+        *,
+        owner: str = "memory-vector-index",
+        limit: int = 10,
+    ) -> list[dict[str, Any]]:
+        return self.vector_index_service.process_pending_jobs(owner=owner, limit=limit)
+
+    def process_due_memory_expirations(
+        self,
+        *,
+        owner: str = "memory-lifecycle-expirer",
+    ) -> list[dict[str, Any]]:
+        return self.lifecycle_service.expire_due(actor=owner)
+
     def create_candidates(
         self,
         *,
@@ -775,8 +1019,9 @@ class MemoryFeedbackService:
 
             now = _now()
             published_ref = None
+            superseded_refs: list[str] = []
             if clean_decision == "approve":
-                published_ref = self._publish(
+                publication = self._publish(
                     conn,
                     row,
                     title=final_title,
@@ -785,6 +1030,8 @@ class MemoryFeedbackService:
                     importance=final_importance,
                     now=now,
                 )
+                published_ref = publication["published_ref"]
+                superseded_refs = list(publication.get("superseded_refs") or [])
             conn.execute(
                 """
                 UPDATE memory_candidates
@@ -814,6 +1061,21 @@ class MemoryFeedbackService:
                     (str(candidate_id),),
                 ).fetchone()
             )
+            graph_outbox_id = None
+            vector_job_id = None
+            if published_ref:
+                graph_outbox_id = self._enqueue_graph_projection(
+                    conn,
+                    candidate=after,
+                    published_ref=published_ref,
+                    supersedes_ref=superseded_refs[0] if superseded_refs else "",
+                    now=now,
+                )
+                vector_job_id = enqueue_vector_document(
+                    conn,
+                    candidate_vector_document(after, published_ref, now=now),
+                    now=now,
+                )
             self._record_audit(
                 conn,
                 actor=reviewed_by,
@@ -828,10 +1090,19 @@ class MemoryFeedbackService:
                 metadata={
                     "mission_id": row["mission_id"],
                     "published_ref": published_ref,
+                    "superseded_refs": superseded_refs,
+                    "graph_outbox_id": graph_outbox_id,
+                    "vector_job_id": vector_job_id,
                     "comment": str(comment or "")[:1000],
                 },
             )
-            return {**after, "review_changed": True}
+            return {
+                **after,
+                "graph_outbox_id": graph_outbox_id,
+                "vector_job_id": vector_job_id,
+                "superseded_refs": superseded_refs,
+                "review_changed": True,
+            }
 
     @staticmethod
     def _normalize_candidate(raw: Any) -> Optional[dict[str, Any]]:
@@ -867,6 +1138,95 @@ class MemoryFeedbackService:
             ][:20],
         }
 
+    @staticmethod
+    def _enqueue_graph_projection(
+        conn: sqlite3.Connection,
+        *,
+        candidate: dict[str, Any],
+        published_ref: str,
+        now: str,
+        supersedes_ref: str = "",
+    ) -> str:
+        """Persist a graph projection event in the same review transaction."""
+        target_scope = str(candidate.get("target_scope") or "")
+        aggregate_type = {
+            "profile": "profile_fact",
+            "project": "project_memory",
+            "agent": "agent_memory",
+        }.get(target_scope)
+        if not aggregate_type:
+            raise MemoryFeedbackError(f"unsupported graph projection target: {target_scope}")
+        aggregate_id = str(published_ref).split(":", 1)[-1]
+        event_id = f"graph-event-{uuid.uuid4().hex[:12]}"
+        idempotency_key = _hash(
+            {
+                "event_type": "memory.published",
+                "candidate_id": candidate["id"],
+                "published_ref": published_ref,
+                "content": candidate["content"],
+                "memory_key": candidate["memory_key"],
+            }
+        )
+        projection_document = candidate_vector_document(
+            candidate,
+            published_ref,
+            now=now,
+        )
+        payload = {
+            "event_id": event_id,
+            "event_type": "memory.published",
+            "aggregate_type": aggregate_type,
+            "aggregate_id": aggregate_id,
+            "source_ref": published_ref,
+            "user_id": str(candidate["user_id"]),
+            "project_id": projection_document.project_id,
+            "agent_id": projection_document.agent_id,
+            "memory_key": str(candidate["memory_key"]),
+            "memory_type": str(candidate["memory_type"]),
+            "version": int(candidate.get("plan_version") or 0),
+            "supersedes_ref": supersedes_ref or None,
+            "title": projection_document.title,
+            "content": projection_document.content,
+            "content_hash": projection_document.content_hash,
+            "importance": str(candidate["importance"]),
+            "confidence": candidate["confidence"],
+            "visibility": target_scope,
+            "status": "active",
+            "evidence_refs": list(candidate.get("evidence_refs") or []),
+            "mission_id": str(candidate.get("mission_id") or ""),
+            "published_at": now,
+        }
+        conn.execute(
+            """
+            INSERT OR IGNORE INTO memory_graph_outbox
+            (id, event_type, aggregate_type, aggregate_id, candidate_id, user_id,
+             project_id, agent_id, payload, idempotency_key, next_attempt_at,
+             created_at, updated_at)
+            VALUES (?, 'memory.published', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                event_id,
+                aggregate_type,
+                aggregate_id,
+                candidate["id"],
+                candidate["user_id"],
+                projection_document.project_id,
+                projection_document.agent_id,
+                _json(payload),
+                idempotency_key,
+                now,
+                now,
+                now,
+            ),
+        )
+        row = conn.execute(
+            "SELECT id FROM memory_graph_outbox WHERE idempotency_key=?",
+            (idempotency_key,),
+        ).fetchone()
+        if not row:
+            raise MemoryFeedbackError("failed to enqueue graph projection")
+        return str(row["id"])
+
     def _publish(
         self,
         conn: sqlite3.Connection,
@@ -877,7 +1237,7 @@ class MemoryFeedbackService:
         memory_key: str,
         importance: str,
         now: str,
-    ) -> str:
+    ) -> dict[str, Any]:
         metadata = {
             "candidate_id": row["id"],
             "user_id": row["user_id"],
@@ -912,83 +1272,100 @@ class MemoryFeedbackService:
         importance: str,
         metadata: dict[str, Any],
         now: str,
-    ) -> str:
+    ) -> dict[str, Any]:
         profile = conn.execute(
             "SELECT * FROM user_context_profiles WHERE user_id=?",
             (row["user_id"],),
         ).fetchone()
         if not profile:
             raise MemoryFeedbackError(f"profile not found: {row['user_id']}")
-        existing = conn.execute(
+        idempotent = conn.execute(
             """
             SELECT * FROM profile_facts
             WHERE profile_id=? AND fact_key=? AND source_ref=?
-            ORDER BY CASE status WHEN 'active' THEN 0 ELSE 1 END, updated_at DESC
-            LIMIT 1
+            ORDER BY updated_at DESC LIMIT 1
             """,
             (profile["id"], memory_key, row["source_ref"]),
         ).fetchone()
-        if not existing:
-            existing = conn.execute(
-                """
-                SELECT * FROM profile_facts
-                WHERE profile_id=? AND fact_key=? AND status='active'
-                ORDER BY updated_at DESC LIMIT 1
-                """,
-                (profile["id"], memory_key),
-            ).fetchone()
-        fact_id = existing["id"] if existing else f"fact-{uuid.uuid4().hex[:12]}"
-        if existing:
-            conn.execute(
-                """
-                UPDATE profile_facts
-                SET status='superseded', updated_at=?
-                WHERE profile_id=? AND fact_key=? AND status='active' AND id!=?
-                """,
-                (now, profile["id"], memory_key, fact_id),
+        if idempotent:
+            if idempotent["status"] != "active":
+                raise MemoryFeedbackError("retired profile memory cannot be republished")
+            published_ref = f"fact:{idempotent['id']}"
+            register_canonical_memory(
+                conn,
+                source_ref=published_ref,
+                actor="memory-review",
+                reason_code="idempotent_publish",
+                now=now,
+            )
+            return {"published_ref": published_ref, "superseded_refs": []}
+
+        active = conn.execute(
+            """
+            SELECT * FROM profile_facts
+            WHERE profile_id=? AND fact_key=? AND status='active'
+            ORDER BY updated_at DESC LIMIT 1
+            """,
+            (profile["id"], memory_key),
+        ).fetchone()
+        fact_id = f"fact-{uuid.uuid4().hex[:12]}"
+        published_ref = f"fact:{fact_id}"
+        superseded_refs: list[str] = []
+        if active:
+            old_ref = f"fact:{active['id']}"
+            register_canonical_memory(
+                conn,
+                source_ref=old_ref,
+                actor="memory-review",
+                reason_code="replacement_baseline",
+                now=now,
             )
             conn.execute(
-                """
-                UPDATE profile_facts
-                SET fact_type=?, fact_value=?, importance=?, confidence=?,
-                    source_type='mission_result', source_ref=?, status='active', metadata=?,
-                    updated_at=?
-                WHERE id=?
-                """,
-                (
-                    row["memory_type"],
-                    content,
-                    importance,
-                    row["confidence"],
-                    row["source_ref"],
-                    _json(metadata),
-                    now,
-                    fact_id,
-                ),
+                "UPDATE profile_facts SET status='superseded', updated_at=? WHERE id=?",
+                (now, active["id"]),
             )
-        else:
-            conn.execute(
-                """
-                INSERT INTO profile_facts
-                (id, profile_id, fact_type, fact_key, fact_value, importance,
-                 confidence, source_type, source_ref, metadata, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, 'mission_result', ?, ?, ?, ?)
-                """,
-                (
-                    fact_id,
-                    profile["id"],
-                    row["memory_type"],
-                    memory_key,
-                    content,
-                    importance,
-                    row["confidence"],
-                    row["source_ref"],
-                    _json(metadata),
-                    now,
-                    now,
-                ),
+            transition_canonical_memory(
+                conn,
+                source_ref=old_ref,
+                user_id=str(row["user_id"]),
+                to_state="superseded",
+                actor="memory-review",
+                reason_code="approved_replacement",
+                linked_source_ref=published_ref,
+                canonical_already_updated=True,
+                now=now,
             )
-        return f"fact:{fact_id}"
+            superseded_refs.append(old_ref)
+        conn.execute(
+            """
+            INSERT INTO profile_facts
+            (id, profile_id, fact_type, fact_key, fact_value, importance,
+             confidence, source_type, source_ref, metadata, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'mission_result', ?, ?, ?, ?)
+            """,
+            (
+                fact_id,
+                profile["id"],
+                row["memory_type"],
+                memory_key,
+                content,
+                importance,
+                row["confidence"],
+                row["source_ref"],
+                _json(metadata),
+                now,
+                now,
+            ),
+        )
+        register_canonical_memory(
+            conn,
+            source_ref=published_ref,
+            actor="memory-review",
+            reason_code="approved_publish",
+            supersedes_ref=superseded_refs[0] if superseded_refs else "",
+            now=now,
+        )
+        return {"published_ref": published_ref, "superseded_refs": superseded_refs}
 
     @staticmethod
     def _publish_project(
@@ -1000,83 +1377,98 @@ class MemoryFeedbackService:
         importance: str,
         metadata: dict[str, Any],
         now: str,
-    ) -> str:
+    ) -> dict[str, Any]:
         project_id = str(row["project_id"] or "").strip()
         if not project_id:
             raise MemoryFeedbackError("project memory requires project_id")
-        existing = conn.execute(
+        idempotent = conn.execute(
             """
             SELECT * FROM project_context_memories
             WHERE user_id=? AND project_id=? AND memory_key=? AND source_ref=?
-            ORDER BY CASE status WHEN 'active' THEN 0 ELSE 1 END, updated_at DESC
-            LIMIT 1
+            ORDER BY updated_at DESC LIMIT 1
             """,
             (row["user_id"], project_id, memory_key, row["source_ref"]),
         ).fetchone()
-        if not existing:
-            existing = conn.execute(
-                """
-                SELECT * FROM project_context_memories
-                WHERE user_id=? AND project_id=? AND memory_key=? AND status='active'
-                ORDER BY updated_at DESC LIMIT 1
-                """,
-                (row["user_id"], project_id, memory_key),
-            ).fetchone()
-        memory_id = (
-            existing["id"] if existing else f"project-memory-{uuid.uuid4().hex[:12]}"
+        if idempotent:
+            if idempotent["status"] != "active":
+                raise MemoryFeedbackError("retired project memory cannot be republished")
+            published_ref = f"project-memory:{idempotent['id']}"
+            register_canonical_memory(
+                conn,
+                source_ref=published_ref,
+                actor="memory-review",
+                reason_code="idempotent_publish",
+                now=now,
+            )
+            return {"published_ref": published_ref, "superseded_refs": []}
+
+        active = conn.execute(
+            """
+            SELECT * FROM project_context_memories
+            WHERE user_id=? AND project_id=? AND memory_key=? AND status='active'
+            ORDER BY updated_at DESC LIMIT 1
+            """,
+            (row["user_id"], project_id, memory_key),
+        ).fetchone()
+        memory_id = f"project-memory-{uuid.uuid4().hex[:12]}"
+        published_ref = f"project-memory:{memory_id}"
+        superseded_refs: list[str] = []
+        if active:
+            old_ref = f"project-memory:{active['id']}"
+            register_canonical_memory(
+                conn,
+                source_ref=old_ref,
+                actor="memory-review",
+                reason_code="replacement_baseline",
+                now=now,
+            )
+            conn.execute(
+                "UPDATE project_context_memories SET status='superseded', updated_at=? WHERE id=?",
+                (now, active["id"]),
+            )
+            transition_canonical_memory(
+                conn,
+                source_ref=old_ref,
+                user_id=str(row["user_id"]),
+                to_state="superseded",
+                actor="memory-review",
+                reason_code="approved_replacement",
+                linked_source_ref=published_ref,
+                canonical_already_updated=True,
+                now=now,
+            )
+            superseded_refs.append(old_ref)
+        conn.execute(
+            """
+            INSERT INTO project_context_memories
+            (id, user_id, project_id, memory_key, title, content, importance,
+             confidence, source_type, source_ref, metadata, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'mission_result', ?, ?, ?, ?)
+            """,
+            (
+                memory_id,
+                row["user_id"],
+                project_id,
+                memory_key,
+                title,
+                content,
+                importance,
+                row["confidence"],
+                row["source_ref"],
+                _json(metadata),
+                now,
+                now,
+            ),
         )
-        if existing:
-            conn.execute(
-                """
-                UPDATE project_context_memories
-                SET status='superseded', updated_at=?
-                WHERE user_id=? AND project_id=? AND memory_key=?
-                  AND status='active' AND id!=?
-                """,
-                (now, row["user_id"], project_id, memory_key, memory_id),
-            )
-            conn.execute(
-                """
-                UPDATE project_context_memories
-                SET title=?, content=?, importance=?, confidence=?, status='active',
-                    source_ref=?, metadata=?, updated_at=?
-                WHERE id=?
-                """,
-                (
-                    title,
-                    content,
-                    importance,
-                    row["confidence"],
-                    row["source_ref"],
-                    _json(metadata),
-                    now,
-                    memory_id,
-                ),
-            )
-        else:
-            conn.execute(
-                """
-                INSERT INTO project_context_memories
-                (id, user_id, project_id, memory_key, title, content, importance,
-                 confidence, source_type, source_ref, metadata, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'mission_result', ?, ?, ?, ?)
-                """,
-                (
-                    memory_id,
-                    row["user_id"],
-                    project_id,
-                    memory_key,
-                    title,
-                    content,
-                    importance,
-                    row["confidence"],
-                    row["source_ref"],
-                    _json(metadata),
-                    now,
-                    now,
-                ),
-            )
-        return f"project-memory:{memory_id}"
+        register_canonical_memory(
+            conn,
+            source_ref=published_ref,
+            actor="memory-review",
+            reason_code="approved_publish",
+            supersedes_ref=superseded_refs[0] if superseded_refs else "",
+            now=now,
+        )
+        return {"published_ref": published_ref, "superseded_refs": superseded_refs}
 
     @staticmethod
     def _publish_agent(
@@ -1087,16 +1479,15 @@ class MemoryFeedbackService:
         memory_key: str,
         metadata: dict[str, Any],
         now: str,
-    ) -> str:
+    ) -> dict[str, Any]:
         agent_id = str(row["agent_id"] or "optimus").strip() or "optimus"
         project_id = str(row["project_id"] or "")
-        existing = conn.execute(
+        idempotent = conn.execute(
             """
             SELECT * FROM agent_memories
             WHERE agent_id=? AND user_id=? AND project_id=? AND memory_key=?
               AND source=?
-            ORDER BY CASE status WHEN 'active' THEN 0 ELSE 1 END, updated_at DESC
-            LIMIT 1
+            ORDER BY updated_at DESC LIMIT 1
             """,
             (
                 agent_id,
@@ -1106,76 +1497,88 @@ class MemoryFeedbackService:
                 row["source_ref"],
             ),
         ).fetchone()
-        if not existing:
-            existing = conn.execute(
-                """
-                SELECT * FROM agent_memories
-                WHERE agent_id=? AND user_id=? AND project_id=? AND memory_key=?
-                  AND status='active'
-                ORDER BY updated_at DESC LIMIT 1
-                """,
-                (agent_id, row["user_id"], project_id, memory_key),
-            ).fetchone()
-        memory_id = existing["id"] if existing else f"agent-memory-{uuid.uuid4().hex[:12]}"
+        if idempotent:
+            if idempotent["status"] != "active":
+                raise MemoryFeedbackError("retired agent memory cannot be republished")
+            published_ref = f"agent-memory:{idempotent['id']}"
+            register_canonical_memory(
+                conn,
+                source_ref=published_ref,
+                actor="memory-review",
+                reason_code="idempotent_publish",
+                now=now,
+            )
+            return {"published_ref": published_ref, "superseded_refs": []}
+
+        active = conn.execute(
+            """
+            SELECT * FROM agent_memories
+            WHERE agent_id=? AND user_id=? AND project_id=? AND memory_key=?
+              AND status='active'
+            ORDER BY updated_at DESC LIMIT 1
+            """,
+            (agent_id, row["user_id"], project_id, memory_key),
+        ).fetchone()
+        memory_id = f"agent-memory-{uuid.uuid4().hex[:12]}"
+        published_ref = f"agent-memory:{memory_id}"
         agent_metadata = {**metadata, "memory_key": memory_key}
-        if existing:
-            conn.execute(
-                """
-                UPDATE agent_memories
-                SET status='superseded', updated_at=?
-                WHERE agent_id=? AND user_id=? AND project_id=? AND memory_key=?
-                  AND status='active' AND id!=?
-                """,
-                (
-                    now,
-                    agent_id,
-                    row["user_id"],
-                    project_id,
-                    memory_key,
-                    memory_id,
-                ),
+        superseded_refs: list[str] = []
+        if active:
+            old_ref = f"agent-memory:{active['id']}"
+            register_canonical_memory(
+                conn,
+                source_ref=old_ref,
+                actor="memory-review",
+                reason_code="replacement_baseline",
+                now=now,
             )
             conn.execute(
-                """
-                UPDATE agent_memories
-                SET memory_type=?, title=?, content=?, source=?, status='active',
-                    updated_at=?, metadata=?
-                WHERE id=?
-                """,
-                (
-                    row["memory_type"],
-                    title,
-                    content,
-                    row["source_ref"],
-                    now,
-                    _json(agent_metadata),
-                    memory_id,
-                ),
+                "UPDATE agent_memories SET status='superseded', updated_at=? WHERE id=?",
+                (now, active["id"]),
             )
-        else:
-            conn.execute(
-                """
-                INSERT INTO agent_memories
-                (id, agent_id, user_id, project_id, memory_key, memory_type,
-                 title, content, source, status, created_at, updated_at, metadata)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?)
-                """,
-                (
-                    memory_id,
-                    agent_id,
-                    row["user_id"],
-                    project_id,
-                    memory_key,
-                    row["memory_type"],
-                    title,
-                    content,
-                    row["source_ref"],
-                    now,
-                    now,
-                    _json(agent_metadata),
-                ),
+            transition_canonical_memory(
+                conn,
+                source_ref=old_ref,
+                user_id=str(row["user_id"]),
+                to_state="superseded",
+                actor="memory-review",
+                reason_code="approved_replacement",
+                linked_source_ref=published_ref,
+                canonical_already_updated=True,
+                now=now,
             )
-        return f"agent-memory:{memory_id}"
+            superseded_refs.append(old_ref)
+        conn.execute(
+            """
+            INSERT INTO agent_memories
+            (id, agent_id, user_id, project_id, memory_key, memory_type,
+             title, content, source, status, created_at, updated_at, metadata)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?)
+            """,
+            (
+                memory_id,
+                agent_id,
+                row["user_id"],
+                project_id,
+                memory_key,
+                row["memory_type"],
+                title,
+                content,
+                row["source_ref"],
+                now,
+                now,
+                _json(agent_metadata),
+            ),
+        )
+        register_canonical_memory(
+            conn,
+            source_ref=published_ref,
+            actor="memory-review",
+            reason_code="approved_publish",
+            supersedes_ref=superseded_refs[0] if superseded_refs else "",
+            now=now,
+        )
+        return {"published_ref": published_ref, "superseded_refs": superseded_refs}
 
     @staticmethod
     def _record_audit(
@@ -1219,6 +1622,12 @@ class MemoryFeedbackService:
         item = dict(row)
         item["candidates"] = _loads(item.pop("candidates_json", ""), [])
         item["source_snapshot"] = _loads(item.get("source_snapshot"), {})
+        return item
+
+    @staticmethod
+    def _serialize_graph_job(row: sqlite3.Row) -> dict[str, Any]:
+        item = dict(row)
+        item["payload"] = _loads(item.get("payload"), {})
         return item
 
 

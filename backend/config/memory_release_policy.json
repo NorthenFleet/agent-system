@@ -1,0 +1,84 @@
+{
+  "schema_version": "memory-release-policy.v1",
+  "requirements": {
+    "drill_scenarios": 4,
+    "matrix_cases": 5,
+    "matrix_slo_min_samples": 1,
+    "primary_slo_min_samples": 20
+  },
+  "risk_policy": {
+    "memory-platform": {
+      "level": "high",
+      "label": "高风险",
+      "approval_mode": "human-admin-separated",
+      "requires_creator_separation": true,
+      "required_validations": [
+        "backend_memory_release_regression",
+        "frontend_production_build"
+      ]
+    },
+    "graph-bridge": {
+      "level": "high",
+      "label": "高风险",
+      "approval_mode": "human-admin-separated",
+      "requires_creator_separation": true,
+      "required_validations": [
+        "backend_memory_release_regression",
+        "frontend_production_build"
+      ]
+    },
+    "memory-skill": {
+      "level": "medium",
+      "label": "中风险",
+      "approval_mode": "human-admin-separated",
+      "requires_creator_separation": true,
+      "required_validations": [
+        "backend_memory_release_regression"
+      ]
+    },
+    "evaluation-contract": {
+      "level": "medium",
+      "label": "中风险",
+      "approval_mode": "human-admin-separated",
+      "requires_creator_separation": true,
+      "required_validations": [
+        "backend_memory_release_regression"
+      ]
+    },
+    "configuration": {
+      "level": "medium",
+      "label": "中风险",
+      "approval_mode": "human-admin-separated",
+      "requires_creator_separation": true,
+      "required_validations": [
+        "backend_memory_release_regression"
+      ]
+    }
+  },
+  "managed_artifacts": [
+    "integrations/openclaw/graph-memory/approved-projection.ts",
+    "integrations/openclaw/graph-memory/approved-projection.test.ts",
+    "integrations/openclaw/graph-memory/openclaw-plugin-sdk.d.ts",
+    "integrations/openclaw/graph-memory/deploy.py",
+    "integrations/openclaw/skills/memory-context/SKILL.md",
+    "backend/evals/memory_introspection_system.json",
+    "backend/evals/memory_introspection_matrix.json",
+    "backend/services/context_retrieval_service.py",
+    "backend/services/memory_awareness_service.py",
+    "backend/services/memory_system_gate.py",
+    "backend/services/memory_system_health_status.py",
+    "backend/services/memory_system_matrix.py",
+    "backend/services/memory_system_slo.py",
+    "backend/services/memory_release_governance.py",
+    "backend/services/memory_release_notifications.py",
+    "backend/services/memory_release_orchestrator.py",
+    "backend/scripts/memory_system_gate.py",
+    "backend/scripts/memory_system_matrix.py",
+    "backend/scripts/memory_system_drill.py",
+    "backend/scripts/memory_release_gate.py",
+    "backend/routers/monitoring_router.py",
+    "backend/config/memory_release_policy.json",
+    "frontend-v2/src/api/monitoring.ts",
+    "frontend-v2/src/views/Monitoring.vue"
+  ]
+}

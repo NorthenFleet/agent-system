@@ -1,0 +1,31 @@
+{
+  "environment": "isolated-temporary-sqlite",
+  "mutates_production_memory": false,
+  "passed": true,
+  "scenarios": {
+    "conflict": {
+      "loser_state": "superseded",
+      "passed": true
+    },
+    "expiry": {
+      "expired_count": 1,
+      "expired_ref_recalled": false,
+      "passed": true
+    },
+    "forget": {
+      "forgotten_ref_recalled": false,
+      "passed": true
+    },
+    "update": {
+      "new_ref_recalled": true,
+      "old_ref_retired": true,
+      "passed": true
+    }
+  },
+  "schema_version": "memory-lifecycle-fixture.v1",
+  "verification": {
+    "consistent": true,
+    "records_checked": 5,
+    "violations": []
+  }
+}
