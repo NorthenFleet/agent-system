@@ -173,3 +173,30 @@ def test_unbound_document_asset_uses_null_foreign_key(tmp_path):
             "SELECT section_id FROM document_assets WHERE id='asset-1'"
         ).fetchone()[0]
     assert section_id is None
+
+
+def test_operational_metrics_report_retries_leases_and_completions(tmp_path):
+    service = WorkRunService(str(tmp_path / "operational-metrics.db"))
+    first = service.claim(
+        dispatch_id="metrics-dispatch",
+        agent_id="agent-a",
+        executor="test",
+    )
+    service.transition(first["id"], "running", actor="agent-a")
+    service.transition(first["id"], "review", actor="agent-a")
+    service.transition(first["id"], "completed", actor="reviewer")
+    retry = service.claim(
+        dispatch_id="metrics-dispatch",
+        agent_id="agent-a",
+        executor="test",
+    )
+
+    metrics = service.operational_metrics()
+
+    assert retry["attempt"] == 2
+    assert metrics["total"] == 2
+    assert metrics["active"] == 1
+    assert metrics["expired_active_leases"] == 0
+    assert metrics["retry_attempts"] == 1
+    assert metrics["completed_transitions"] == 1
+    assert metrics["storage_runtime"]["connection_mode"] == "direct"

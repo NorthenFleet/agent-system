@@ -11,10 +11,13 @@ import json
 import os
 import sqlite3
 import uuid
-from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from typing import Any, Iterator, Optional
 
+from repositories.command_center_repository import (
+    CommandCenterRepository,
+    create_command_center_repository,
+)
 from unified_data_manager import UNIFIED_DB_PATH
 
 
@@ -105,37 +108,52 @@ def _loads(value: str | None, fallback: Any) -> Any:
 
 
 class WorkRunService:
-    def __init__(self, db_path: str = UNIFIED_DB_PATH):
-        self.db_path = db_path
+    def __init__(
+        self,
+        db_path: str | None = None,
+        *,
+        database_url: str = "",
+        repository: CommandCenterRepository | None = None,
+    ):
+        configured_url = str(
+            database_url
+            or (os.getenv("WORK_RUN_DATABASE_URL", "") if db_path is None else "")
+        ).strip()
+        if repository is not None and (db_path is not None or configured_url):
+            raise ValueError("Pass repository, db_path, or database_url, not multiple stores")
+        self.repository = repository or create_command_center_repository(
+            db_path=db_path or UNIFIED_DB_PATH,
+            database_url=configured_url or None,
+        )
+        self.db_path = self.repository.source_of_truth
         self.ensure_schema()
 
-    @contextmanager
-    def connect(self, *, immediate: bool = False) -> Iterator[sqlite3.Connection]:
-        directory = os.path.dirname(self.db_path)
-        if directory:
-            os.makedirs(directory, exist_ok=True)
-        conn = sqlite3.connect(self.db_path, timeout=5)
-        conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA foreign_keys=ON")
-        conn.execute("PRAGMA busy_timeout=5000")
-        if immediate:
-            conn.execute("BEGIN IMMEDIATE")
-        try:
-            yield conn
-            conn.commit()
-        except Exception:
-            conn.rollback()
-            raise
-        finally:
-            conn.close()
+    def connect(self, *, immediate: bool = False) -> Iterator[Any]:
+        return self.repository.transaction(immediate=immediate)
 
     def ensure_schema(self) -> None:
+        if not self.repository.capabilities.runtime_schema_management:
+            with self.connect() as conn:
+                missing = [
+                    table
+                    for table in ("work_runs", "work_run_events", "work_artifacts")
+                    if not self.repository.table_exists(conn, table)
+                ]
+            if missing:
+                raise WorkRunError(
+                    "Work Run schema is not migrated; missing tables: "
+                    + ", ".join(missing)
+                    + ". Run Alembic upgrade head before starting workers."
+                )
+            return
         with self.connect() as conn:
             conn.executescript(
                 """
                 CREATE TABLE IF NOT EXISTS work_runs (
                     id TEXT PRIMARY KEY,
                     dispatch_id TEXT NOT NULL,
+                    mission_id TEXT,
+                    mission_run_id TEXT,
                     project_id TEXT,
                     task_id TEXT,
                     development_point_id TEXT,
@@ -209,6 +227,14 @@ class WorkRunService:
                 );
                 """
             )
+            self._ensure_column(conn, "work_runs", "mission_id", "TEXT")
+            self._ensure_column(conn, "work_runs", "mission_run_id", "TEXT")
+            conn.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_work_runs_mission
+                ON work_runs(mission_run_id, created_at, attempt)
+                """
+            )
             conn.execute(
                 """
                 INSERT OR IGNORE INTO schema_migrations (id, description, applied_at)
@@ -221,12 +247,26 @@ class WorkRunService:
                 ),
             )
 
+    def _ensure_column(
+        self,
+        conn: sqlite3.Connection,
+        table: str,
+        column: str,
+        definition: str,
+    ) -> None:
+        columns = self.repository.table_columns(conn, table)
+        if column not in columns:
+            conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+
     def claim(
         self,
         *,
         dispatch_id: str,
         agent_id: str,
         executor: str,
+        mission_id: str = "",
+        mission_run_id: str = "",
+        correlation_id: str = "",
         project_id: str = "",
         task_id: str = "",
         development_point_id: str = "",
@@ -242,6 +282,7 @@ class WorkRunService:
         now = _now()
         lease_expires = now + timedelta(seconds=max(lease_seconds, 30))
         with self.connect(immediate=True) as conn:
+            self.repository.lock_key(conn, f"work-run:{key}")
             latest = conn.execute(
                 """
                 SELECT * FROM work_runs
@@ -259,10 +300,24 @@ class WorkRunService:
                 conn.execute(
                     """
                     UPDATE work_runs
-                    SET lease_owner=?, lease_expires_at=?, updated_at=?
+                    SET lease_owner=?, lease_expires_at=?,
+                        mission_id=COALESCE(NULLIF(mission_id, ''), ?),
+                        mission_run_id=COALESCE(NULLIF(mission_run_id, ''), ?),
+                        correlation_id=CASE
+                            WHEN ?!='' THEN ? ELSE correlation_id END,
+                        updated_at=?
                     WHERE id=?
                     """,
-                    (owner, _iso(lease_expires), _iso(now), latest["id"]),
+                    (
+                        owner,
+                        _iso(lease_expires),
+                        mission_id or None,
+                        mission_run_id or None,
+                        correlation_id,
+                        correlation_id,
+                        _iso(now),
+                        latest["id"],
+                    ),
                 )
                 self._insert_event(
                     conn,
@@ -278,19 +333,22 @@ class WorkRunService:
 
             attempt = int(latest["attempt"] or 0) + 1 if latest else 1
             run_id = f"wrun-{uuid.uuid4().hex[:16]}"
-            correlation_id = f"work-{uuid.uuid4().hex[:16]}"
+            run_correlation_id = correlation_id or f"work-{uuid.uuid4().hex[:16]}"
             conn.execute(
                 """
                 INSERT INTO work_runs
-                (id, dispatch_id, project_id, task_id, development_point_id,
+                (id, dispatch_id, mission_id, mission_run_id,
+                 project_id, task_id, development_point_id,
                  agent_id, executor, status, attempt, idempotency_key,
                  lease_owner, lease_expires_at, correlation_id, workspace,
                  input_context, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, 'claimed', ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'claimed', ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     run_id,
                     dispatch_id,
+                    mission_id or None,
+                    mission_run_id or None,
                     project_id or None,
                     task_id or None,
                     development_point_id or None,
@@ -300,7 +358,7 @@ class WorkRunService:
                     key,
                     owner,
                     _iso(lease_expires),
-                    correlation_id,
+                    run_correlation_id,
                     workspace or None,
                     _json(input_context or {}),
                     _iso(now),
@@ -508,17 +566,59 @@ class WorkRunService:
             "runs": runs,
             "total": sum(counts.values()),
             "counts": counts,
-            "source": "unified_dashboard.db:work_runs",
+            "source": f"{self.repository.backend}:work_runs",
             "updated_at": _iso(),
         }
 
-    def _get_run(self, conn: sqlite3.Connection, run_id: str) -> dict[str, Any]:
+    def operational_metrics(self) -> dict[str, Any]:
+        now = _iso()
+        with self.connect() as conn:
+            row = conn.execute(
+                """
+                SELECT
+                    COUNT(*) AS total,
+                    SUM(CASE WHEN status IN ('claimed', 'running', 'review', 'verifying')
+                              THEN 1 ELSE 0 END) AS active,
+                    SUM(CASE WHEN status IN ('claimed', 'running', 'review', 'verifying')
+                                  AND lease_expires_at IS NOT NULL
+                                  AND lease_expires_at <= ?
+                              THEN 1 ELSE 0 END) AS expired_active_leases,
+                    SUM(CASE WHEN attempt > 1 THEN 1 ELSE 0 END) AS retry_attempts,
+                    SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) AS failed
+                FROM work_runs
+                """,
+                (now,),
+            ).fetchone()
+            event_row = conn.execute(
+                """
+                SELECT
+                    SUM(CASE WHEN event_type='lease_reclaimed' THEN 1 ELSE 0 END)
+                        AS lease_reclaims,
+                    SUM(CASE WHEN event_type='status_changed' AND to_status='completed'
+                             THEN 1 ELSE 0 END) AS completed_transitions
+                FROM work_run_events
+                """
+            ).fetchone()
+        return {
+            "backend": self.repository.backend,
+            "total": int(row["total"] or 0),
+            "active": int(row["active"] or 0),
+            "expired_active_leases": int(row["expired_active_leases"] or 0),
+            "retry_attempts": int(row["retry_attempts"] or 0),
+            "failed": int(row["failed"] or 0),
+            "lease_reclaims": int(event_row["lease_reclaims"] or 0),
+            "completed_transitions": int(event_row["completed_transitions"] or 0),
+            "storage_runtime": self.repository.runtime_metrics(),
+            "observed_at": now,
+        }
+
+    def _get_run(self, conn: Any, run_id: str) -> dict[str, Any]:
         row = conn.execute("SELECT * FROM work_runs WHERE id=?", (run_id,)).fetchone()
         if not row:
             raise WorkRunNotFound(run_id)
         return self._serialize_run(conn, row)
 
-    def _serialize_run(self, conn: sqlite3.Connection, row: sqlite3.Row) -> dict[str, Any]:
+    def _serialize_run(self, conn: Any, row: Any) -> dict[str, Any]:
         data = dict(row)
         data["input_context"] = _loads(data.get("input_context"), {})
         data["execution_result"] = _loads(data.get("execution_result"), {})
@@ -547,7 +647,7 @@ class WorkRunService:
 
     def _insert_event(
         self,
-        conn: sqlite3.Connection,
+        conn: Any,
         run_id: str,
         event_type: str,
         from_status: str,
@@ -577,7 +677,7 @@ class WorkRunService:
 
     def _sync_task_status(
         self,
-        conn: sqlite3.Connection,
+        conn: Any,
         task_id: str | None,
         status: str,
         updated_at: str,
@@ -585,18 +685,15 @@ class WorkRunService:
     ) -> None:
         if not task_id:
             return
-        table_exists = conn.execute(
-            """
-            SELECT 1 FROM sqlite_master
-            WHERE type='table' AND name='project_tasks'
-            """
-        ).fetchone()
-        if not table_exists:
+        if not self.repository.table_exists(conn, "project_tasks"):
+            return
+        columns = self.repository.table_columns(conn, "project_tasks")
+        if not {"id", "status", "updated_at"}.issubset(columns):
             return
         exists = conn.execute("SELECT 1 FROM project_tasks WHERE id=?", (task_id,)).fetchone()
         if not exists:
             return
-        if result_summary is None:
+        if result_summary is None or "result_summary" not in columns:
             conn.execute(
                 "UPDATE project_tasks SET status=?, updated_at=? WHERE id=?",
                 (status, updated_at, task_id),

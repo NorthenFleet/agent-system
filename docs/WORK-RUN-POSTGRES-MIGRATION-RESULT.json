@@ -1,0 +1,50 @@
+{
+  "mode": "apply",
+  "source": "/Users/apple/工作桌面/Workspace/agent-system/backend/data/unified_dashboard.db",
+  "tables": {
+    "work_runs": {
+      "source_count": 24,
+      "source_id_checksum": "49f9c0e39f882615d12492c25cec75ccdc09ecc3c8c02d37930a9f7979e5d3d0",
+      "target_before": {
+        "count": 0,
+        "id_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "target_matches_source": false,
+      "target_after": {
+        "count": 24,
+        "id_checksum": "49f9c0e39f882615d12492c25cec75ccdc09ecc3c8c02d37930a9f7979e5d3d0"
+      },
+      "verified": true
+    },
+    "work_run_events": {
+      "source_count": 97,
+      "source_id_checksum": "9e91c1d070336095f793d109877cd7a62d8c25d38de255617cbf0fdba567af33",
+      "target_before": {
+        "count": 0,
+        "id_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "target_matches_source": false,
+      "target_after": {
+        "count": 97,
+        "id_checksum": "9e91c1d070336095f793d109877cd7a62d8c25d38de255617cbf0fdba567af33"
+      },
+      "verified": true
+    },
+    "work_artifacts": {
+      "source_count": 6,
+      "source_id_checksum": "4fe8cca2ead5ff1d3c84b3e18c011587784bca26d52377829f0243595d1e48ef",
+      "target_before": {
+        "count": 0,
+        "id_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "target_matches_source": false,
+      "target_after": {
+        "count": 6,
+        "id_checksum": "4fe8cca2ead5ff1d3c84b3e18c011587784bca26d52377829f0243595d1e48ef"
+      },
+      "verified": true
+    }
+  },
+  "target_revision": "20260919_work_run_pg",
+  "verified": true
+}

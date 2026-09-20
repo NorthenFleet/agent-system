@@ -239,6 +239,38 @@ class TestOpenClawTaskExecutor:
         assert "message" in result.error
 
     @pytest.mark.asyncio
+    async def test_execute_agent_run_forwards_session_key(self, executor, monkeypatch):
+        captured = {}
+
+        async def fake_cli(agent_id, message, timeout_seconds, *, session_key=""):
+            captured.update(
+                agent_id=agent_id,
+                message=message,
+                timeout_seconds=timeout_seconds,
+                session_key=session_key,
+            )
+            return ExecutionResult(success=True, output="ok")
+
+        monkeypatch.setattr(executor, "_execute_via_cli", fake_cli)
+        result = await executor.execute(
+            command="agent_run",
+            command_args={
+                "agent_id": "donatello",
+                "message": "verify",
+                "session_key": "command-center-mission-v7-step-1",
+            },
+            timeout_seconds=45,
+        )
+
+        assert result.success
+        assert captured == {
+            "agent_id": "donatello",
+            "message": "verify",
+            "timeout_seconds": 45,
+            "session_key": "command-center-mission-v7-step-1",
+        }
+
+    @pytest.mark.asyncio
     async def test_execute_unknown_command(self, executor):
         """测试未知命令"""
         result = await executor.execute(
