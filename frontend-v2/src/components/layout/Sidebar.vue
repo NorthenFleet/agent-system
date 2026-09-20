@@ -58,6 +58,7 @@ const productModuleKeys = ['projects', 'development', 'writing', 'finance', 'pro
 const productionModuleKeys = [
   'data-admin',
   'agents',
+  'discussions',
   'knowledge',
   'tools',
   'community',
@@ -65,7 +66,7 @@ const productionModuleKeys = [
   'news-center',
   'tasks'
 ]
-const systemModuleKeys = ['monitoring', 'analytics', 'user-admin']
+const systemModuleKeys = ['monitoring', 'analytics', 'memory-evaluation', 'user-admin']
 
 const iconMap: Record<string, Component> = {
   Calendar,

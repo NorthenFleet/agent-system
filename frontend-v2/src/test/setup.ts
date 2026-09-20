@@ -1,8 +1,32 @@
-import { vi } from 'vitest'
-import ElementPlus from 'element-plus'
+import { afterEach, vi } from 'vitest'
 
 // Stub fetch globally for API mocking
 global.fetch = vi.fn()
+
+class StorageMock implements Storage {
+  private values = new Map<string, string>()
+
+  get length() { return this.values.size }
+  clear() { this.values.clear() }
+  getItem(key: string) { return this.values.get(String(key)) ?? null }
+  key(index: number) { return Array.from(this.values.keys())[index] ?? null }
+  removeItem(key: string) { this.values.delete(String(key)) }
+  setItem(key: string, value: string) { this.values.set(String(key), String(value)) }
+}
+
+const stableLocalStorage = new StorageMock()
+Object.defineProperty(globalThis, 'localStorage', {
+  configurable: true,
+  value: stableLocalStorage
+})
+Object.defineProperty(window, 'localStorage', {
+  configurable: true,
+  value: stableLocalStorage
+})
+
+afterEach(() => {
+  stableLocalStorage.clear()
+})
 
 class ResizeObserverMock {
   observe() {}
@@ -31,11 +55,21 @@ vi.mock('@element-plus/icons-vue', () => ({
   Upload: { name: 'Upload', render: () => null },
   Back: { name: 'Back', render: () => null },
   Check: { name: 'Check', render: () => null },
+  ChatLineRound: { name: 'ChatLineRound', render: () => null },
+  CircleClose: { name: 'CircleClose', render: () => null },
+  Connection: { name: 'Connection', render: () => null },
+  DocumentChecked: { name: 'DocumentChecked', render: () => null },
+  Platform: { name: 'Platform', render: () => null },
+  Position: { name: 'Position', render: () => null },
+  Promotion: { name: 'Promotion', render: () => null },
+  Warning: { name: 'Warning', render: () => null },
   ChatLineSquare: { name: 'ChatLineSquare', render: () => null },
   Clock: { name: 'Clock', render: () => null },
   Close: { name: 'Close', render: () => null },
   DArrowLeft: { name: 'DArrowLeft', render: () => null },
   Document: { name: 'Document', render: () => null },
+  DocumentAdd: { name: 'DocumentAdd', render: () => null },
+  Edit: { name: 'Edit', render: () => null },
   Expand: { name: 'Expand', render: () => null },
   Fold: { name: 'Fold', render: () => null },
   MagicStick: { name: 'MagicStick', render: () => null },

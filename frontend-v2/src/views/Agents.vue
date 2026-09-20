@@ -192,9 +192,6 @@
       </el-card>
     </div>
       </el-tab-pane>
-      <el-tab-pane label="智能体对话" name="chat">
-        <AgentChat />
-      </el-tab-pane>
     </el-tabs>
 
     <!-- Agent 详情 Drawer -->
@@ -489,8 +486,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { Loading, Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useAgentsStore, type Agent } from '@/stores/agents'
@@ -506,14 +502,11 @@ import {
   type GraphMemoryShare,
   type GraphMemorySummary,
 } from '@/api/openclaw'
-import AgentChat from './AgentChat.vue'
 
 const agentsStore = useAgentsStore()
-const route = useRoute()
-const router = useRouter()
 
 // ===================== 状态 =====================
-const activeTab = ref(route.query.tab === 'chat' ? 'chat' : 'team')
+const activeTab = ref('team')
 const activeFilter = ref<'all' | 'online' | 'busy' | 'offline' | 'idle'>('all')
 const drawerVisible = ref(false)
 const memoryLoading = ref(false)
@@ -888,19 +881,6 @@ async function refresh() {
   await agentsStore.fetchAgents()
   ElMessage.success('刷新完成')
 }
-
-watch(() => route.query.tab, tab => {
-  activeTab.value = tab === 'chat' ? 'chat' : 'team'
-})
-
-watch(activeTab, tab => {
-  const rest = { ...route.query }
-  delete rest.tab
-  void router.replace({
-    path: '/agents',
-    query: tab === 'chat' ? { ...rest, tab: 'chat' } : rest
-  })
-})
 
 // ===================== 生命周期 =====================
 onMounted(async () => {

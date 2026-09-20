@@ -17,6 +17,12 @@ const routes: RouteRecordRaw[] = [
     children: [
       {
         path: '',
+        name: 'AgentSpace',
+        component: () => import('@/views/AgentSpace.vue'),
+        meta: { module: 'dashboard' }
+      },
+      {
+        path: 'dashboard',
         name: 'Dashboard',
         component: () => import('@/views/Dashboard.vue'),
         meta: { module: 'dashboard' }
@@ -88,13 +94,19 @@ const routes: RouteRecordRaw[] = [
       },
       {
         path: 'agent-chat',
-        redirect: { path: '/agents', query: { tab: 'chat' } }
+        redirect: '/command-center'
       },
       {
         path: 'knowledge',
         name: 'Knowledge',
         component: () => import('@/views/Knowledge.vue'),
         meta: { module: 'knowledge' }
+      },
+      {
+        path: 'discussions',
+        name: 'Discussions',
+        component: () => import('@/views/Discussions.vue'),
+        meta: { module: 'discussions' }
       },
       {
         path: 'finance/:section?',
@@ -162,6 +174,12 @@ const routes: RouteRecordRaw[] = [
         name: 'Analytics',
         component: () => import('@/views/Analytics.vue'),
         meta: { module: 'analytics' }
+      },
+      {
+        path: 'memory-evaluation',
+        name: 'MemoryEvaluation',
+        component: () => import('@/views/MemoryEvaluation.vue'),
+        meta: { module: 'memory-evaluation' }
       },
       {
         path: 'user-admin',

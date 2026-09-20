@@ -1,8 +1,8 @@
 <template>
-  <div class="app-layout" :style="themeStyle" :data-view-theme="themeName">
-    <Sidebar />
+  <div class="app-layout" :class="{ 'agent-space-layout': isAgentSpace }" :style="themeStyle" :data-view-theme="themeName">
+    <Sidebar v-if="!isAgentSpace" />
     <div class="main-content">
-      <TopBar />
+      <TopBar v-if="!isAgentSpace" />
       <div class="page-content">
         <router-view />
       </div>
@@ -29,17 +29,20 @@ const routeThemes: Record<string, { name: string; rgb: string }> = {
   '/tasks/kanban': { name: 'kanban', rgb: '88, 166, 255' },
   '/tasks/gantt': { name: 'gantt', rgb: '88, 166, 255' },
   '/agents': { name: 'agents', rgb: '88, 166, 255' },
-  '/agent-chat': { name: 'agent-chat', rgb: '88, 166, 255' },
+  '/agent-chat': { name: 'command-center', rgb: '88, 166, 255' },
   '/knowledge': { name: 'knowledge', rgb: '88, 166, 255' },
+  '/discussions': { name: 'discussions', rgb: '88, 166, 255' },
   '/tools': { name: 'tools', rgb: '88, 166, 255' },
   '/community': { name: 'community', rgb: '88, 166, 255' },
   '/intelligence': { name: 'intelligence', rgb: '88, 166, 255' },
   '/news-center': { name: 'news', rgb: '88, 166, 255' },
   '/products': { name: 'products', rgb: '88, 166, 255' },
   '/monitoring': { name: 'monitoring', rgb: '88, 166, 255' },
+  '/memory-evaluation': { name: 'memory-evaluation', rgb: '88, 166, 255' },
   '/user-admin': { name: 'user-admin', rgb: '88, 166, 255' }
 }
 
+const isAgentSpace = computed(() => route.name === 'AgentSpace')
 const activeTheme = computed(() => routeThemes[route.path] || routeThemes['/'])
 const themeName = computed(() => activeTheme.value.name)
 const themeStyle = computed(() => ({ '--view-rgb': activeTheme.value.rgb }))
@@ -80,6 +83,10 @@ const themeStyle = computed(() => ({ '--view-rgb': activeTheme.value.rgb }))
   flex: 1;
   overflow-y: auto;
   padding: 20px;
+}
+
+.agent-space-layout .page-content {
+  padding: 0;
 }
 
 @media (max-width: 820px) {

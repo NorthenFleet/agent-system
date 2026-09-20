@@ -553,19 +553,22 @@ const productBindingCount = computed(() => projects.value.reduce(
   0
 ))
 
-function projectTypeValue(project?: Project): 'software' | 'document' {
+function projectTypeValue(project?: Project): 'software' | 'document' | 'research' {
   const value = String(project?.project_type || project?.type || 'software').toLowerCase()
-  return value === 'document' ? 'document' : 'software'
+  return value === 'document' || value === 'research' ? value : 'software'
 }
 
 function projectTypeLabel(project?: Project) {
-  return projectTypeValue(project) === 'document' ? '文档模板' : '开发模板'
+  const type = projectTypeValue(project)
+  return type === 'document' ? '文档模板' : type === 'research' ? '研究项目' : '开发模板'
 }
 
 function enabledModules(project?: Project) {
   if (project?.enabled_modules?.length) return project.enabled_modules
   return projectTypeValue(project) === 'document'
     ? ['writing', 'finance', 'knowledge', 'products']
+    : projectTypeValue(project) === 'research'
+      ? ['knowledge', 'discussions', 'writing', 'products']
     : ['development', 'finance', 'knowledge', 'products']
 }
 

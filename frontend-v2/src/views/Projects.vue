@@ -773,14 +773,8 @@
           <el-card class="panel chat-panel" shadow="hover">
             <template #header>
               <div class="panel-header">
-                <span>项目智能体对话</span>
-                <el-select v-model="chatAgent" size="small" class="agent-select">
-                  <el-option label="擎天柱" value="optimus" />
-                  <el-option label="通天晓" value="ultra-magnus" />
-                  <el-option label="千斤顶" value="wheeljack" />
-                  <el-option label="救护车" value="ratchet" />
-                  <el-option label="感知器" value="perceptor" />
-                </el-select>
+                <span>项目需求提交给擎天柱</span>
+                <el-tag size="small" type="success" effect="plain">唯一入口</el-tag>
               </div>
             </template>
 
@@ -802,11 +796,11 @@
               type="textarea"
               :rows="4"
               resize="none"
-              :placeholder="isDocumentProject ? '例如：让通天晓细化第三章目录，并补充图片建议' : '例如：让拉斐尔实现接口，让多纳泰罗补前端页面'"
+              :placeholder="isDocumentProject ? '例如：细化第三章目录，并补充图片建议' : '例如：实现接口并补齐前端页面和测试'"
             />
             <div class="chat-actions">
-              <el-button size="small" :loading="chatLoading" @click="generateTaskFromChat">生成任务</el-button>
-              <el-button size="small" type="primary" :loading="chatLoading" @click="sendChat">发送到项目上下文</el-button>
+              <el-button size="small" :loading="chatLoading" @click="generateTaskFromChat">交给擎天柱生成任务</el-button>
+              <el-button size="small" type="primary" :loading="chatLoading" @click="sendChat">记录到擎天柱上下文</el-button>
             </div>
           </el-card>
 
@@ -871,7 +865,6 @@ import OneSimArchitecturePanel from '@/components/OneSimArchitecturePanel.vue'
 import SoftwareWorkspacePanel from '@/components/SoftwareWorkspacePanel.vue'
 import LanshuArchitecturePanel from '@/components/LanshuArchitecturePanel.vue'
 import {
-  createProjectAgentAction,
   getProjectChatContext,
   getProjectConversation,
   getProjects,
@@ -889,6 +882,7 @@ import {
   type ProjectChatMessage,
   type ProjectTask
 } from '@/api/projects'
+import { createCommandCenterMission } from '@/api/commandCenter'
 import {
   createDevelopmentPlan,
   decideDevelopmentPlan,
@@ -927,7 +921,6 @@ const sidecarError = ref('')
 const sidecarRequestSequence = ref(0)
 const chatMessages = ref<ProjectChatMessage[]>([])
 const chatText = ref('')
-const chatAgent = ref('optimus')
 const workspaceProjectType = computed(() => route.meta.workspaceMode === 'writing' ? 'document' : 'software')
 const isWritingWorkspace = computed(() => workspaceProjectType.value === 'document')
 const workspaceModule = computed(() => isWritingWorkspace.value ? 'writing' : 'development')
@@ -2145,7 +2138,7 @@ async function sendChat() {
   chatLoading.value = true
   try {
     await sendProjectChat(project.id, {
-      agent_id: chatAgent.value,
+      agent_id: 'optimus',
       role: 'user',
       intent: 'project_collaboration',
       message
@@ -2169,24 +2162,22 @@ async function generateTaskFromChat() {
   }
   chatLoading.value = true
   try {
-    await createProjectAgentAction(project.id, {
-      action_type: isDocumentProject.value ? 'writing_task' : 'development_task',
-      agent_id: chatAgent.value,
-      assignee_agent: chatAgent.value,
-      task_title: message.slice(0, 36),
-      task_type: isDocumentProject.value ? 'writing' : 'development',
-      instruction: message,
-      payload: {
-        priority: 'medium',
-        point_title: `${message.slice(0, 48)} - ${isDocumentProject.value ? '写作要点' : '开发要点'}`
+    await createCommandCenterMission({
+      title: message.slice(0, 36),
+      objective: message,
+      project_id: project.id,
+      mission_type: projectTypeValue(project),
+      context: {
+        source: 'project-workspace',
+        project_name: project.name
       }
     })
     chatText.value = ''
-    ElMessage.success('任务已生成')
+    ElMessage.success('任务已交给擎天柱')
     await loadProjects()
     if (project.id) await loadProjectSidecar(project.id)
   } catch {
-    ElMessage.error('生成任务失败')
+    ElMessage.error('交给擎天柱失败')
   } finally {
     chatLoading.value = false
   }

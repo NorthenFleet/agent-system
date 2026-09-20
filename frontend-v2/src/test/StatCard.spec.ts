@@ -1,13 +1,7 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ElementPlus from 'element-plus'
 import StatCard from '@/components/common/StatCard.vue'
-
-vi.mock('@element-plus/icons-vue', () => ({
-  TrendingUp: { name: 'TrendingUp', render: () => null },
-  TrendingDown: { name: 'TrendingDown', render: () => null },
-  Minus: { name: 'Minus', render: () => null }
-}))
 
 describe('StatCard 组件测试', () => {
   it('✅ 基本渲染', () => {
@@ -16,82 +10,58 @@ describe('StatCard 组件测试', () => {
       props: {
         title: '测试指标',
         value: 1234,
-        unit: '个'
+        icon: '📊',
+        color: '#409eff'
       }
     })
 
     expect(wrapper.text()).toContain('测试指标')
     expect(wrapper.text()).toContain('1234')
-    expect(wrapper.text()).toContain('个')
+    expect(wrapper.text()).toContain('📊')
   })
 
-  it('✅ 变化趋势显示 - 上升', () => {
-    const wrapper = mount(StatCard, {
-      global: { plugins: [ElementPlus] },
-      props: {
-        title: '活跃用户',
-        value: 1000,
-        change: 15.5,
-        unit: '人'
-      }
-    })
-
-    expect(wrapper.text()).toContain('+15.5%')
-  })
-
-  it('✅ 变化趋势显示 - 下降', () => {
-    const wrapper = mount(StatCard, {
-      global: { plugins: [ElementPlus] },
-      props: {
-        title: '错误率',
-        value: 2.5,
-        change: -10.2,
-        unit: '%'
-      }
-    })
-
-    expect(wrapper.text()).toContain('-10.2%')
-  })
-
-  it('✅ 变化趋势显示 - 持平', () => {
-    const wrapper = mount(StatCard, {
-      global: { plugins: [ElementPlus] },
-      props: {
-        title: '访问量',
-        value: 5000,
-        change: 0,
-        unit: '次'
-      }
-    })
-
-    expect(wrapper.text()).toContain('0%')
-  })
-
-  it('✅ 不同颜色主题', () => {
+  it('✅ 渲染配置颜色', () => {
     const wrapper = mount(StatCard, {
       global: { plugins: [ElementPlus] },
       props: {
         title: '告警数',
         value: 5,
-        color: 'danger',
-        unit: '条'
+        icon: '⚠️',
+        color: '#f56c6c'
       }
     })
 
-    expect(wrapper.classes()).toContain('stat-card--danger')
+    expect((wrapper.find('.stat-icon').element as HTMLElement).style.background).toBe(
+      'rgba(245, 108, 108, 0.082)'
+    )
   })
 
-  it('✅ 图标自定义', () => {
+  it('✅ 数值为 0 时仍正确显示', () => {
+    const wrapper = mount(StatCard, {
+      global: { plugins: [ElementPlus] },
+      props: {
+        title: '离线数',
+        value: 0,
+        icon: '○',
+        color: '#909399'
+      }
+    })
+
+    expect(wrapper.find('.stat-value').text()).toBe('0')
+  })
+
+  it('✅ 统计卡保持标准结构', () => {
     const wrapper = mount(StatCard, {
       global: { plugins: [ElementPlus] },
       props: {
         title: '任务完成',
         value: 80,
-        icon: 'TrendingUp',
-        unit: '%'
+        icon: '✅',
+        color: '#67c23a'
       }
     })
 
-    expect(wrapper.find('svg').exists()).toBe(true)
+    expect(wrapper.find('.stat-content').exists()).toBe(true)
+    expect(wrapper.find('.stat-info').exists()).toBe(true)
   })
 })

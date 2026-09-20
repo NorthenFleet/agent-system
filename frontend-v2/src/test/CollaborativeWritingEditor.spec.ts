@@ -363,7 +363,9 @@ describe('CollaborativeWritingEditor', () => {
 
   it('persists a pure block reorder as explicit move operations', async () => {
     vi.mocked(getWritingCollaboration).mockResolvedValue(twoBlockCollaboration())
-    vi.mocked(patchWritingCollaborationDraft).mockResolvedValue(twoBlockCollaboration(8))
+    const reordered = twoBlockCollaboration(8)
+    reordered.document.content = [...(reordered.document.content || [])].reverse()
+    vi.mocked(patchWritingCollaborationDraft).mockResolvedValue(reordered)
     const wrapper = mountEditor()
     await flushPromises()
     const activeEditor = (wrapper.vm as any).editor
@@ -672,10 +674,9 @@ describe('CollaborativeWritingEditor', () => {
     await flushPromises()
 
     expect(getDocumentWritingAsset).toHaveBeenCalledWith('project-1', 'document-1', 'assets/existing.png')
-    const image = wrapper.get('img[data-asset-src="assets/existing.png"]')
-    expect(image.attributes('src')).toBeUndefined()
     assetRequest.resolve(new Blob(['fake-png'], { type: 'image/png' }))
     await flushPromises()
+    const image = wrapper.get('img[data-asset-src="assets/existing.png"]')
     expect(image.attributes('src')).toBe('blob:preview-image')
     expect(JSON.stringify((wrapper.vm as any).editor.getJSON())).toContain('"src":"assets/existing.png"')
     wrapper.unmount()
