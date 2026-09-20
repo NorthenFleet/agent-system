@@ -22,4 +22,5 @@ def test_task_plan_models_create_on_sqlite():
     Base.metadata.create_all(bind=engine)
 
     table_names = set(Base.metadata.tables)
-    assert {"tasks", "plans", "plan_steps", "task_plans"}.issubset(table_names)
+    assert {"legacy_plan_tasks", "plans", "plan_steps", "task_plans"}.issubset(table_names)
+    assert "tasks" not in table_names

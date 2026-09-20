@@ -1,6 +1,7 @@
 import json
 import os
 import shutil
+import tempfile
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -9,7 +10,7 @@ from main import app
 from project_manager import project_manager
 
 
-TEST_DATA_DIR = os.path.expanduser("~/WorkSpace/team-dashboard/data/test-projects-v3")
+TEST_DATA_DIR = tempfile.mkdtemp(prefix="agent-system-projects-v3-")
 TEST_PROJECTS_FILE = os.path.join(TEST_DATA_DIR, "projects-v3.json")
 ORIGINAL_FILE = None
 

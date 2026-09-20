@@ -1,4 +1,6 @@
 import os
+import shutil
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -8,7 +10,7 @@ import skill_manager
 from main import app
 
 
-TEST_SKILL_ROOT = Path(os.path.expanduser("~/WorkSpace/team-dashboard/data/test-skills-root"))
+TEST_SKILL_ROOT = Path(tempfile.mkdtemp(prefix="agent-system-skills-v3-"))
 ORIGINAL_BINDINGS_FILE = None
 
 
@@ -35,6 +37,7 @@ def setup_module():
 def teardown_module():
     skill_manager.BINDINGS_FILE = ORIGINAL_BINDINGS_FILE
     os.environ.pop("SKILL_ROOTS", None)
+    shutil.rmtree(TEST_SKILL_ROOT, ignore_errors=True)
 
 
 @pytest.fixture
