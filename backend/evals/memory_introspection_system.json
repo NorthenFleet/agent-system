@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0",
+  "description": "擎天柱真实入口的记忆盘点回归，同时验证身份绑定、3021 权威存储和辅助检索通道。",
+  "cases": [
+    {
+      "id": "optimus-memory-inventory-system-gate",
+      "prompt": "你现在记住了哪些内容，你有几层记忆",
+      "request": {
+        "agent_id": "optimus",
+        "project_id": "",
+        "limit": 12,
+        "persist": false
+      },
+      "contract": {
+        "schema_version": "memory-introspection.v1",
+        "accepted_statuses": ["ready"],
+        "authority_system": "3021-unified-memory",
+        "agent_id": "optimus",
+        "identity_channel": "feishu",
+        "require_identity_display_name": true,
+        "minimum_counts": {
+          "profile": 1,
+          "profile_facts": 1,
+          "project_memories": 1,
+          "agent_memories": 1
+        },
+        "minimum_remembered_items": 1,
+        "required_channels": {
+          "local_markdown": ["ready"],
+          "openclaw_lexical_index": ["ready"],
+          "approved_graph_projection": ["ready"],
+          "native_private_graph": ["ready"]
+        },
+        "max_degraded_channels": 0,
+        "require_retrieval_citations": true,
+        "interpretation_must_be_false": [
+          "fixed_layer_count",
+          "private_graph_empty_means_system_empty",
+          "sandbox_error_means_file_missing"
+        ]
+      }
+    }
+  ]
+}

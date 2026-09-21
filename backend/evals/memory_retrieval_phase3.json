@@ -1,0 +1,56 @@
+{
+  "schema_version": "1.0",
+  "description": "混合检索排序验收集，同时覆盖多通道互证、语义改写、权威冲突和作用域隔离。",
+  "acceptance": {
+    "forbidden_hits_must_not_increase": true,
+    "max_recall_drop": 0.0,
+    "max_mrr_drop": 0.02
+  },
+  "cases": [
+    {
+      "id": "semantic-paraphrase-release-gate",
+      "query": "上线之前需要完成哪些验证",
+      "user_id": "1",
+      "project_id": "project-openclaw",
+      "agent_id": "optimus",
+      "expected_source_refs": ["project-memory:release-regression-gate"],
+      "forbidden_source_refs": []
+    },
+    {
+      "id": "lexical-vector-corroboration",
+      "query": "审批后才可执行",
+      "user_id": "1",
+      "project_id": "project-openclaw",
+      "agent_id": "optimus",
+      "expected_source_refs": ["fact:approval-gate", "project-memory:approval-policy"],
+      "forbidden_source_refs": []
+    },
+    {
+      "id": "canonical-beats-inferred-graph",
+      "query": "项目发布规则",
+      "user_id": "1",
+      "project_id": "project-openclaw",
+      "agent_id": "optimus",
+      "expected_source_refs": ["project-memory:release-regression-gate"],
+      "forbidden_source_refs": ["graph:stale-release-rule"]
+    },
+    {
+      "id": "cross-user-vector-isolation",
+      "query": "私有客户决策",
+      "user_id": "2",
+      "project_id": "project-openclaw",
+      "agent_id": "optimus",
+      "expected_source_refs": [],
+      "forbidden_source_refs": ["project-memory:user-1-private-decision"]
+    },
+    {
+      "id": "archived-vector-isolation",
+      "query": "历史输出偏好",
+      "user_id": "1",
+      "project_id": "project-openclaw",
+      "agent_id": "optimus",
+      "expected_source_refs": [],
+      "forbidden_source_refs": ["fact:archived-output-preference"]
+    }
+  ]
+}

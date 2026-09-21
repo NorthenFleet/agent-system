@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0",
+  "description": "第一阶段关键词检索基线。expected_source_refs 必须由受控测试语料提供，不引用生产敏感数据。",
+  "cases": [
+    {
+      "id": "exact-policy-keyword",
+      "query": "审批任务规划",
+      "user_id": "1",
+      "project_id": "project-openclaw",
+      "agent_id": "optimus",
+      "expected_source_refs": ["fact:approval-gate"],
+      "forbidden_source_refs": []
+    },
+    {
+      "id": "exact-technical-term",
+      "query": "Context Pack",
+      "user_id": "1",
+      "project_id": "project-openclaw",
+      "agent_id": "optimus",
+      "expected_source_refs": ["knowledge:context-pack"],
+      "forbidden_source_refs": []
+    },
+    {
+      "id": "cross-profile-isolation",
+      "query": "私有会话记忆",
+      "user_id": "2",
+      "project_id": "project-openclaw",
+      "agent_id": "optimus",
+      "expected_source_refs": [],
+      "forbidden_source_refs": ["memory:optimus:private-session"]
+    },
+    {
+      "id": "superseded-memory-filter",
+      "query": "旧项目决策",
+      "user_id": "1",
+      "project_id": "project-openclaw",
+      "agent_id": "optimus",
+      "expected_source_refs": [],
+      "forbidden_source_refs": ["project-memory:superseded-decision"]
+    }
+  ]
+}

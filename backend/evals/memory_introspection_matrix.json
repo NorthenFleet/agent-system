@@ -1,0 +1,105 @@
+{
+  "schema_version": "1.0",
+  "description": "多智能体记忆通道、用户作用域和 Agent 私有记忆隔离回归矩阵。",
+  "invariants": {
+    "canonical_counts_equal": ["profile", "profile_facts", "project_memories"],
+    "identity_bound_for_all": true,
+    "authority_system": "3021-unified-memory"
+  },
+  "cases": [
+    {
+      "id": "optimus-orchestration-memory",
+      "prompt": "你现在记住了哪些内容，你有几层记忆",
+      "request": {"agent_id": "optimus", "project_id": "", "limit": 8, "persist": false},
+      "contract": {
+        "agent_id": "optimus",
+        "minimum_counts": {"profile": 1, "profile_facts": 1, "project_memories": 1, "agent_memories": 1},
+        "minimum_remembered_items": 1,
+        "required_channels": {
+          "local_markdown": ["ready"],
+          "openclaw_lexical_index": ["ready"],
+          "approved_graph_projection": ["ready"],
+          "native_private_graph": ["ready"]
+        },
+        "max_degraded_channels": 0,
+        "interpretation_must_be_false": ["fixed_layer_count", "private_graph_empty_means_system_empty", "sandbox_error_means_file_missing"]
+      }
+    },
+    {
+      "id": "inspector-review-memory-isolation",
+      "prompt": "检索与审查、验证相关的已授权记忆",
+      "request": {"agent_id": "inspector", "project_id": "", "limit": 8, "persist": false},
+      "contract": {
+        "agent_id": "inspector",
+        "minimum_counts": {"profile": 1, "profile_facts": 1, "project_memories": 1},
+        "exact_counts": {"agent_memories": 0},
+        "minimum_remembered_items": 1,
+        "required_channels": {
+          "local_markdown": ["ready"],
+          "openclaw_lexical_index": ["ready"],
+          "approved_graph_projection": ["ready"],
+          "native_private_graph": ["ready"]
+        },
+        "max_degraded_channels": 0,
+        "interpretation_must_be_false": ["fixed_layer_count", "private_graph_empty_means_system_empty", "sandbox_error_means_file_missing"]
+      }
+    },
+    {
+      "id": "perceptor-knowledge-memory-isolation",
+      "prompt": "检索知识管理、调研与引用相关的已授权记忆",
+      "request": {"agent_id": "perceptor", "project_id": "", "limit": 8, "persist": false},
+      "contract": {
+        "agent_id": "perceptor",
+        "minimum_counts": {"profile": 1, "profile_facts": 1, "project_memories": 1},
+        "exact_counts": {"agent_memories": 0},
+        "minimum_remembered_items": 1,
+        "required_channels": {
+          "local_markdown": ["ready"],
+          "openclaw_lexical_index": ["ready"],
+          "approved_graph_projection": ["ready"],
+          "native_private_graph": ["ready"]
+        },
+        "max_degraded_channels": 0,
+        "interpretation_must_be_false": ["fixed_layer_count", "private_graph_empty_means_system_empty", "sandbox_error_means_file_missing"]
+      }
+    },
+    {
+      "id": "shockwave-finance-memory-isolation",
+      "prompt": "检索财务流程、审批和风险控制相关的已授权记忆",
+      "request": {"agent_id": "shockwave", "project_id": "", "limit": 8, "persist": false},
+      "contract": {
+        "agent_id": "shockwave",
+        "minimum_counts": {"profile": 1, "profile_facts": 1, "project_memories": 1},
+        "exact_counts": {"agent_memories": 0},
+        "minimum_remembered_items": 1,
+        "required_channels": {
+          "local_markdown": ["ready"],
+          "openclaw_lexical_index": ["ready"],
+          "approved_graph_projection": ["ready"],
+          "native_private_graph": ["ready"]
+        },
+        "max_degraded_channels": 0,
+        "interpretation_must_be_false": ["fixed_layer_count", "private_graph_empty_means_system_empty", "sandbox_error_means_file_missing"]
+      }
+    },
+    {
+      "id": "bumblebee-coordination-memory-isolation",
+      "prompt": "检索团队协调、任务跟踪相关的已授权记忆",
+      "request": {"agent_id": "bumblebee", "project_id": "", "limit": 8, "persist": false},
+      "contract": {
+        "agent_id": "bumblebee",
+        "minimum_counts": {"profile": 1, "profile_facts": 1, "project_memories": 1},
+        "exact_counts": {"agent_memories": 0},
+        "minimum_remembered_items": 1,
+        "required_channels": {
+          "local_markdown": ["ready"],
+          "openclaw_lexical_index": ["ready"],
+          "approved_graph_projection": ["ready"],
+          "native_private_graph": ["ready"]
+        },
+        "max_degraded_channels": 0,
+        "interpretation_must_be_false": ["fixed_layer_count", "private_graph_empty_means_system_empty", "sandbox_error_means_file_missing"]
+      }
+    }
+  ]
+}

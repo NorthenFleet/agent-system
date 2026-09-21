@@ -1,0 +1,195 @@
+{
+  "version": "memory-review-proposals.v1",
+  "batch_id": "memory-eval-batch-2417c72342cde48e",
+  "proposed_by": "codex-assistant",
+  "proposals": [
+    {
+      "case_id": "memory-eval-draft-5250b82485797450",
+      "suggested_query": "command-center Skill 应该分配给哪些智能体？",
+      "suggested_forbidden_source_refs": [],
+      "rationale": "保留权威记忆的核心判断，将内部标题改写为业务人员可直接提出的标准问题。"
+    },
+    {
+      "case_id": "memory-eval-draft-d9cf495b1f21ecad",
+      "suggested_query": "验证智能体是否加载新增 Skill 时，应该检查哪些权威来源？",
+      "suggested_forbidden_source_refs": [],
+      "rationale": "聚焦配置与文件双重核验，避免把可能滞后的清单误当作唯一依据。"
+    },
+    {
+      "case_id": "memory-eval-draft-638b772e4bd07050",
+      "suggested_query": "workflow.memory_review_gate 规则实际存储在哪里，又如何进入任务上下文？",
+      "suggested_forbidden_source_refs": [],
+      "rationale": "同时覆盖规则存储位置与上下文注入路径，形成可验证的标准问法。"
+    },
+    {
+      "case_id": "memory-eval-draft-9f22e1c5de128c87",
+      "suggested_query": "任务产生的长期记忆候选在什么条件下才能进入后续上下文检索？",
+      "suggested_forbidden_source_refs": [],
+      "rationale": "突出人工审批这一关键门禁，避免把候选状态与可检索状态混淆。"
+    },
+    {
+      "case_id": "memory-eval-draft-73ae52dad2de211f",
+      "suggested_query": "四智能体协作开发的标准交付顺序和职责是什么？",
+      "suggested_forbidden_source_refs": [],
+      "rationale": "把流程记忆改写为同时检验顺序与职责边界的标准业务问题。"
+    },
+    {
+      "case_id": "memory-eval-draft-846cf5672ad54521",
+      "suggested_query": "智能体记忆库包含哪 5 个 API，它们分别提供什么能力？",
+      "suggested_forbidden_source_refs": [],
+      "rationale": "明确接口数量和能力映射，便于评估结果是否完整覆盖权威记忆。"
+    },
+    {
+      "case_id": "memory-eval-draft-d87f4e99e907e539",
+      "suggested_query": "记忆库 5 个 API 当前还缺少哪项上线前安全改造？",
+      "suggested_forbidden_source_refs": [],
+      "rationale": "将风险说明改写为上线检查问题，重点检验统一认证要求。"
+    },
+    {
+      "case_id": "memory-eval-variant-0b22b232520a64dc",
+      "suggested_query": "其他智能体也需要配置 command-center 吗，还是只给 optimus？",
+      "suggested_forbidden_source_refs": [],
+      "rationale": "使用真实使用者可能提出的口语表达，同时保留角色分配判断。"
+    },
+    {
+      "case_id": "memory-eval-variant-017b7a1cbaa3ffd4",
+      "suggested_query": "skill-inventory.md 里看不到 command-center 和 ninja-dispatch，我怎么确认它们其实已经加载？",
+      "suggested_forbidden_source_refs": [],
+      "rationale": "模拟发现清单滞后后的自然追问，要求检索结果给出权威核验路径。"
+    },
+    {
+      "case_id": "memory-eval-variant-5afb3b9d4432d2f8",
+      "suggested_query": "为什么 memory_search 找不到 workflow.memory_review_gate.md，这条规则到底存在哪儿？",
+      "suggested_forbidden_source_refs": [],
+      "rationale": "保留故障现象与用户困惑，验证系统能否纠正错误的文件化假设。"
+    },
+    {
+      "case_id": "memory-eval-variant-accbb05d74401e7a",
+      "suggested_query": "任务结束后提取的记忆能直接给下一个任务使用吗？",
+      "suggested_forbidden_source_refs": [],
+      "rationale": "以业务人员的直接问法检验候选记忆不能绕过审核门禁这一结论。"
+    },
+    {
+      "case_id": "memory-eval-variant-d2100d57e0917454",
+      "suggested_query": "一个功能要让 Leonardo、Raphael、Donatello 和 Michelangelo 协作，应该怎么接力？",
+      "suggested_forbidden_source_refs": [],
+      "rationale": "用自然协作场景表达固定流水线，检验阶段交接顺序是否正确。"
+    },
+    {
+      "case_id": "memory-eval-variant-be6ec11f428c8b17",
+      "suggested_query": "我想查看、读取和搜索各智能体的记忆，应该调用哪些接口？",
+      "suggested_forbidden_source_refs": [],
+      "rationale": "从实际使用意图出发，覆盖列表、读取、搜索和统计等接口能力。"
+    },
+    {
+      "case_id": "memory-eval-variant-6be5f570f5aa92eb",
+      "suggested_query": "记忆库接口现在能直接上线吗，认证问题解决了吗？",
+      "suggested_forbidden_source_refs": [],
+      "rationale": "用上线决策语境检验认证缺口，避免仅返回接口功能说明。"
+    },
+    {
+      "case_id": "memory-eval-variant-a826f33c46c6ba1b",
+      "suggested_query": "command-center 给谁用？",
+      "suggested_forbidden_source_refs": [],
+      "rationale": "构造极简问法，检验低词项输入下仍能召回准确的角色分配记忆。"
+    },
+    {
+      "case_id": "memory-eval-variant-b54f91ad26bfa344",
+      "suggested_query": "新增 Skill 去哪里核验？",
+      "suggested_forbidden_source_refs": [],
+      "rationale": "构造省略具体名称的简短问法，检验核验流程语义能否被召回。"
+    },
+    {
+      "case_id": "memory-eval-variant-929e0dde8e9bca23",
+      "suggested_query": "memory_review_gate 存哪儿？",
+      "suggested_forbidden_source_refs": [],
+      "rationale": "以最少上下文检验规则键、profile_fact 与文件记忆之间的辨识能力。"
+    },
+    {
+      "case_id": "memory-eval-variant-b29e3b4270dea137",
+      "suggested_query": "记忆候选能直接入库吗？",
+      "suggested_forbidden_source_refs": [],
+      "rationale": "构造常见短问句，检验系统能否召回人工审批门禁而非直接发布。"
+    },
+    {
+      "case_id": "memory-eval-variant-abf4b7ac3b88b76b",
+      "suggested_query": "四忍者开发流程怎么走？",
+      "suggested_forbidden_source_refs": [],
+      "rationale": "使用团队内部简称构造简短问法，检验完整流水线是否仍可召回。"
+    },
+    {
+      "case_id": "memory-eval-variant-e137ea2d51e3adfd",
+      "suggested_query": "记忆库 5 个接口是什么？",
+      "suggested_forbidden_source_refs": [],
+      "rationale": "以短查询检验接口集合的整体召回，防止只命中单个接口描述。"
+    },
+    {
+      "case_id": "memory-eval-variant-aeaca2bc7f534c9d",
+      "suggested_query": "记忆库 API 认证接了吗？",
+      "suggested_forbidden_source_refs": [],
+      "rationale": "以短查询检验上线安全缺口，目标答案应明确认证尚需统一。"
+    },
+    {
+      "case_id": "memory-eval-variant-2c604be6f7bac5ec",
+      "suggested_query": "在智能体协作架构中，optimus 和其他 Agent 分别应该加载 command-center 与 ninja-dispatch 中的哪一个？",
+      "suggested_forbidden_source_refs": [],
+      "rationale": "补充协作架构上下文，检验两个 Skill 在不同角色间的精确映射。"
+    },
+    {
+      "case_id": "memory-eval-variant-ae80b634be38d19b",
+      "suggested_query": "检查 command-center 与 ninja-dispatch 的加载状态时，gateway 配置和文件分别要看什么？",
+      "suggested_forbidden_source_refs": [],
+      "rationale": "加入具体排障上下文，要求答案同时覆盖运行配置和 Skill 文件。"
+    },
+    {
+      "case_id": "memory-eval-variant-aefa66f6eeb85001",
+      "suggested_query": "排查审核门禁没有被语义搜索命中时，应检查哪个 profile_fact 和哪条上下文注入链路？",
+      "suggested_forbidden_source_refs": [],
+      "rationale": "构造排障场景，检验系统是否理解结构化事实与任务上下文注入的关系。"
+    },
+    {
+      "case_id": "memory-eval-variant-642d3a43f4f685a9",
+      "suggested_query": "在任务闭环中，长期记忆候选进入后续任务 Context Pack 前必须经过什么审批？",
+      "suggested_forbidden_source_refs": [],
+      "rationale": "限定任务闭环与 Context Pack 场景，明确测试候选到可检索记忆的转换门禁。"
+    },
+    {
+      "case_id": "memory-eval-variant-f0292083d2712b4a",
+      "suggested_query": "采用四忍者流水线开发时，每个阶段应该产出什么，并如何验收后交棒？",
+      "suggested_forbidden_source_refs": [],
+      "rationale": "把角色顺序扩展为产出和验收要求，检验流程记忆的完整性。"
+    },
+    {
+      "case_id": "memory-eval-variant-5d5b06e7002a407c",
+      "suggested_query": "实现记忆库页面时，智能体统计、目录懒加载、文件读取、BM25 搜索和聚合统计分别使用哪个接口，数据源路径是什么？",
+      "suggested_forbidden_source_refs": [],
+      "rationale": "构造实现上下文，要求接口、能力与数据路径形成完整映射。"
+    },
+    {
+      "case_id": "memory-eval-variant-68c3e9892222d5f8",
+      "suggested_query": "把记忆库 API 接入 3021 现有 v2 体系时，认证中间件需要如何统一？",
+      "suggested_forbidden_source_refs": [],
+      "rationale": "加入部署端口和现有体系上下文，检验认证改造要求是否准确。"
+    },
+    {
+      "case_id": "memory-eval-variant-f047207f1d2c5429",
+      "suggested_query": "除了 optimus，其他 15 个 Agent 能否分配 command-center？协作时应使用什么替代？",
+      "suggested_forbidden_source_refs": [
+        "project-memory:project-memory-270227a395f2",
+        "project-memory:project-memory-784c736165ec",
+        "project-memory:project-memory-d07d4f300258"
+      ],
+      "rationale": "构造角色边界问法，并加入无关项目记忆作为候选安全负例，需人工逐条确认。"
+    },
+    {
+      "case_id": "memory-eval-variant-0ba2c2dfb01790de",
+      "suggested_query": "skill-inventory.md 能否作为新增 Skill 已加载的权威依据？什么时候不能依赖它？",
+      "suggested_forbidden_source_refs": [
+        "project-memory:project-memory-270227a395f2",
+        "project-memory:project-memory-784c736165ec",
+        "project-memory:project-memory-d07d4f300258"
+      ],
+      "rationale": "构造权威性边界问法，并以无关项目记忆作为安全负例候选，防止错误旁路命中。"
+    }
+  ]
+}
