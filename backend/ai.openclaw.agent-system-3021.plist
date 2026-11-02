@@ -8,7 +8,7 @@
   <array>
     <string>/bin/zsh</string>
     <string>-lc</string>
-    <string>export AGENT_SYSTEM_ENV_FILE="../.env" AGENT_SYSTEM_RUNTIME_KIND="launchd"; if [[ ! -r "$AGENT_SYSTEM_ENV_FILE" ]]; then echo "required config source is missing: $AGENT_SYSTEM_ENV_FILE" &gt;&amp;2; exit 78; fi; set -a; source "$AGENT_SYSTEM_ENV_FILE"; set +a; export DASHBOARD_JWT_SECRET="$( &lt;data/.dashboard_jwt_secret)" &amp;&amp; exec ./venv/bin/uvicorn main_slim_v2:app --host 0.0.0.0 --port 3021</string>
+    <string>export AGENT_SYSTEM_ENV_FILE="../.env" AGENT_SYSTEM_RUNTIME_KIND="launchd"; if [[ ! -r "$AGENT_SYSTEM_ENV_FILE" ]]; then echo "required config source is missing: $AGENT_SYSTEM_ENV_FILE" &gt;&amp;2; exit 78; fi; set -a; source "$AGENT_SYSTEM_ENV_FILE"; set +a; if [[ -r "./data/genoffice-runtime.env" &amp;&amp; ! -L "./data/genoffice-runtime.env" ]]; then set -a; source "./data/genoffice-runtime.env"; set +a; fi; export DASHBOARD_JWT_SECRET="$( &lt;data/.dashboard_jwt_secret)" &amp;&amp; exec ./venv/bin/uvicorn main_slim_v2:app --host 0.0.0.0 --port 3021</string>
   </array>
   <key>WorkingDirectory</key>
   <string>/Users/apple/工作桌面/Workspace/agent-system/backend</string>

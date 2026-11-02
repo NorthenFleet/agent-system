@@ -23,7 +23,9 @@ from routers.auth_router import router as auth_router
 from routers.scheduler_router import router as scheduler_router
 from routers.memory_router import router as memory_router
 from routers.graph_memory_router import router as graph_memory_router
+from routers.finance_workflow import router as finance_workflow_router
 from services.memory_runtime_config import public_memory_runtime_configuration
+from services.knowledge.worker import start_knowledge_worker, stop_knowledge_worker
 
 app = FastAPI(title="团队状态看板 API")
 FD2 = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend-v2", "dist")
@@ -132,6 +134,7 @@ app.include_router(auth_router)
 app.include_router(scheduler_router)
 app.include_router(memory_router)
 app.include_router(graph_memory_router)
+app.include_router(finance_workflow_router)
 
 # Pages
 app.get("/")(lambda: _r(_fe()))
@@ -239,6 +242,8 @@ async def startup():
     except Exception as e:
         print(f"[WritingCollaboration] 启动失败: {e}")
 
+    start_knowledge_worker()
+
     if os.getenv("DISABLE_SCHEDULER", "false").lower() == "true":
         print("[Scheduler] 已禁用（DISABLE_SCHEDULER=true）")
         return
@@ -250,6 +255,7 @@ async def startup():
 
 @app.on_event("shutdown")
 async def shutdown():
+    await stop_knowledge_worker()
     try:
         device_manager.stop_health_monitoring()
     except Exception as e: print(f"[DeviceManager] 健康监控关闭异常: {e}")

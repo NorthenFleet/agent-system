@@ -91,3 +91,6 @@ frontend-v2/node_modules/
 frontend-v2/dist/
 frontend-v2/src.backup*/
 frontend-v2/.vscode/
+
+# Review evidence build artifacts (regenerable via frontend-v2 build)
+docs/review/**/ui-dist/

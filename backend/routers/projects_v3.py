@@ -28,6 +28,7 @@ from services.work_run_service import (
     InvalidWorkTransition,
     WorkRunLeaseConflict,
     WorkRunNotFound,
+    public_work_run,
     work_run_service,
 )
 import skill_manager
@@ -1525,7 +1526,7 @@ def _runner_tick(req: AgentRunnerTickRequest) -> dict[str, Any]:
     state.setdefault("runs", []).append(run)
     state["runs"] = state["runs"][-200:]
     _save_runner_state(state)
-    return {"claimed": True, "queue_task": task, "run": run, "executor": _runner_executor_status()}
+    return {"claimed": True, "queue_task": task, "run": public_work_run(run), "executor": _runner_executor_status()}
 
 
 @router.get("/projects")
@@ -2536,8 +2537,8 @@ def get_agent_runner_status():
         and row.get("status") == "in_progress"
     ]
     return {
-        "runner": state,
-        "canonical_runs": canonical,
+        "runner": {**state, "runs": [public_work_run(run) for run in state.get("runs", [])]},
+        "canonical_runs": {**canonical, "runs": [public_work_run(run) for run in canonical["runs"]]},
         "executor": _runner_executor_status(),
         "background": _elastic_runner_status(),
         "queue": {
@@ -2568,7 +2569,7 @@ def list_work_runs(
     except InvalidWorkTransition as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     return {
-        "runs": rows,
+        "runs": [public_work_run(run) for run in rows],
         "total": len(rows),
         "source": "unified_dashboard.db:work_runs",
     }
@@ -2577,7 +2578,7 @@ def list_work_runs(
 @router.get("/work-runs/{run_id}")
 def get_work_run(run_id: str):
     try:
-        return work_run_service.get(run_id)
+        return public_work_run(work_run_service.get(run_id))
     except WorkRunNotFound as exc:
         raise HTTPException(status_code=404, detail="Work run not found") from exc
 
@@ -2585,17 +2586,20 @@ def get_work_run(run_id: str):
 @router.post("/work-runs/{run_id}/transition")
 def transition_work_run(run_id: str, req: WorkRunTransitionRequest):
     try:
-        return work_run_service.transition(
+        return public_work_run(work_run_service.transition(
             run_id,
             req.status,
             actor=req.actor,
             detail=req.detail,
             result_summary=req.result_summary,
-        )
+        ))
     except WorkRunNotFound as exc:
         raise HTTPException(status_code=404, detail="Work run not found") from exc
     except InvalidWorkTransition as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except WorkRunLeaseConflict as exc:
+        raise HTTPException(status_code=409,
+            detail="Work run is controlled by its active execution authority") from exc
 
 
 @router.post("/agents/runner/tick")
@@ -2685,7 +2689,7 @@ def release_agent_instance(instance_id: str, req: AgentReleaseRequest):
         except InvalidWorkTransition:
             pass
     _save_agent_instance_store(store)
-    return {"instance": _enrich_agent_instance(row), "queue_task": queue_task, "work_run": canonical_run}
+    return {"instance": _enrich_agent_instance(row), "queue_task": queue_task, "work_run": public_work_run(canonical_run)}
 
 
 @router.post("/agents/instances/{instance_id}/complete")
@@ -2731,7 +2735,7 @@ def complete_agent_instance(instance_id: str, req: AgentCompleteRequest):
         "instance": _enrich_agent_instance(row),
         "memory_commit": commit,
         "queue_task": queue_task,
-        "work_run": canonical_run,
+        "work_run": public_work_run(canonical_run),
     }
 
 

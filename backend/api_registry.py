@@ -33,10 +33,12 @@ from routers.auth_router import router as auth_router
 from routers.codex_jobs_router import router as codex_jobs_router
 from routers.command_center_router import router as command_center_router
 from routers.context_router import router as context_router
+from routers.knowledge_v3 import router as knowledge_v3_router
 from routers.development_automation_router import router as development_automation_router
 from routers.customers_router import router as customers_router
 from routers.modules_router import router as modules_router
 from routers.monitoring_router import router as monitoring_router
+from routers.cluster_inventory_router import router as cluster_inventory_router
 from routers.notification_router import router as notification_router
 from routers.task_recommend_router import router as task_recommend_router
 from routers.task_webhook_router import router as task_webhook_router
@@ -111,11 +113,13 @@ ACTIVE_ROUTERS = (
     codex_jobs_router,
     command_center_router,
     context_router,
+    knowledge_v3_router,
     development_automation_router,
     task_recommend_router,
     agent_health_router,
     agent_team_router,
     monitoring_router,
+    cluster_inventory_router,
     modules_router,
     task_webhook_router,
     templates_router,

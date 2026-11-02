@@ -9,7 +9,7 @@ from typing import Any
 from zipfile import BadZipFile, ZIP_DEFLATED, ZipFile
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field
 from starlette.background import BackgroundTask
 
@@ -28,6 +28,11 @@ from services.document_evaluation_service import (
 )
 from services.document_layout_service import document_layout_service
 from services.document_fidelity_service import document_fidelity_service
+from services.genoffice_readonly_service import (
+    GenOfficeBusy,
+    GenOfficeUnavailable,
+    genoffice_readonly_service,
+)
 from services.document_comparison_service import document_comparison_service
 from services.diagram_service import diagram_service
 from services.multi_document_service import multi_document_service
@@ -612,6 +617,13 @@ def _owner_id(user: dict[str, Any]) -> str:
 
 
 def _handle(error: DocumentWorkspaceError) -> HTTPException:
+    if isinstance(error, GenOfficeBusy):
+        return HTTPException(
+            status_code=429,
+            detail={"code": "office_engine_busy", "message": str(error)},
+        )
+    if isinstance(error, GenOfficeUnavailable):
+        return HTTPException(status_code=503, detail=str(error))
     if isinstance(error, WritingWorkbenchConflict):
         return HTTPException(
             status_code=409,
@@ -809,21 +821,21 @@ def create_writing_project(req: WritingProjectCreate, _user: dict = Depends(requ
         }] if req.product_id else []),
         "document_spec": document_spec,
     })
-    initialized = document_workspace_service.initialize_project(project, document_spec["outline"])
-    document_spec["working_markdown"] = initialized
-    document_spec["sync_status"] = {
-        "status": "initialized",
-        "message": "已创建独立 Markdown 工作稿",
-        "heading_count": len(chapters) + 2,
-        "section_link_count": 0,
-    }
-    project = project_manager.update_project(project["id"], {"document_spec": document_spec}) or project
     try:
+        initialized = document_workspace_service.initialize_project(project, document_spec["outline"])
+        document_spec["working_markdown"] = initialized
+        document_spec["sync_status"] = {
+            "status": "initialized", "message": "已创建独立 Markdown 工作稿",
+            "heading_count": len(chapters) + 2, "section_link_count": 0,
+        }
+        project = project_manager.update_project(project["id"], {"document_spec": document_spec}) or project
         workspace = document_workspace_service.workspace(project)
-    except DocumentWorkspaceError as exc:
-        project_manager.delete_project(project["id"])
-        raise _handle(exc) from exc
+    except (DocumentWorkspaceError, OSError) as exc:
+        document_spec["sync_status"] = {"status": "failed", "message": "项目已创建，工作区初始化失败，请在项目中重试"}
+        project = project_manager.update_project(project["id"], {"document_spec": document_spec}) or project
+        return {"project": project, "workspace": None, "warning": document_spec["sync_status"]["message"]}
     return {"project": project, "workspace": workspace}
+
 
 
 @router.get("/projects/{project_id}/documents")
@@ -2179,6 +2191,48 @@ def get_document_fidelity_preview(
     try:
         path = document_fidelity_service.preview_pdf(_project(project_id), document_id)
         return FileResponse(path, filename=f"{path.parent.parent.parent.name}-WPS预览.pdf", media_type="application/pdf")
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.get("/genoffice/status")
+def get_genoffice_readonly_status(_user: dict = Depends(require_role("admin"))):
+    """Return a token- and path-free G1 capability report."""
+    return genoffice_readonly_service.status()
+
+
+@router.post("/projects/{project_id}/documents/{document_id}/genoffice/check")
+def check_document_with_genoffice(
+    project_id: str,
+    document_id: str,
+    # G1 is an administrator-controlled local pilot.  Project membership ACLs
+    # do not exist yet, so do not expose an expensive source-document upload
+    # endpoint to every authenticated account.
+    _user: dict = Depends(require_role("admin")),
+):
+    try:
+        return genoffice_readonly_service.check(_project(project_id), document_id)
+    except DocumentWorkspaceError as exc:
+        raise _handle(exc) from exc
+
+
+@router.get("/projects/{project_id}/documents/{document_id}/genoffice/proof.png")
+def get_document_genoffice_proof(
+    project_id: str,
+    document_id: str,
+    _user: dict = Depends(require_role("admin")),
+):
+    try:
+        proof = genoffice_readonly_service.proof(_project(project_id), document_id)
+        return Response(
+            content=proof.content,
+            media_type=proof.media_type,
+            headers={
+                "Cache-Control": "no-store",
+                "Content-Disposition": f'inline; filename="{proof.filename}"',
+                "X-Content-Type-Options": "nosniff",
+            },
+        )
     except DocumentWorkspaceError as exc:
         raise _handle(exc) from exc
 

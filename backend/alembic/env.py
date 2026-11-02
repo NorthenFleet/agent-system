@@ -24,12 +24,20 @@ from models.v2_models import Base as V2Base
 from models.task_plan import Base as TPBase
 from models import finance_models  # noqa: F401 - register finance metadata
 from models import writing_collaboration  # noqa: F401 - register writing metadata
+from models import cluster_inventory  # noqa: F401 - register cluster inventory metadata
+from models.knowledge_schema_v1 import metadata as knowledge_metadata
 
 database_url = os.getenv("DATABASE_URL")
 if database_url:
     config.set_main_option("sqlalchemy.url", database_url.replace("%", "%%"))
 
-target_metadata = V2Base.metadata
+from models.knowledge_projection_v2 import metadata as knowledge_projection_metadata
+
+from models.knowledge_context_v3 import metadata as knowledge_context_metadata
+
+from models.knowledge_operations_v4 import metadata as knowledge_operations_metadata
+
+target_metadata = [V2Base.metadata, knowledge_metadata, knowledge_projection_metadata, knowledge_context_metadata, knowledge_operations_metadata]
 
 
 def run_migrations_offline() -> None:
