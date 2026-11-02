@@ -2,9 +2,9 @@
 
 ## Source of truth
 - Status: Active
-- Last refreshed: 2026-08-09
+- Last refreshed: 2026-09-25
 - Primary product surfaces: 3021 文档管理、协同工作台、概念与论证、参考文献、排版与交付、项目中枢、数据管理
-- Evidence reviewed: `frontend-v2/src/views/WritingWorkspace.vue`、`frontend-v2/src/components/writing/WritingLinkedWorkspace.vue`、`frontend-v2/src/components/writing/WritingWorkspacePane.vue`、`frontend-v2/src/components/writing/WritingAiPane.vue`、`frontend-v2/src/components/writing/CollaborativeWritingEditor.vue`、`frontend-v2/src/components/writing/PresentationWorkspace.vue`、WorkBuddy 人机双写参考截图
+- Evidence reviewed: `frontend-v2/src/views/WritingWorkspace.vue`、`frontend-v2/src/components/writing/WritingLinkedWorkspace.vue`、`frontend-v2/src/components/writing/WritingWorkspacePane.vue`、`frontend-v2/src/components/writing/WritingAiPane.vue`、`frontend-v2/src/components/writing/CollaborativeWritingEditor.vue`、`frontend-v2/src/components/writing/PresentationWorkspace.vue`、`docs/review/word-cowriting-phase0-contract.md`、`docs/review/word-cowriting-phase1-poc-entry.md`、`docs/GENOFFICE-3021-INTEGRATION-DESIGN.md`、WorkBuddy 人机双写参考截图
 
 ## Brand
 - Personality: 严谨、克制、面向研究与交付
@@ -53,6 +53,8 @@
 - 图表引用固定 `diagram_id + diagram_revision + target`，新修订只显示“有更新”，不得静默替换正文或 PPT 已引用版本
 - 图表 AI 只返回元素级结构化操作；不同元素可自动合并，同一元素修订冲突必须保留为建议，删除、批量重排和语义变化均需人工确认
 - 正式 Word/PDF 只能由当前已审批修订生成；Word 内容修改必须以 ChangeSet 回流
+- 外部 Office 引擎通过可替换适配层处理候选副本，不直接写入 PostgreSQL 正文权威或覆盖正式母稿；GenOffice 的详细设计见 `docs/GENOFFICE-3021-INTEGRATION-DESIGN.md`
+- 未经当前 DOCX 金标和版本兼容门验证的 Office 引擎版本只能读取、检查和渲染，不得执行候选写入或版本晋升
 - 不同文档类型根据后端标准包动态展示指标，前端不维护业务评分规则
 - Tradeoffs: 桌面端优先同屏对照；窄屏自动回落为纵向阅读
 
@@ -102,12 +104,37 @@
 - Compatibility constraints: PostgreSQL 结构化文档 JSON 为唯一可写权威；SQLite 默认禁止协作写入。仅允许经显式运维标志执行一次性、可审计的历史权威源迁移；Markdown 投影继续服务 OpenClaw、知识库和质量检查；原始 Markdown 与 Word 永不覆盖
 - Compatibility constraints: PPTX 原稿仍是交付文件，第一阶段 PPT 人机双写继续写入结构化联动清单；文档-PPT 关系不得仅依赖前端状态
 - Compatibility constraints: 旧 `mode=document|presentation|linked` 链接映射为工作台预设；AI 窗口不得通过隐藏 Tiptap 或 PPT 组件模拟
+- Compatibility constraints: GenOffice 作为本机 Sidecar 文档引擎和可选外部桌面编辑器接入；浏览器不得直接连接 MCP、不得 iframe 嵌入 Electron UI、不得把 GenOffice 源码复制为 3021 前端组件。所有写入先进入候选副本，经 ChangeSet、结构/视觉审计和人工确认后才能晋升
 - Test/screenshot expectations: 相关 Vitest、后端段落并发与往返测试、图表版本/冲突/引用测试、类型检查、生产构建，以及 3021 桌面和 iPad 视觉验收
 
 ## Open questions
 - [ ] 第二阶段是否引入多人实时协作与离线合并；当前明确限定为一个人工用户与多个 AI 智能体。
 - [ ] 第二阶段把章节标题匹配迁移为稳定 `section_id/block_id ↔ slide_id/element_id` 映射，并保留标题匹配作为只读兼容。
 - [ ] 第四阶段确定 PPT 元素级编辑模型和 PPTX 回写适配器；第一阶段不承诺浏览器内直接修改 PPTX 视觉元素。
+
+## Second Brain Knowledge Subsystem Governance
+- Status: Design v1.0, 2026-10-06; SB0–SB4 core engineering and isolated checks implemented, including logical recovery. SB4 Memory uses export-only proposals pending native idempotency/dependency contracts. Production pilot, human quality gates and seven-day observation remain pending; execution injection, native Memory bridging and schedules remain disabled. See [SB0/SB1](docs/SECOND-BRAIN-PHASE-SB0-SB1.md), [SB2](docs/SECOND-BRAIN-PHASE-SB2.md), [SB3](docs/SECOND-BRAIN-PHASE-SB3.md) and [SB4 实施记录](docs/SECOND-BRAIN-PHASE-SB4.md). [受控试点](docs/SECOND-BRAIN-PILOT-PLAN.md), 2026-10-07: read-only preflight and evidence tools implemented; [actual pilot configuration](docs/SECOND-BRAIN-PILOT-CONFIGURATION.md) and basic preflight are complete; [empty-baseline recovery and source preparation](docs/SECOND-BRAIN-PILOT-READINESS.md) are complete, [30 authorized sources have been ingested and recovery-checked](docs/SECOND-BRAIN-PILOT-INTAKE.md), candidates await review, and real observation has not started.
+- Detailed subplan: [第二大脑知识子系统（SB-01）](docs/SECOND-BRAIN-KNOWLEDGE-SUBSYSTEM-DESIGN.md); roadmap placement: [系统闭环补强总体方案](docs/SYSTEM-CLOSURE-MASTER-PLAN.md).
+- Product role: 在现有 `/knowledge` 内完成资料导入、候选审核、知识页、引用问答和维护回顾；资料按来源保留，概念随新来源持续更新。
+- Authority: 新知识域以 PostgreSQL 页面修订、来源引用和审核记录为权威，Markdown、图谱与知识向量是可重建投影；外部 Obsidian 原笔记保持原权威，导入只形成快照与候选。
+- Domain boundary: 知识发布不等于长期记忆发布；Profile/Project/Agent 记忆继续走原审核与生命周期。知识引用不得直接升级为写作证据或覆盖正文、图表、任务及实验事实。
+- Change control: AI 只能提交结构化候选；发布服务核对修改集哈希、基础修订、来源状态及人工批准后原子提交，投影通过 Outbox 异步更新。
+- Context: 新知识以 `reviewed_knowledge` 和固定修订进入 Context Pack；先 shadow，再按项目启用。撤回和权限变化必须在检索与执行前重新检查，不改变现有记忆融合排序。
+- Delivery: SB0–SB4 分阶段实施，首个交付为一份资料的导入、审核、发布与引用回答闭环；此设计不表示启用调度、迁移既有记忆数据库或开放自动发布。
+
+## GenOffice Integration Governance
+- Status: v0.1 approved. Phase G1 is deployed as a read-only pilot: the official application release is `v0.10.1038` and its bundled MCP server reports `0.10.0`. The course DOCX gold passed `docs_read`/`docs_check`/page-1 `render`; the thesis DOCX twice failed at page-1 `render` with `conversion_failed` after about 180 seconds, matching the vendor's internal headless-export budget. Therefore the formal two-gold G1 exit gate is not passed, and G2 candidate writes remain prohibited. In the host launchd environment, strict `codesign`, Gatekeeper, and stapled-notarization checks pass for the installed app. Earlier sandbox-only diagnostics were not treated as host verification, 2026-09-25.
+- Detailed attachment: [`docs/GENOFFICE-3021-INTEGRATION-DESIGN.md`](docs/GENOFFICE-3021-INTEGRATION-DESIGN.md).
+- Architectural role: GenOffice is a replaceable local Office sidecar and optional external desktop editor, not a second document authority and not an embedded browser UI.
+- Initial scope: DOCX read/check/render only; candidate writes, native editing, PPTX and XLSX require later gates.
+- Authority: PostgreSQL `tiptap-json-v1` remains the editable semantic source during drafting. GenOffice only receives immutable snapshots and candidate copies. Formal promotion remains a 3021 decision recorded through existing writing/version objects.
+- Deployment: one localhost-only MCP HTTP Sidecar is used by the G1 single-Uvicorn-worker deployment; the browser never receives its token or calls it directly. The launcher rejects unsafe token-file permissions and `GENOFFICE_ALLOWED_ROOTS`, runs with private `0700` Sidecar HOME/TMP, a `0600` private log, and a scrubbed environment, pins `com.genoffice.app` / `TC7CATC2Z2`, and requires strict `codesign`, Gatekeeper, and stapled-notarization checks. MCP/PNG results are read under hard streaming caps. The isolated Electron render-source copy is removed after each proof; HTTP FileStore uploads instead follow their short TTL (about one hour) inside the private TMP directory.
+- Access boundary: all G1 status/check/proof routes are administrator-only during the single-user pilot. Before any multi-user rollout, project ACL, user quota/rate limiting, and a stronger OS isolation boundary are required.
+- Host boundary: G1 is a process/API boundary, not a macOS sandbox—both processes still run as the same local account. A dedicated restricted service account/sandbox is required before treating it as OS-level isolation.
+- Update policy: discover stable releases automatically, default unknown versions to read-only, run adapter contracts plus real DOCX gold/visual gates, then require human approval before enabling writes.
+- G1.1 compatibility recovery: as of 2026-09-25, installed `v0.10.1038` remains GenOffice's latest stable release; its upstream headless-render path still has the same 180-second budget, and the large-document performance issue remains open. G1.1 therefore adds only a repeatable, evidence-only read/check/page-one-render protocol (three independent cold-process runs, three warm runs, and one fresh-profile run in an isolated test Sidecar). It does not install an app, patch vendor code, restart the production Sidecar, unlock `docs_apply`, or authorize G2. See `docs/GENOFFICE-3021-INTEGRATION-DESIGN.md` §13.5 and §17.4.
+- Word Add-in: remains the Word-native fidelity reference until GenOffice passes the defined multi-version replacement criteria.
+- Development boundary: G1 provides status, `docs_read`/`docs_check`, and page-1 `render` only. It does not authorize candidate writes, native editing, database migrations, formal-document promotion, or a change of semantic authority.
 
 ## Doctoral Thesis Three-Edition Governance
 - 项目级论文世代仍按第一版、第二版、第三版治理。第三版处于正文升级窗口时，允许同时显示“当前写作稿”和“冻结交付基线”两条记录；v34 完成正式交付冻结后再收拢为单一第三版入口。
@@ -137,3 +164,28 @@
 - Visual language: product cards may use representative images, but the page must remain a dense operational product dashboard. Avoid marketing hero layouts, generic stock images, decorative gradients, nested cards, and one-color palettes.
 - Responsive behavior: desktop uses grouped product modules plus a right-side evidence/roadmap area; tablet and narrow screens stack modules and keep card actions accessible without hover.
 - Implementation acceptance: verify `/products` renders portfolio groups, `/products/:productId` opens a detail page, registered documents show with review state and hash, system links are clickable, and screenshots at desktop and tablet widths show no text overlap.
+
+## Decision Routing and Advisor Governance
+- Status: DR1 implementation, 2026-10-06; local verification recorded separately, production rollout pending.
+- Subplan: [DR-01 决策路由与旁路顾问](docs/DECISION-ROUTING-ARCHITECTURE.md); [DR1 实施记录](docs/DECISION-ROUTING-PHASE-1.md).
+- Product surface: 现有指挥中心步骤详情展示“路由观察 · 仅建议，未接管执行”、实际 Agent/执行器、失败建议与连续相同失败次数；时间线保留可追溯事件。
+- Authority: Mission/WorkRun 继续控制执行；Agent Team 管理协作事实，Router 只输出建议，Advisor 后续按检查点只读审查。
+- First release: 默认 off；shadow 只记录观察，不改变批准计划、派发、重试或完成判定，不展示虚构节省费用与置信概率。
+- Follow-up: 确定性执行、顾问调用、模型档位与工具级拦截分批验证后接入。
+
+### DR2 controlled execution update (2026-10-06)
+- Status: [DR2 本地实现与隔离验证完成](docs/DECISION-ROUTING-PHASE-2.md)，生产未启用。
+- Explicit executor: approved inline SHA-256 comparison / JSON required-key checks; persisted reports; no model calls inside these steps.
+- Recovery: duplicate failures/attempt budgets stop the original step; feedback requires a new approved plan, with a maximum of three plan versions.
+- UI: “确定性检查 · 无模型调用”和“受控修复 · 已停止原步骤重试”独立于 DR1 影子建议；不把实际阻断标成仅建议。
+
+### DR3 advisor and isolated candidates (2026-10-08)
+- Status: [DR3 核心实现与本地验证完成](docs/DECISION-ROUTING-PHASE-3.md)，生产默认关闭；源分支集成未执行。
+- Checkpoints: 计划保存后、重复失败、交付前；意见仅作参考，过期/取消结果丢弃，不代替审批和证据验收。
+- Model receipt: 请求模型和实际回执分别显示；无回执为未知，不推算费用。
+- Code candidates: operator-owned repository mapping + approved base commit + isolated worktree; UI clearly says “隔离代码候选 · 尚未合并”. Candidate generation is distinct from tests, integration and final delivery.
+
+### DR4 controlled file tools (2026-10-08)
+- Status: [DR4 工具调用控制与持久化回执](docs/DECISION-ROUTING-PHASE-4.md) 核心实现与本地验证完成，默认关闭。
+- Scope: 仅隔离代码候选；专用插件通过本地控制器执行文件操作，逐调用复核租约、路径和预算，先提交意图再操作并留存回执。未闭合意图、拒绝或未知副作用阻止候选通过。
+- Gate: 本地回归、插件 RPC 和安装版本工具策略通过；真实模型/生产并发/视觉验收及源分支集成待执行。

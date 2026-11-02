@@ -1,316 +1,499 @@
 <template>
-  <section v-loading="loading" class="reimbursement-page">
-    <header class="mode-bar">
-      <el-segmented v-model="mode" :options="modeOptions" />
-      <div class="mode-summary">
-        <span>待我审批</span>
-        <strong>{{ approvalTasks.length }}</strong>
-      </div>
-    </header>
-
-    <template v-if="mode === 'records'">
-      <div class="toolbar">
-        <el-button type="primary" @click="openCreate">新建报销</el-button>
-        <el-select v-model="status" clearable placeholder="全部状态" @change="loadRecords">
-          <el-option v-for="item in statuses" :key="item" :label="statusLabel(item)" :value="item" />
-        </el-select>
-      </div>
-      <div class="layout">
-        <el-card class="list" shadow="never">
-          <article v-for="item in records" :key="item.id" :class="{ active: selected?.id === item.id }" @click="selected = item">
-            <div>
-              <b>{{ item.title }}</b>
-              <small>{{ item.reimbursement_no }}</small>
-            </div>
-            <div class="record-state">
-              <strong>{{ formatMoney(item.total_amount) }}</strong>
-              <el-tag size="small" :type="statusType(item.status)">{{ statusLabel(item.status) }}</el-tag>
-            </div>
-          </article>
-          <el-empty v-if="!records.length" description="暂无报销单" />
+  <div class="finance-reimbursements">
+    <!-- 统计卡片 -->
+    <el-row :gutter="16" class="stat-row">
+      <el-col :span="6" v-for="stat in stats" :key="stat.label">
+        <el-card shadow="hover" class="stat-card" :class="stat.type">
+          <div class="stat-value">{{ stat.value }}</div>
+          <div class="stat-label">{{ stat.label }}</div>
         </el-card>
+      </el-col>
+    </el-row>
 
-        <el-card v-if="selected" class="detail" shadow="never">
-          <template #header>
-            <div class="detail-header">
-              <div>
-                <b>{{ selected.title }}</b>
-                <small>{{ selected.reimbursement_no }}</small>
-              </div>
-              <div class="detail-actions">
-                <el-button v-if="['draft', 'returned'].includes(selected.status)" @click="itemDialog = true">新增明细</el-button>
-                <el-button v-if="selected.status === 'draft'" type="primary" @click="submit">提交审批</el-button>
-                <el-button v-if="selected.status === 'returned'" @click="redraft">转回草稿</el-button>
-                <el-button v-if="selected.status === 'paid'" type="success" @click="archive">归档</el-button>
-              </div>
-            </div>
+    <!-- 操作栏 -->
+    <el-card shadow="never" class="toolbar-card">
+      <el-row :gutter="16" align="middle">
+        <el-col :span="12">
+          <el-button type="primary" @click="showCreateDialog = true">
+            <el-icon><Plus /></el-icon>
+            新建报销单
+          </el-button>
+          <el-button @click="refreshList">
+            <el-icon><Refresh /></el-icon>
+            刷新
+          </el-button>
+        </el-col>
+        <el-col :span="12" class="filter-col">
+          <el-select v-model="filterStatus" placeholder="状态筛选" clearable @change="fetchList">
+            <el-option label="草稿" value="draft" />
+            <el-option label="已提交" value="submitted" />
+            <el-option label="审批中" value="in_review" />
+            <el-option label="已通过" value="approved" />
+            <el-option label="已拒绝" value="rejected" />
+            <el-option label="已付款" value="paid" />
+          </el-select>
+          <el-select v-model="filterCategory" placeholder="类别筛选" clearable @change="fetchList">
+            <el-option label="差旅" value="travel" />
+            <el-option label="办公用品" value="office" />
+            <el-option label="餐饮" value="meal" />
+            <el-option label="交通" value="transport" />
+            <el-option label="培训" value="training" />
+            <el-option label="其他" value="other" />
+          </el-select>
+        </el-col>
+      </el-row>
+    </el-card>
+
+    <!-- 报销单列表 -->
+    <el-card shadow="never">
+      <el-table :data="reimbursements" v-loading="loading" stripe>
+        <el-table-column prop="code" label="单号" width="160" />
+        <el-table-column prop="title" label="标题" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="amount" label="金额" width="120" align="right">
+          <template #default="{ row }">
+            <span class="amount">¥{{ row.amount.toFixed(2) }}</span>
           </template>
-          <el-descriptions :column="3" border>
-            <el-descriptions-item label="状态">{{ statusLabel(selected.status) }}</el-descriptions-item>
-            <el-descriptions-item label="金额">{{ formatMoney(selected.total_amount) }}</el-descriptions-item>
-            <el-descriptions-item label="版本">{{ selected.lock_version }}</el-descriptions-item>
-          </el-descriptions>
-          <el-table :data="selected.items" class="items">
-            <el-table-column prop="description" label="说明" />
-            <el-table-column prop="vendor" label="供应商" />
-            <el-table-column prop="expense_date" label="日期" width="110" />
-            <el-table-column label="金额" width="130"><template #default="{ row }">{{ formatMoney(row.amount) }}</template></el-table-column>
-          </el-table>
-          <section v-if="selected.approval" class="approval-flow">
-            <div class="section-title">
-              <b>审批进度</b>
-              <span>{{ selected.approval.tasks.filter(task => task.status === 'approved').length }} / {{ selected.approval.tasks.length }} 步</span>
-            </div>
-            <div class="approval-steps">
-              <div v-for="task in selected.approval.tasks" :key="task.id" class="approval-step">
-                <span class="step-order">{{ task.step_order }}</span>
-                <div><b>{{ task.assignee_role || `用户 ${task.assignee_user_id}` }}</b><small>{{ taskStatusLabel(task.status) }}</small></div>
-              </div>
-            </div>
-            <el-timeline v-if="selected.approval.events?.length" class="timeline">
-              <el-timeline-item v-for="(event, index) in selected.approval.events" :key="index" :timestamp="String(event.created_at || '')">
-                {{ eventLabel(String(event.action || '')) }}<span v-if="event.comment"> · {{ event.comment }}</span>
-              </el-timeline-item>
-            </el-timeline>
-          </section>
-        </el-card>
-      </div>
-    </template>
+        </el-table-column>
+        <el-table-column prop="category" label="类别" width="100">
+          <template #default="{ row }">
+            <el-tag size="small">{{ categoryMap[row.category] || row.category }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="status" label="状态" width="100">
+          <template #default="{ row }">
+            <el-tag :type="statusType(row.status)" size="small">
+              {{ statusMap[row.status] || row.status }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="applicant_name" label="申请人" width="100" />
+        <el-table-column prop="created_at" label="创建时间" width="160">
+          <template #default="{ row }">
+            {{ formatDate(row.created_at) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="180" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" @click="viewDetail(row)">详情</el-button>
+            <el-button link type="warning" v-if="row.status === 'draft'" @click="submitReimbursement(row)">提交</el-button>
+            <el-button link type="danger" v-if="row.status === 'draft'" @click="deleteReimbursement(row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="pageSize"
+        :total="total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next"
+        @size-change="fetchList"
+        @current-change="fetchList"
+        class="pagination"
+      />
+    </el-card>
 
-    <template v-else>
-      <div class="approval-queue">
-        <article v-for="task in approvalTasks" :key="task.id" class="approval-card">
-          <div class="approval-card-main">
-            <div class="approval-card-heading">
-              <div>
-                <span class="eyebrow">第 {{ task.step_order }} 级审批</span>
-                <h3>{{ task.reimbursement?.title || '报销审批任务' }}</h3>
-              </div>
-              <strong>{{ formatMoney(task.reimbursement?.total_amount) }}</strong>
-            </div>
-            <dl>
-              <div><dt>项目</dt><dd>{{ task.reimbursement?.project_name || task.reimbursement?.project_id || '-' }}</dd></div>
-              <div><dt>单号</dt><dd>{{ task.reimbursement?.reimbursement_no || '-' }}</dd></div>
-              <div><dt>申请人</dt><dd>用户 {{ task.reimbursement?.applicant_user_id || '-' }}</dd></div>
-              <div><dt>分配方式</dt><dd>{{ task.assignee_role ? `角色：${task.assignee_role}` : `用户：${task.assignee_user_id}` }}</dd></div>
-            </dl>
-          </div>
-          <div class="approval-card-actions">
-            <el-button type="success" @click="act(task, 'approve')">通过</el-button>
-            <el-button type="warning" @click="act(task, 'return')">退回补充</el-button>
-            <el-button type="danger" plain @click="act(task, 'reject')">拒绝</el-button>
-          </div>
-        </article>
-        <el-empty v-if="!approvalTasks.length" description="当前没有待审批任务" />
-      </div>
-    </template>
-
-    <el-dialog v-model="createDialog" title="新建报销单" width="520px">
-      <el-form label-width="90px">
-        <el-form-item label="项目"><el-select v-model="createForm.project_id"><el-option v-for="p in projects" :key="p.id" :label="p.name" :value="p.id" /></el-select></el-form-item>
-        <el-form-item label="标题"><el-input v-model="createForm.title" /></el-form-item>
-        <el-form-item label="说明"><el-input v-model="createForm.description" type="textarea" /></el-form-item>
+    <!-- 创建报销单对话框 -->
+    <el-dialog v-model="showCreateDialog" title="新建报销单" width="600px">
+      <el-form :model="createForm" label-width="100px">
+        <el-form-item label="报销标题" required>
+          <el-input v-model="createForm.title" placeholder="请输入报销标题" />
+        </el-form-item>
+        <el-form-item label="报销金额" required>
+          <el-input-number v-model="createForm.amount" :min="0" :precision="2" :step="100" />
+        </el-form-item>
+        <el-form-item label="报销类别" required>
+          <el-select v-model="createForm.category" placeholder="请选择类别">
+            <el-option label="差旅" value="travel" />
+            <el-option label="办公用品" value="office" />
+            <el-option label="餐饮" value="meal" />
+            <el-option label="交通" value="transport" />
+            <el-option label="培训" value="training" />
+            <el-option label="其他" value="other" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="报销说明">
+          <el-input v-model="createForm.description" type="textarea" :rows="3" placeholder="请输入报销说明" />
+        </el-form-item>
+        <el-form-item label="所属部门">
+          <el-input v-model="createForm.department" placeholder="请输入所属部门" />
+        </el-form-item>
       </el-form>
-      <template #footer><el-button @click="createDialog = false">取消</el-button><el-button type="primary" @click="createRecord">保存</el-button></template>
+      <template #footer>
+        <el-button @click="showCreateDialog = false">取消</el-button>
+        <el-button type="primary" @click="createReimbursement" :loading="creating">创建</el-button>
+      </template>
     </el-dialog>
 
-    <el-dialog v-model="itemDialog" title="新增报销明细" width="560px">
-      <el-form label-width="90px">
-        <el-form-item label="预算科目"><el-select v-model="itemForm.budget_line_id"><el-option v-for="line in availableLines" :key="line.id" :label="`${line.category} · 可用 ${formatMoney(Number(line.amount) - Number(line.reserved_amount) - Number(line.spent_amount))}`" :value="line.id" /></el-select></el-form-item>
-        <el-form-item label="支出说明"><el-input v-model="itemForm.description" /></el-form-item>
-        <el-form-item label="供应商"><el-input v-model="itemForm.vendor" /></el-form-item>
-        <el-form-item label="日期"><el-date-picker v-model="itemForm.expense_date" value-format="YYYY-MM-DD" /></el-form-item>
-        <el-form-item label="金额"><el-input-number v-model="itemForm.amount" :min="0.01" :precision="2" /></el-form-item>
-        <el-form-item label="发票"><el-select v-model="itemForm.invoice_id" clearable><el-option v-for="invoice in invoices" :key="invoice.id" :label="`${invoice.invoice_number || invoice.id} · ${formatMoney(invoice.amount)}`" :value="invoice.id" /></el-select></el-form-item>
-      </el-form>
-      <template #footer><el-button @click="itemDialog = false">取消</el-button><el-button type="primary" @click="addItem">保存</el-button></template>
+    <!-- 详情对话框 -->
+    <el-dialog v-model="showDetailDialog" title="报销单详情" width="700px">
+      <div v-if="currentReimbursement" class="detail-content">
+        <el-descriptions :column="2" border>
+          <el-descriptions-item label="报销单号">{{ currentReimbursement.code }}</el-descriptions-item>
+          <el-descriptions-item label="状态">
+            <el-tag :type="statusType(currentReimbursement.status)">
+              {{ statusMap[currentReimbursement.status] }}
+            </el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="报销标题" :span="2">{{ currentReimbursement.title }}</el-descriptions-item>
+          <el-descriptions-item label="报销金额">
+            <span class="amount">¥{{ currentReimbursement.amount?.toFixed(2) }}</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="报销类别">
+            <el-tag size="small">{{ categoryMap[currentReimbursement.category] }}</el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="申请人">{{ currentReimbursement.applicant_name }}</el-descriptions-item>
+          <el-descriptions-item label="所属部门">{{ currentReimbursement.department }}</el-descriptions-item>
+          <el-descriptions-item label="创建时间">{{ formatDate(currentReimbursement.created_at) }}</el-descriptions-item>
+          <el-descriptions-item label="提交时间">{{ formatDate(currentReimbursement.submitted_at) }}</el-descriptions-item>
+          <el-descriptions-item label="报销说明" :span="2">{{ currentReimbursement.description || '-' }}</el-descriptions-item>
+        </el-descriptions>
+
+        <!-- 审批记录 -->
+        <div v-if="currentReimbursement.approval_records?.length" class="approval-section">
+          <h4>审批记录</h4>
+          <el-timeline>
+            <el-timeline-item
+              v-for="(record, index) in currentReimbursement.approval_records"
+              :key="index"
+              :type="record.action === 'approve' ? 'success' : record.action === 'reject' ? 'danger' : 'warning'"
+              :timestamp="formatDate(record.created_at)"
+            >
+              <div class="approval-record">
+                <strong>{{ record.approver_name }}</strong>
+                <el-tag size="small" :type="record.action === 'approve' ? 'success' : record.action === 'reject' ? 'danger' : 'warning'">
+                  {{ actionMap[record.action] }}
+                </el-tag>
+                <p v-if="record.comment">{{ record.comment }}</p>
+              </div>
+            </el-timeline-item>
+          </el-timeline>
+        </div>
+
+        <!-- 审批操作 -->
+        <div v-if="currentReimbursement.status === 'submitted' || currentReimbursement.status === 'in_review'" class="approval-actions">
+          <el-input v-model="approvalComment" type="textarea" :rows="2" placeholder="请输入审批意见" />
+          <div class="action-buttons">
+            <el-button type="success" @click="approveReimbursement('approve')" :loading="approving">通过</el-button>
+            <el-button type="danger" @click="approveReimbursement('reject')" :loading="approving">拒绝</el-button>
+            <el-button type="warning" @click="approveReimbursement('return')" :loading="approving">退回</el-button>
+          </div>
+        </div>
+      </div>
     </el-dialog>
-  </section>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import {
-  financeApi,
-  formatMoney,
-  type ApprovalTask,
-  type BudgetLine,
-  type BudgetVersion,
-  type FinanceProject,
-  type Invoice,
-  type Reimbursement,
-} from '@/api/finance'
+import { Plus, Refresh } from '@element-plus/icons-vue'
+import { request } from '@/utils/request'
 
+// 状态映射
+const statusMap: Record<string, string> = {
+  draft: '草稿',
+  submitted: '已提交',
+  in_review: '审批中',
+  approved: '已通过',
+  rejected: '已拒绝',
+  paid: '已付款',
+  archived: '已归档'
+}
+
+const categoryMap: Record<string, string> = {
+  travel: '差旅',
+  office: '办公用品',
+  meal: '餐饮',
+  transport: '交通',
+  training: '培训',
+  other: '其他'
+}
+
+const actionMap: Record<string, string> = {
+  approve: '通过',
+  reject: '拒绝',
+  return: '退回',
+  transfer: '转交'
+}
+
+// 状态类型
+const statusType = (status: string) => {
+  const map: Record<string, string> = {
+    draft: 'info',
+    submitted: 'warning',
+    in_review: 'warning',
+    approved: 'success',
+    rejected: 'danger',
+    paid: 'success'
+  }
+  return map[status] || 'info'
+}
+
+// 统计数据
+const stats = ref([
+  { label: '报销单总数', value: 0, type: 'total' },
+  { label: '待审批', value: 0, type: 'pending' },
+  { label: '已通过', value: 0, type: 'approved' },
+  { label: '总金额', value: '¥0', type: 'amount' }
+])
+
+// 列表数据
+const reimbursements = ref([])
 const loading = ref(false)
-const mode = ref<'records' | 'approvals'>('records')
-const status = ref('')
-const records = ref<Reimbursement[]>([])
-const approvalTasks = ref<ApprovalTask[]>([])
-const selected = ref<Reimbursement | null>(null)
-const projects = ref<FinanceProject[]>([])
-const budgets = ref<BudgetVersion[]>([])
-const invoices = ref<Invoice[]>([])
-const createDialog = ref(false)
-const itemDialog = ref(false)
-const modeOptions = [
-  { label: '报销单', value: 'records' },
-  { label: '待我审批', value: 'approvals' },
-]
-const statuses = ['draft', 'submitted', 'in_review', 'returned', 'approved', 'payment_pending', 'paid', 'archived', 'rejected', 'cancelled']
-const createForm = reactive({ project_id: '', title: '', description: '' })
-const itemForm = reactive({ budget_line_id: '', description: '', vendor: '', expense_date: '', amount: 0, invoice_id: '' })
-const availableLines = computed<BudgetLine[]>(() => budgets.value
-  .filter(budget => budget.project_id === selected.value?.project_id && budget.status === 'approved')
-  .flatMap(budget => budget.lines))
+const page = ref(1)
+const pageSize = ref(20)
+const total = ref(0)
 
-const statusNames: Record<string, string> = {
-  draft: '草稿', submitted: '已提交', in_review: '审批中', returned: '已退回', approved: '审批通过',
-  payment_pending: '待付款', paid: '已付款', archived: '已归档', rejected: '已拒绝', cancelled: '已取消',
+// 筛选
+const filterStatus = ref('')
+const filterCategory = ref('')
+
+// 创建表单
+const showCreateDialog = ref(false)
+const creating = ref(false)
+const createForm = reactive({
+  title: '',
+  amount: 0,
+  category: '',
+  description: '',
+  department: ''
+})
+
+// 详情
+const showDetailDialog = ref(false)
+const currentReimbursement = ref(null)
+const approvalComment = ref('')
+const approving = ref(false)
+
+// 获取统计数据
+const fetchStatistics = async () => {
+  try {
+    const res = await request.get('/finance/workflow/statistics')
+    const data = res.data
+    stats.value = [
+      { label: '报销单总数', value: data.total_reimbursements, type: 'total' },
+      { label: '待审批', value: data.pending_count, type: 'pending' },
+      { label: '已通过', value: data.approved_count, type: 'approved' },
+      { label: '总金额', value: `¥${data.total_amount?.toFixed(2) || '0.00'}`, type: 'amount' }
+    ]
+  } catch (e) {
+    console.error('获取统计失败', e)
+  }
 }
 
-function statusLabel(value: string) { return statusNames[value] || value }
-function taskStatusLabel(value: string) { return ({ pending: '待处理', approved: '已通过', returned: '已退回', rejected: '已拒绝' } as Record<string, string>)[value] || value }
-function eventLabel(value: string) { return ({ submit: '提交审批', approve: '审批通过', return: '退回补充', reject: '审批拒绝' } as Record<string, string>)[value] || value }
-function statusType(value: string): 'success' | 'warning' | 'danger' | 'info' {
-  if (['approved', 'paid', 'archived'].includes(value)) return 'success'
-  if (['submitted', 'in_review', 'payment_pending'].includes(value)) return 'warning'
-  if (['rejected', 'cancelled'].includes(value)) return 'danger'
-  return 'info'
-}
-
-async function loadRecords() {
-  records.value = await financeApi.reimbursements(status.value || undefined)
-  selected.value = selected.value
-    ? records.value.find(record => record.id === selected.value?.id) || records.value[0] || null
-    : records.value[0] || null
-}
-
-async function load() {
+// 获取列表
+const fetchList = async () => {
   loading.value = true
   try {
-    [records.value, approvalTasks.value, budgets.value, invoices.value] = await Promise.all([
-      financeApi.reimbursements(status.value || undefined),
-      financeApi.approvalTasks(),
-      financeApi.budgets(),
-      financeApi.invoices(),
-    ])
-    selected.value = records.value.find(record => record.id === selected.value?.id) || records.value[0] || null
+    const params: any = {
+      page: page.value,
+      page_size: pageSize.value
+    }
+    if (filterStatus.value) params.status = filterStatus.value
+    if (filterCategory.value) params.category = filterCategory.value
+
+    const res = await request.get('/finance/workflow/reimbursements', { params })
+    reimbursements.value = res.data.items
+    total.value = res.data.total
+  } catch (e) {
+    ElMessage.error('获取报销单列表失败')
   } finally {
     loading.value = false
   }
 }
 
-async function openCreate() {
-  projects.value = await financeApi.projects()
-  createForm.project_id = projects.value[0]?.id || ''
-  createDialog.value = true
+// 刷新列表
+const refreshList = () => {
+  fetchList()
+  fetchStatistics()
 }
 
-async function createRecord() {
-  const item = await financeApi.createReimbursement(createForm)
-  createDialog.value = false
-  await load()
-  selected.value = records.value.find(record => record.id === item.id) || item
-  ElMessage.success('报销草稿已创建')
+// 创建报销单
+const createReimbursement = async () => {
+  if (!createForm.title || !createForm.amount || !createForm.category) {
+    ElMessage.warning('请填写必填项')
+    return
+  }
+
+  creating.value = true
+  try {
+    await request.post('/finance/workflow/reimbursements?applicant_id=1', createForm)
+    ElMessage.success('报销单创建成功')
+    showCreateDialog.value = false
+    Object.assign(createForm, { title: '', amount: 0, category: '', description: '', department: '' })
+    refreshList()
+  } catch (e) {
+    ElMessage.error('创建失败')
+  } finally {
+    creating.value = false
+  }
 }
 
-async function addItem() {
-  if (!selected.value) return
-  selected.value = await financeApi.addReimbursementItem(selected.value.id, { ...itemForm, invoice_id: itemForm.invoice_id || null })
-  itemDialog.value = false
-  await load()
-  ElMessage.success('报销明细已添加')
+// 查看详情
+const viewDetail = async (row: any) => {
+  try {
+    const res = await request.get(`/finance/workflow/reimbursements/${row.id}`)
+    currentReimbursement.value = res.data
+    showDetailDialog.value = true
+  } catch (e) {
+    ElMessage.error('获取详情失败')
+  }
 }
 
-async function submit() {
-  if (!selected.value) return
-  await ElMessageBox.confirm('提交后将锁定当前内容、占用项目预算并进入分级审批，确认继续？', '提交审批', { type: 'warning' })
-  selected.value = await financeApi.submitReimbursement(selected.value.id, selected.value.lock_version)
-  await load()
-  ElMessage.success('报销已提交审批')
+// 提交报销单
+const submitReimbursement = async (row: any) => {
+  try {
+    await ElMessageBox.confirm('确认提交该报销单？提交后将启动审批流程。', '提示', {
+      type: 'warning'
+    })
+    await request.post(`/finance/workflow/reimbursements/${row.id}/submit`)
+    ElMessage.success('报销单已提交')
+    refreshList()
+  } catch (e) {
+    if (e !== 'cancel') {
+      ElMessage.error('提交失败')
+    }
+  }
 }
 
-async function redraft() {
-  if (!selected.value) return
-  selected.value = await financeApi.redraftReimbursement(selected.value.id, selected.value.lock_version)
-  await load()
+// 删除报销单
+const deleteReimbursement = async (row: any) => {
+  try {
+    await ElMessageBox.confirm('确认删除该报销单？此操作不可恢复。', '警告', {
+      type: 'warning'
+    })
+    await request.delete(`/finance/workflow/reimbursements/${row.id}`)
+    ElMessage.success('报销单已删除')
+    refreshList()
+  } catch (e) {
+    if (e !== 'cancel') {
+      ElMessage.error('删除失败')
+    }
+  }
 }
 
-async function archive() {
-  if (!selected.value) return
-  selected.value = await financeApi.archiveReimbursement(selected.value.id, selected.value.lock_version)
-  await load()
-  ElMessage.success('已归档')
+// 审批报销单
+const approveReimbursement = async (action: string) => {
+  if (!currentReimbursement.value) return
+
+  approving.value = true
+  try {
+    await request.post(
+      `/finance/workflow/reimbursements/${currentReimbursement.value.id}/approve?approver_id=1&approver_name=审批人`,
+      { action, comment: approvalComment.value }
+    )
+    ElMessage.success('审批完成')
+    showDetailDialog.value = false
+    approvalComment.value = ''
+    refreshList()
+  } catch (e) {
+    ElMessage.error('审批失败')
+  } finally {
+    approving.value = false
+  }
 }
 
-async function act(task: ApprovalTask, action: 'approve' | 'return' | 'reject') {
-  const label = action === 'approve' ? '通过' : action === 'return' ? '退回补充' : '拒绝'
-  const { value } = await ElMessageBox.prompt(
-    action === 'approve' ? '可填写审批意见。' : '请填写处理原因，内容将进入审计记录。',
-    `${label}审批`,
-    {
-      inputPlaceholder: '审批意见',
-      inputValidator: input => action === 'approve' || Boolean(String(input || '').trim()) || '退回或拒绝必须填写原因',
-      confirmButtonText: label,
-      cancelButtonText: '取消',
-      type: action === 'approve' ? 'success' : 'warning',
-    },
-  )
-  await financeApi.actApproval(task.id, action, String(value || ''))
-  await load()
-  ElMessage.success(`审批已${label}`)
+// 格式化日期
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return '-'
+  return new Date(dateStr).toLocaleString('zh-CN')
 }
 
-onMounted(load)
+onMounted(() => {
+  refreshList()
+})
 </script>
 
 <style scoped>
-.reimbursement-page { display: grid; gap: 16px; }
-.mode-bar { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border: 1px solid var(--el-border-color); background: var(--el-fill-color-lighter); border-radius: 6px; }
-.mode-summary { display: flex; align-items: baseline; gap: 8px; color: var(--el-text-color-secondary); }
-.mode-summary strong { color: var(--el-color-warning); font-size: 22px; }
-.toolbar { display: flex; gap: 10px; }
-.toolbar .el-select { width: 180px; }
-.layout { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 16px; }
-.list article { display: flex; justify-content: space-between; gap: 12px; padding: 12px; border: 1px solid var(--el-border-color); border-radius: 6px; margin-bottom: 8px; cursor: pointer; }
-.list article.active { border-color: var(--el-color-primary); background: var(--el-color-primary-light-9); }
-.list article > div { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
-.list b, .list small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.record-state { align-items: flex-end; flex: 0 0 auto; }
-.list small, .detail-header small, .approval-step small { display: block; color: var(--el-text-color-secondary); margin-top: 4px; }
-.detail-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
-.detail-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
-.detail-actions .el-button + .el-button { margin-left: 0; }
-.items { margin-top: 16px; }
-.approval-flow { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--el-border-color); }
-.section-title { display: flex; justify-content: space-between; margin-bottom: 14px; }
-.section-title span { color: var(--el-text-color-secondary); }
-.approval-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; }
-.approval-step { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--el-border-color); border-radius: 6px; }
-.step-order { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--el-color-primary-light-8); color: var(--el-color-primary); font-weight: 700; }
-.timeline { margin-top: 20px; }
-.approval-queue { display: grid; gap: 12px; }
-.approval-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 18px; padding: 18px; border: 1px solid var(--el-border-color); background: var(--el-bg-color-overlay); border-radius: 6px; box-shadow: var(--el-box-shadow-light); }
-.approval-card-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
-.approval-card-heading h3 { margin: 4px 0 0; font-size: 17px; }
-.approval-card-heading > strong { color: var(--el-color-primary); font-size: 20px; }
-.eyebrow { color: var(--el-text-color-secondary); font-size: 12px; }
-.approval-card dl { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin: 16px 0 0; }
-.approval-card dl div { min-width: 0; }
-.approval-card dt { color: var(--el-text-color-secondary); font-size: 12px; }
-.approval-card dd { margin: 5px 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.approval-card-actions { display: flex; align-items: center; gap: 8px; }
-.approval-card-actions .el-button + .el-button { margin-left: 0; }
-@media (max-width: 1180px) {
-  .layout { grid-template-columns: 1fr; }
-  .approval-card { grid-template-columns: 1fr; }
-  .approval-card-actions { justify-content: flex-end; }
+.finance-reimbursements {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
-@media (max-width: 720px) {
-  .mode-bar, .detail-header { align-items: flex-start; flex-direction: column; }
-  .approval-card dl { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .approval-card-actions { flex-wrap: wrap; justify-content: stretch; }
-  .approval-card-actions .el-button { flex: 1; }
+
+.stat-row {
+  margin-bottom: 8px;
+}
+
+.stat-card {
+  text-align: center;
+  padding: 20px;
+}
+
+.stat-card.total { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+.stat-card.pending { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; }
+.stat-card.approved { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; }
+.stat-card.amount { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; }
+
+.stat-value {
+  font-size: 28px;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.stat-label {
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.toolbar-card :deep(.el-card__body) {
+  padding: 16px;
+}
+
+.filter-col {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.amount {
+  color: #f56c6c;
+  font-weight: bold;
+}
+
+.pagination {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.detail-content {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.approval-section {
+  margin-top: 24px;
+}
+
+.approval-section h4 {
+  margin-bottom: 16px;
+  color: var(--el-text-color-primary);
+}
+
+.approval-record {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.approval-record p {
+  width: 100%;
+  margin: 8px 0 0;
+  color: var(--el-text-color-secondary);
+}
+
+.approval-actions {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--el-border-color-lighter);
+}
+
+.action-buttons {
+  margin-top: 12px;
+  display: flex;
+  gap: 12px;
 }
 </style>
