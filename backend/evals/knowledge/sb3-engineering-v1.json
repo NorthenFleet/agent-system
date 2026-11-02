@@ -1,0 +1,616 @@
+{
+  "version": "sb3-engineering-v1",
+  "provenance": "synthetic_engineering_fixture_not_human_gold",
+  "human_reviewed": false,
+  "sources": [
+    {
+      "id": "s00",
+      "title": "来源快照",
+      "text": "来源快照：导入资料保留固定哈希和原始附件。",
+      "language": "zh"
+    },
+    {
+      "id": "s01",
+      "title": "发布回滚",
+      "text": "发布回滚：纠错需要新修订，不能覆盖历史证据。",
+      "language": "zh"
+    },
+    {
+      "id": "s02",
+      "title": "审批范围",
+      "text": "审批范围：每份修改集绑定审批哈希和基础修订。",
+      "language": "zh"
+    },
+    {
+      "id": "s03",
+      "title": "中文别名",
+      "text": "中文别名：改名后保留旧标题用于查询。",
+      "language": "zh"
+    },
+    {
+      "id": "s04",
+      "title": "项目隔离",
+      "text": "项目隔离：查询前检查用户和项目范围。",
+      "language": "zh"
+    },
+    {
+      "id": "s05",
+      "title": "访问撤回",
+      "text": "访问撤回：来源撤回后拒绝旧知识引用。",
+      "language": "zh"
+    },
+    {
+      "id": "s06",
+      "title": "概念累积",
+      "text": "概念累积：多份来源可以积累到同一个概念页。",
+      "language": "zh"
+    },
+    {
+      "id": "s07",
+      "title": "关系理由",
+      "text": "关系理由：每条知识关系必须保留理由。",
+      "language": "zh"
+    },
+    {
+      "id": "s08",
+      "title": "文件漂移",
+      "text": "文件漂移：发现外部编辑时保留差异并停止覆盖。",
+      "language": "zh"
+    },
+    {
+      "id": "s09",
+      "title": "引用定位",
+      "text": "引用定位：段落引用包含页码或文本行号。",
+      "language": "zh"
+    },
+    {
+      "id": "s10",
+      "title": "重试预算",
+      "text": "重试预算：达到重试上限后进入死信队列。",
+      "language": "zh"
+    },
+    {
+      "id": "s11",
+      "title": "知识合并",
+      "text": "知识合并：合并保留原始页面的历史和来源。",
+      "language": "zh"
+    },
+    {
+      "id": "s12",
+      "title": "字节校验",
+      "text": "字节校验：下载原始附件时验证内容哈希。",
+      "language": "zh"
+    },
+    {
+      "id": "s13",
+      "title": "指针切换",
+      "text": "指针切换：完整文件生成后才能切换当前指针。",
+      "language": "zh"
+    },
+    {
+      "id": "s14",
+      "title": "人工推论",
+      "text": "人工推论：人工编辑后的推论需要明确标记。",
+      "language": "zh"
+    },
+    {
+      "id": "s15",
+      "title": "Lease fencing",
+      "text": "Lease fencing：Expired workers cannot publish late results.",
+      "language": "en"
+    },
+    {
+      "id": "s16",
+      "title": "Scope policy",
+      "text": "Scope policy：A project snapshot must retain its owner and project scope.",
+      "language": "en"
+    },
+    {
+      "id": "s17",
+      "title": "Context budget",
+      "text": "Context budget：Knowledge background has a separate character budget.",
+      "language": "en"
+    },
+    {
+      "id": "s18",
+      "title": "Atomic release",
+      "text": "Atomic release：Reviewed revisions and release manifests commit together.",
+      "language": "en"
+    },
+    {
+      "id": "s19",
+      "title": "Source provenance",
+      "text": "Source provenance：Every statement retains fixed source evidence.",
+      "language": "en"
+    },
+    {
+      "id": "s20",
+      "title": "日志保留期限旧资料",
+      "text": "日志保留期限：规定每 30 天处理一次。",
+      "language": "zh"
+    },
+    {
+      "id": "s21",
+      "title": "日志保留期限新资料",
+      "text": "日志保留期限：规定每 7 天处理一次。",
+      "language": "zh"
+    },
+    {
+      "id": "s22",
+      "title": "缓存更新间隔旧资料",
+      "text": "缓存更新间隔：规定每 30 天处理一次。",
+      "language": "zh"
+    },
+    {
+      "id": "s23",
+      "title": "缓存更新间隔新资料",
+      "text": "缓存更新间隔：规定每 7 天处理一次。",
+      "language": "zh"
+    },
+    {
+      "id": "s24",
+      "title": "复核执行周期旧资料",
+      "text": "复核执行周期：规定每 30 天处理一次。",
+      "language": "zh"
+    },
+    {
+      "id": "s25",
+      "title": "复核执行周期新资料",
+      "text": "复核执行周期：规定每 7 天处理一次。",
+      "language": "zh"
+    },
+    {
+      "id": "s26",
+      "title": "附件备份频率旧资料",
+      "text": "附件备份频率：规定每 30 天处理一次。",
+      "language": "zh"
+    },
+    {
+      "id": "s27",
+      "title": "附件备份频率新资料",
+      "text": "附件备份频率：规定每 7 天处理一次。",
+      "language": "zh"
+    },
+    {
+      "id": "s28",
+      "title": "运行规范版本旧资料",
+      "text": "运行规范版本：规定每 30 天处理一次。",
+      "language": "zh"
+    },
+    {
+      "id": "s29",
+      "title": "运行规范版本新资料",
+      "text": "运行规范版本：规定每 7 天处理一次。",
+      "language": "zh"
+    }
+  ],
+  "relations": [
+    {
+      "from": "s20",
+      "to": "s21",
+      "relation": "CONTRADICTS",
+      "reason": "工程样例中两份资料给出不同周期，待人工核对。"
+    },
+    {
+      "from": "s22",
+      "to": "s23",
+      "relation": "CONTRADICTS",
+      "reason": "工程样例中两份资料给出不同周期，待人工核对。"
+    },
+    {
+      "from": "s24",
+      "to": "s25",
+      "relation": "CONTRADICTS",
+      "reason": "工程样例中两份资料给出不同周期，待人工核对。"
+    },
+    {
+      "from": "s26",
+      "to": "s27",
+      "relation": "CONTRADICTS",
+      "reason": "工程样例中两份资料给出不同周期，待人工核对。"
+    }
+  ],
+  "queries": [
+    {
+      "id": "answer-00",
+      "kind": "answerable",
+      "query": "来源快照",
+      "expected_sources": [
+        "s00"
+      ]
+    },
+    {
+      "id": "answer-01",
+      "kind": "answerable",
+      "query": "发布回滚",
+      "expected_sources": [
+        "s01"
+      ]
+    },
+    {
+      "id": "answer-02",
+      "kind": "answerable",
+      "query": "审批范围",
+      "expected_sources": [
+        "s02"
+      ]
+    },
+    {
+      "id": "answer-03",
+      "kind": "answerable",
+      "query": "中文别名",
+      "expected_sources": [
+        "s03"
+      ]
+    },
+    {
+      "id": "answer-04",
+      "kind": "answerable",
+      "query": "项目隔离",
+      "expected_sources": [
+        "s04"
+      ]
+    },
+    {
+      "id": "answer-05",
+      "kind": "answerable",
+      "query": "访问撤回",
+      "expected_sources": [
+        "s05"
+      ]
+    },
+    {
+      "id": "answer-06",
+      "kind": "answerable",
+      "query": "概念累积",
+      "expected_sources": [
+        "s06"
+      ]
+    },
+    {
+      "id": "answer-07",
+      "kind": "answerable",
+      "query": "关系理由",
+      "expected_sources": [
+        "s07"
+      ]
+    },
+    {
+      "id": "answer-08",
+      "kind": "answerable",
+      "query": "文件漂移",
+      "expected_sources": [
+        "s08"
+      ]
+    },
+    {
+      "id": "answer-09",
+      "kind": "answerable",
+      "query": "引用定位",
+      "expected_sources": [
+        "s09"
+      ]
+    },
+    {
+      "id": "answer-10",
+      "kind": "answerable",
+      "query": "重试预算",
+      "expected_sources": [
+        "s10"
+      ]
+    },
+    {
+      "id": "answer-11",
+      "kind": "answerable",
+      "query": "知识合并",
+      "expected_sources": [
+        "s11"
+      ]
+    },
+    {
+      "id": "answer-12",
+      "kind": "answerable",
+      "query": "字节校验",
+      "expected_sources": [
+        "s12"
+      ]
+    },
+    {
+      "id": "answer-13",
+      "kind": "answerable",
+      "query": "指针切换",
+      "expected_sources": [
+        "s13"
+      ]
+    },
+    {
+      "id": "answer-14",
+      "kind": "answerable",
+      "query": "人工推论",
+      "expected_sources": [
+        "s14"
+      ]
+    },
+    {
+      "id": "answer-15",
+      "kind": "answerable",
+      "query": "Lease fencing",
+      "expected_sources": [
+        "s15"
+      ]
+    },
+    {
+      "id": "answer-16",
+      "kind": "answerable",
+      "query": "Scope policy",
+      "expected_sources": [
+        "s16"
+      ]
+    },
+    {
+      "id": "answer-17",
+      "kind": "answerable",
+      "query": "Context budget",
+      "expected_sources": [
+        "s17"
+      ]
+    },
+    {
+      "id": "answer-18",
+      "kind": "answerable",
+      "query": "Atomic release",
+      "expected_sources": [
+        "s18"
+      ]
+    },
+    {
+      "id": "answer-19",
+      "kind": "answerable",
+      "query": "Source provenance",
+      "expected_sources": [
+        "s19"
+      ]
+    },
+    {
+      "id": "answer-20",
+      "kind": "answerable",
+      "query": "日志保留期限旧资料",
+      "expected_sources": [
+        "s20"
+      ]
+    },
+    {
+      "id": "answer-21",
+      "kind": "answerable",
+      "query": "日志保留期限新资料",
+      "expected_sources": [
+        "s21"
+      ]
+    },
+    {
+      "id": "answer-22",
+      "kind": "answerable",
+      "query": "缓存更新间隔旧资料",
+      "expected_sources": [
+        "s22"
+      ]
+    },
+    {
+      "id": "answer-23",
+      "kind": "answerable",
+      "query": "缓存更新间隔新资料",
+      "expected_sources": [
+        "s23"
+      ]
+    },
+    {
+      "id": "answer-24",
+      "kind": "answerable",
+      "query": "复核执行周期旧资料",
+      "expected_sources": [
+        "s24"
+      ]
+    },
+    {
+      "id": "answer-25",
+      "kind": "answerable",
+      "query": "复核执行周期新资料",
+      "expected_sources": [
+        "s25"
+      ]
+    },
+    {
+      "id": "answer-26",
+      "kind": "answerable",
+      "query": "附件备份频率旧资料",
+      "expected_sources": [
+        "s26"
+      ]
+    },
+    {
+      "id": "answer-27",
+      "kind": "answerable",
+      "query": "附件备份频率新资料",
+      "expected_sources": [
+        "s27"
+      ]
+    },
+    {
+      "id": "answer-28",
+      "kind": "answerable",
+      "query": "运行规范版本旧资料",
+      "expected_sources": [
+        "s28"
+      ]
+    },
+    {
+      "id": "answer-29",
+      "kind": "answerable",
+      "query": "运行规范版本新资料",
+      "expected_sources": [
+        "s29"
+      ]
+    },
+    {
+      "id": "absent-0",
+      "kind": "unanswerable",
+      "query": "火星岩石密度",
+      "expected_sources": []
+    },
+    {
+      "id": "absent-1",
+      "kind": "unanswerable",
+      "query": "深海鱼类分类",
+      "expected_sources": []
+    },
+    {
+      "id": "absent-2",
+      "kind": "unanswerable",
+      "query": "拉丁语诗歌格律",
+      "expected_sources": []
+    },
+    {
+      "id": "absent-3",
+      "kind": "unanswerable",
+      "query": "南极企鹅数量",
+      "expected_sources": []
+    },
+    {
+      "id": "absent-4",
+      "kind": "unanswerable",
+      "query": "小麦基因编辑",
+      "expected_sources": []
+    },
+    {
+      "id": "absent-5",
+      "kind": "unanswerable",
+      "query": "太阳黑子预测",
+      "expected_sources": []
+    },
+    {
+      "id": "absent-6",
+      "kind": "unanswerable",
+      "query": "核聚变磁场设计",
+      "expected_sources": []
+    },
+    {
+      "id": "absent-7",
+      "kind": "unanswerable",
+      "query": "古埃及象形文字",
+      "expected_sources": []
+    },
+    {
+      "id": "absent-8",
+      "kind": "unanswerable",
+      "query": "羽毛球比赛规则",
+      "expected_sources": []
+    },
+    {
+      "id": "absent-9",
+      "kind": "unanswerable",
+      "query": "阿尔卑斯山雪线",
+      "expected_sources": []
+    },
+    {
+      "id": "conflict-0-0",
+      "kind": "conflict",
+      "query": "日志保留期限旧资料",
+      "expected_sources": [
+        "s20",
+        "s21"
+      ],
+      "expect_conflict": true
+    },
+    {
+      "id": "conflict-0-1",
+      "kind": "conflict",
+      "query": "日志保留期限新资料",
+      "expected_sources": [
+        "s20",
+        "s21"
+      ],
+      "expect_conflict": true
+    },
+    {
+      "id": "conflict-1-0",
+      "kind": "conflict",
+      "query": "缓存更新间隔旧资料",
+      "expected_sources": [
+        "s22",
+        "s23"
+      ],
+      "expect_conflict": true
+    },
+    {
+      "id": "conflict-1-1",
+      "kind": "conflict",
+      "query": "缓存更新间隔新资料",
+      "expected_sources": [
+        "s22",
+        "s23"
+      ],
+      "expect_conflict": true
+    },
+    {
+      "id": "conflict-2-0",
+      "kind": "conflict",
+      "query": "复核执行周期旧资料",
+      "expected_sources": [
+        "s24",
+        "s25"
+      ],
+      "expect_conflict": true
+    },
+    {
+      "id": "conflict-2-1",
+      "kind": "conflict",
+      "query": "复核执行周期新资料",
+      "expected_sources": [
+        "s24",
+        "s25"
+      ],
+      "expect_conflict": true
+    },
+    {
+      "id": "conflict-3-0",
+      "kind": "conflict",
+      "query": "附件备份频率旧资料",
+      "expected_sources": [
+        "s26",
+        "s27"
+      ],
+      "expect_conflict": true
+    },
+    {
+      "id": "conflict-3-1",
+      "kind": "conflict",
+      "query": "附件备份频率新资料",
+      "expected_sources": [
+        "s26",
+        "s27"
+      ],
+      "expect_conflict": true
+    },
+    {
+      "id": "temporal-new",
+      "kind": "temporal",
+      "query": "运行规范版本新资料",
+      "expected_sources": [
+        "s29"
+      ],
+      "withdraw_before": [
+        "s28"
+      ]
+    },
+    {
+      "id": "temporal-old",
+      "kind": "temporal",
+      "query": "运行规范版本旧资料",
+      "expected_sources": [],
+      "forbidden_sources": [
+        "s28"
+      ],
+      "allow_other_results": true
+    }
+  ]
+}
