@@ -1,0 +1,1 @@
+{"name":"animated-bar-chart","version":"1.0.0","private":true,"scripts":{"dev":"remotion studio --no-open","check":"tsc --noEmit"},"dependencies":{"@remotion/cli":"4.0.532","remotion":"4.0.532","react":"19.1.0","react-dom":"19.1.0"},"devDependencies":{"typescript":"5.9.3","@types/react":"19.1.16","@types/react-dom":"19.1.9"}}

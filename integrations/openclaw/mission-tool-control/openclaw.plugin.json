@@ -1,0 +1,1 @@
+{"id":"mission-tool-control","name":"Mission Tool Control","version":"1.0.0","activation":{"onStartup":true},"contracts":{"tools":["dr4_read","dr4_list","dr4_write","dr4_edit"]},"configSchema":{"type":"object","additionalProperties":false,"required":["socketPath","token"],"properties":{"socketPath":{"type":"string"},"token":{"type":"string"}}}}
