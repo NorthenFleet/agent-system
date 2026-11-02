@@ -317,3 +317,20 @@ def test_worker_executes_only_approved_compensation_contract(tmp_path):
         assert compensation["contract_hash"] in executor.messages[0]
 
     asyncio.run(scenario())
+
+
+def test_unknown_effect_verification_cannot_claim_a_write_rollback(tmp_path):
+    service = CommandCenterService(str(tmp_path / 'verify-only.db'))
+    mission, step = _running_step(service)
+    service.complete_step(step['id'], result={'success': False, 'output': '执行状态未知'},
+        success=False, actor='optimus', lease_token=step['lease_token'])
+    item = service.list_compensations(mission['id'])['compensations'][0]
+    assert item['compensation_type'] == 'verify_effect'
+    service.decide_compensation(item['id'], expected_mission_id=mission['id'],
+        contract_hash=item['contract_hash'], decision='approved', decided_by='admin', comment='仅核实')
+    claimed = service.claim_ready_compensation('verification-worker')
+    completed = service.complete_compensation(claimed['id'], lease_token=claimed['lease_token'],
+        result={'status': 'reverted', 'summary': '声称已经删除', 'receipt_ref': 'fixture', 'evidence_refs': ['fixture']},
+        actor='optimus')
+    assert completed['status'] == 'failed'
+    assert service.list_compensations(mission['id'])['effects'][0]['status'] == 'unknown'

@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import hashlib
+import copy
 import json
 import os
 import re
 from typing import Any
+from services.execution_contract_ids import contract_items
 
 
 EVIDENCE_ALIASES = {
@@ -49,7 +51,40 @@ class ExecutionEvidenceService:
         success: bool,
         enforcement: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        enriched = self.normalize_result(result)
+        enriched = self.normalize_result(copy.deepcopy(result))
+        before = self.evaluate(step, enriched, success=success,
+                               enforcement={"mode": "strict", "enforced": True})
+        # Only canonicalize a current, unambiguous evidence ID to its existing
+        # source. Never infer missing evidence or change an acceptance decision.
+        current_ids = {item['id'] for item in contract_items(step, 'evidence_required')}
+        sources: dict[str, set[str]] = {}
+        for entry in enriched['evidence']:
+            identifier = entry.get('requirement_id')
+            if identifier in current_ids and entry.get('source_ref') and entry.get('summary'):
+                sources.setdefault(identifier, set()).add(entry['source_ref'])
+        changes = []
+        for index, entry in enumerate(enriched['acceptance_results']):
+            refs = []
+            for ref in entry['evidence_refs']:
+                candidates = sources.get(ref, set())
+                target = next(iter(candidates)) if len(candidates) == 1 else ref
+                if target != ref:
+                    changes.append({'acceptance_index': index, 'from': ref, 'to': target})
+                refs.append(target)
+            entry['evidence_refs'] = refs
+        after = self.evaluate(step, enriched, success=success,
+                              enforcement={"mode": "strict", "enforced": True})
+        enriched['receipt_preflight'] = {
+            'schema_version': '1.0',
+            'strategy': 'existing_evidence_only',
+            'input_sha256': hashlib.sha256(json.dumps(result, ensure_ascii=False,
+                sort_keys=True, default=str).encode()).hexdigest(),
+            'changes': changes,
+            'strict_accepted_before': before['accepted'],
+            'strict_accepted': after['accepted'],
+            'blockers': after['blockers'],
+            'execution_repeated': False,
+        }
         enriched["execution_quality"] = self.evaluate(
             step,
             enriched,
@@ -77,6 +112,13 @@ class ExecutionEvidenceService:
                 if field not in enriched and field in structured:
                     enriched[field] = structured[field]
             enriched["structured_output"] = structured
+
+        if not isinstance(structured, dict):
+            output = str(enriched.get("output") or "")
+            if "<summary>" in output and "</summary>" in output:
+                enriched["protocol_error"] = "执行器返回会话摘要，尚未提交结构化交付结果"
+            elif re.search(r"<parameter(?:=|\s)|</parameter>|<tool_call>|<function=", output):
+                enriched["protocol_error"] = "执行器返回未完成的工具调用文本，尚未提交结构化交付结果"
 
         enriched["summary"] = str(
             enriched.get("summary")
@@ -119,6 +161,9 @@ class ExecutionEvidenceService:
         business_outcome = str(result.get("outcome") or "failed")
         hard_blockers: list[str] = []
 
+        if result.get("protocol_error"):
+            hard_blockers.append(str(result["protocol_error"]))
+
         if success and business_outcome != "succeeded":
             hard_blockers.append(f"步骤业务结果为 {business_outcome}，不得标记为已完成")
 
@@ -155,7 +200,14 @@ class ExecutionEvidenceService:
             blockers.append("执行成功但没有返回结果摘要")
         if success:
             missing_evidence = [
-                item for item in required_evidence if not self._has_evidence(item, evidence)
+                item['text'] for item in contract_items(step, 'evidence_required')
+                if not any(
+                    entry.get('requirement_id') == item['id']
+                    and entry.get('source_ref') and entry.get('summary')
+                    for entry in evidence
+                ) and not self._has_evidence(item['text'], [
+                    entry for entry in evidence if not entry.get('requirement_id')
+                ])
             ]
             self._finding(
                 missing_evidence,
@@ -200,11 +252,24 @@ class ExecutionEvidenceService:
                     item.get("status") or ""
                 ).lower()
                 for item in acceptance_results
+                if not item.get('criterion_id')
+            }
+            required_ids = {item['id'] for item in contract_items(step, 'evidence_required')}
+            resolvable_refs = set(evidence_refs) | {
+                entry['requirement_id'] for entry in evidence
+                if entry.get('requirement_id') in required_ids
+                and entry.get('source_ref') and entry.get('summary')
             }
             failed_acceptance = [
-                criterion
-                for criterion in acceptance
-                if acceptance_by_criterion.get(criterion.lower()) not in {"pass", "passed"}
+                item['text']
+                for item in contract_items(step, 'acceptance_criteria')
+                if not any(
+                    entry.get('criterion_id') == item['id']
+                    and entry.get('status') in {'pass', 'passed'}
+                    and entry.get('evidence_refs')
+                    and all(ref in resolvable_refs for ref in entry['evidence_refs'])
+                    for entry in acceptance_results
+                ) and acceptance_by_criterion.get(item['text'].lower()) not in {'pass', 'passed'}
             ]
             self._finding(
                 failed_acceptance,
@@ -217,7 +282,7 @@ class ExecutionEvidenceService:
             missing_tools = [
                 tool
                 for tool in required_tools
-                if tool.lower() not in tools_used and tool.lower() not in output.lower()
+                if not self._tool_capability_proven(tool, tools_used, artifacts, evidence, output)
             ]
             self._finding(
                 missing_tools,
@@ -268,7 +333,7 @@ class ExecutionEvidenceService:
 
     @staticmethod
     def _business_outcome(result: dict[str, Any]) -> str:
-        if result.get("success") is False:
+        if result.get("success") is False or result.get("protocol_error"):
             return "failed"
         structured = (
             result.get("structured_output")
@@ -369,6 +434,64 @@ class ExecutionEvidenceService:
         return bool(value) or value == 0 or value is False
 
     @staticmethod
+    def _tool_capability_proven(
+        requirement: str,
+        tools_used: set[str],
+        artifacts: list[dict[str, Any]],
+        evidence: list[dict[str, Any]],
+        output: str,
+    ) -> bool:
+        """Accept a capability only when the returned work proves its use.
+
+        Plans name orchestration capabilities (for example ``document_workspace``),
+        whereas OpenClaw reports native tools such as ``write`` or ``exec``.  An
+        exact capability name remains valid for non-OpenClaw executors.  Native
+        tool aliases need a matching evidence or durable artifact so a bare
+        ``exec`` call cannot satisfy an unrelated capability.
+        """
+        required = str(requirement or "").strip().lower()
+        if not required:
+            return True
+        if required in tools_used or required in str(output or "").lower():
+            return True
+
+        evidence_types = {
+            str(item.get("evidence_type") or "").strip().lower()
+            for item in evidence
+        }
+        artifact_types = {
+            str(item.get("artifact_type") or "").strip().lower()
+            for item in artifacts
+        }
+        native_file_tools = {"write", "edit", "apply_patch", "exec"}
+
+        if required == "document_workspace":
+            return bool(tools_used & native_file_tools) and bool(
+                artifact_types & {"markdown_file", "document", "docx", "pdf", "review_report", "verification_report"}
+                or any(str(item.get("uri") or "").lower().endswith((".md", ".docx", ".pdf")) for item in artifacts)
+            )
+        if required == "quality_checker":
+            return bool(
+                evidence_types & {"review_report", "verification_report", "quality_notes"}
+                or artifact_types & {"review_report", "verification_report"}
+            )
+        if required == "test_runner":
+            return bool(tools_used & {"exec", "test"}) and bool(
+                evidence_types & {"test_output", "test_report"}
+            )
+        if required == "build_runner":
+            return bool(tools_used & {"exec", "build"}) and bool(
+                evidence_types & {"build_output", "build_report"}
+            )
+        if required == "codex":
+            return bool(tools_used & {"write", "edit", "apply_patch", "exec"}) and bool(
+                evidence_types & {"diff_summary", "code_diff"}
+            )
+        if required == "ops_check":
+            return bool(tools_used & {"exec", "read"}) and "ops_log" in evidence_types
+        return False
+
+    @staticmethod
     def _has_evidence(requirement: str, evidence: list[dict[str, Any]]) -> bool:
         required = requirement.strip().lower()
         accepted = EVIDENCE_ALIASES.get(required, {required})
@@ -429,6 +552,7 @@ class ExecutionEvidenceService:
             normalized.append(
                 {
                     "evidence_type": evidence_type[:120],
+                    "requirement_id": str(raw.get("requirement_id") or "")[:80],
                     "source_ref": source_ref[:2000],
                     "summary": summary[:4000],
                     "artifact_key": str(raw.get("artifact_key") or raw.get("artifact_id") or "")[:160],
@@ -485,10 +609,10 @@ class ExecutionEvidenceService:
                         "metadata": citation,
                     }
                 )
-        seen: set[tuple[str, str, str]] = set()
+        seen: set[tuple[str, str, str, str]] = set()
         unique: list[dict[str, Any]] = []
         for item in normalized:
-            key = (item["evidence_type"], item["source_ref"], item["summary"])
+            key = (item.get("requirement_id", ""), item["evidence_type"], item["source_ref"], item["summary"])
             if key not in seen:
                 seen.add(key)
                 unique.append(item)
@@ -525,6 +649,7 @@ class ExecutionEvidenceService:
                 normalized.append(
                     {
                         "criterion": criterion[:1000],
+                        "criterion_id": str(raw.get("criterion_id") or "")[:80],
                         "status": "pass" if status in {"pass", "passed"} else "fail",
                         "evidence_refs": ExecutionEvidenceService._string_list(
                             raw.get("evidence_refs"), limit=20, item_limit=2000

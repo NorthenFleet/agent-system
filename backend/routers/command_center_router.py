@@ -10,6 +10,9 @@ from typing import Any, Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Query, Request
 from pydantic import BaseModel, Field
+from fastapi.responses import Response
+from urllib.parse import quote
+from services.mission_artifact_reader import read_artifact
 
 from database import get_db
 from routers.auth_router import get_current_user, require_role
@@ -31,7 +34,7 @@ from services.memory_feedback_service import (
 )
 from services.context_retrieval_service import context_retrieval_service
 from services.memory_awareness_service import MemoryAwarenessService
-from services.work_run_service import WorkRunService, work_run_service
+from services.work_run_service import WorkRunService, public_work_run, work_run_service
 from services.memory_system_health_status import (
     MemorySystemHealthStatusError,
     publish_memory_health_notification,
@@ -60,6 +63,7 @@ class InboxRequest(BaseModel):
 
 
 class MissionCreateRequest(BaseModel):
+    idempotency_key: str = Field("", max_length=128, pattern="^[A-Za-z0-9_-]*$")
     objective: str = Field(..., min_length=1, max_length=20000)
     title: str = Field("", max_length=160)
     project_id: str = Field(..., min_length=1, max_length=160)
@@ -121,8 +125,14 @@ class CompensationDecisionRequest(BaseModel):
     comment: str = Field("", max_length=4000)
 
 
+class RecoveryProposalRequest(BaseModel):
+    contract_hash: str = Field(..., pattern="^[a-f0-9]{64}$")
+    instructions: str = Field(..., min_length=1, max_length=4000)
+
+
 class FeedbackRequest(BaseModel):
     content: str = Field(..., min_length=1, max_length=10000)
+    replan: bool = False
 
 
 class MemoryCandidateReviewRequest(BaseModel):
@@ -775,6 +785,7 @@ def create_mission(
                 "business_flow_key": body.flow_key or body.mission_type,
             },
             profile_user_id=_profile_user_id(user),
+            idempotency_key=body.idempotency_key,
         )
         return {"success": True, "mission": mission}
     except CommandCenterError as exc:
@@ -809,16 +820,36 @@ def get_mission_delivery_evidence(
         raise _translate_error(exc) from exc
 
 
+@router.get("/api/v3/command-center/missions/{mission_id}/artifacts/{artifact_id}/download")
+def download_mission_artifact(mission_id: str, artifact_id: str, user: dict = Depends(get_current_user)):
+    try:
+        mission = command_center_service.get_mission(mission_id, owner_user_id=_owner_scope(user))
+    except CommandCenterError as exc:
+        raise _translate_error(exc) from exc
+    artifact = next((a for a in mission.get("artifacts", []) if a["id"] == artifact_id), None)
+    if artifact is None:
+        raise HTTPException(404, "任务产物不存在")
+    try:
+        name, data = read_artifact(artifact)
+    except (ValueError, OSError) as exc:
+        raise HTTPException(409, str(exc) if isinstance(exc, ValueError) else "文件不可读取") from exc
+    return Response(data, media_type="application/octet-stream", headers={
+        "Content-Disposition": f"attachment; filename*=UTF-8''{quote(name)}",
+        "X-Content-Type-Options": "nosniff", "Cache-Control": "no-store",
+    })
+
+
 @router.get("/api/v3/command-center/missions/{mission_id}/run-ledger")
 def get_mission_run_ledger(
     mission_id: str,
     user: dict = Depends(get_current_user),
 ):
     try:
-        return command_center_service.get_mission_run_ledger(
+        ledger = command_center_service.get_mission_run_ledger(
             mission_id,
             owner_user_id=_owner_scope(user),
         )
+        return {**ledger, "step_runs": [public_work_run(run) for run in ledger["step_runs"]]}
     except CommandCenterError as exc:
         raise _translate_error(exc) from exc
 
@@ -894,6 +925,21 @@ def get_mission_compensations(
         return command_center_service.list_compensations(
             mission_id,
             owner_user_id=_owner_scope(user),
+        )
+    except CommandCenterError as exc:
+        raise _translate_error(exc) from exc
+
+
+@router.post("/api/v3/command-center/missions/{mission_id}/compensations/{compensation_id}/recovery-plan")
+def propose_mission_recovery(
+    mission_id: str, compensation_id: str, body: RecoveryProposalRequest,
+    user: dict = Depends(require_role("admin")),
+):
+    try:
+        _assert_mission_access(mission_id, user)
+        return command_center_service.propose_compensation_recovery(
+            compensation_id, expected_mission_id=mission_id,
+            contract_hash=body.contract_hash, instructions=body.instructions, actor=_actor(user),
         )
     except CommandCenterError as exc:
         raise _translate_error(exc) from exc
@@ -1008,6 +1054,7 @@ def mission_feedback(
             mission_id,
             actor=_actor(user),
             content=body.content,
+            replan=body.replan,
         )
     except CommandCenterError as exc:
         raise _translate_error(exc) from exc

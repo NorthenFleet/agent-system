@@ -241,7 +241,7 @@ def get_monitoring_agents(
 
     for hb in rows:
         display_status = _compute_display_status(hb.heartbeat_at.isoformat())
-        if hb.status == "busy":
+        if display_status == "online" and hb.status == "busy":
             display_status = "busy"
 
         seconds_ago = 0.0

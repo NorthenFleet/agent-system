@@ -1047,6 +1047,11 @@ class ContextRetrievalService:
                 for item in selected
             ],
         }
+        # SB3 observes the already-selected baseline; never joins memory fusion.
+        from services.knowledge.context import observe as observe_knowledge_shadow
+        knowledge_shadow = observe_knowledge_shadow(result, persist=persist)
+        if knowledge_shadow is not None:
+            health["reviewed_knowledge_shadow"] = knowledge_shadow
         latency_ms = round((time.perf_counter() - started) * 1000, 2)
         if persist:
             result = self._persist_pack(result, latency_ms)
@@ -1104,6 +1109,13 @@ class ContextRetrievalService:
         if not pack:
             return ""
         items = list(pack.get("items") or [])
+        # Until the separate quality/rollout gate is implemented, even a forged
+        # or accidentally copied shadow item must never reach an executor.
+        if any(str(item.get("source_ref") or "").startswith("kb-page:")
+               or item.get("authority") == "reviewed_knowledge"
+               or (item.get("metadata") or {}).get("authority") == "reviewed_knowledge"
+               for item in items):
+            raise ContextRetrievalError("reviewed_knowledge_execution_gate_closed")
         decision = pack.get("retrieval_decision")
         if not isinstance(decision, dict):
             health = pack.get("retrieval_health")
@@ -2072,6 +2084,17 @@ class ContextRetrievalService:
 
     @staticmethod
     def _project_content(project: dict[str, Any]) -> str:
+        context = project.get("context") if isinstance(project.get("context"), dict) else {}
+        # Keep explicit project requirements ahead of potentially large design docs.
+        # Do not send arbitrary integration settings or credentials to the planner.
+        planning_context = {
+            key: context[key]
+            for key in (
+                "goal", "scope", "acceptance_marker", "minimum_acceptance",
+                "acceptance_criteria", "constraints", "repository", "output_directory",
+            )
+            if context.get(key) not in (None, "", [], {})
+        }
         selected = {
             key: project.get(key)
             for key in (
@@ -2087,7 +2110,7 @@ class ContextRetrievalService:
             )
             if project.get(key) not in (None, "", [], {})
         }
-        return _json(selected)[:6000]
+        return _json({"context": planning_context, **selected})[:6000]
 
     @staticmethod
     def _item(

@@ -176,11 +176,18 @@ class CompensationService:
         instructions = str(
             configured.get("instructions") or step.get("rollback_plan") or ""
         ).strip()[:4000]
+        verification_only = effect.get("status") == "unknown"
+        if verification_only:
+            instructions = (
+                "仅只读核实指定资源是否发生本步骤声明的副作用，禁止删除、覆盖或其他写入。"
+                "只有证据确认未生效时返回 not_needed，附真实核实结果和回执；"
+                "如已生效或无法确定，返回 failed 并说明事实，等待新的恢复方案审批。"
+            )
         effect_key = str(effect.get("effect_key") or "effect")
         original_key = str(step.get("idempotency_key") or "")
         key = f"compensate:{original_key}:{effect_key}"[:240]
         contract = {
-            "type": str(configured.get("type") or "manual")[:80],
+            "type": "verify_effect" if verification_only else str(configured.get("type") or "manual")[:80],
             "instructions": instructions,
             "resource": str(effect.get("resource") or "")[:500],
             "effect_key": effect_key[:160],
@@ -203,7 +210,7 @@ class CompensationService:
         if not isinstance(structured, dict):
             structured = CompensationService._extract_json(str(payload.get("output") or ""))
         if isinstance(structured, dict):
-            for field in ("summary", "status", "receipt_ref", "evidence_refs", "risk_notes"):
+            for field in ("summary", "status", "receipt_ref", "evidence_refs", "risk_notes", "receipt_sha256"):
                 if field not in payload and field in structured:
                     payload[field] = structured[field]
             payload["structured_output"] = structured
@@ -226,6 +233,38 @@ class CompensationService:
             and payload["evidence_refs"]
         )
         return payload
+
+    @staticmethod
+    def validate_manual_recovery_receipt(case: dict[str, Any], result: dict[str, Any]) -> dict[str, Any]:
+        """Validate local recovery evidence without executing or repairing anything."""
+        from services.mission_artifact_reader import read_artifact
+        ref = str(result.get("receipt_ref") or "")
+        check: dict[str, Any] = {"accepted": False, "validator": "local-recovery-json-v1", "receipt_ref": ref}
+        try:
+            _, data = read_artifact({"uri": ref, "content_hash": result.get("receipt_sha256")})
+            receipt = json.loads(data)
+            if not isinstance(receipt, dict):
+                raise ValueError("恢复回执必须是 JSON 对象")
+            for key in ("contract_hash", "idempotency_key", "resource"):
+                if receipt.get(key) != case.get(key):
+                    raise ValueError(f"恢复回执 {key} 与当前合同不一致")
+            verification = receipt.get("verification")
+            if not isinstance(verification, dict) or verification.get("all_passed") is not True:
+                raise ValueError("恢复回执未明确通过核验")
+            if ref not in result.get("evidence_refs", []):
+                raise ValueError("恢复证据必须引用已校验的回执")
+            # Only configured local delivery roots are readable. Unsupported remote
+            # resources fail closed until a dedicated verifier exists.
+            read_artifact({"uri": case.get("resource"), "content_hash": receipt.get("post_recovery_sha256")})
+            check.update(accepted=True, receipt_sha256=hashlib.sha256(data).hexdigest(),
+                         resource_sha256=receipt["post_recovery_sha256"])
+        except FileNotFoundError:
+            check["error"] = "恢复回执校验未通过：回执或资源文件不存在"
+        except (json.JSONDecodeError, UnicodeError):
+            check["error"] = "恢复回执校验未通过：回执文件损坏，不是有效的 JSON"
+        except (OSError, ValueError, TypeError) as exc:
+            check["error"] = f"恢复回执校验未通过：{str(exc)[:500]}"
+        return check
 
     @staticmethod
     def _strings(value: Any, limit: int, item_limit: int) -> list[str]:

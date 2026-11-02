@@ -17,7 +17,11 @@ from services.command_center_worker import (
     normalize_memory_candidates,
     normalize_plan,
 )
-from services.openclaw_task_executor import ExecutionResult, _agent_visible_output
+from services.openclaw_task_executor import (
+    ExecutionResult,
+    _agent_output_candidates,
+    _agent_visible_output,
+)
 from services.plan_quality_service import PlanQualityService
 from services.work_run_service import WorkRunService
 
@@ -826,7 +830,7 @@ def test_stale_step_and_persisted_mission_recover_after_restart(tmp_path):
     )
 
 
-def test_inflight_recovery_reuses_work_run_and_delivers_once(tmp_path):
+def test_inflight_write_recovery_preserves_run_and_blocks_delivery(tmp_path):
     db_path = str(tmp_path / "inflight-idempotency.db")
     service = CommandCenterService(db_path, project_provider=_test_projects)
     work_runs = WorkRunService(db_path)
@@ -902,133 +906,27 @@ def test_inflight_recovery_reuses_work_run_and_delivers_once(tmp_path):
         )
 
     restarted = CommandCenterService(db_path)
-    resumed_runs = WorkRunService(db_path)
     assert restarted.requeue_stale_steps() == 1
-    second_claim = restarted.claim_ready_steps("worker-b", limit=1)[0]
-    second_run = resumed_runs.claim(
-        dispatch_id=second_claim["id"],
-        agent_id="worker-b",
-        executor="controlled-drill",
-        mission_id=mission["id"],
-        mission_run_id=mission_run_id,
-        idempotency_key=idempotency_key,
-        lease_seconds=60,
-    )
-    assert second_run["id"] == first_run["id"]
-    assert second_run["attempt"] == 1
-
+    assert restarted.claim_ready_steps("worker-b", limit=1) == []
+    assert restarted.claim_evaluation_mission("evaluator") is None
+    current = restarted.get_mission(mission["id"])
+    assert current["status"] == "waiting_feedback"
+    assert current["steps"][0]["work_run_id"] == first_run["id"]
+    assert current["steps"][0]["attempt_count"] == 1
+    assert current["effects"][0]["status"] == "unknown"
+    assert current["compensations"][0]["compensation_type"] == "verify_effect"
     with pytest.raises(InvalidMissionTransition):
-        restarted.complete_step(
-            first_claim["id"],
-            result={"summary": "stale completion"},
-            success=True,
-            actor="worker-a",
-            lease_token=first_claim["lease_token"],
-        )
-
-    restarted.attach_work_run(
-        second_claim["id"],
-        second_run["id"],
-        lease_token=second_claim["lease_token"],
-    )
-    result = {
-        "summary": "恢复后复用首次副作用回执并完成",
-        "artifacts": [
-            {
-                "artifact_type": "receipt",
-                "title": "幂等执行回执",
-                "uri": "drill://inflight-receipt/once",
-                "content_hash": "a" * 64,
-            }
-        ],
-        "evidence": [
-            {
-                "evidence_type": "test_output",
-                "source_ref": "drill://inflight-receipt/once",
-                "summary": "适配器第二次调用返回首次回执，apply_count=1",
-            }
-        ],
-        "side_effects": [
-            {
-                "effect_key": "controlled-receipt",
-                "resource": "drill://inflight-receipt",
-                "action": "write-once",
-                "status": "applied",
-                "idempotency_key": idempotency_key,
-                "receipt_ref": "drill://inflight-receipt/once",
-                "evidence_refs": ["drill://inflight-receipt/once"],
-            }
-        ],
-    }
-    completed_step = restarted.complete_step(
-        second_claim["id"],
-        result=result,
-        success=True,
-        actor="worker-b",
-        lease_token=second_claim["lease_token"],
-    )
-    assert completed_step["status"] == "completed"
-    resumed_runs.transition(
-        second_run["id"],
-        "review",
-        actor="worker-b",
-        result_summary=result["summary"],
-        execution_result=result,
-    )
-    resumed_runs.transition(
-        second_run["id"],
-        "completed",
-        actor="worker-b",
-        result_summary=result["summary"],
-        execution_result=result,
-    )
-    assert restarted.claim_evaluation_mission("evaluator") is not None
-    first_completion = restarted.complete_mission(
-        mission["id"], summary="故障恢复演练通过", success=True, actor="evaluator"
-    )
-    replayed_completion = restarted.complete_mission(
-        mission["id"], summary="重复完成命令", success=True, actor="evaluator-replay"
-    )
-    assert first_completion["status"] == "completed"
-    assert replayed_completion["updated_at"] == first_completion["updated_at"]
-
+        restarted.complete_step(first_claim["id"], result={"summary": "late"},
+            success=True, actor="worker-a", lease_token=first_claim["lease_token"])
     with restarted.connect() as conn:
         assert conn.execute(
             "SELECT COUNT(*) AS count FROM work_runs WHERE idempotency_key=?",
             (idempotency_key,),
         ).fetchone()["count"] == 1
         assert conn.execute(
-            "SELECT COUNT(*) AS count FROM work_run_events WHERE run_id=? AND event_type='lease_reclaimed'",
-            (first_run["id"],),
-        ).fetchone()["count"] == 1
-        assert conn.execute(
-            "SELECT COUNT(*) AS count FROM mission_events WHERE mission_id=? AND event_type='step_requeued'",
-            (mission["id"],),
-        ).fetchone()["count"] == 1
-        assert conn.execute(
-            "SELECT COUNT(*) AS count FROM mission_events WHERE mission_id=? AND event_type='step_completed'",
-            (mission["id"],),
-        ).fetchone()["count"] == 1
-        assert conn.execute(
-            "SELECT COUNT(*) AS count FROM mission_events WHERE mission_id=? AND event_type='mission_completed'",
-            (mission["id"],),
-        ).fetchone()["count"] == 1
-        assert conn.execute(
             "SELECT COUNT(*) AS count FROM notification_outbox WHERE mission_id=? AND idempotency_key LIKE 'result:%'",
             (mission["id"],),
-        ).fetchone()["count"] == 1
-        assert conn.execute(
-            "SELECT COUNT(*) AS count FROM mission_artifacts WHERE mission_id=?",
-            (mission["id"],),
-        ).fetchone()["count"] == 1
-        assert conn.execute(
-            "SELECT COUNT(*) AS count FROM mission_evidence WHERE mission_id=?",
-            (mission["id"],),
-        ).fetchone()["count"] == 1
-        assert conn.execute(
-            "SELECT COUNT(*) AS count FROM mission_effects WHERE mission_id=?",
-            (mission["id"],),
-        ).fetchone()["count"] == 1
+        ).fetchone()["count"] == 0
 
 
 def test_context_packs_bind_to_plan_versions_and_steps(tmp_path):
@@ -1590,6 +1488,26 @@ def test_planning_prompt_requests_plan_v2_quality_fields():
     assert "rollback_plan" in prompt
 
 
+def test_planning_prompt_preserves_explicit_delivery_directory_contract():
+    output_directory = "/tmp/workflow-pilot-output"
+    prompt = CommandCenterWorker._planning_prompt(
+        {
+            "id": "mission-test",
+            "objective": "生成测试文档",
+            "events": [],
+            "context": {
+                "user_context": {
+                    "output_directory": output_directory,
+                    "acceptance_marker": "WF-PILOT",
+                }
+            },
+        },
+        "[C1] 背景",
+    )
+    assert '"output_directory": "/tmp/workflow-pilot-output"' in prompt
+    assert "最终交付物的强制路径" in prompt
+
+
 def test_step_prompt_includes_execution_contract():
     prompt = CommandCenterWorker._step_prompt(
         {
@@ -1619,6 +1537,15 @@ def test_step_prompt_includes_execution_contract():
     assert "测试结果必须写入独立报告文件" in prompt
     assert "artifact_type=build_artifact" in prompt
     assert "不得再返回 dist/ 目录" in prompt
+
+
+def test_step_prompt_allows_short_exec_fallback_for_durable_path():
+    prompt = CommandCenterWorker._step_prompt(
+        {"id": "mission-test", "objective": "交付文档", "steps": []},
+        {"id": "step-test", "title": "写入", "deliverables": [], "output_contract": {}},
+    )
+    assert "write/edit 沙箱外" in prompt
+    assert "允许使用 exec 写入该合同路径" in prompt
 
 
 def test_execution_context_uses_bounded_default_memory_budget(monkeypatch):
@@ -1823,6 +1750,32 @@ def test_openclaw_json_result_is_reduced_to_visible_agent_text():
         }
     )
     assert _agent_visible_output(raw) == "VISIBLE_RESULT"
+
+
+def test_openclaw_result_prefers_structured_payload_over_compacted_visible_text():
+    delivery = '{"outcome":"succeeded","summary":"交付完成"}'
+    raw = json.dumps(
+        {
+            "result": {
+                "finalAssistantVisibleText": "<summary>继续提交交付结果</summary>",
+                "payloads": [{"text": delivery}],
+            }
+        }
+    )
+    assert _agent_visible_output(raw) == delivery
+    assert _agent_output_candidates(raw)[0][0] == "finalAssistantVisibleText"
+
+
+def test_document_fallback_preserves_explicit_delivery_directory():
+    plan = normalize_plan(
+        None,
+        "生成 protocol-probe.md 文档",
+        flow_key="document",
+        task_contract={"output_directory": "/tmp/pilot-deliverables"},
+    )
+    writing_step = plan["steps"][2]
+    assert "/tmp/pilot-deliverables/protocol-probe.md" in writing_step["description"]
+    assert writing_step["resources"] == ["/tmp/pilot-deliverables/protocol-probe.md"]
 
 
 def test_openclaw_command_prefers_stable_node_runtime(tmp_path, monkeypatch):

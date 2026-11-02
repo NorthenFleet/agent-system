@@ -8,10 +8,13 @@ deliverables/evidence and blocks structurally unsafe plans before approval.
 from __future__ import annotations
 
 from copy import deepcopy
+import re
 from typing import Any
 
 from services.agent_capability_registry import agent_capability_registry
 from services.business_flow_service import business_flow_registry
+from services import deterministic_executor_service as deterministic
+from services import mission_code_workspace_service as code_workspace
 
 
 VALID_AGENTS = set(agent_capability_registry.agent_ids())
@@ -29,6 +32,8 @@ class PlanQualityService:
         for index, step in enumerate(steps, start=1):
             if not isinstance(step, dict):
                 continue
+            deterministic.defaults(step)
+            code_workspace.defaults(step)
             task_type = str(step.get("task_type") or "general").strip().lower()
             defaults = agent_capability_registry.step_defaults(task_type)
             step.setdefault("order_index", index)
@@ -58,8 +63,7 @@ class PlanQualityService:
         warnings: list[str] = []
         suggestions: list[str] = []
         steps = plan.get("steps") if isinstance(plan.get("steps"), list) else []
-        mission_context = self._mission_context(mission)
-        mission_type = str(self._mission_value(mission, "mission_type") or mission_context.get("mission_type") or "")
+        flow_key = business_flow_registry.resolve(mission, plan)["flow_key"]
         tool_summary = {"total": 0, "unknown": 0, "unavailable": 0}
         flow_validation = plan.get("flow_validation") if isinstance(plan.get("flow_validation"), dict) else {}
         blockers.extend(str(item) for item in flow_validation.get("blockers") or [])
@@ -72,7 +76,19 @@ class PlanQualityService:
 
         seen_order_indexes: set[int] = set()
         task_types: set[str] = set()
+        objective = str(business_flow_registry._mission_value(mission, "objective") or "")
+        document_only = bool(re.search(r"只[做写].{0,4}文档|仅.{0,4}文档|不开发代码|禁止.{0,3}(改|写|开发)代码", objective))
         for index, step in enumerate(steps, start=1):
+            if isinstance(step, dict) and step.get("executor") == code_workspace.EXECUTOR:
+                try:
+                    code_workspace.validate(step)
+                except (ValueError, TypeError, KeyError) as exc:
+                    blockers.append(f"第 {index} 步：{exc}")
+            if isinstance(step, dict) and step.get("executor") == deterministic.EXECUTOR:
+                try:
+                    deterministic.validate(step)
+                except (ValueError, TypeError) as exc:
+                    blockers.append(f"第 {index} 步：{exc}")
             if not isinstance(step, dict):
                 blockers.append(f"第 {index} 步不是有效对象")
                 continue
@@ -80,6 +96,8 @@ class PlanQualityService:
             task_type = str(step.get("task_type") or "general").strip().lower()
             agent_id = str(step.get("agent_id") or "").strip()
             task_types.add(task_type)
+            if document_only and task_type in {"frontend", "backend", "api", "database", "development"}:
+                blockers.append(f"第 {index} 步违反纯文档/禁止代码变更约束，必须重新规划")
             if not title:
                 warnings.append(f"第 {index} 步缺少标题")
             if not agent_capability_registry.known_agent(agent_id):
@@ -109,14 +127,17 @@ class PlanQualityService:
                     tool_summary["unavailable"] += 1
                     warnings.append(f"第 {index} 步工具不可用或待接入：{tool_id}")
 
-        if mission_type == "software" or self._looks_like_software(mission):
+        if flow_key == "software":
             missing = {"architecture", "testing"} - task_types
             if missing:
                 warnings.append("软件任务必须包含架构与测试/评估步骤")
             if not ({"backend", "frontend", "api", "database", "ui"} & task_types):
                 warnings.append("软件任务建议至少包含后端或前端实现步骤")
-        if mission_type == "document" or self._looks_like_document(mission):
-            missing = {"research", "writing", "review"} - task_types
+        if flow_key == "document":
+            required = {"writing", "review"}
+            if not re.search(r"无需.{0,12}(研究|资料|联网)|不[需用].{0,6}(研究|资料|联网)", objective):
+                required.add("research")
+            missing = required - task_types
             if missing:
                 warnings.append("文档任务必须包含资料、撰写和审校步骤")
 

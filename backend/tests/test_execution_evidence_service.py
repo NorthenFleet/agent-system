@@ -96,6 +96,78 @@ def test_structured_result_normalization_and_strict_gate():
     assert result["evidence_refs"] == ["pytest:1"]
 
 
+def test_native_tools_prove_document_capability_only_with_durable_artifact():
+    service = ExecutionEvidenceService()
+    step = {
+        "required_tools": ["document_workspace"],
+        "evidence_required": ["document_diff"],
+        "acceptance_criteria": ["文档已交付"],
+        "output_contract": {
+            "artifact_types": ["markdown_file"],
+            "required_fields": ["summary", "evidence_refs", "risk_notes"],
+        },
+    }
+    result = service.enrich_result(
+        step,
+        {
+            "success": True,
+            "outcome": "succeeded",
+            "summary": "已用原生工具写入持久文档",
+            "tools_used": ["exec"],
+            "artifacts": [{
+                "artifact_type": "markdown_file", "title": "outline",
+                "uri": "artifact://test/outline.md", "content": "# outline",
+            }],
+            "evidence": [{
+                "evidence_type": "document_diff", "source_ref": "exec:write",
+                "summary": "已写入并校验文件",
+            }],
+            "acceptance_results": [{"criterion": "文档已交付", "status": "pass"}],
+            "risk_notes": "无",
+        },
+        success=True,
+        enforcement={"mode": "strict", "enforced": True},
+    )
+
+    assert result["execution_quality"]["accepted"] is True
+
+
+def test_review_capability_requires_review_report_proof():
+    service = ExecutionEvidenceService()
+    step = {
+        "required_tools": ["quality_checker"],
+        "evidence_required": ["review_report"],
+        "acceptance_criteria": ["已给出审查结论"],
+        "output_contract": {
+            "artifact_types": ["verification_report"],
+            "required_fields": ["summary", "evidence_refs", "risk_notes"],
+        },
+    }
+    result = service.enrich_result(
+        step,
+        {
+            "success": True,
+            "outcome": "succeeded",
+            "summary": "审查通过",
+            "tools_used": ["exec"],
+            "artifacts": [{
+                "artifact_type": "verification_report", "title": "review",
+                "uri": "artifact://test/review.json", "content": "{}",
+            }],
+            "evidence": [{
+                "evidence_type": "review_report", "source_ref": "exec:review",
+                "summary": "逐项验收已完成",
+            }],
+            "acceptance_results": [{"criterion": "已给出审查结论", "status": "pass"}],
+            "risk_notes": "无",
+        },
+        success=True,
+        enforcement={"mode": "strict", "enforced": True},
+    )
+
+    assert result["execution_quality"]["accepted"] is True
+
+
 def test_executor_and_nested_cli_failure_normalize_to_failed_outcome():
     service = ExecutionEvidenceService()
 

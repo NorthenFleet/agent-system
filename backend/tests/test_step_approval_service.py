@@ -100,11 +100,12 @@ def test_stale_or_consumed_approval_cannot_authorize_retry(tmp_path):
     assert service.claim_ready_steps("runner-2", limit=1) == []
     refreshed = service.get_mission(mission["id"])
     latest = refreshed["steps"][0]["step_approval"]
-    assert refreshed["steps"][0]["status"] == "awaiting_approval"
-    assert latest["status"] == "pending"
-    assert latest["request_version"] == 2
+    assert refreshed["steps"][0]["status"] == "failed"
+    assert latest["status"] == "consumed"
+    assert latest["request_version"] == 1
+    assert refreshed["compensations"][0]["compensation_type"] == "verify_effect"
 
-    with pytest.raises(InvalidMissionTransition, match="stale"):
+    with pytest.raises(InvalidMissionTransition, match="not awaiting approval"):
         service.decide_step_approval(
             mission["id"],
             step["id"],

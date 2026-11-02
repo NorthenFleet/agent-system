@@ -19,6 +19,7 @@ from typing import Optional
 
 import httpx
 from services.openclaw_cli import openclaw_command
+from services.agent_execution_profile_service import resolve_profile
 
 logger = logging.getLogger(__name__)
 
@@ -33,27 +34,54 @@ SCHEDULED_SHELL_ALLOWLIST = {
 SHELL_CONTROL_TOKENS = {"|", "&", ";", "&&", "||", ">", ">>", "<", "$(", "`"}
 
 
-def _agent_visible_output(stdout: str) -> str:
+def _agent_output_candidates(stdout: str) -> list[tuple[str, str]]:
+    """Return agent response candidates in gateway reliability order."""
     try:
         payload = json.loads(stdout)
     except (TypeError, json.JSONDecodeError):
-        return stdout
+        return [("stdout", stdout)] if stdout else []
+
+    candidates: list[tuple[str, str]] = []
     result = payload.get("result") if isinstance(payload, dict) else None
     if isinstance(result, dict):
         for key in ("finalAssistantVisibleText", "finalAssistantRawText"):
             value = result.get(key)
             if isinstance(value, str) and value.strip():
-                return value.strip()
+                candidates.append((key, value.strip()))
         payloads = result.get("payloads")
         if isinstance(payloads, list):
-            texts = [
-                item.get("text", "").strip()
-                for item in payloads
-                if isinstance(item, dict) and isinstance(item.get("text"), str)
-            ]
-            if texts:
-                return "\n".join(text for text in texts if text)
-    return stdout
+            for index, item in enumerate(payloads):
+                text = item.get("text") if isinstance(item, dict) else ""
+                if isinstance(text, str) and text.strip():
+                    candidates.append((f"payloads[{index}]", text.strip()))
+    if stdout:
+        candidates.append(("stdout", stdout))
+
+    unique: list[tuple[str, str]] = []
+    seen: set[str] = set()
+    for source, text in candidates:
+        if text and text not in seen:
+            unique.append((source, text))
+            seen.add(text)
+    return unique
+
+
+def _agent_visible_output(stdout: str) -> str:
+    candidates = _agent_output_candidates(stdout)
+    if not candidates:
+        return ""
+    # The gateway may expose a compacted visible message while retaining the
+    # actual structured handoff in a payload. Preserve that handoff.
+    for _, text in candidates:
+        try:
+            value = json.loads(text)
+        except (TypeError, json.JSONDecodeError):
+            continue
+        if isinstance(value, dict) and any(
+            key in value for key in ("outcome", "verdict", "steps", "memory_candidates")
+        ):
+            return text
+    return candidates[0][1]
 
 
 class ExecutionResult:
@@ -66,20 +94,28 @@ class ExecutionResult:
         error: str = "",
         duration_ms: int = 0,
         exit_code: Optional[int] = None,
+        output_source: str = "",
+        output_candidates: Optional[list[dict[str, str]]] = None,
     ):
+        self.execution_profile = None
         self.success = success
         self.output = output
         self.error = error
         self.duration_ms = duration_ms
         self.exit_code = exit_code
+        self.output_source = output_source
+        self.output_candidates = output_candidates or []
 
     def to_dict(self) -> dict:
         return {
+            **({"execution_profile": self.execution_profile} if self.execution_profile else {}),
             "success": self.success,
             "output": self.output,
             "error": self.error,
             "duration_ms": self.duration_ms,
             "exit_code": self.exit_code,
+            "output_source": self.output_source,
+            "output_candidates": self.output_candidates,
         }
 
     def __repr__(self) -> str:
@@ -190,15 +226,22 @@ class OpenClawTaskExecutor:
                 success=False, error="agent_run 缺少 message 参数"
             )
 
-        # 优先尝试 CLI 方式
+        profile = resolve_profile(args["execution_role"]) if args.get("execution_role") else None
+        overrides = {"model": profile["requested_model"], "thinking": profile["requested_thinking"]} if profile and (profile["requested_model"] or profile["requested_thinking"]) else {}
+        # Explicit profiles never silently fall back to an incompatible HTTP path.
         try:
-            return await self._execute_via_cli(
+            result = await self._execute_via_cli(
                 agent_id,
                 message,
                 timeout_seconds,
                 session_key=session_key,
+                **overrides,
             )
+            result.execution_profile = profile
+            return result
         except FileNotFoundError:
+            if overrides:
+                return ExecutionResult(success=False, error="Configured model profile requires the OpenClaw CLI")
             logger.warning("openclaw CLI 不可用，回退到 HTTP API")
 
         # 回退到 HTTP API 方式
@@ -211,6 +254,8 @@ class OpenClawTaskExecutor:
         timeout_seconds: int,
         *,
         session_key: str = "",
+        model: str | None = None,
+        thinking: str | None = None,
     ) -> ExecutionResult:
         """
         使用 `openclaw agent` CLI 命令触发 Agent
@@ -218,6 +263,10 @@ class OpenClawTaskExecutor:
         命令格式: openclaw agent --agent <id> "<message>"
         """
         cmd = openclaw_command("agent", "--agent", agent_id)
+        if model:
+            cmd.extend(["--model", model])
+        if thinking:
+            cmd.extend(["--thinking", thinking])
         if session_key:
             cmd.extend(["--session-key", session_key])
         cmd.extend(
@@ -250,13 +299,23 @@ class OpenClawTaskExecutor:
         stderr = stderr_bytes.decode("utf-8", errors="replace").strip()
 
         success = proc.returncode == 0
+        candidates = _agent_output_candidates(stdout)
         output = _agent_visible_output(stdout) if stdout else stderr
+        output_source = next(
+            (source for source, text in candidates if text == output),
+            "stderr" if stderr and not stdout else "",
+        )
 
         return ExecutionResult(
             success=success,
             output=output,
             error=stderr if not success else "",
             exit_code=proc.returncode,
+            output_source=output_source,
+            output_candidates=[
+                {"source": source, "text": text[:12000]}
+                for source, text in candidates[:4]
+            ],
         )
 
     async def _execute_via_http_api(

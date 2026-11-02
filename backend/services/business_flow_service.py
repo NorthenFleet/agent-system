@@ -11,6 +11,7 @@ of truth.
 from __future__ import annotations
 
 from copy import deepcopy
+import re
 from typing import Any
 
 
@@ -304,9 +305,15 @@ class BusinessFlowRegistry:
             "ops": "operations",
         }
         requested = aliases.get(requested, requested)
+        objective = str(self._mission_value(mission, "objective") or "")
+        if re.search(r"只[做写].{0,4}文档|仅.{0,4}文档|不开发代码|禁止.{0,3}(改|写|开发)代码", objective) and re.search(r"文档|简报|大纲|报告", objective):
+            requested = "document"
         if requested not in FLOW_SPECS:
             requested = self._infer_type(str(self._mission_value(mission, "objective") or ""))
-        return deepcopy(FLOW_SPECS.get(requested, FLOW_SPECS["general"]))
+        spec = deepcopy(FLOW_SPECS.get(requested, FLOW_SPECS["general"]))
+        if requested == "document" and re.search(r"无需.{0,12}(研究|资料|联网)|不[需用].{0,6}(研究|资料|联网)", objective):
+            spec["required_task_groups"] = [group for group in spec["required_task_groups"] if group["name"] != "资料与证据"]
+        return spec
 
     def enrich_plan(self, plan: dict[str, Any], mission: Any = None) -> dict[str, Any]:
         enriched = deepcopy(plan)
@@ -476,15 +483,19 @@ class BusinessFlowRegistry:
     @staticmethod
     def _output_contract(step: dict[str, Any]) -> dict[str, Any]:
         current = step.get("output_contract")
+        explicit_evidence_only = (
+            isinstance(current, dict) and current.get("artifact_types") == []
+            and step.get("side_effect") is False
+        )
         if isinstance(current, dict):
             artifact_types = BusinessFlowRegistry._string_list(current.get("artifact_types"), limit=12)
             required_fields = BusinessFlowRegistry._string_list(current.get("required_fields"), limit=12)
         else:
             artifact_types = []
             required_fields = []
-        if not artifact_types:
+        if not artifact_types and not explicit_evidence_only:
             artifact_types = BusinessFlowRegistry._string_list(step.get("deliverables"), limit=12)
-        if not artifact_types:
+        if not artifact_types and not explicit_evidence_only:
             artifact_types = [str(step.get("title") or "任务交付物")[:300]]
         if not required_fields:
             required_fields = ["summary", "evidence_refs", "risk_notes"]
@@ -557,9 +568,25 @@ class BusinessFlowRegistry:
                 continue
             for left_index, left in enumerate(orders):
                 for right in orders[left_index + 1 :]:
-                    if left not in dependency_map.get(right, set()) and right not in dependency_map.get(left, set()):
+                    if not (
+                        BusinessFlowRegistry._depends_on(right, left, dependency_map)
+                        or BusinessFlowRegistry._depends_on(left, right, dependency_map)
+                    ):
                         warnings.append(f"资源 {resource} 被步骤 {left} 和 {right} 并行修改，建议增加依赖或锁")
         return warnings
+
+    @staticmethod
+    def _depends_on(candidate: int, predecessor: int, dependency_map: dict[int, set[int]]) -> bool:
+        pending = list(dependency_map.get(candidate, set()))
+        visited: set[int] = set()
+        while pending:
+            current = pending.pop()
+            if current == predecessor:
+                return True
+            if current not in visited:
+                visited.add(current)
+                pending.extend(dependency_map.get(current, set()))
+        return False
 
     @staticmethod
     def _infer_type(objective: str) -> str:

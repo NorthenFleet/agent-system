@@ -111,6 +111,16 @@ TASK_AGENT_DEFAULTS: dict[str, str] = {
 }
 
 TOOL_REGISTRY: dict[str, dict[str, Any]] = {
+    "isolated_code_candidate": {
+        "name": "隔离代码候选", "category": "development", "status": "available",
+        "description": "在批准基线的工作树生成候选提交，不代表测试或源仓库合并。",
+        "evidence_types": ["diff_summary"],
+    },
+    "deterministic_check": {
+        "name": "确定性内联检查", "category": "verification", "status": "available",
+        "description": "批准计划中的文本 SHA-256 或 JSON 必需字段检查；运行需独立开关。",
+        "evidence_types": ["verification_report"],
+    },
     "context_search": {
         "name": "背景检索",
         "category": "context",

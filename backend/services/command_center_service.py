@@ -9,6 +9,7 @@ import os
 import re
 import sqlite3
 import uuid
+from contextlib import nullcontext
 from datetime import datetime, timedelta, timezone
 from typing import Any, Callable, Iterator, Optional
 
@@ -21,6 +22,10 @@ from services.business_flow_service import MISSION_LIFECYCLE
 from services.plan_quality_service import plan_quality_service
 from services.execution_evidence_service import execution_evidence_service
 from services.compensation_service import compensation_service
+from services.decision_router_service import decision_router_service
+from services import deterministic_executor_service as deterministic
+from services import mission_code_workspace_service as code_workspace
+from services.tool_control_service import ToolControlMixin
 from services.workflow_runtime import (
     POSTGRES_CHECKPOINT_TABLES,
     postgres_checkpoint_required_version,
@@ -219,7 +224,7 @@ def _loads(value: str | None, fallback: Any) -> Any:
         return fallback
 
 
-class CommandCenterService:
+class CommandCenterService(ToolControlMixin):
     def __init__(
         self,
         db_path: str | None = None,
@@ -1959,11 +1964,13 @@ class CommandCenterService:
         }
         active_agent_ids.discard("")
         active_mission_counts: dict[str, int] = {}
+        active_items_by_agent: dict[str, list[dict[str, Any]]] = {}
         for item in items:
             if item.get("mission_status") in terminal:
                 continue
             agent_id = str(item.get("current_agent_id") or "optimus")
             active_mission_counts[agent_id] = active_mission_counts.get(agent_id, 0) + 1
+            active_items_by_agent.setdefault(agent_id, []).append(item)
 
         nodes = []
         for node in visible_agents:
@@ -1981,15 +1988,36 @@ class CommandCenterService:
                 progress = self._space_progress_from_step(str(current_step.get("status") or ""))
                 current_task = str(current_step.get("title") or "")
             elif active_mission_counts.get(agent_id):
-                status = "working"
-                progress = 35
+                agent_items = active_items_by_agent[agent_id]
+                if any(item.get("mission_status") in {"running", "planning", "evaluating"} for item in agent_items):
+                    status = "working"
+                    progress = 35
+                elif any(item.get("mission_status") == "waiting_feedback" for item in agent_items):
+                    status = "blocked"
+                else:
+                    status = "assigned"
+            if current_step and selected_mission.get("status") == "waiting_feedback":
+                status = "blocked"
             if agent_id in active_agent_ids and status == "idle":
                 status = "assigned"
             if selected_item and agent_id == "optimus":
-                status = "coordinating"
+                mission_status = selected_item.get("mission_status")
+                status = (
+                    "completed" if mission_status == "completed" else
+                    "idle" if mission_status in terminal else
+                    "blocked" if mission_status == "waiting_feedback" else
+                    "assigned" if mission_status in {"received", "awaiting_approval"} else
+                    "coordinating"
+                )
                 progress = max(progress, min(100, int(selected_item.get("progress") or 0)))
                 current_task = selected_item.get("active_step", {}).get("title") if isinstance(selected_item.get("active_step"), dict) else ""
-                current_task = current_task or "拆分、协调、验收与汇报"
+                current_task = {
+                    "waiting_feedback": "等待用户反馈",
+                    "awaiting_approval": "等待计划审批",
+                    "completed": "任务已完成",
+                    "cancelled": "任务已取消",
+                    "failed": "任务失败",
+                }.get(str(mission_status), current_task or "拆分、协调、验收与汇报")
             nodes.append({
                 **node,
                 "status": status,
@@ -2403,6 +2431,8 @@ class CommandCenterService:
                 profile_user_id = str(binding["profile_user_id"]).strip()
                 owner_user_id = str(binding["internal_user_id"]).strip()
 
+            if metadata.get("_creation_fingerprint"):
+                self.repository.lock_key(conn, f"mission-create:{channel}:{conversation_key}")
             conversation = conn.execute(
                 """
                 SELECT * FROM command_conversations
@@ -2461,6 +2491,8 @@ class CommandCenterService:
                     (conversation_id, external_message_id),
                 ).fetchone()
                 if duplicate:
+                    if metadata.get("_creation_fingerprint") and _loads(duplicate["metadata"], {}).get("_creation_fingerprint") != metadata["_creation_fingerprint"]:
+                        raise InvalidMissionTransition("同一提交标识对应的任务内容已变化，请使用新的提交标识")
                     mission = self._mission_from_message(conn, duplicate["id"])
                     return {
                         "action": "duplicate",
@@ -2777,6 +2809,7 @@ class CommandCenterService:
         profile_user_id: str = "",
         reserve_planning: bool = False,
         planning_owner: str = "",
+        idempotency_key: str = "",
     ) -> dict[str, Any]:
         context_value = context or {}
         direct_type = str(
@@ -2799,12 +2832,22 @@ class CommandCenterService:
                     project.get("project_type") or project.get("type")
                 )
         direct_type = self._normalize_project_type(direct_type)
+        creation_fingerprint = ""
+        owner = str(profile_user_id or requested_by).strip()
+        if idempotency_key:
+            if not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", idempotency_key):
+                raise CommandCenterError("invalid mission idempotency key")
+            creation_fingerprint = hashlib.sha256(json.dumps({
+                "objective": objective.strip(), "title": title, "project_id": project_id,
+                "mission_type": direct_type, "context": context_value,
+                "owner": owner, "reserve_planning": reserve_planning, "planning_owner": planning_owner,
+            }, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode()).hexdigest()
         return self.process_inbound(
             channel="dashboard",
-            external_conversation_id=f"dashboard:{requested_by}",
+            external_conversation_id=(f"dashboard-create:{hashlib.sha256(owner.encode()).hexdigest()}" if idempotency_key else f"dashboard:{requested_by}"),
             user_external_id=requested_by,
             content=objective,
-            external_message_id=f"ui-{uuid.uuid4().hex}",
+            external_message_id=f"ui-key-{idempotency_key}" if idempotency_key else f"ui-{uuid.uuid4().hex}",
             metadata={
                 "project_id": project_id,
                 "title": title,
@@ -2818,6 +2861,7 @@ class CommandCenterService:
                 "profile_user_id": profile_user_id
                 or requested_by,
                 "suppress_notification": True,
+                "_creation_fingerprint": creation_fingerprint,
                 "_direct_mission": True,
                 "_reserve_planning": reserve_planning,
                 "_planning_owner": planning_owner,
@@ -3146,6 +3190,8 @@ class CommandCenterService:
     def mark_planning_failed(self, mission_id: str, error: str, *, actor: str) -> dict[str, Any]:
         with self.connect(immediate=True) as conn:
             mission = self._require_mission(conn, mission_id)
+            if mission["status"] != "planning":
+                raise InvalidMissionTransition("stale planning failure rejected")
             conn.execute(
                 """
                 UPDATE orchestration_missions
@@ -3264,6 +3310,8 @@ class CommandCenterService:
         if decision == "rejected" and not str(comment or "").strip():
             raise CommandCenterError("rejecting a high-risk step requires a comment")
         with self.connect(immediate=True) as conn:
+            suffix = " FOR UPDATE" if self.repository.backend == "postgresql" else ""
+            conn.execute("SELECT id FROM orchestration_missions WHERE id=?" + suffix, (mission_id,)).fetchone()
             mission = self._require_mission(conn, mission_id)
             if mission["status"] != "running":
                 raise InvalidMissionTransition(
@@ -3273,7 +3321,7 @@ class CommandCenterService:
                 """
                 SELECT * FROM mission_steps
                 WHERE id=? AND mission_id=? AND plan_version=?
-                """,
+                """ + suffix,
                 (step_id, mission_id, mission["plan_version"]),
             ).fetchone()
             if not step_row:
@@ -3325,11 +3373,12 @@ class CommandCenterService:
                         seconds=self.step_approval_policy()["approval_ttl_seconds"]
                     )
                 )
-            conn.execute(
+            decision_update = conn.execute(
                 """
                 UPDATE mission_step_approvals
                 SET status=?, decided_at=?, decided_by=?, comment=?, expires_at=?
-                WHERE id=? AND status='pending'
+                WHERE id=? AND status='pending' AND consumed_at IS NULL
+                  AND contract_hash=? AND expires_at>?
                 """,
                 (
                     decision,
@@ -3338,8 +3387,12 @@ class CommandCenterService:
                     str(comment or "")[:4000],
                     expires_at,
                     approval["id"],
+                    actual_hash,
+                    decided_at,
                 ),
             )
+            if decision_update.rowcount != 1:
+                raise InvalidMissionTransition("step approval decision lost concurrent race")
             if decision == "approved":
                 conn.execute(
                     "UPDATE mission_steps SET status='ready', updated_at=? WHERE id=?",
@@ -3449,6 +3502,60 @@ class CommandCenterService:
                 ],
             }
 
+    def propose_compensation_recovery(
+        self, compensation_id: str, *, expected_mission_id: str,
+        contract_hash: str, instructions: str, actor: str,
+    ) -> dict[str, Any]:
+        """Replace a failed verification contract with an unapproved recovery contract."""
+        instructions = str(instructions or "").strip()
+        if not instructions or len(instructions) > 4000:
+            raise CommandCenterError("recovery instructions must contain 1 to 4000 characters")
+        with self.connect(immediate=True) as conn:
+            suffix = " FOR UPDATE" if self.repository.backend == "postgresql" else ""
+            row = conn.execute("SELECT * FROM mission_compensations WHERE id=?" + suffix,
+                               (compensation_id,)).fetchone()
+            if not row or row["mission_id"] != expected_mission_id:
+                raise CommandCenterError("compensation does not belong to mission")
+            mission = self._require_mission(conn, expected_mission_id)
+            if mission["status"] not in {"running", "waiting_feedback"} or row["plan_version"] != mission["plan_version"]:
+                raise InvalidMissionTransition("recovery belongs to an inactive mission or stale plan")
+            if row["status"] != "failed" or row["compensation_type"] != "verify_effect":
+                raise InvalidMissionTransition("only a failed read-only verification can propose recovery")
+            if not contract_hash or row["contract_hash"] != contract_hash:
+                raise InvalidMissionTransition("compensation contract hash mismatch")
+            verification = _loads(row["result_json"], {})
+            if not verification.get("receipt_ref") or not verification.get("evidence_refs"):
+                raise InvalidMissionTransition("recovery requires recorded verification evidence")
+            contract = {
+                "type": "manual_recovery", "resource": row["resource"],
+                "instructions": instructions, "previous_contract_hash": contract_hash,
+                "verification": verification,
+            }
+            new_hash = hashlib.sha256(_json(contract).encode("utf-8")).hexdigest()
+            changed = conn.execute(
+                """UPDATE mission_compensations
+                SET compensation_type='manual_recovery', instructions=?, contract_hash=?,
+                    idempotency_key=?, status='pending_approval', approved_at=NULL,
+                    approved_by=NULL, approval_comment=NULL, authorization_expires_at=NULL,
+                    lease_owner=NULL, lease_token=NULL, lease_expires_at=NULL,
+                    started_at=NULL, completed_at=NULL, last_error=NULL, updated_at=?
+                WHERE id=? AND status='failed' AND contract_hash=?""",
+                (instructions, new_hash, f"recovery:{compensation_id}:{new_hash[:20]}",
+                 _iso(), compensation_id, contract_hash),
+            )
+            if changed.rowcount != 1:
+                raise InvalidMissionTransition("recovery contract changed concurrently")
+            self._add_event(conn, expected_mission_id, "recovery_plan_proposed",
+                mission["status"], mission["status"], actor,
+                "新的恢复方案已提交，需单独审批；原核实记录保留。",
+                {"compensation_id": compensation_id,
+                 "previous": self._serialize_compensation(row), "contract": contract,
+                 "contract_hash": new_hash})
+            self._sync_mission_ledger_safe(conn, expected_mission_id)
+            updated = conn.execute("SELECT * FROM mission_compensations WHERE id=?", (compensation_id,)).fetchone()
+            return {"success": True, "compensation": self._serialize_compensation(updated),
+                    "mission": self._serialize_mission(conn, mission)}
+
     def decide_compensation(
         self,
         compensation_id: str,
@@ -3464,8 +3571,9 @@ class CommandCenterService:
         if decision == "rejected" and not str(comment or "").strip():
             raise CommandCenterError("rejecting compensation requires a comment")
         with self.connect(immediate=True) as conn:
+            suffix = " FOR UPDATE" if self.repository.backend == "postgresql" else ""
             row = conn.execute(
-                "SELECT * FROM mission_compensations WHERE id=?",
+                "SELECT * FROM mission_compensations WHERE id=?" + suffix,
                 (compensation_id,),
             ).fetchone()
             if not row:
@@ -3555,8 +3663,9 @@ class CommandCenterService:
                 """,
                 (_iso(),),
             ).fetchall()
+            requeued = 0
             for row in rows:
-                conn.execute(
+                changed = conn.execute(
                     """
                     UPDATE mission_compensations
                     SET status='pending_approval', approved_at=NULL, approved_by=NULL,
@@ -3564,10 +3673,14 @@ class CommandCenterService:
                         authorization_expires_at=NULL, lease_expires_at=NULL,
                         last_error='Interrupted compensation requires reapproval',
                         updated_at=?
-                    WHERE id=? AND status='running'
+                    WHERE id=? AND status='running' AND lease_token=?
+                      AND lease_expires_at=? AND lease_expires_at<=?
                     """,
-                    (_iso(), row["id"]),
+                    (_iso(), row["id"], row["lease_token"], row["lease_expires_at"], _iso()),
                 )
+                if changed.rowcount != 1:
+                    continue
+                requeued += 1
                 mission = self._require_mission(conn, row["mission_id"])
                 self._add_event(
                     conn,
@@ -3579,7 +3692,7 @@ class CommandCenterService:
                     "补偿执行租约过期，必须重新审批后才能重试",
                     {"compensation_id": row["id"]},
                 )
-            return len(rows)
+            return requeued
 
     def expire_compensation_approvals(self) -> int:
         with self.connect(immediate=True) as conn:
@@ -3691,9 +3804,9 @@ class CommandCenterService:
                 """
                 UPDATE mission_compensations
                 SET lease_expires_at=?, updated_at=?
-                WHERE id=? AND status='running' AND lease_token=?
+                WHERE id=? AND status='running' AND lease_token=? AND lease_expires_at>?
                 """,
-                (expires_at, _iso(), compensation_id, lease_token),
+                (expires_at, _iso(), compensation_id, lease_token, _iso()),
             )
             if cursor.rowcount != 1:
                 raise InvalidMissionTransition(
@@ -3717,16 +3830,26 @@ class CommandCenterService:
             ).fetchone()
             if not row:
                 raise CommandCenterError(f"compensation not found: {compensation_id}")
-            if row["status"] != "running" or row["lease_token"] != lease_token:
+            if (row["status"] != "running" or row["lease_token"] != lease_token
+                    or not row["lease_expires_at"] or row["lease_expires_at"] <= _iso()):
                 raise InvalidMissionTransition("stale compensation completion rejected")
+            if row["compensation_type"] == "verify_effect" and normalized["status"] != "not_needed":
+                normalized["accepted"] = False
+                normalized["summary"] = "只读核实未确认无需补偿；保留阻塞，等待新的恢复方案审批。 " + normalized["summary"]
+            if row["compensation_type"] == "manual_recovery" and normalized["accepted"]:
+                validation = compensation_service.validate_manual_recovery_receipt(dict(row), normalized)
+                normalized["receipt_validation"] = validation
+                if not validation["accepted"]:
+                    normalized["accepted"] = False
+                    normalized["summary"] = validation["error"] + "；保持暂停，未自动重试。 " + normalized["summary"]
             accepted = bool(normalized["accepted"])
             next_status = "completed" if accepted else "failed"
-            conn.execute(
+            changed = conn.execute(
                 """
                 UPDATE mission_compensations
                 SET status=?, result_json=?, last_error=?, lease_owner=NULL,
                     lease_token=NULL, lease_expires_at=NULL, completed_at=?, updated_at=?
-                WHERE id=? AND status='running' AND lease_token=?
+                WHERE id=? AND status='running' AND lease_token=? AND lease_expires_at>?
                 """,
                 (
                     next_status,
@@ -3736,16 +3859,20 @@ class CommandCenterService:
                     _iso(),
                     compensation_id,
                     lease_token,
+                    _iso(),
                 ),
             )
+            if changed.rowcount != 1:
+                raise InvalidMissionTransition("stale compensation completion rejected")
             if accepted:
                 conn.execute(
                     """
                     UPDATE mission_effects
-                    SET status='reverted', receipt_ref=?, evidence_refs_json=?, updated_at=?
+                    SET status=?, receipt_ref=?, evidence_refs_json=?, updated_at=?
                     WHERE id=?
                     """,
                     (
+                        "not_applied" if row["compensation_type"] == "verify_effect" else "reverted",
                         normalized["receipt_ref"],
                         _json(normalized["evidence_refs"]),
                         _iso(),
@@ -3825,7 +3952,72 @@ class CommandCenterService:
                 self._require_mission(conn, mission_id),
             )
 
-    def add_feedback(self, mission_id: str, *, actor: str, content: str) -> dict[str, Any]:
+    def record_model_profile(self, mission_id: str, version: int, phase: str, profile: dict | None) -> None:
+        if not profile or phase not in {"planning", "evaluation"}:
+            return
+        with self.connect(immediate=True) as conn:
+            conn.execute("UPDATE orchestration_missions SET updated_at=updated_at WHERE id=?", (mission_id,))
+            mission = self._require_mission(conn, mission_id)
+            if mission["plan_version"] != version or mission["status"] in {"completed", "failed", "cancelled"}:
+                return
+            self._add_event(conn, mission_id, "model_profile_observed", mission["status"], mission["status"], "command-center",
+                            "模型执行档位回执", {"phase": phase, "plan_version": version, "execution_profile": profile})
+
+    def record_code_workspace(self, step_id: str, lease_token: str, workspace: dict) -> None:
+        with self.connect(immediate=True) as conn:
+            step = conn.execute("SELECT * FROM mission_steps WHERE id=?", (step_id,)).fetchone()
+            if not step:
+                raise InvalidMissionTransition("Unknown code step")
+            cursor = conn.execute(
+                """UPDATE mission_steps SET updated_at=updated_at WHERE id=? AND status='running'
+                   AND lease_token=? AND lease_expires_at>? AND EXISTS (
+                   SELECT 1 FROM orchestration_missions m WHERE m.id=mission_steps.mission_id
+                   AND m.status='running' AND m.plan_version=mission_steps.plan_version)""",
+                (step_id, lease_token, _iso()),
+            )
+            if cursor.rowcount != 1 or step["executor"] != code_workspace.EXECUTOR:
+                raise InvalidMissionTransition("Stale or invalid code workspace receipt")
+            self._add_event(conn, step["mission_id"], "code_workspace_prepared", "running", "running", "command-center",
+                            "隔离候选工作树已创建，尚未合并", {"step_id": step_id, "attempt": step["attempt_count"], "workspace": workspace},
+                            event_key=f"code-workspace:{step_id}:{step['attempt_count']}")
+
+    def claim_advisor_checkpoint(self, mission_id: str, version: int, checkpoint: str, input_hash: str) -> bool:
+        if checkpoint not in {"plan", "repeated_failure", "delivery"}:
+            raise ValueError("Unknown advisor checkpoint")
+        with self.connect(immediate=True) as conn:
+            # Serialize checkpoint ownership on the Mission row in both stores.
+            conn.execute("UPDATE orchestration_missions SET updated_at=updated_at WHERE id=?", (mission_id,))
+            mission = self._require_mission(conn, mission_id)
+            if mission["plan_version"] != version or mission["status"] in {"completed", "failed", "cancelled"}:
+                return False
+            key = f"advisor:{mission_id}:{version}:{checkpoint}"
+            if conn.execute("SELECT id FROM mission_events WHERE mission_id=? AND event_key=?", (mission_id, key)).fetchone():
+                return False
+            self._add_event(conn, mission_id, "advisor_requested", mission["status"], mission["status"], "advisor",
+                            "检查点顾问已领取（仅建议）", {"plan_version": version, "checkpoint": checkpoint, "input_sha256": input_hash}, event_key=key)
+            return True
+
+    def complete_advisor_checkpoint(self, mission_id: str, version: int, checkpoint: str, result: dict) -> bool:
+        with self.connect(immediate=True) as conn:
+            conn.execute("UPDATE orchestration_missions SET updated_at=updated_at WHERE id=?", (mission_id,))
+            mission = self._require_mission(conn, mission_id)
+            key = f"advisor:{mission_id}:{version}:{checkpoint}"
+            requested = conn.execute("SELECT metadata FROM mission_events WHERE mission_id=? AND event_key=?", (mission_id, key)).fetchone()
+            if not requested or conn.execute("SELECT id FROM mission_events WHERE mission_id=? AND event_key=?", (mission_id, key + ":result")).fetchone():
+                return False
+            if mission["plan_version"] != version or mission["status"] in {"completed", "failed", "cancelled"}:
+                result = {"status": "discarded", "advisory_only": True, "reason": "stale_checkpoint"}
+            self._add_event(conn, mission_id, "advisor_result", mission["status"], mission["status"], "advisor",
+                            "检查点顾问：" + str(result.get("status")),
+                            {**result, "plan_version": version, "checkpoint": checkpoint,
+                             "input_sha256": _loads(requested["metadata"], {}).get("input_sha256")}, event_key=key + ":result")
+            return True
+
+    @staticmethod
+    def _recovery_enabled() -> bool:
+        return os.getenv("COMMAND_CENTER_RECOVERY_CONTROL_ENABLED", "false").lower() == "true"
+
+    def add_feedback(self, mission_id: str, *, actor: str, content: str, replan: bool = False) -> dict[str, Any]:
         text = str(content or "").strip()
         if not text:
             raise CommandCenterError("feedback content is required")
@@ -3857,7 +4049,7 @@ class CommandCenterService:
                 mission["status"],
                 actor,
                 text,
-                {"message_id": message_id},
+                {"message_id": message_id, "replan": replan},
             )
             if mission["status"] == "waiting_feedback":
                 unresolved_compensations = conn.execute(
@@ -3887,8 +4079,20 @@ class CommandCenterService:
                     """,
                     (mission_id, mission["plan_version"]),
                 ).fetchone()["count"]
-                next_status = "dispatching" if failed_steps else "planning"
-                if failed_steps:
+                failed_results = conn.execute(
+                    "SELECT result_json FROM mission_steps WHERE mission_id=? AND plan_version=? AND status='failed'",
+                    (mission_id, mission["plan_version"]),
+                ).fetchall()
+                controlled_recovery = any(
+                    (_loads(row["result_json"], {}).get("recovery_control") or {}).get("requires_replan")
+                    for row in failed_results
+                )
+                if controlled_recovery:
+                    replan = True
+                    if int(mission["plan_version"] or 0) >= 3:
+                        raise CommandCenterError("受控修复已达到两次重新规划预算，请结束本任务并重新明确范围")
+                next_status = "dispatching" if failed_steps and not replan else "planning"
+                if failed_steps and not replan:
                     conn.execute(
                         """
                         UPDATE mission_steps
@@ -4145,6 +4349,14 @@ class CommandCenterService:
             "rollback_plan": step.get("rollback_plan") or "",
             "compensation": step.get("compensation") or {},
         }
+        # Preserve historical generic hashes; cluster grants also bind the
+        # concrete executor/catalog, and cannot be redirected to OpenClaw.
+        if step.get("task_type") == "cluster_operation" or step.get("executor") in {"cluster-readonly-v1", deterministic.EXECUTOR, code_workspace.EXECUTOR}:
+            protected["executor"] = step.get("executor") or ""
+            protected["operation_catalog"] = "deterministic.v1" if step.get("executor") == deterministic.EXECUTOR else "isolated-code.v1" if step.get("executor") == code_workspace.EXECUTOR else "cluster-operation.v1"
+            for field in ("max_attempts", "timeout_seconds", "required_tools", "output_contract",
+                          "evidence_required", "acceptance_criteria"):
+                protected[field] = step.get(field)
         canonical = json.dumps(
             protected,
             ensure_ascii=False,
@@ -4315,6 +4527,19 @@ class CommandCenterService:
                 (now,),
             ).fetchall()
             for approval in rows:
+                # Serialize expiry with decisions/claims on the same step;
+                # re-read after locking instead of overwriting a consumed grant.
+                suffix = " FOR UPDATE" if self.repository.backend == "postgresql" else ""
+                conn.execute("SELECT id FROM orchestration_missions WHERE id=?" + suffix,
+                             (approval["mission_id"],)).fetchone()
+                mission = self._require_mission(conn, approval["mission_id"])
+                if mission["status"] != "running" or mission["plan_version"] != approval["plan_version"]:
+                    continue
+                step_row = conn.execute(
+                    "SELECT * FROM mission_steps WHERE id=?" + suffix, (approval["step_id"],)
+                ).fetchone()
+                if not step_row or step_row["status"] not in {"ready", "awaiting_approval"}:
+                    continue
                 latest = conn.execute(
                     """
                     SELECT id FROM mission_step_approvals
@@ -4324,14 +4549,13 @@ class CommandCenterService:
                 ).fetchone()
                 if not latest or latest["id"] != approval["id"]:
                     continue
-                conn.execute(
-                    "UPDATE mission_step_approvals SET status='expired' WHERE id=?",
-                    (approval["id"],),
+                expired = conn.execute(
+                    "UPDATE mission_step_approvals SET status='expired' WHERE id=? "
+                    "AND status IN ('pending', 'approved') AND consumed_at IS NULL AND expires_at<=?",
+                    (approval["id"], now),
                 )
-                step_row = conn.execute(
-                    "SELECT * FROM mission_steps WHERE id=?", (approval["step_id"],)
-                ).fetchone()
-                mission = self._require_mission(conn, approval["mission_id"])
+                if expired.rowcount != 1:
+                    continue
                 step = self._serialize_step(step_row)
                 self._attach_plan_step_contract(conn, step)
                 self._request_step_approval(
@@ -4662,6 +4886,7 @@ class CommandCenterService:
 
     def requeue_stale_steps(self) -> int:
         now = _iso()
+        recovered = 0
         with self.connect(immediate=True) as conn:
             rows = conn.execute(
                 """
@@ -4671,26 +4896,50 @@ class CommandCenterService:
                 (now,),
             ).fetchall()
             for step in rows:
-                conn.execute(
+                contract = self._serialize_step(step)
+                self._attach_plan_step_contract(conn, contract)
+                uncertain_effect = bool(contract.get("side_effect"))
+                changed = conn.execute(
                     """
                     UPDATE mission_steps
-                    SET status='ready', lease_owner=NULL, lease_token=NULL,
+                    SET status=?, lease_owner=NULL, lease_token=NULL,
                         lease_expires_at=NULL, updated_at=?
-                    WHERE id=?
+                    WHERE id=? AND status='running' AND lease_token=?
+                      AND lease_expires_at=? AND lease_expires_at<=?
                     """,
-                    (now, step["id"]),
+                    ("failed" if uncertain_effect else "ready", now, step["id"], step["lease_token"], step["lease_expires_at"], now),
                 )
+                if changed.rowcount != 1:
+                    continue
+                recovered += 1
+                if uncertain_effect:
+                    # A lost receipt cannot establish whether an external write happened.
+                    # Preserve uncertainty and require verification before any new execution.
+                    result = compensation_service.enrich_execution_result(contract, {
+                        "success": False,
+                        "error": "执行租约已过期，写入结果未知；已停止自动重试，请先审批只读核实。",
+                        "recovery_reason": "lease_expired_before_receipt",
+                    })
+                    result["effect_ids"] = self._persist_effect_records(
+                        conn, step=step, step_contract=contract, result=result,
+                        next_status="failed", actor="command-center",
+                    )
+                    conn.execute(
+                        "UPDATE mission_steps SET result_json=?, completed_at=? WHERE id=?",
+                        (_json(result), now, step["id"]),
+                    )
                 self._add_event(
                     conn,
                     step["mission_id"],
-                    "step_requeued",
+                    "step_recovery_required" if uncertain_effect else "step_requeued",
                     "running",
                     "running",
                     "command-center",
-                    f"Recovered stale step {step['title']}",
+                    result["error"] if uncertain_effect else f"Recovered stale step {step['title']}",
                     {"step_id": step["id"]},
                 )
-            return len(rows)
+                self._sync_mission_ledger_safe(conn, step["mission_id"])
+            return recovered
 
     def claim_ready_steps(
         self,
@@ -4698,23 +4947,35 @@ class CommandCenterService:
         *,
         limit: int = 3,
         lease_seconds: int = 900,
+        cluster_step_id: str = "",
     ) -> list[dict[str, Any]]:
         now = _now()
         claimed: list[dict[str, Any]] = []
+        # Cluster work is never routed into the generic LLM/OpenClaw worker.
+        executors = ["openclaw"]
+        if deterministic.enabled():
+            executors.append(deterministic.EXECUTOR)
+        if code_workspace.enabled():
+            executors.append(code_workspace.EXECUTOR)
+        generic_executors = "(" + ",".join("'" + value + "'" for value in executors) + ")"
+        lane = ("AND s.task_type='cluster_operation' AND s.executor='cluster-readonly-v1' AND s.id=?"
+                if cluster_step_id else
+                f"AND s.task_type!='cluster_operation' AND s.executor IN {generic_executors}")
         with self.connect(immediate=True) as conn:
             candidates = conn.execute(
                 self.repository.claim_query(
-                    """
+                    f"""
                 SELECT s.* FROM mission_steps s
                 JOIN orchestration_missions m ON m.id=s.mission_id
                 WHERE s.status='ready' AND m.status='running'
                   AND s.plan_version=m.plan_version
+                  {lane}
                 ORDER BY m.created_at, s.order_index
                 LIMIT ?
                     """,
                     table_alias="s",
                 ),
-                (max(1, limit),),
+                (cluster_step_id, max(1, limit)) if cluster_step_id else (max(1, limit),),
             ).fetchall()
             for step in candidates:
                 dependencies = _loads(step["dependencies_json"], [])
@@ -4729,6 +4990,14 @@ class CommandCenterService:
                 mission = self._require_mission(conn, step["mission_id"])
                 step_contract = self._serialize_step(step)
                 self._attach_plan_step_contract(conn, step_contract)
+                if cluster_step_id and step_contract.get("approval_required") is not True:
+                    continue
+                if not cluster_step_id and (step["executor"] in {deterministic.EXECUTOR, code_workspace.EXECUTOR} or self._recovery_enabled()):
+                    if int(step["attempt_count"] or 0) >= int(step_contract.get("max_attempts") or 1):
+                        blocked = {"success": False, "error": "执行次数预算已耗尽，请重新规划", "recovery_control": {"enforced": True, "requires_replan": True, "reason_code": "attempt_budget_exhausted"}}
+                        conn.execute("UPDATE mission_steps SET status='failed', result_json=?, updated_at=? WHERE id=? AND status='ready'", (_json(blocked), _iso(), step["id"]))
+                        self._add_event(conn, mission["id"], "step_budget_exhausted", "running", "running", "decision-router", blocked["error"], {"step_id": step["id"]})
+                        continue
                 authorized, step_approval_id = self._authorize_step_execution(
                     conn,
                     mission,
@@ -4744,6 +5013,12 @@ class CommandCenterService:
                         lease_owner=?, lease_token=?, lease_expires_at=?,
                         started_at=COALESCE(started_at, ?), updated_at=?
                     WHERE id=? AND status='ready'
+                      AND EXISTS (
+                          SELECT 1 FROM orchestration_missions current_mission
+                          WHERE current_mission.id=mission_steps.mission_id
+                            AND current_mission.status='running'
+                            AND current_mission.plan_version=mission_steps.plan_version
+                      )
                     """,
                     (
                         owner,
@@ -4756,14 +5031,20 @@ class CommandCenterService:
                 )
                 if cursor.rowcount == 1:
                     if step_approval_id:
-                        conn.execute(
+                        consumed_at = _iso()
+                        consumed = conn.execute(
                             """
                             UPDATE mission_step_approvals
                             SET status='consumed', consumed_at=?
                             WHERE id=? AND status='approved' AND consumed_at IS NULL
+                              AND mission_id=? AND plan_version=? AND step_id=?
+                              AND contract_hash=? AND expires_at>?
                             """,
-                            (_iso(now), step_approval_id),
+                            (consumed_at, step_approval_id, mission["id"], step["plan_version"],
+                             step["id"], self._step_contract_hash(step_contract), consumed_at),
                         )
+                        if consumed.rowcount != 1:
+                            raise InvalidMissionTransition("step approval consumption lost concurrent race")
                     updated = conn.execute(
                         "SELECT * FROM mission_steps WHERE id=?",
                         (step["id"],),
@@ -4778,6 +5059,10 @@ class CommandCenterService:
                         serialized_step["step_approval"] = self._serialize_step_approval(
                             approval_row
                         )
+                    routing_decision = None
+                    if decision_router_service.enabled() and not cluster_step_id:
+                        routing_decision = decision_router_service.route(serialized_step)
+                        serialized_step["routing_decision"] = routing_decision
                     claimed.append(serialized_step)
                     self._add_event(
                         conn,
@@ -4790,6 +5075,7 @@ class CommandCenterService:
                         {
                             "step_id": step["id"],
                             "step_approval_id": step_approval_id or None,
+                            **({"routing_decision": routing_decision} if routing_decision else {}),
                         },
                     )
                 if len(claimed) >= max(1, limit):
@@ -4809,13 +5095,15 @@ class CommandCenterService:
                 UPDATE mission_steps
                 SET work_run_id=?, updated_at=?
                 WHERE id=? AND status='running' AND lease_token=?
+                  AND lease_expires_at>?
                   AND EXISTS (
                       SELECT 1 FROM orchestration_missions mission
                       WHERE mission.id=mission_steps.mission_id
                         AND mission.status='running'
+                        AND mission.plan_version=mission_steps.plan_version
                   )
                 """,
-                (work_run_id, _iso(), step_id, str(lease_token or "")),
+                (work_run_id, _iso(), step_id, str(lease_token or ""), _iso()),
             )
             if cursor.rowcount != 1:
                 raise InvalidMissionTransition(
@@ -4838,10 +5126,12 @@ class CommandCenterService:
                 UPDATE mission_steps
                 SET lease_expires_at=?, updated_at=?
                 WHERE id=? AND status='running' AND lease_token=?
+                  AND lease_expires_at>?
                   AND EXISTS (
                       SELECT 1 FROM orchestration_missions mission
                       WHERE mission.id=mission_steps.mission_id
                         AND mission.status='running'
+                        AND mission.plan_version=mission_steps.plan_version
                   )
                 """,
                 (
@@ -4849,6 +5139,7 @@ class CommandCenterService:
                     _iso(),
                     step_id,
                     str(lease_token or ""),
+                    _iso(),
                 ),
             )
             if cursor.rowcount != 1:
@@ -5227,14 +5518,22 @@ class CommandCenterService:
         success: bool,
         actor: str,
         lease_token: str,
+        _connection=None,
     ) -> dict[str, Any]:
-        with self.connect(immediate=True) as conn:
+        with nullcontext(_connection) if _connection is not None else self.connect(immediate=True) as conn:
             step = conn.execute("SELECT * FROM mission_steps WHERE id=?", (step_id,)).fetchone()
             if not step:
                 raise CommandCenterError(f"step not found: {step_id}")
+            if step["task_type"] == "cluster_operation" and _connection is None:
+                raise InvalidMissionTransition("cluster completion requires canonical fenced transaction")
+            result = dict(result)
+            result.pop("decision_shadow", None)
+            result.pop("recovery_control", None)
             step_contract = self._serialize_step(step)
             self._attach_plan_step_contract(conn, step_contract)
             enforcement = self._execution_enforcement(conn, step_contract)
+            if step["executor"] in {deterministic.EXECUTOR, code_workspace.EXECUTOR}:
+                enforcement = {**enforcement, "mode": "strict", "enforced": True}
             result = execution_evidence_service.enrich_result(
                 step_contract,
                 result,
@@ -5265,28 +5564,58 @@ class CommandCenterService:
                 item.get("status") in {"applied", "unknown"}
                 for item in (result.get("side_effects") or [])
             )
+            # An omitted side-effect receipt is not proof that re-execution is safe.
+            receipt_retry_safe = not unsafe_effect and step_contract.get("side_effect") is False
             retry_evidence = bool(
                 success
                 and semantic_accepted
                 and quality.get("enforced")
                 and not quality.get("accepted")
                 and effect_quality.get("accepted", True)
-                and not unsafe_effect
+                and receipt_retry_safe
                 and int(step["attempt_count"] or 0) < max_attempts
             )
+            retry_protocol = bool(
+                success
+                and result.get("protocol_error")
+                and effect_quality.get("accepted", True)
+                and receipt_retry_safe
+                and int(step["attempt_count"] or 0) < max_attempts
+            )
+            observed = None
+            recovery_enabled = self._recovery_enabled() or step["executor"] == deterministic.EXECUTOR
+            if (decision_router_service.enabled() or recovery_enabled) and step["executor"] in {"openclaw", deterministic.EXECUTOR}:
+                previous_row = conn.execute(
+                    "SELECT metadata FROM mission_events WHERE mission_id=? AND event_key=?",
+                    (step["mission_id"], f"decision-shadow:{step_id}:{step['plan_version']}:{int(step['attempt_count']) - 1}"),
+                ).fetchone()
+                previous = _loads(previous_row["metadata"], {}) if previous_row else None
+                observed = decision_router_service.observe_result(
+                    step_contract, result, accepted=effective_success, previous=previous,
+                )
+            if recovery_enabled and not effective_success and observed is not None:
+                stop_reason = (
+                    "effect_requires_inspection" if observed["action"] == "inspect" else
+                    "repeated_failure" if observed["repeated_failure"] else
+                    "attempt_budget_exhausted" if int(step["attempt_count"] or 0) >= max_attempts else ""
+                )
+                if stop_reason:
+                    retry_evidence = retry_protocol = False
+                    result["recovery_control"] = {"enforced": True, "requires_replan": True, "reason_code": stop_reason}
             next_status = (
                 "completed"
                 if effective_success
                 else "ready"
-                if retry_evidence
+                if retry_evidence or retry_protocol
                 else "failed"
             )
             result["completion_decision"] = {
                 "executor_success": bool(success),
                 "accepted": effective_success,
-                "retry_scheduled": retry_evidence,
+                "retry_scheduled": retry_evidence or retry_protocol,
                 "attempt": int(step["attempt_count"] or 0),
                 "max_attempts": max_attempts,
+                "receipt_retry_safe": receipt_retry_safe,
                 "enforcement": enforcement,
                 "effect_quality": effect_quality,
             }
@@ -5297,10 +5626,12 @@ class CommandCenterService:
                     lease_expires_at=NULL,
                     completed_at=?, updated_at=?
                 WHERE id=? AND status='running' AND lease_token=?
+                  AND lease_expires_at>?
                   AND EXISTS (
                       SELECT 1 FROM orchestration_missions mission
                       WHERE mission.id=mission_steps.mission_id
                         AND mission.status='running'
+                        AND mission.plan_version=mission_steps.plan_version
                   )
                 """,
                 (
@@ -5310,11 +5641,19 @@ class CommandCenterService:
                     _iso(),
                     step_id,
                     str(lease_token or ""),
+                    _iso(),
                 ),
             )
             if cursor.rowcount != 1:
                 raise InvalidMissionTransition(
                     f"stale or cancelled step completion rejected: {step_id}"
+                )
+            if observed is not None:
+                result["decision_shadow"] = observed
+                self._add_event(
+                    conn, step["mission_id"], "decision_shadow_observed", "running", "running",
+                    "decision-router", "影子建议：" + observed["detail"], observed,
+                    event_key=f"decision-shadow:{step_id}:{step['plan_version']}:{step['attempt_count']}",
                 )
             self._persist_execution_records(
                 conn,
@@ -5339,7 +5678,7 @@ class CommandCenterService:
                 "step_completed"
                 if next_status == "completed"
                 else "step_evidence_retry_scheduled"
-                if retry_evidence
+                if retry_evidence or retry_protocol
                 else "step_effect_rejected"
                 if success and not effect_quality.get("accepted", True)
                 else "step_evidence_rejected"
@@ -5583,6 +5922,15 @@ class CommandCenterService:
                 }
                 if counts.get("failed"):
                     if mission["status"] != "waiting_feedback":
+                        failure = conn.execute(
+                            "SELECT title, result_json FROM mission_steps WHERE mission_id=? AND plan_version=? AND status='failed' ORDER BY order_index LIMIT 1",
+                            (mission["id"], mission["plan_version"]),
+                        ).fetchone()
+                        result = _loads(failure["result_json"], {}) if failure else {}
+                        reasons = ((result.get("completion_decision") or {}).get("effect_quality") or {}).get("blockers") or []
+                        reasons = list(reasons) + list((result.get("execution_quality") or {}).get("blockers") or [])
+                        reason = "；".join(reasons) or str(result.get("error") or (result.get("structured_output") or {}).get("summary") or "请检查步骤执行记录")
+                        failure_message = f"{failure['title'] if failure else '执行步骤'}：{reason}"[:4000]
                         previous = mission["status"]
                         conn.execute(
                             """
@@ -5591,7 +5939,7 @@ class CommandCenterService:
                                 lease_owner=NULL, lease_expires_at=NULL, updated_at=?
                             WHERE id=?
                             """,
-                            ("One or more mission steps failed", _iso(), mission["id"]),
+                            (failure_message, _iso(), mission["id"]),
                         )
                         self._add_event(
                             conn,
@@ -5600,7 +5948,7 @@ class CommandCenterService:
                             previous,
                             "waiting_feedback",
                             "command-center",
-                            "One or more mission steps failed",
+                            failure_message,
                             {"counts": counts},
                         )
                         updated = self._require_mission(conn, mission["id"])
@@ -7045,6 +7393,21 @@ class CommandCenterService:
             (item["id"], item["plan_version"]),
         ).fetchall()
         bindings = [self._serialize_context_binding(binding) for binding in binding_rows]
+        # Planning freezes the next version before save_plan advances the mission.
+        # Show that snapshot while planning, rather than an absent or rejected one.
+        if item["status"] == "planning":
+            pending_binding = conn.execute(
+                """
+                SELECT * FROM mission_context_bindings
+                WHERE mission_id=? AND plan_version=? AND purpose='planning' AND step_id=''
+                """,
+                (item["id"], int(item["plan_version"]) + 1),
+            ).fetchone()
+            if pending_binding:
+                bindings = [self._serialize_context_binding(pending_binding)] + [
+                    binding for binding in bindings
+                    if binding["purpose"] != "planning" or binding["step_id"]
+                ]
         item["context_bindings"] = bindings
         item["planning_context"] = next(
             (
@@ -7198,6 +7561,18 @@ class CommandCenterService:
                 }
                 for event in events
             ]
+            item["advisor_reviews"] = [event["metadata"] for event in item["events"]
+                                       if event["event_type"] == "advisor_result"
+                                       and event["metadata"].get("plan_version") == item["plan_version"]]
+            steps_by_id = {step["id"]: step for step in item["steps"]}
+            for event in item["events"]:
+                decision = event["metadata"].get("routing_decision")
+                if event["event_type"] != "step_started" or not isinstance(decision, dict):
+                    continue
+                target = steps_by_id.get(decision.get("step_id"))
+                if target is not None and decision.get("plan_version") == target.get("plan_version"):
+                    if decision.get("attempt", 0) == target.get("attempt_count", 0):
+                        target["routing_decision"] = decision
             messages = conn.execute(
                 """
                 SELECT * FROM command_messages

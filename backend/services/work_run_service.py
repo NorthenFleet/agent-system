@@ -7,10 +7,15 @@ retried, and verified without depending on queue JSON snapshots.
 
 from __future__ import annotations
 
+import hashlib
 import json
+import math
 import os
 import sqlite3
 import uuid
+from collections.abc import Mapping
+from contextlib import nullcontext
+from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from typing import Any, Iterator, Optional
 
@@ -74,6 +79,10 @@ class WorkRunLeaseConflict(WorkRunError):
     pass
 
 
+class WorkRunIdempotencyConflict(WorkRunError):
+    pass
+
+
 class InvalidWorkTransition(WorkRunError):
     pass
 
@@ -105,6 +114,83 @@ def _loads(value: str | None, fallback: Any) -> Any:
         return json.loads(value)
     except (TypeError, json.JSONDecodeError):
         return fallback
+
+
+AT_MOST_ONCE_CONTEXT_KEY = "_at_most_once"
+AT_MOST_ONCE_SCHEMA_VERSION = "work-run-at-most-once.v1"
+
+
+def public_work_run(run: dict[str, Any] | None) -> dict[str, Any] | None:
+    """HTTP-only projection; internal services retain the complete execution fence.
+
+    Generic runners keep their existing DTO. The dormant host.info executor has
+    a closed public contract: no workspace, lease, arbitrary metadata or files.
+    Extend this projection explicitly before adding another cluster operation.
+    """
+    if run is None:
+        return None
+    context = run.get("input_context") or {}
+    if run.get("executor") != "cluster-readonly-v1" and "_cluster_step_fence" not in context:
+        return deepcopy(run)
+
+    def pick(source: dict, fields: str) -> dict:
+        return {key: deepcopy(source[key]) for key in fields.split() if key in source}
+
+    view = pick(run, "id dispatch_id mission_id mission_run_id correlation_id project_id task_id "
+                "development_point_id agent_id executor status attempt idempotency_key "
+                "result_summary failure_code created_at started_at updated_at ended_at")
+    view["input_context"] = {"request": pick(context.get("request") or {},
+        "schema_version request_id node_id tailscale_id operation timeout_seconds")}
+    receipt = run.get("execution_result") or {}
+    view["execution_result"] = pick(receipt,
+        "schema_version run_id request_id node_id tailscale_id operation started_at ended_at "
+        "status remote_outcome exit_code log replayed mission_id plan_version step_id "
+        "approval_id contract_hash step_idempotency_key previous_approval_id acceptance")
+    if "parameters_summary" in receipt:
+        # host.info accepts no remote command parameters.
+        view["execution_result"]["parameters_summary"] = {}
+    if "events" in run:
+        view["events"] = [
+            {**pick(event, "id run_id event_type from_status to_status actor detail created_at"),
+             "metadata": pick(event.get("metadata") or {},
+                              "dispatch_id attempt execution_semantics failure_code")}
+            for event in run["events"]
+        ]
+    if "metrics" in run:
+        view["metrics"] = {}
+    if "artifacts" in run:
+        view["artifacts"] = []
+    return view
+
+
+def _canonical_json(value: Any) -> str:
+    def validate(item: Any, path: str) -> None:
+        if item is None or isinstance(item, (str, bool, int)):
+            return
+        if isinstance(item, float):
+            if not math.isfinite(item):
+                raise WorkRunError(f"non-finite value in {path}")
+            return
+        if isinstance(item, list):
+            for index, child in enumerate(item):
+                validate(child, f"{path}[{index}]")
+            return
+        if isinstance(item, dict):
+            for key, child in item.items():
+                if not isinstance(key, str):
+                    raise WorkRunError(f"non-string JSON key in {path}")
+                validate(child, f"{path}.{key}")
+            return
+        raise WorkRunError(f"non-JSON value in {path}")
+
+    validate(value, "payload")
+    return json.dumps(
+        value,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    )
 
 
 class WorkRunService:
@@ -291,6 +377,15 @@ class WorkRunService:
                 """,
                 (key,),
             ).fetchone()
+            if latest:
+                latest_context = _loads(latest["input_context"], {})
+                if (
+                    isinstance(latest_context, dict)
+                    and AT_MOST_ONCE_CONTEXT_KEY in latest_context
+                ):
+                    raise WorkRunIdempotencyConflict(
+                        "idempotency key is reserved for at-most-once execution"
+                    )
             if latest and latest["status"] in ACTIVE_STATUSES:
                 expires_at = self._parse_iso(latest["lease_expires_at"])
                 if latest["lease_owner"] not in {None, "", owner} and expires_at and expires_at > now:
@@ -378,6 +473,164 @@ class WorkRunService:
             self._sync_task_status(conn, task_id, "claimed", _iso(now))
             return self._get_run(conn, run_id)
 
+    def claim_at_most_once(
+        self,
+        *,
+        dispatch_id: str,
+        idempotency_key: str,
+        request_binding: Mapping[str, Any],
+        agent_id: str,
+        executor: str,
+        mission_id: str = "",
+        mission_run_id: str = "",
+        correlation_id: str = "",
+        project_id: str = "",
+        task_id: str = "",
+        development_point_id: str = "",
+        workspace: str = "",
+        input_context: Optional[dict[str, Any]] = None,
+        lease_seconds: int = 900,
+        _connection=None,
+    ) -> tuple[dict[str, Any], bool]:
+        """Create one durable execution attempt or replay its original record.
+
+        Unlike :meth:`claim`, this method never renews, reclaims, or retries an
+        existing key. It is intended for operations whose effects cannot be
+        safely repeated after an ambiguous timeout or worker loss.
+        """
+
+        dispatch = str(dispatch_id or "").strip()
+        key = str(idempotency_key or "").strip()
+        owner = str(agent_id or "").strip()
+        executor_name = str(executor or "").strip()
+        if not dispatch:
+            raise WorkRunError("dispatch_id is required")
+        if not key:
+            raise WorkRunError("idempotency_key is required")
+        if not owner:
+            raise WorkRunError("agent_id is required")
+        if not executor_name:
+            raise WorkRunError("executor is required")
+        if not isinstance(request_binding, Mapping):
+            raise WorkRunError("request_binding must be a JSON object")
+        if input_context is not None and not isinstance(input_context, dict):
+            raise WorkRunError("input_context must be a JSON object")
+
+        context = dict(input_context or {})
+        if AT_MOST_ONCE_CONTEXT_KEY in context:
+            raise WorkRunError(
+                f"input_context key {AT_MOST_ONCE_CONTEXT_KEY!r} is reserved"
+            )
+        binding_payload = {
+            "dispatch_id": dispatch,
+            "executor": executor_name,
+            "request": dict(request_binding),
+        }
+        binding_hash = hashlib.sha256(
+            _canonical_json(binding_payload).encode("utf-8")
+        ).hexdigest()
+        context[AT_MOST_ONCE_CONTEXT_KEY] = {
+            "schema_version": AT_MOST_ONCE_SCHEMA_VERSION,
+            "binding_sha256": binding_hash,
+        }
+        context_json = _canonical_json(context)
+        now = _now()
+        lease_expires = now + timedelta(seconds=max(lease_seconds, 30))
+
+        # Internal composition seam: the caller owns commit/rollback when supplied.
+        with nullcontext(_connection) if _connection is not None else self.connect(immediate=True) as conn:
+            self.repository.lock_key(conn, f"work-run:{key}")
+            existing = conn.execute(
+                """
+                SELECT * FROM work_runs
+                WHERE idempotency_key=?
+                ORDER BY attempt DESC LIMIT 1
+                """,
+                (key,),
+            ).fetchone()
+            if existing:
+                if str(existing["dispatch_id"] or "") != dispatch:
+                    raise WorkRunIdempotencyConflict(
+                        "idempotency key is bound to a different dispatch_id"
+                    )
+                if str(existing["executor"] or "") != executor_name:
+                    raise WorkRunIdempotencyConflict(
+                        "idempotency key is bound to a different executor"
+                    )
+                stored_context = _loads(existing["input_context"], {})
+                marker = (
+                    stored_context.get(AT_MOST_ONCE_CONTEXT_KEY)
+                    if isinstance(stored_context, dict)
+                    else None
+                )
+                if not isinstance(marker, dict):
+                    raise WorkRunIdempotencyConflict(
+                        "existing work run has no at-most-once binding marker"
+                    )
+                if marker.get("schema_version") != AT_MOST_ONCE_SCHEMA_VERSION:
+                    raise WorkRunIdempotencyConflict(
+                        "existing work run has an incompatible binding marker"
+                    )
+                if marker.get("binding_sha256") != binding_hash:
+                    raise WorkRunIdempotencyConflict(
+                        "idempotency key is bound to a different request binding"
+                    )
+                if int(existing["attempt"] or 0) != 1:
+                    raise WorkRunIdempotencyConflict(
+                        "at-most-once work run has unexpected retry attempts"
+                    )
+                return self._serialize_run(conn, existing), False
+
+            run_id = f"wrun-{uuid.uuid4().hex[:16]}"
+            run_correlation_id = correlation_id or f"work-{uuid.uuid4().hex[:16]}"
+            conn.execute(
+                """
+                INSERT INTO work_runs
+                (id, dispatch_id, mission_id, mission_run_id,
+                 project_id, task_id, development_point_id,
+                 agent_id, executor, status, attempt, idempotency_key,
+                 lease_owner, lease_expires_at, correlation_id, workspace,
+                 input_context, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'claimed', 1, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    run_id,
+                    dispatch,
+                    mission_id or None,
+                    mission_run_id or None,
+                    project_id or None,
+                    task_id or None,
+                    development_point_id or None,
+                    owner,
+                    executor_name,
+                    key,
+                    owner,
+                    _iso(lease_expires),
+                    run_correlation_id,
+                    workspace or None,
+                    context_json,
+                    _iso(now),
+                    _iso(now),
+                ),
+            )
+            self._insert_event(
+                conn,
+                run_id,
+                "claimed",
+                "ready",
+                "claimed",
+                owner,
+                "Runner claimed an at-most-once operation",
+                {
+                    "dispatch_id": dispatch,
+                    "attempt": 1,
+                    "execution_semantics": "at_most_once",
+                    "binding_sha256": binding_hash,
+                },
+            )
+            self._sync_task_status(conn, task_id, "claimed", _iso(now))
+            return self._get_run(conn, run_id), True
+
     def transition(
         self,
         run_id: str,
@@ -393,13 +646,18 @@ class WorkRunService:
         execution_result: Optional[dict[str, Any]] = None,
         metrics: Optional[dict[str, Any]] = None,
         lease_seconds: int = 900,
+        _connection=None,
+        _step_fence: str = "",
     ) -> dict[str, Any]:
         next_status = normalize_work_status(status)
         now = _now()
-        with self.connect(immediate=True) as conn:
+        with nullcontext(_connection) if _connection is not None else self.connect(immediate=True) as conn:
             current = conn.execute("SELECT * FROM work_runs WHERE id=?", (run_id,)).fetchone()
             if not current:
                 raise WorkRunNotFound(run_id)
+            fence = _loads(current["input_context"], {}).get("_cluster_step_fence")
+            if fence and (_connection is None or _step_fence != fence.get("lease_sha256")):
+                raise WorkRunLeaseConflict("cluster step requires a fenced transaction")
             previous = normalize_work_status(current["status"])
             if next_status != previous and next_status not in ALLOWED_TRANSITIONS[previous]:
                 raise InvalidWorkTransition(f"invalid work transition: {previous} -> {next_status}")
@@ -449,6 +707,8 @@ class WorkRunService:
             current = conn.execute("SELECT * FROM work_runs WHERE id=?", (run_id,)).fetchone()
             if not current:
                 raise WorkRunNotFound(run_id)
+            if _loads(current["input_context"], {}).get("_cluster_step_fence"):
+                raise WorkRunLeaseConflict("cluster step lease belongs to Command Center")
             if current["status"] not in ACTIVE_STATUSES:
                 raise WorkRunLeaseConflict(f"run {run_id} is not active")
             if current["lease_owner"] not in {None, "", actor}:
@@ -474,6 +734,8 @@ class WorkRunService:
             run = conn.execute("SELECT * FROM work_runs WHERE id=?", (run_id,)).fetchone()
             if not run:
                 raise WorkRunNotFound(run_id)
+            if _loads(run["input_context"], {}).get("_cluster_step_fence"):
+                raise WorkRunLeaseConflict("cluster artifacts belong to canonical step completion")
             artifact_id = f"wart-{uuid.uuid4().hex[:16]}"
             created_at = _iso()
             conn.execute(
