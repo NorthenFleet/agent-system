@@ -19,6 +19,31 @@
 
 记忆生产闭环与 Agent Team 是两条独立演进线。二者通过 Context Pack、执行引用和效果事件协作，不共享状态机，不互相复制事实。
 
+### 1.1 第二大脑知识分方案（设计扩展，2026-10-06）
+
+[第二大脑知识子系统 SB-01](SECOND-BRAIN-KNOWLEDGE-SUBSYSTEM-DESIGN.md) 在现有知识域补齐来源快照、概念积累、候选审核和引用问答；[SB0/SB1 基础实现](SECOND-BRAIN-PHASE-SB0-SB1.md)、[SB2 维护/投影](SECOND-BRAIN-PHASE-SB2.md)及 [SB3 引用检索/shadow 核心工程与隔离验证](SECOND-BRAIN-PHASE-SB3.md)已完成；生产试点及人工质量金标待验收，正式上下文注入关闭；[SB4 成果导入、export-only 记忆提案与运维恢复](SECOND-BRAIN-PHASE-SB4.md)工程验证完成，原生记忆桥接与 7 天真实任务观察待验收；[2026-10-07 试点工具与只读预检](SECOND-BRAIN-PILOT-PLAN.md)已完成，[实际配置与基础预检](SECOND-BRAIN-PILOT-CONFIGURATION.md)已通过，[空基线恢复与来源准备](SECOND-BRAIN-PILOT-READINESS.md)完成，[30 份授权文档入库与恢复](SECOND-BRAIN-PILOT-INTAKE.md)完成、候选待审核、观察未开始，不改变本总纲已记录的历史门禁状态。
+
+- 新知识页面及修订由新增 PostgreSQL 知识域管理；Markdown、知识图和知识向量只作投影，不写入既有记忆投影表。
+- 知识 `reviewed_knowledge` 与长期记忆 `approved_memory` 分开标识；知识只能提出 Memory Candidate，不直接发布 Profile/Project/Agent 记忆。
+- Context Pack 增量记录 `knowledge_refs`、固定修订、来源片段和访问 epoch；不得把知识引用伪装为 `memory_source_ref`。
+- 知识进入执行仍须满足本总纲适用的 Claim/WorkRun 绑定及作用域规则；执行前复核撤回和访问授权，旧快照不构成永久授权。
+- 与 Memory、Artifact、Writing 的跨库动作通过幂等接口、Outbox 和对账协作，不将不同领域提交描述为一个数据库事务。
+- SB3 知识上下文切流独立于 Memory RRF 与 Agent Team 真实认领，不在同一窗口首次启用。详细模型、接口与门禁以 SB-01 为准。
+
+### 1.2 决策路由协同边界（DR-01，2026-10-06）
+
+[DR-01 分方案](DECISION-ROUTING-ARCHITECTURE.md) 为现有 Mission/WorkRun 增加路由观察与后续旁路顾问，不改变本总纲的权威分区及历史门禁结论。
+
+- 决策引用 mission_id、plan_version、step_id、attempt 和策略版本；沿现有事件账本关联 mission_run_id/correlation_id，执行仍引用原 WorkRun。
+- DR1 使用现有 mission_events 元数据保存权威观察，步骤 result 中仅附带本次结果观察；不新增 Team 调度器、状态机或 JSON 主数据源。
+- 同一步骤、同一计划版本的连续尝试才可累计失败；成功、中断观察或策略版本变化打断连续计数。观察只能在有效租约结果被接受后落账。
+- Router 不生成 Context Pack，不修改记忆授权，不消费新的审批；顾问接入后仅持有按检查点裁剪的只读上下文。
+- cluster_operation 保持独立受控执行路径，DR1 不接管也不记录其影子判断。关闭开关保留历史审计记录。
+
+DR2 本地实现已完成，见 [实施记录](DECISION-ROUTING-PHASE-2.md)：确定性检查仍使用原 Mission/WorkRun，报告保存在现有结果与产物元数据中；受控恢复产生新计划，不重写旧验收。恢复上下文仅引用原失败事实，顾问及记忆权限不扩展。生产开关保持关闭。
+
+DR3 增补（2026-10-08）：[检查点顾问与隔离代码候选](DECISION-ROUTING-PHASE-3.md) 复用 Mission 行锁和事件键领取顾问检查点，意见只读；工作树与模型回执继续绑定步骤/尝试/WorkRun，不新增执行权威。候选提交不代表源分支集成或验收完成；生产试点与独立集成门禁待执行。
+
 ## 2. 权威事实分区
 
 | 领域 | 权威对象 | 唯一事实源 | 禁止行为 |
@@ -187,3 +212,5 @@ Gate M1、T1、X1、Q1 全部通过前，禁止进入真实共享任务认领。
 2. 生成不可执行的 SharedTask 投影和认领建议，不创建真实 WorkRun；
 3. 完成 Gate X1、Gate Q1；
 4. 两个 Gate 未通过时继续禁止真实共享任务认领。
+
+DR4 增补（2026-10-08）：[工具调用控制与持久化回执](DECISION-ROUTING-PHASE-4.md) 复用步骤租约与 Mission 事件权威，先提交意图再执行有界文件操作；崩溃后未闭合意图不重放。仅隔离代码执行器开放四个专用工具，其他原生工具不在白名单。核心实现及本地测试完成，开关默认关闭；真实模型与生产验证待执行。
