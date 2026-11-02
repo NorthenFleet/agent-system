@@ -254,60 +254,46 @@
       </el-col>
     </el-row>
 
-    <div class="section-header">
-      <h2>🖥️ 设备与节点</h2>
-      <span class="refresh-hint">{{ devices.length }} 台设备 · 已并入系统监视</span>
-    </div>
+    <ClusterMonitoringPanel ref="clusterPanelRef" />
 
-    <el-row :gutter="16" class="device-cards-row">
-      <el-col
-        v-for="device in devices"
-        :key="device.id"
-        :xs="24"
-        :sm="12"
-        :lg="8"
-      >
-        <div class="device-card" :class="`status-${device.status || 'unknown'}`">
-          <div class="device-header">
-            <div>
-              <div class="device-name">{{ device.name }}</div>
-              <div class="device-address">{{ device.ip }} · {{ device.location || '未知位置' }}</div>
+    <details class="legacy-devices">
+      <summary>旧设备配置（兼容） · {{ devices.length }} 台</summary>
+      <p>仅保留旧接口兼容，不作为当前集群身份或调度依据。</p>
+      <el-row :gutter="16" class="device-cards-row">
+        <el-col
+          v-for="device in devices"
+          :key="device.id"
+          :xs="24"
+          :sm="12"
+          :lg="8"
+        >
+          <div class="device-card" :class="`status-${device.status || 'unknown'}`">
+            <div class="device-header">
+              <div>
+                <div class="device-name">{{ device.name }}</div>
+                <div class="device-address">{{ device.ip }} · {{ device.location || '未知位置' }}</div>
+              </div>
+              <span class="status-badge" :class="device.status || 'unknown'">
+                {{ statusLabel(device.status || 'unknown') }}
+              </span>
             </div>
-            <span class="status-badge" :class="device.status || 'unknown'">
-              {{ statusLabel(device.status || 'unknown') }}
-            </span>
-          </div>
 
-          <div class="device-meta">
-            <div>
-              <span>系统</span>
-              <strong>{{ device.os || '未知' }}</strong>
+            <div class="device-meta">
+              <div><span>系统</span><strong>{{ device.os || '未知' }}</strong></div>
+              <div><span>角色</span><strong>{{ device.role || '未设置' }}</strong></div>
+              <div><span>端口</span><strong>{{ device.ports?.length ? device.ports.join(', ') : '无' }}</strong></div>
             </div>
-            <div>
-              <span>角色</span>
-              <strong>{{ device.role || '未设置' }}</strong>
-            </div>
-            <div>
-              <span>端口</span>
-              <strong>{{ device.ports?.length ? device.ports.join(', ') : '无' }}</strong>
-            </div>
-          </div>
 
-          <div class="device-agents">
-            <span
-              v-for="agent in device.assigned_agents_details || []"
-              :key="agent.id"
-              class="agent-chip"
-            >
-              {{ agent.name }}
-            </span>
-            <span v-if="!device.assigned_agents_details?.length" class="empty-chip">
-              暂无绑定智能体
-            </span>
+            <div class="device-agents">
+              <span v-for="agent in device.assigned_agents_details || []" :key="agent.id" class="agent-chip">
+                {{ agent.name }}
+              </span>
+              <span v-if="!device.assigned_agents_details?.length" class="empty-chip">暂无绑定智能体</span>
+            </div>
           </div>
-        </div>
-      </el-col>
-    </el-row>
+        </el-col>
+      </el-row>
+    </details>
 
     <!-- ECharts 图表区域 -->
     <el-row :gutter="16" class="charts-row">
@@ -393,11 +379,13 @@ import {
 } from '@/api/monitoring'
 import { getDevices, type DeviceItem } from '@/api/openclaw'
 import { useAuthStore } from '@/stores/auth'
+import ClusterMonitoringPanel from '@/components/monitoring/ClusterMonitoringPanel.vue'
 
 // ─── Reactive State ─────────────────────────────────────────────────────────
 
 const agents = ref<MonitoringAgent[]>([])
 const devices = ref<DeviceItem[]>([])
+const clusterPanelRef = ref<{ refresh: () => Promise<void> } | null>(null)
 const memoryHealth = ref<MemorySystemHealth | null>(null)
 const lastMemoryStatus = ref<string | null>(null)
 const authStore = useAuthStore()
@@ -515,12 +503,6 @@ const summaryStats = computed(() => [
     value: agents.value.filter(a => a.status === 'offline').length,
     icon: '⚫',
     class: 'stat-offline'
-  },
-  {
-    label: '设备',
-    value: devices.value.length,
-    icon: '🖥️',
-    class: 'stat-devices'
   },
   {
     label: '平均CPU',
@@ -846,6 +828,7 @@ function refreshData() {
   fetchMonitoringData()
   fetchDevices()
   fetchMemoryHealth()
+  void clusterPanelRef.value?.refresh()
 }
 
 // ─── Auto Refresh (3s interval) ──────────────────────────────────────────────
@@ -1237,8 +1220,7 @@ onUnmounted(() => {
 }
 
 .stat-total .stat-value,
-.stat-busy .stat-value,
-.stat-devices .stat-value { color: var(--view-color); }
+.stat-busy .stat-value { color: var(--view-color); }
 .stat-online .stat-value { color: #3fb950; }
 .stat-idle .stat-value,
 .stat-avg-cpu .stat-value { color: #d29922; }
@@ -1587,6 +1569,25 @@ onUnmounted(() => {
 /* ─── Device Cards ───────────────────────────────────────────── */
 .device-cards-row {
   margin-bottom: 28px;
+}
+
+.legacy-devices {
+  margin: 0 0 28px;
+  color: var(--text-secondary);
+}
+
+.legacy-devices > summary {
+  cursor: pointer;
+  padding: 10px 12px;
+  background: var(--panel-bg);
+  border: 1px solid var(--line-color);
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.legacy-devices > p {
+  margin: 10px 2px;
+  font-size: 12px;
 }
 
 .device-card {

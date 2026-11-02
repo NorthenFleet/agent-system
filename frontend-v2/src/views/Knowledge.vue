@@ -43,6 +43,9 @@
           </template>
 
           <el-tabs v-model="mainTab" class="workspace-tabs" @tab-change="handleMainTabChange">
+            <el-tab-pane label="资料入库与审核" name="intake">
+              <KnowledgeIntakePanel v-if="mainTab === 'intake'" />
+            </el-tab-pane>
             <el-tab-pane label="知识图谱" name="graph">
               <div ref="graphRef" class="graph-canvas" />
             </el-tab-pane>
@@ -236,6 +239,7 @@ import { GraphChart } from 'echarts/charts'
 import { LegendComponent, TitleComponent, TooltipComponent } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
 import { ElMessage } from 'element-plus'
+import KnowledgeIntakePanel from '@/components/knowledge/KnowledgeIntakePanel.vue'
 import {
   getKnowledgeGraph,
   getKnowledgeNeighbors,
