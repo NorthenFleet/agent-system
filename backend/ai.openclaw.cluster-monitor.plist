@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>ai.openclaw.cluster-monitor</string>
+  <key>ProgramArguments</key><array>
+    <string>/Users/apple/工作桌面/Workspace/agent-system/backend/venv/bin/python</string>
+    <string>/Users/apple/工作桌面/Workspace/agent-system/backend/scripts/run_cluster_monitor.py</string>
+  </array>
+  <key>WorkingDirectory</key><string>/Users/apple/工作桌面/Workspace/agent-system/backend</string>
+  <key>EnvironmentVariables</key><dict>
+    <key>PATH</key><string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>TAILSCALE_BE_CLI</key><string>1</string>
+    <key>DATABASE_URL</key><string>sqlite:////Users/apple/工作桌面/Workspace/agent-system/backend/data/dashboard_v2.db</string>
+    <key>CLUSTER_TAILSCALE_BINARY</key><string>/Applications/Tailscale.app/Contents/MacOS/Tailscale</string>
+    <key>CLUSTER_KNOWN_HOSTS</key><string>/Users/apple/工作桌面/Workspace/agent-system/backend/data/cluster_known_hosts</string>
+    <key>PYTHONUNBUFFERED</key><string>1</string>
+  </dict>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>ThrottleInterval</key><integer>30</integer>
+  <key>StandardOutPath</key><string>/Users/apple/工作桌面/Workspace/agent-system/backend/data/cluster-monitor.log</string>
+  <key>StandardErrorPath</key><string>/Users/apple/工作桌面/Workspace/agent-system/backend/data/cluster-monitor.log</string>
+</dict></plist>

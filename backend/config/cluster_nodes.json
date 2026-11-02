@@ -1,0 +1,13 @@
+{
+  "schema_version": "cluster-inventory-seed.v1",
+  "notes": "Operator seed, not a second mutable inventory. Registration is explicit. No passwords/private keys. Three role mappings await owner confirmation.",
+  "nodes": [
+    {"node_id":"macbook-pro-01","tailscale_id":"nmWQW9u1o111CNTRL","hostname":"孙翼的MacBook Pro","os":"macOS","role":"development","managed":true,"identity_status":"confirmed","domain_refs":{},"collector":{"transport":"ssh","user":"sunyi"},"services":[]},
+    {"node_id":"mac-mini-01","tailscale_id":"n5EAbdY79t11CNTRL","hostname":"apple的Mac mini","os":"macOS","role":"control","managed":true,"identity_status":"confirmed","domain_refs":{},"collector":{"transport":"local"},"services":[{"name":"agent-system-3021","port":3021,"path":"/health"}]},
+    {"node_id":"yoga-01","tailscale_id":"n8ueeuBtRC21CNTRL","hostname":"LAPTOP-1JBC0OFA","os":"windows","role":"development","managed":true,"identity_status":"unconfirmed","domain_refs":{},"collector":{"transport":"disabled"},"services":[]},
+    {"node_id":"simulation-01","tailscale_id":"n2A6H3Rm9121CNTRL","hostname":"sunyi-System-Product-Name","os":"linux","role":"simulation","managed":true,"identity_status":"unconfirmed","domain_refs":{},"collector":{"transport":"disabled"},"services":[]},
+    {"node_id":"compute-04","tailscale_id":"nkPPnJtMCW11CNTRL","hostname":"abc-Precision-7920-Tower","os":"linux","role":"compute","managed":true,"identity_status":"confirmed","domain_refs":{"one_sim_compute_node_id":"train-node-04"},"collector":{"transport":"ssh","user":"abc"},"services":[]},
+    {"node_id":"compute-05","tailscale_id":"nAmjeRWctV11CNTRL","hostname":"mcgtsy3-Precision-7920-Tower","os":"linux","role":"compute","managed":true,"identity_status":"confirmed","domain_refs":{"one_sim_compute_node_id":"train-node-05"},"collector":{"transport":"ssh","user":"mcgtsy3"},"services":[]},
+    {"node_id":"public-windows-01","tailscale_id":"nPMVeBnDMJ11CNTRL","hostname":"DESKTOP-RD7D8L3","os":"windows","role":"public_service","managed":true,"identity_status":"unconfirmed","domain_refs":{},"collector":{"transport":"disabled"},"services":[]}
+  ]
+}
