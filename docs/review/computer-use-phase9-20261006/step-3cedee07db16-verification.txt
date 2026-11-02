@@ -1,0 +1,1 @@
+PASS: target absent, no duplicate write

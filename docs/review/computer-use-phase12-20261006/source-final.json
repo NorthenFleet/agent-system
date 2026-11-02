@@ -1,0 +1,9 @@
+{
+  "backend/services/command_center_service.py": "253969c436e0211cc90a144b8558f2eb406f67b840cd5d602fa652a982943abc",
+  "frontend-v2/src/views/CommandCenter.vue": "d2b6cae7283228e26fc303655153018c0fb09baf2d28c6ee6b488d72fec426e5",
+  "frontend-v2/src/test/CommandCenterGovernance.spec.ts": "c412d7c906f4ce91deacf42e619f4904c4fb75d420eadf348f001bcaabe7625a",
+  "backend/tests/test_phase12_recovery_interruption.py": "aebf89a4fb3e7fbf346f36974d79236f57d136c8c67639a02ef8403068672d33",
+  "backend/scripts/run_phase12_recovery_crash_lab.py": "22b3b3687d60e8d7083d3c3ebe3ac9bc70a4232dc485d14b9212829bf9dd91be",
+  "backend/scripts/run_phase12_crash_probe.py": "6534739d2072a65adedc18e12053e28bf1ae5dca6b14dc726a4be238fb59ec5a",
+  "backend/scripts/run_phase12_pg_lease_race.py": "ebdf6e748a56989e835a6ff9316f272d99c9eedad0188389712db5564accde22"
+}

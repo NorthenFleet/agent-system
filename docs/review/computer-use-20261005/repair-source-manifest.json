@@ -1,0 +1,77 @@
+{
+  "files": [
+    {
+      "path": "backend/services/command_center_worker.py",
+      "sha256": "f210ffccc8f347bd1d6e81a9df643bd80f28e6278c5d70fdf32755a69d403565"
+    },
+    {
+      "path": "backend/services/command_center_service.py",
+      "sha256": "58eeb139f0f6f2fddacb48c48554ee6a3352120435d2274621f1e36d16b828f8"
+    },
+    {
+      "path": "backend/services/business_flow_service.py",
+      "sha256": "de61088fa4fce10dd76b256280404b5dc5c83ee6385c1a964793c08ff2d2ef59"
+    },
+    {
+      "path": "backend/services/plan_quality_service.py",
+      "sha256": "b8b6e3e7a8344d448eed9c4a9e2a791724c6ebf0e680aeb5310ca15cfde42609"
+    },
+    {
+      "path": "backend/services/compensation_service.py",
+      "sha256": "0280b0c7f890daec0e251ad1caa2e9ee8dc2c81d70bb1f4514c874b234979efb"
+    },
+    {
+      "path": "backend/services/execution_evidence_service.py",
+      "sha256": "d08b5c2c40e4869913b1de83aae2389b95e373ac7314616872734858ce8d92b6"
+    },
+    {
+      "path": "backend/services/mission_artifact_reader.py",
+      "sha256": "519fa3e3ceb40c33ac1dbd36c53a3d316472d5702306fdfe1c3f03c9a4cb79ea"
+    },
+    {
+      "path": "backend/routers/command_center_router.py",
+      "sha256": "cd0f13393429956fad47cb4eee9d51417435c64e01e009df9957ddeafc66a0bc"
+    },
+    {
+      "path": "backend/routers/writing_workspace.py",
+      "sha256": "a89c1a7f2b1d38a3c255615a8bb8f8a8384e7773ba62d225121bdbb3bc3797b8"
+    },
+    {
+      "path": "frontend-v2/src/views/CommandCenter.vue",
+      "sha256": "d1c0bb4eab8d98f26f1ec04cd05a7931a9391017f2a422735de1150fff814990"
+    },
+    {
+      "path": "frontend-v2/src/views/AgentSpace.vue",
+      "sha256": "d235f9aba0aa3bf6790879344520873d3d3fff0ad8cf43ec9cafbf32ccd0df64"
+    },
+    {
+      "path": "frontend-v2/src/views/WritingWorkspace.vue",
+      "sha256": "4fa4c58eeba8e333779d01589ce85c6c63919fc8775eeb86b2360c35764060a8"
+    },
+    {
+      "path": "frontend-v2/src/utils/commandCenterLifecycle.ts",
+      "sha256": "c5a7579e76ea76f215bba9b0168f1397c79a5c6ac969953ecca991d94f719ec3"
+    },
+    {
+      "path": "frontend-v2/src/api/commandCenter.ts",
+      "sha256": "613d7b969225bb0cda5ab7e899f05a84e40cd356630f99a3c66b004e4335c8d2"
+    },
+    {
+      "path": "frontend-v2/src/api/writing.ts",
+      "sha256": "b775e7dff8220c9cd29afd78a0802d086fe095ab2d83b21cb3a37431ff62be1e"
+    },
+    {
+      "path": "backend/tests/test_computer_use_regressions.py",
+      "sha256": "6a065521c7b7f4b6df54e87f31c4c3bc0c99c8421a1bc9238d72008fbdf08e41"
+    },
+    {
+      "path": "backend/tests/test_compensation_service.py",
+      "sha256": "ade63528e954341e84819d75c95cfe1b2c734e7b92377614bc16a67ca10cf4f2"
+    },
+    {
+      "path": "frontend-v2/src/test/commandCenterLifecycle.spec.ts",
+      "sha256": "ed46972ce2e378752c48b7cdbaa3d087e6ce2a40c69e429026352154d31324dc"
+    }
+  ],
+  "note": "Includes pre-existing edits; hashes identify final file contents, not exclusive ownership of the diff."
+}

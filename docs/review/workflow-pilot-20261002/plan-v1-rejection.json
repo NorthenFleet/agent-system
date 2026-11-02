@@ -1,0 +1,2009 @@
+{
+  "comment": "试点计划V1退回，验证真实退回重规划流程。保留原任务目标，补齐后重新提交审批：\n1. 增加最终独立复核步骤：修订后必须由非编写者再次打开最终文件、核查审核问题闭环，不能由编写者自行交付即通过。\n2. 需求覆盖矩阵显式读取项目context.acceptance_marker，保留原文。区分文档审核结果和测试实际结果，测试实际结果必须保持未执行。\n3. 场景设计优先分配米开朗基罗(michelangelo)，文档编写优先通天晓(ultra-magnus)，独立审核救护车(ratchet)。擎天柱负责编排；避免把测试设计和写作分配给不匹配的角色。\n4. 统一产物类型为markdown_document，证据类型使用系统支持的source_refs、quality_notes、document_diff等，不要用中文句子当 evidence_type。每步明确实际文件路径并传给依赖步骤，回传artifacts/evidence/acceptance_results等结构化字段及真实SHA256。\n5. 写入范围严格限于试点deliverables目录；回滚保留历史文件，不删除既有成果。系统接口检查只能只读。上述范围内已获用户执行授权，仍经本系统计划审批后调度。",
+  "response": {
+    "id": "mission-f165257f1043",
+    "conversation_id": "conv-06a7b6bb64b7",
+    "source_message_id": "msg-159c13a4291e",
+    "title": "编写并独立审核智能体系统软件测试大纲",
+    "objective": "为智能体系统自身编写《智能体系统软件测试大纲》，这是工作流验证试点的首个真实任务。请由擎天柱生成计划并经审批后组织执行，不得直接宣布完成。\n范围：需求接收、项目背景获取、计划拆解、计划审批/退回、多智能体依赖执行、独立质量审核、返工、产物保存、版本追溯、证据验收、交付状态同步、失败恢复、重复提交及幂等。\n先只编写和审核大纲，不在生产服务注入故障，不修改系统代码或配置，不重启服务，不提交Git，不发送外部消息。后续测试执行和修复作为独立任务。\n必须依据本地源码和实际接口梳理系统；区分已实现、当前启用、尚未验证。仓库 /Users/apple/工作桌面/Workspace/agent-system 中已有其他未提交改动，不得覆盖。\n建议分工：范围梳理→测试场景设计→文档整合→不同智能体独立审核→修订交付。至少覆盖12个核心场景，每个包含编号、目标、前置条件、步骤、预期结果、证据要求、优先级，实际结果统一为未执行。大纲包含测试范围、环境、正常/异常流程、产物质量、缺陷分级及退出条件。\n交付：完整中文测试大纲、需求覆盖矩阵、独立审查记录及修订说明。优先保存为实际Markdown文件到 /Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/deliverables/ 。每项产物回传真实可访问路径和验收证据，不能只提供总结或虚构路径。不可访问该目录时明确报告阻塞，不得伪造完成。\n验收：完整文件可打开，需求全覆盖，场景可执行，独立审核意见得到处理，任务/项目/产物可追溯。系统编写文档成功不代表文档中测试通过。\n规划时主动读取项目context中的专属验收标识，纳入覆盖矩阵以验证背景传递。",
+    "status": "planning",
+    "priority": "normal",
+    "project_id": "workflow-pilot-20261002",
+    "mission_type": "software",
+    "requested_by": "admin",
+    "owner_user_id": "1",
+    "plan_version": 1,
+    "current_step_id": null,
+    "requires_approval": true,
+    "approval_status": "rejected",
+    "last_error": null,
+    "lease_owner": null,
+    "lease_expires_at": null,
+    "created_at": "2026-10-02T13:02:53.541143+00:00",
+    "updated_at": "2026-10-02T13:06:09.141173+00:00",
+    "completed_at": null,
+    "context": {
+      "source": "dashboard",
+      "profile_user_id": "1",
+      "mission_type": "software",
+      "intent_decision": {
+        "type": "software_project",
+        "confidence": 1.0,
+        "reason": "由已认证的项目任务入口显式创建",
+        "execution_requested": true
+      },
+      "user_context": {
+        "source": "workflow-validation-pilot",
+        "output_directory": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/deliverables",
+        "phase": "outline-authoring-only",
+        "mission_type": "software",
+        "business_flow_key": "document"
+      },
+      "metadata": {
+        "project_id": "workflow-pilot-20261002",
+        "title": "编写并独立审核智能体系统软件测试大纲",
+        "context": {
+          "source": "workflow-validation-pilot",
+          "output_directory": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/deliverables",
+          "phase": "outline-authoring-only",
+          "mission_type": "software",
+          "business_flow_key": "document"
+        },
+        "intent_type": "software_project",
+        "execution_requested": true,
+        "profile_user_id": "1",
+        "suppress_notification": true,
+        "_direct_mission": true,
+        "_reserve_planning": false,
+        "_planning_owner": ""
+      }
+    },
+    "mission_run": {
+      "id": "mrun-da8ef511af824802",
+      "mission_id": "mission-f165257f1043",
+      "correlation_id": "mission-2f58a34c2d2a474c",
+      "status": "planning",
+      "active_plan_version": 1,
+      "workflow_run_id": "workflow-58b10815d75a",
+      "outcome": "",
+      "created_at": "2026-10-02T13:02:53.541143+00:00",
+      "updated_at": "2026-10-02T13:06:09.175555+00:00",
+      "ended_at": null,
+      "metadata": {}
+    },
+    "conversation": {
+      "id": "conv-06a7b6bb64b7",
+      "channel": "dashboard",
+      "external_conversation_id": "dashboard:admin",
+      "user_external_id": "admin",
+      "owner_user_id": "1",
+      "profile_user_id": "1",
+      "status": "active",
+      "metadata": {
+        "project_id": "workflow-pilot-20261002",
+        "title": "编写并独立审核智能体系统软件测试大纲",
+        "context": {
+          "source": "workflow-validation-pilot",
+          "output_directory": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/deliverables",
+          "phase": "outline-authoring-only",
+          "mission_type": "software",
+          "business_flow_key": "document"
+        },
+        "intent_type": "software_project",
+        "execution_requested": true,
+        "profile_user_id": "1",
+        "suppress_notification": true,
+        "_direct_mission": true,
+        "_reserve_planning": false,
+        "_planning_owner": ""
+      },
+      "created_at": "2026-07-30T14:21:43.444848+00:00",
+      "updated_at": "2026-10-02T13:02:53.541143+00:00"
+    },
+    "steps": [
+      {
+        "id": "step-a5cdd4ea4d9f",
+        "mission_id": "mission-f165257f1043",
+        "plan_version": 1,
+        "order_index": 1,
+        "title": "系统能力与接口范围梳理",
+        "description": "读取/Users/apple/工作桌面/Workspace/agent-system仓库源码，重点分析backend/routers/command_center_router.py、backend/routers/workflow.py、backend/models/、backend/services/等核心模块，梳理已实现的任务接收、计划拆解、审批/退回、多智能体依赖执行、独立质量审核、返工、产物保存、版本追溯、证据验收、交付状态同步、失败恢复、重复提交及幂等等能力，区分已实现/当前启用/尚未验证，输出系统能力清单和接口清单",
+        "task_type": "research",
+        "agent_id": "perceptor",
+        "executor": "openclaw",
+        "status": "draft",
+        "work_run_id": null,
+        "lease_owner": null,
+        "lease_token": null,
+        "lease_expires_at": null,
+        "attempt_count": 0,
+        "started_at": null,
+        "completed_at": null,
+        "updated_at": "2026-10-02T13:05:13.899128+00:00",
+        "dependencies": [],
+        "input": {},
+        "result": {},
+        "context_binding": null,
+        "phase": "research",
+        "objective": "产出系统能力与接口范围基线文档",
+        "required_tools": [
+          "context_search",
+          "document_workspace"
+        ],
+        "tool_requirements": [
+          {
+            "name": "背景检索",
+            "category": "context",
+            "status": "available",
+            "description": "检索项目、记忆、会话和文档背景，形成可引用上下文。",
+            "evidence_types": [
+              "context_pack",
+              "citations"
+            ],
+            "id": "context_search"
+          },
+          {
+            "name": "文档工作台",
+            "category": "document",
+            "status": "available",
+            "description": "处理文档结构、正文、引用与格式交付。",
+            "evidence_types": [
+              "document_diff",
+              "quality_notes"
+            ],
+            "id": "document_workspace"
+          }
+        ],
+        "deliverables": [
+          "系统能力清单（JSON/Markdown）",
+          "接口清单（含路径、方法、参数、状态）"
+        ],
+        "output_contract": {
+          "artifact_types": [
+            "markdown_document",
+            "json_data"
+          ],
+          "required_fields": [
+            "summary",
+            "evidence_refs",
+            "risk_notes"
+          ]
+        },
+        "acceptance_criteria": [
+          "覆盖command_center_router和workflow路由的所有端点",
+          "区分已实现/当前启用/尚未验证三类状态",
+          "每个接口标注验证状态"
+        ],
+        "evidence_required": [
+          "文件读取记录（路径+行号）",
+          "能力清单文件内容摘要"
+        ],
+        "risk_level": "low",
+        "risk_class": "L0",
+        "approval_required": false,
+        "side_effect": false,
+        "resources": [],
+        "idempotency_key": "mission-f165257f1043:plan:1:step:1",
+        "timeout_seconds": 1200,
+        "max_attempts": 3,
+        "rollback_plan": "分析失败时保留已读取记录，重新执行全量分析",
+        "compensation": {
+          "type": "manual",
+          "instructions": "回退到上一步状态，无外部副作用需补偿"
+        },
+        "capability_match": true,
+        "artifacts": [],
+        "evidence": [],
+        "acceptance_gate": null,
+        "step_approval": null,
+        "effects": [],
+        "compensations": []
+      },
+      {
+        "id": "step-63b33e20b92e",
+        "mission_id": "mission-f165257f1043",
+        "plan_version": 1,
+        "order_index": 2,
+        "title": "需求覆盖矩阵设计",
+        "description": "基于步骤1产出的系统能力清单，设计12个核心测试场景的需求覆盖矩阵，场景包括：需求接收、项目背景获取、计划拆解、计划审批/退回、多智能体依赖执行、独立质量审核、返工、产物保存、版本追溯、证据验收、交付状态同步、失败恢复、重复提交及幂等，每个场景包含编号、目标、前置条件、步骤、预期结果、证据要求、优先级，实际结果统一标记为未执行",
+        "task_type": "research",
+        "agent_id": "optimus",
+        "executor": "openclaw",
+        "status": "draft",
+        "work_run_id": null,
+        "lease_owner": null,
+        "lease_token": null,
+        "lease_expires_at": null,
+        "attempt_count": 0,
+        "started_at": null,
+        "completed_at": null,
+        "updated_at": "2026-10-02T13:05:13.902489+00:00",
+        "dependencies": [
+          "step-a5cdd4ea4d9f"
+        ],
+        "input": {},
+        "result": {},
+        "context_binding": null,
+        "phase": "research",
+        "objective": "产出需求覆盖矩阵与场景定义",
+        "required_tools": [
+          "context_search",
+          "document_workspace"
+        ],
+        "tool_requirements": [
+          {
+            "name": "背景检索",
+            "category": "context",
+            "status": "available",
+            "description": "检索项目、记忆、会话和文档背景，形成可引用上下文。",
+            "evidence_types": [
+              "context_pack",
+              "citations"
+            ],
+            "id": "context_search"
+          },
+          {
+            "name": "文档工作台",
+            "category": "document",
+            "status": "available",
+            "description": "处理文档结构、正文、引用与格式交付。",
+            "evidence_types": [
+              "document_diff",
+              "quality_notes"
+            ],
+            "id": "document_workspace"
+          }
+        ],
+        "deliverables": [
+          "需求覆盖矩阵（Markdown表格）",
+          "12个核心场景定义"
+        ],
+        "output_contract": {
+          "artifact_types": [
+            "markdown_document"
+          ],
+          "required_fields": [
+            "summary",
+            "evidence_refs",
+            "risk_notes"
+          ]
+        },
+        "acceptance_criteria": [
+          "覆盖全部12个核心场景",
+          "每个场景包含编号、目标、前置条件、步骤、预期结果、证据要求、优先级",
+          "实际结果字段统一为未执行"
+        ],
+        "evidence_required": [
+          "需求覆盖矩阵文件内容",
+          "场景编号连续性检查"
+        ],
+        "risk_level": "low",
+        "risk_class": "L0",
+        "approval_required": false,
+        "side_effect": false,
+        "resources": [],
+        "idempotency_key": "mission-f165257f1043:plan:1:step:2",
+        "timeout_seconds": 900,
+        "max_attempts": 2,
+        "rollback_plan": "设计失败时基于步骤1清单重新梳理",
+        "compensation": {
+          "type": "manual",
+          "instructions": "回退到步骤1完成状态，无外部副作用需补偿"
+        },
+        "capability_match": true,
+        "artifacts": [],
+        "evidence": [],
+        "acceptance_gate": null,
+        "step_approval": null,
+        "effects": [],
+        "compensations": []
+      },
+      {
+        "id": "step-7c7eb3e7b547",
+        "mission_id": "mission-f165257f1043",
+        "plan_version": 1,
+        "order_index": 3,
+        "title": "测试大纲初稿撰写",
+        "description": "基于步骤1系统能力清单和步骤2需求覆盖矩阵，编写《智能体系统软件测试大纲》初稿，包含：测试范围、测试环境、正常流程测试、异常流程测试、产物质量检查、缺陷分级标准、退出条件，每个测试场景按步骤2定义的编号、目标、前置条件、步骤、预期结果、证据要求展开，实际结果统一为未执行，文档保存至/Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/deliverables/test-outline-draft.md",
+        "task_type": "writing",
+        "agent_id": "donatello",
+        "executor": "openclaw",
+        "status": "draft",
+        "work_run_id": null,
+        "lease_owner": null,
+        "lease_token": null,
+        "lease_expires_at": null,
+        "attempt_count": 0,
+        "started_at": null,
+        "completed_at": null,
+        "updated_at": "2026-10-02T13:05:13.903107+00:00",
+        "dependencies": [
+          "step-a5cdd4ea4d9f",
+          "step-63b33e20b92e"
+        ],
+        "input": {},
+        "result": {},
+        "context_binding": null,
+        "phase": "implementation",
+        "objective": "产出测试大纲初稿文件",
+        "required_tools": [
+          "document_workspace",
+          "codex"
+        ],
+        "tool_requirements": [
+          {
+            "name": "文档工作台",
+            "category": "document",
+            "status": "available",
+            "description": "处理文档结构、正文、引用与格式交付。",
+            "evidence_types": [
+              "document_diff",
+              "quality_notes"
+            ],
+            "id": "document_workspace"
+          },
+          {
+            "name": "Coding Agent / Codex",
+            "category": "development",
+            "status": "available",
+            "description": "在代码仓库中完成受控修改。",
+            "evidence_types": [
+              "diff_summary"
+            ],
+            "id": "codex"
+          }
+        ],
+        "deliverables": [
+          "测试大纲初稿（Markdown文件）"
+        ],
+        "output_contract": {
+          "artifact_types": [
+            "markdown_file"
+          ],
+          "required_fields": [
+            "summary",
+            "evidence_refs",
+            "risk_notes"
+          ]
+        },
+        "acceptance_criteria": [
+          "包含测试范围、测试环境、正常流程、异常流程、产物质量、缺陷分级、退出条件",
+          "覆盖步骤2定义的12个核心场景",
+          "文件保存至指定目录且可打开"
+        ],
+        "evidence_required": [
+          "文件保存路径",
+          "文件内容摘要（前10行）",
+          "文件大小（字节）"
+        ],
+        "risk_level": "low",
+        "risk_class": "L1",
+        "approval_required": false,
+        "side_effect": true,
+        "resources": [
+          "/Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/deliverables/"
+        ],
+        "idempotency_key": "mission-f165257f1043:plan:1:step:3",
+        "timeout_seconds": 1200,
+        "max_attempts": 2,
+        "rollback_plan": "写入失败时检查目录权限，创建目录后重试；文件损坏时删除后重新写入",
+        "compensation": {
+          "type": "manual",
+          "instructions": "删除已写入文件，恢复目录到写入前状态"
+        },
+        "capability_match": true,
+        "artifacts": [],
+        "evidence": [],
+        "acceptance_gate": null,
+        "step_approval": null,
+        "effects": [],
+        "compensations": []
+      },
+      {
+        "id": "step-af76b220139c",
+        "mission_id": "mission-f165257f1043",
+        "plan_version": 1,
+        "order_index": 4,
+        "title": "独立质量审核",
+        "description": "对步骤3产出的测试大纲初稿进行独立质量审核，检查：需求覆盖完整性（12个核心场景是否全部覆盖）、场景可执行性（步骤是否清晰、预期结果是否可验证）、证据要求充分性、文档结构规范性、与步骤1系统能力清单的一致性，输出审核记录，包含发现的问题、建议修改项、严重程度分级",
+        "task_type": "review",
+        "agent_id": "ratchet",
+        "executor": "openclaw",
+        "status": "draft",
+        "work_run_id": null,
+        "lease_owner": null,
+        "lease_token": null,
+        "lease_expires_at": null,
+        "attempt_count": 0,
+        "started_at": null,
+        "completed_at": null,
+        "updated_at": "2026-10-02T13:05:13.903656+00:00",
+        "dependencies": [
+          "step-7c7eb3e7b547"
+        ],
+        "input": {},
+        "result": {},
+        "context_binding": null,
+        "phase": "verification",
+        "objective": "产出独立审核记录",
+        "required_tools": [
+          "document_workspace",
+          "quality_checker"
+        ],
+        "tool_requirements": [
+          {
+            "name": "文档工作台",
+            "category": "document",
+            "status": "available",
+            "description": "处理文档结构、正文、引用与格式交付。",
+            "evidence_types": [
+              "document_diff",
+              "quality_notes"
+            ],
+            "id": "document_workspace"
+          },
+          {
+            "name": "质量检查器",
+            "category": "review",
+            "status": "available",
+            "description": "执行计划、结果和风险复核，产出问题清单。",
+            "evidence_types": [
+              "review_report"
+            ],
+            "id": "quality_checker"
+          }
+        ],
+        "deliverables": [
+          "独立审核记录（Markdown文件）"
+        ],
+        "output_contract": {
+          "artifact_types": [
+            "markdown_file"
+          ],
+          "required_fields": [
+            "summary",
+            "evidence_refs",
+            "risk_notes"
+          ]
+        },
+        "acceptance_criteria": [
+          "审核记录包含需求覆盖完整性检查",
+          "审核记录包含场景可执行性检查",
+          "审核记录包含发现的问题列表及严重程度",
+          "文件保存至指定目录"
+        ],
+        "evidence_required": [
+          "审核记录文件路径",
+          "发现的问题数量及分级",
+          "审核通过/不通过结论"
+        ],
+        "risk_level": "low",
+        "risk_class": "L1",
+        "approval_required": false,
+        "side_effect": true,
+        "resources": [
+          "/Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/deliverables/"
+        ],
+        "idempotency_key": "mission-f165257f1043:plan:1:step:4",
+        "timeout_seconds": 900,
+        "max_attempts": 2,
+        "rollback_plan": "审核失败时保留审核记录，不修改原大纲",
+        "compensation": {
+          "type": "manual",
+          "instructions": "删除审核记录文件，恢复目录状态"
+        },
+        "capability_match": true,
+        "artifacts": [],
+        "evidence": [],
+        "acceptance_gate": null,
+        "step_approval": null,
+        "effects": [],
+        "compensations": []
+      },
+      {
+        "id": "step-243567a41d9c",
+        "mission_id": "mission-f165257f1043",
+        "plan_version": 1,
+        "order_index": 5,
+        "title": "大纲修订与交付",
+        "description": "基于步骤4独立审核记录，对测试大纲进行修订，处理所有发现的问题和建议修改项，更新需求覆盖矩阵标注实际审核结果，编写修订说明文档，记录每次修改的内容、原因、依据，最终交付：完整中文测试大纲（test-outline-final.md）、需求覆盖矩阵（requirements-matrix.md）、独立审查记录（review-record.md）、修订说明（revision-notes.md），所有文件保存至/Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/deliverables/，回传真实可访问路径和验收证据",
+        "task_type": "writing",
+        "agent_id": "donatello",
+        "executor": "openclaw",
+        "status": "draft",
+        "work_run_id": null,
+        "lease_owner": null,
+        "lease_token": null,
+        "lease_expires_at": null,
+        "attempt_count": 0,
+        "started_at": null,
+        "completed_at": null,
+        "updated_at": "2026-10-02T13:05:13.904152+00:00",
+        "dependencies": [
+          "step-af76b220139c"
+        ],
+        "input": {},
+        "result": {},
+        "context_binding": null,
+        "phase": "delivery",
+        "objective": "产出最终交付物并回传验收证据",
+        "required_tools": [
+          "document_workspace"
+        ],
+        "tool_requirements": [
+          {
+            "name": "文档工作台",
+            "category": "document",
+            "status": "available",
+            "description": "处理文档结构、正文、引用与格式交付。",
+            "evidence_types": [
+              "document_diff",
+              "quality_notes"
+            ],
+            "id": "document_workspace"
+          }
+        ],
+        "deliverables": [
+          "完整中文测试大纲（test-outline-final.md）",
+          "需求覆盖矩阵（requirements-matrix.md）",
+          "独立审查记录（review-record.md）",
+          "修订说明（revision-notes.md）"
+        ],
+        "output_contract": {
+          "artifact_types": [
+            "markdown_files"
+          ],
+          "required_fields": [
+            "summary",
+            "evidence_refs",
+            "risk_notes"
+          ]
+        },
+        "acceptance_criteria": [
+          "所有文件保存至指定目录且可打开",
+          "测试大纲覆盖全部12个核心场景",
+          "需求覆盖矩阵标注实际审核结果",
+          "修订说明记录所有修改",
+          "回传真实可访问路径"
+        ],
+        "evidence_required": [
+          "四个文件的完整路径",
+          "每个文件的SHA-256哈希值",
+          "文件内容摘要（前5行）",
+          "目录ls -la输出"
+        ],
+        "risk_level": "low",
+        "risk_class": "L1",
+        "approval_required": false,
+        "side_effect": true,
+        "resources": [
+          "/Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/deliverables/"
+        ],
+        "idempotency_key": "mission-f165257f1043:plan:1:step:5",
+        "timeout_seconds": 1200,
+        "max_attempts": 2,
+        "rollback_plan": "修订失败时保留步骤3初稿，重新执行修订；文件写入失败时检查权限后重试",
+        "compensation": {
+          "type": "manual",
+          "instructions": "删除已写入文件，恢复目录到步骤3完成状态，保留初稿"
+        },
+        "capability_match": true,
+        "artifacts": [],
+        "evidence": [],
+        "acceptance_gate": null,
+        "step_approval": null,
+        "effects": [],
+        "compensations": []
+      }
+    ],
+    "context_bindings": [
+      {
+        "id": "ctxbind-bcee509fcf0a",
+        "mission_id": "mission-f165257f1043",
+        "plan_version": 1,
+        "step_id": "",
+        "purpose": "planning",
+        "agent_id": "optimus",
+        "context_pack_id": "context-5900985e5c64",
+        "context_pack_version": 1,
+        "status": "ready",
+        "query": "为智能体系统自身编写《智能体系统软件测试大纲》，这是工作流验证试点的首个真实任务。请由擎天柱生成计划并经审批后组织执行，不得直接宣布完成。\n范围：需求接收、项目背景获取、计划拆解、计划审批/退回、多智能体依赖执行、独立质量审核、返工、产物保存、版本追溯、证据验收、交付状态同步、失败恢复、重复提交及幂等。\n先只编写和审核大纲，不在生产服务注入故障，不修改系统代码或配置，不重启服务，不提交Git，不发送外部消息。后续测试执行和修复作为独立任务。\n必须依据本地源码和实际接口梳理系统；区分已实现、当前启用、尚未验证。仓库 /Users/apple/工作桌面/Workspace/agent-system 中已有其他未提交改动，不得覆盖。\n建议分工：范围梳理→测试场景设计→文档整合→不同智能体独立审核→修订交付。至少覆盖12个核心场景，每个包含编号、目标、前置条件、步骤、预期结果、证据要求、优先级，实际结果统一为未执行。大纲包含测试范围、环境、正常/异常流程、产物质量、缺陷分级及退出条件。\n交付：完整中文测试大纲、需求覆盖矩阵、独立审查记录及修订说明。优先保存为实际Markdown文件到 /Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/deliverables/ 。每项产物回传真实可访问路径和验收证据，不能只提供总结或虚构路径。不可访问该目录时明确报告阻塞，不得伪造完成。\n验收：完整文件可打开，需求全覆盖，场景可执行，独立审核意见得到处理，任务/项目/产物可追溯。系统编写文档成功不代表文档中测试通过。\n规划时主动读取项目context中的专属验收标识，纳入覆盖矩阵以验证背景传递。\n项目：workflow-pilot-20261002\n任务约束：{\"source\": \"workflow-validation-pilot\", \"output_directory\": \"/Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/deliverables\", \"phase\": \"outline-authoring-only\", \"mission_type\": \"software\", \"business_flow_key\": \"document\"}",
+        "summary": "agent_memory 5 条；graph_memory 4 条；profile 1 条；profile_fact 5 条；project 1 条",
+        "item_count": 16,
+        "citation_count": 16,
+        "error": null,
+        "created_at": "2026-10-02T13:02:55.574995+00:00",
+        "updated_at": "2026-10-02T13:02:55.574995+00:00",
+        "source_types": [
+          "agent_memory",
+          "graph_memory",
+          "profile",
+          "profile_fact",
+          "project"
+        ],
+        "citations": [
+          {
+            "rank": 1,
+            "source_id": "source-profile",
+            "source_ref": "profile:profile-ed9815cfab9d",
+            "title": "孙总的工作与业务档案"
+          },
+          {
+            "rank": 2,
+            "source_id": "source-profile",
+            "source_ref": "project:workflow-pilot-20261002",
+            "title": "智能体系统工作流验证与优化"
+          },
+          {
+            "rank": 3,
+            "source_id": "source-graph-memory",
+            "source_ref": "fact:fact-94ba6ec420b6",
+            "title": "workflow.memory_review_gate"
+          },
+          {
+            "rank": 4,
+            "source_id": "source-graph-memory",
+            "source_ref": "agent-memory:agent-memory-db0426c4737b",
+            "title": "command-center 仅分配给 optimus 的架构决策"
+          },
+          {
+            "rank": 5,
+            "source_id": "source-graph-memory",
+            "source_ref": "fact:fact-03c4a95d7014",
+            "title": "workflow.memory_review_gate_profile_fact"
+          },
+          {
+            "rank": 6,
+            "source_id": "source-graph-memory",
+            "source_ref": "agent-memory:agent-memory-df4fd9eee1eb",
+            "title": "skill-inventory.md 不会自动反映新增 Skill"
+          },
+          {
+            "rank": 7,
+            "source_id": "source-openclaw-memory",
+            "source_ref": "memory:optimus:sessions/optimus/9db24fc3-91dc-4fc9-ba5f-7f79f5638f44.jsonl.reset.2026-08-01T00-50-04.396Z:5-5",
+            "title": "optimus · sessions/optimus/9db24fc3-91dc-4fc9-ba5f-7f79f5638f44.jsonl.reset.2026-08-01T00-50-04.396Z"
+          },
+          {
+            "rank": 8,
+            "source_id": "source-openclaw-memory",
+            "source_ref": "memory:optimus:sessions/optimus/cdf97e5d-595f-4742-a2db-000f1dc55461.jsonl.deleted.2026-08-12T16-17-05.822Z:102-106",
+            "title": "optimus · sessions/optimus/cdf97e5d-595f-4742-a2db-000f1dc55461.jsonl.deleted.2026-08-12T16-17-05.822Z"
+          },
+          {
+            "rank": 9,
+            "source_id": "source-openclaw-memory",
+            "source_ref": "memory:optimus:sessions/optimus/cdf97e5d-595f-4742-a2db-000f1dc55461.jsonl.deleted.2026-08-12T16-17-05.822Z:106-114",
+            "title": "optimus · sessions/optimus/cdf97e5d-595f-4742-a2db-000f1dc55461.jsonl.deleted.2026-08-12T16-17-05.822Z"
+          },
+          {
+            "rank": 10,
+            "source_id": "source-openclaw-memory",
+            "source_ref": "memory:optimus:sessions/optimus/cdf97e5d-595f-4742-a2db-000f1dc55461.jsonl.deleted.2026-08-12T16-17-05.822Z:52-58",
+            "title": "optimus · sessions/optimus/cdf97e5d-595f-4742-a2db-000f1dc55461.jsonl.deleted.2026-08-12T16-17-05.822Z"
+          },
+          {
+            "rank": 11,
+            "source_id": "source-openclaw-memory",
+            "source_ref": "memory:optimus:sessions/optimus/cdf97e5d-595f-4742-a2db-000f1dc55461.jsonl.deleted.2026-08-12T16-17-05.822Z:58-86",
+            "title": "optimus · sessions/optimus/cdf97e5d-595f-4742-a2db-000f1dc55461.jsonl.deleted.2026-08-12T16-17-05.822Z"
+          },
+          {
+            "rank": 12,
+            "source_id": "source-profile",
+            "source_ref": "fact:fact-3059e115d053",
+            "title": "decision.single_entry"
+          },
+          {
+            "rank": 13,
+            "source_id": "source-profile",
+            "source_ref": "fact:fact-d7498dff47c8",
+            "title": "preference.delivery"
+          },
+          {
+            "rank": 14,
+            "source_id": "source-profile",
+            "source_ref": "fact:fact-5c41e4d664ae",
+            "title": "preference.language"
+          },
+          {
+            "rank": 15,
+            "source_id": "source-profile",
+            "source_ref": "fact:fact-10a7effce6c1",
+            "title": "system.source_of_truth"
+          },
+          {
+            "rank": 16,
+            "source_id": "source-profile",
+            "source_ref": "fact:fact-0b1df4e0735b",
+            "title": "workflow.approval"
+          }
+        ],
+        "retrieval_health": {
+          "profile": {
+            "status": "ready",
+            "profile_id": "profile-ed9815cfab9d",
+            "facts": 10
+          },
+          "project": {
+            "status": "ready",
+            "project_id": "workflow-pilot-20261002"
+          },
+          "approved_memory": {
+            "status": "ready",
+            "engine": "unified-approved-memory",
+            "project_results": 0,
+            "agent_results": 0,
+            "results": 0
+          },
+          "vector_memory": {
+            "status": "ready",
+            "engine": "pgvector",
+            "provider": "ollama",
+            "model": "nomic-embed-text:v1.5",
+            "dimension": 768,
+            "results": 4,
+            "latency_ms": 923.32
+          },
+          "graph_memory": {
+            "status": "ready",
+            "engine": "graph-memory",
+            "mode": "approved-projection-sqlite",
+            "results": 4,
+            "returned": 4,
+            "filtered": 0,
+            "evaluation_mode": "rerank"
+          },
+          "knowledge": {
+            "status": "ready",
+            "engine": "obsidian-local",
+            "strategy": "query-with-term-fallback",
+            "queries": [
+              "为智能体系统自身编写《智能体系统软件测试大纲》，这是工作流验证试点的首个真实任务。请由擎天柱生成计划并经审批后组织执行，不得直接宣布完成。\n范围：需求接收、项目背景获取、计划拆解、计划审批/退回、多智能体依赖执行、独立质量审核、返工、产物保存、版本追溯、证据验收、交付状态同步、失败恢复、重复提交及幂等。\n先只编写和审核大纲，不在生产服务注入故障，不修改系统代码或配置，不重启服务，不提交git，不发送外部消息。后续测试执行和修复作为独立任务。\n必须依据本地源码和实际接口梳理系统；区分已实现、当前启用、尚未验证。仓库 /users/apple/工作桌面/workspace/agent-system 中已有其他未提交改动，不得覆盖。\n建议分工：范围梳理→测试场景设计→文档整合→不同智能体独立审核→修订交付。至少覆盖12个核心场景，每个包含编号、目标、前置条件、步骤、预期结果、证据要求、优先级，实际结果统一为未执行。大纲包含测试范围、环境、正常/异常流程、产物质量、缺陷分级及退出条件。\n交付：完整中文测试大纲、需求覆盖矩阵、独立审查记录及修订说明。优先保存为实际markdown文件到 /users/apple/工作桌面/workspace/agent-system/docs/review/workflow-pilot-20261002/deliverables/ 。每项产物回传真实可访问路径和验收证据，不能只提供总结或虚构路径。不可访问该目录时明确报告阻塞，不得伪造完成。\n验收：完整文件可打开，需求全覆盖，场景可执行，独立审核意见得到处理，任务/项目/产物可追溯。系统编写文档成功不代表文档中测试通过。\n规划时主动读取项目context中的专属验收标识，纳入覆盖矩阵以验证背景传递。\n项目：workflow-pilot-20261002\n任务约束：{\"source\": \"workflow-validation-pilot\", \"output_directory\": \"/users/apple/工作桌面/workspace/agent-system/docs/review/workflow-pilot-20261002/deliverables\", \"phase\": \"outline-authoring-only\", \"mission_type\": \"software\", \"business_flow_key\": \"document\"}",
+              "需求接收",
+              "计划拆解",
+              "计划审批",
+              "产物保存",
+              "范围",
+              "退回",
+              "返工",
+              "项目背景获取",
+              "独立质量审核"
+            ],
+            "results": 0,
+            "total": 0
+          },
+          "agent_memory": {
+            "status": "ready",
+            "agent_id": "optimus",
+            "db_path": "/Users/apple/.openclaw/agents/optimus/agent/openclaw-agent.sqlite",
+            "backend": "openclaw-agent-state",
+            "results": 10,
+            "mode": "sqlite-lexical-fallback"
+          },
+          "hybrid_fusion": {
+            "version": "weighted-rrf.v1",
+            "mode": "baseline",
+            "strategy": "score-sort-baseline",
+            "rrf_k": 60,
+            "channel_weights": {
+              "structured": 1.25,
+              "lexical": 1.0,
+              "vector": 1.1,
+              "graph": 0.75
+            },
+            "active_channels": [
+              "structured",
+              "lexical",
+              "vector",
+              "graph"
+            ],
+            "input_candidates": 26,
+            "deduplicated_candidates": 16,
+            "multi_channel_candidates": 4,
+            "reranker": "disabled",
+            "rollout_mode": "shadow",
+            "served_strategy": "score-sort-baseline",
+            "candidate_strategy": "weighted-rrf.v1",
+            "comparison": {
+              "k": 10,
+              "overlap": 6,
+              "overlap_ratio": 0.4286,
+              "top1_changed": true,
+              "mean_rank_displacement": 2.3333,
+              "baseline_refs": [
+                "profile:profile-ed9815cfab9d",
+                "project:workflow-pilot-20261002",
+                "fact:fact-94ba6ec420b6",
+                "agent-memory:agent-memory-db0426c4737b",
+                "fact:fact-03c4a95d7014",
+                "agent-memory:agent-memory-df4fd9eee1eb",
+                "memory:optimus:sessions/optimus/9db24fc3-91dc-4fc9-ba5f-7f79f5638f44.jsonl.reset.2026-08-01T00-50-04.396Z:5-5",
+                "memory:optimus:sessions/optimus/cdf97e5d-595f-4742-a2db-000f1dc55461.jsonl.deleted.2026-08-12T16-17-05.822Z:102-106",
+                "memory:optimus:sessions/optimus/cdf97e5d-595f-4742-a2db-000f1dc55461.jsonl.deleted.2026-08-12T16-17-05.822Z:106-114",
+                "memory:optimus:sessions/optimus/cdf97e5d-595f-4742-a2db-000f1dc55461.jsonl.deleted.2026-08-12T16-17-05.822Z:52-58"
+              ],
+              "candidate_refs": [
+                "fact:fact-94ba6ec420b6",
+                "agent-memory:agent-memory-db0426c4737b",
+                "fact:fact-03c4a95d7014",
+                "profile:profile-ed9815cfab9d",
+                "agent-memory:agent-memory-df4fd9eee1eb",
+                "project:workflow-pilot-20261002",
+                "fact:fact-3059e115d053",
+                "fact:fact-10a7effce6c1",
+                "fact:fact-0b1df4e0735b",
+                "fact:fact-d7498dff47c8"
+              ]
+            }
+          },
+          "retrieval_strategy": {
+            "version": "hybrid-retrieval.v2",
+            "mode": "structured+lexical+vector+graph",
+            "fusion": "score-sort-baseline",
+            "fusion_version": "weighted-rrf.v1",
+            "fusion_rollout_mode": "shadow",
+            "reranker": "disabled",
+            "channels": {
+              "structured": {
+                "status": "ready",
+                "selected": 8
+              },
+              "lexical": {
+                "status": "ready",
+                "selected": 5
+              },
+              "vector": {
+                "status": "ready",
+                "selected": 4
+              },
+              "graph": {
+                "status": "ready",
+                "selected": 4
+              }
+            }
+          },
+          "retrieval_decision": {
+            "status": "supported",
+            "reason_code": "relevant_memory_found",
+            "supporting_count": 8,
+            "supporting_source_refs": [
+              "fact:fact-94ba6ec420b6",
+              "agent-memory:agent-memory-db0426c4737b",
+              "fact:fact-03c4a95d7014",
+              "memory:optimus:sessions/optimus/9db24fc3-91dc-4fc9-ba5f-7f79f5638f44.jsonl.reset.2026-08-01T00-50-04.396Z:5-5",
+              "memory:optimus:sessions/optimus/cdf97e5d-595f-4742-a2db-000f1dc55461.jsonl.deleted.2026-08-12T16-17-05.822Z:102-106",
+              "memory:optimus:sessions/optimus/cdf97e5d-595f-4742-a2db-000f1dc55461.jsonl.deleted.2026-08-12T16-17-05.822Z:106-114",
+              "memory:optimus:sessions/optimus/cdf97e5d-595f-4742-a2db-000f1dc55461.jsonl.deleted.2026-08-12T16-17-05.822Z:52-58",
+              "memory:optimus:sessions/optimus/cdf97e5d-595f-4742-a2db-000f1dc55461.jsonl.deleted.2026-08-12T16-17-05.822Z:58-86"
+            ],
+            "background_count": 8,
+            "background_source_refs": [
+              "profile:profile-ed9815cfab9d",
+              "project:workflow-pilot-20261002",
+              "agent-memory:agent-memory-df4fd9eee1eb",
+              "fact:fact-3059e115d053",
+              "fact:fact-d7498dff47c8",
+              "fact:fact-5c41e4d664ae",
+              "fact:fact-10a7effce6c1",
+              "fact:fact-0b1df4e0735b"
+            ],
+            "max_support_score": 0.94,
+            "thresholds": {
+              "vector": 0.8,
+              "graph": 0.78
+            }
+          }
+        }
+      }
+    ],
+    "planning_context": {
+      "id": "ctxbind-bcee509fcf0a",
+      "mission_id": "mission-f165257f1043",
+      "plan_version": 1,
+      "step_id": "",
+      "purpose": "planning",
+      "agent_id": "optimus",
+      "context_pack_id": "context-5900985e5c64",
+      "context_pack_version": 1,
+      "status": "ready",
+      "query": "为智能体系统自身编写《智能体系统软件测试大纲》，这是工作流验证试点的首个真实任务。请由擎天柱生成计划并经审批后组织执行，不得直接宣布完成。\n范围：需求接收、项目背景获取、计划拆解、计划审批/退回、多智能体依赖执行、独立质量审核、返工、产物保存、版本追溯、证据验收、交付状态同步、失败恢复、重复提交及幂等。\n先只编写和审核大纲，不在生产服务注入故障，不修改系统代码或配置，不重启服务，不提交Git，不发送外部消息。后续测试执行和修复作为独立任务。\n必须依据本地源码和实际接口梳理系统；区分已实现、当前启用、尚未验证。仓库 /Users/apple/工作桌面/Workspace/agent-system 中已有其他未提交改动，不得覆盖。\n建议分工：范围梳理→测试场景设计→文档整合→不同智能体独立审核→修订交付。至少覆盖12个核心场景，每个包含编号、目标、前置条件、步骤、预期结果、证据要求、优先级，实际结果统一为未执行。大纲包含测试范围、环境、正常/异常流程、产物质量、缺陷分级及退出条件。\n交付：完整中文测试大纲、需求覆盖矩阵、独立审查记录及修订说明。优先保存为实际Markdown文件到 /Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/deliverables/ 。每项产物回传真实可访问路径和验收证据，不能只提供总结或虚构路径。不可访问该目录时明确报告阻塞，不得伪造完成。\n验收：完整文件可打开，需求全覆盖，场景可执行，独立审核意见得到处理，任务/项目/产物可追溯。系统编写文档成功不代表文档中测试通过。\n规划时主动读取项目context中的专属验收标识，纳入覆盖矩阵以验证背景传递。\n项目：workflow-pilot-20261002\n任务约束：{\"source\": \"workflow-validation-pilot\", \"output_directory\": \"/Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/deliverables\", \"phase\": \"outline-authoring-only\", \"mission_type\": \"software\", \"business_flow_key\": \"document\"}",
+      "summary": "agent_memory 5 条；graph_memory 4 条；profile 1 条；profile_fact 5 条；project 1 条",
+      "item_count": 16,
+      "citation_count": 16,
+      "error": null,
+      "created_at": "2026-10-02T13:02:55.574995+00:00",
+      "updated_at": "2026-10-02T13:02:55.574995+00:00",
+      "source_types": [
+        "agent_memory",
+        "graph_memory",
+        "profile",
+        "profile_fact",
+        "project"
+      ],
+      "citations": [
+        {
+          "rank": 1,
+          "source_id": "source-profile",
+          "source_ref": "profile:profile-ed9815cfab9d",
+          "title": "孙总的工作与业务档案"
+        },
+        {
+          "rank": 2,
+          "source_id": "source-profile",
+          "source_ref": "project:workflow-pilot-20261002",
+          "title": "智能体系统工作流验证与优化"
+        },
+        {
+          "rank": 3,
+          "source_id": "source-graph-memory",
+          "source_ref": "fact:fact-94ba6ec420b6",
+          "title": "workflow.memory_review_gate"
+        },
+        {
+          "rank": 4,
+          "source_id": "source-graph-memory",
+          "source_ref": "agent-memory:agent-memory-db0426c4737b",
+          "title": "command-center 仅分配给 optimus 的架构决策"
+        },
+        {
+          "rank": 5,
+          "source_id": "source-graph-memory",
+          "source_ref": "fact:fact-03c4a95d7014",
+          "title": "workflow.memory_review_gate_profile_fact"
+        },
+        {
+          "rank": 6,
+          "source_id": "source-graph-memory",
+          "source_ref": "agent-memory:agent-memory-df4fd9eee1eb",
+          "title": "skill-inventory.md 不会自动反映新增 Skill"
+        },
+        {
+          "rank": 7,
+          "source_id": "source-openclaw-memory",
+          "source_ref": "memory:optimus:sessions/optimus/9db24fc3-91dc-4fc9-ba5f-7f79f5638f44.jsonl.reset.2026-08-01T00-50-04.396Z:5-5",
+          "title": "optimus · sessions/optimus/9db24fc3-91dc-4fc9-ba5f-7f79f5638f44.jsonl.reset.2026-08-01T00-50-04.396Z"
+        },
+        {
+          "rank": 8,
+          "source_id": "source-openclaw-memory",
+          "source_ref": "memory:optimus:sessions/optimus/cdf97e5d-595f-4742-a2db-000f1dc55461.jsonl.deleted.2026-08-12T16-17-05.822Z:102-106",
+          "title": "optimus · sessions/optimus/cdf97e5d-595f-4742-a2db-000f1dc55461.jsonl.deleted.2026-08-12T16-17-05.822Z"
+        },
+        {
+          "rank": 9,
+          "source_id": "source-openclaw-memory",
+          "source_ref": "memory:optimus:sessions/optimus/cdf97e5d-595f-4742-a2db-000f1dc55461.jsonl.deleted.2026-08-12T16-17-05.822Z:106-114",
+          "title": "optimus · sessions/optimus/cdf97e5d-595f-4742-a2db-000f1dc55461.jsonl.deleted.2026-08-12T16-17-05.822Z"
+        },
+        {
+          "rank": 10,
+          "source_id": "source-openclaw-memory",
+          "source_ref": "memory:optimus:sessions/optimus/cdf97e5d-595f-4742-a2db-000f1dc55461.jsonl.deleted.2026-08-12T16-17-05.822Z:52-58",
+          "title": "optimus · sessions/optimus/cdf97e5d-595f-4742-a2db-000f1dc55461.jsonl.deleted.2026-08-12T16-17-05.822Z"
+        },
+        {
+          "rank": 11,
+          "source_id": "source-openclaw-memory",
+          "source_ref": "memory:optimus:sessions/optimus/cdf97e5d-595f-4742-a2db-000f1dc55461.jsonl.deleted.2026-08-12T16-17-05.822Z:58-86",
+          "title": "optimus · sessions/optimus/cdf97e5d-595f-4742-a2db-000f1dc55461.jsonl.deleted.2026-08-12T16-17-05.822Z"
+        },
+        {
+          "rank": 12,
+          "source_id": "source-profile",
+          "source_ref": "fact:fact-3059e115d053",
+          "title": "decision.single_entry"
+        },
+        {
+          "rank": 13,
+          "source_id": "source-profile",
+          "source_ref": "fact:fact-d7498dff47c8",
+          "title": "preference.delivery"
+        },
+        {
+          "rank": 14,
+          "source_id": "source-profile",
+          "source_ref": "fact:fact-5c41e4d664ae",
+          "title": "preference.language"
+        },
+        {
+          "rank": 15,
+          "source_id": "source-profile",
+          "source_ref": "fact:fact-10a7effce6c1",
+          "title": "system.source_of_truth"
+        },
+        {
+          "rank": 16,
+          "source_id": "source-profile",
+          "source_ref": "fact:fact-0b1df4e0735b",
+          "title": "workflow.approval"
+        }
+      ],
+      "retrieval_health": {
+        "profile": {
+          "status": "ready",
+          "profile_id": "profile-ed9815cfab9d",
+          "facts": 10
+        },
+        "project": {
+          "status": "ready",
+          "project_id": "workflow-pilot-20261002"
+        },
+        "approved_memory": {
+          "status": "ready",
+          "engine": "unified-approved-memory",
+          "project_results": 0,
+          "agent_results": 0,
+          "results": 0
+        },
+        "vector_memory": {
+          "status": "ready",
+          "engine": "pgvector",
+          "provider": "ollama",
+          "model": "nomic-embed-text:v1.5",
+          "dimension": 768,
+          "results": 4,
+          "latency_ms": 923.32
+        },
+        "graph_memory": {
+          "status": "ready",
+          "engine": "graph-memory",
+          "mode": "approved-projection-sqlite",
+          "results": 4,
+          "returned": 4,
+          "filtered": 0,
+          "evaluation_mode": "rerank"
+        },
+        "knowledge": {
+          "status": "ready",
+          "engine": "obsidian-local",
+          "strategy": "query-with-term-fallback",
+          "queries": [
+            "为智能体系统自身编写《智能体系统软件测试大纲》，这是工作流验证试点的首个真实任务。请由擎天柱生成计划并经审批后组织执行，不得直接宣布完成。\n范围：需求接收、项目背景获取、计划拆解、计划审批/退回、多智能体依赖执行、独立质量审核、返工、产物保存、版本追溯、证据验收、交付状态同步、失败恢复、重复提交及幂等。\n先只编写和审核大纲，不在生产服务注入故障，不修改系统代码或配置，不重启服务，不提交git，不发送外部消息。后续测试执行和修复作为独立任务。\n必须依据本地源码和实际接口梳理系统；区分已实现、当前启用、尚未验证。仓库 /users/apple/工作桌面/workspace/agent-system 中已有其他未提交改动，不得覆盖。\n建议分工：范围梳理→测试场景设计→文档整合→不同智能体独立审核→修订交付。至少覆盖12个核心场景，每个包含编号、目标、前置条件、步骤、预期结果、证据要求、优先级，实际结果统一为未执行。大纲包含测试范围、环境、正常/异常流程、产物质量、缺陷分级及退出条件。\n交付：完整中文测试大纲、需求覆盖矩阵、独立审查记录及修订说明。优先保存为实际markdown文件到 /users/apple/工作桌面/workspace/agent-system/docs/review/workflow-pilot-20261002/deliverables/ 。每项产物回传真实可访问路径和验收证据，不能只提供总结或虚构路径。不可访问该目录时明确报告阻塞，不得伪造完成。\n验收：完整文件可打开，需求全覆盖，场景可执行，独立审核意见得到处理，任务/项目/产物可追溯。系统编写文档成功不代表文档中测试通过。\n规划时主动读取项目context中的专属验收标识，纳入覆盖矩阵以验证背景传递。\n项目：workflow-pilot-20261002\n任务约束：{\"source\": \"workflow-validation-pilot\", \"output_directory\": \"/users/apple/工作桌面/workspace/agent-system/docs/review/workflow-pilot-20261002/deliverables\", \"phase\": \"outline-authoring-only\", \"mission_type\": \"software\", \"business_flow_key\": \"document\"}",
+            "需求接收",
+            "计划拆解",
+            "计划审批",
+            "产物保存",
+            "范围",
+            "退回",
+            "返工",
+            "项目背景获取",
+            "独立质量审核"
+          ],
+          "results": 0,
+          "total": 0
+        },
+        "agent_memory": {
+          "status": "ready",
+          "agent_id": "optimus",
+          "db_path": "/Users/apple/.openclaw/agents/optimus/agent/openclaw-agent.sqlite",
+          "backend": "openclaw-agent-state",
+          "results": 10,
+          "mode": "sqlite-lexical-fallback"
+        },
+        "hybrid_fusion": {
+          "version": "weighted-rrf.v1",
+          "mode": "baseline",
+          "strategy": "score-sort-baseline",
+          "rrf_k": 60,
+          "channel_weights": {
+            "structured": 1.25,
+            "lexical": 1.0,
+            "vector": 1.1,
+            "graph": 0.75
+          },
+          "active_channels": [
+            "structured",
+            "lexical",
+            "vector",
+            "graph"
+          ],
+          "input_candidates": 26,
+          "deduplicated_candidates": 16,
+          "multi_channel_candidates": 4,
+          "reranker": "disabled",
+          "rollout_mode": "shadow",
+          "served_strategy": "score-sort-baseline",
+          "candidate_strategy": "weighted-rrf.v1",
+          "comparison": {
+            "k": 10,
+            "overlap": 6,
+            "overlap_ratio": 0.4286,
+            "top1_changed": true,
+            "mean_rank_displacement": 2.3333,
+            "baseline_refs": [
+              "profile:profile-ed9815cfab9d",
+              "project:workflow-pilot-20261002",
+              "fact:fact-94ba6ec420b6",
+              "agent-memory:agent-memory-db0426c4737b",
+              "fact:fact-03c4a95d7014",
+              "agent-memory:agent-memory-df4fd9eee1eb",
+              "memory:optimus:sessions/optimus/9db24fc3-91dc-4fc9-ba5f-7f79f5638f44.jsonl.reset.2026-08-01T00-50-04.396Z:5-5",
+              "memory:optimus:sessions/optimus/cdf97e5d-595f-4742-a2db-000f1dc55461.jsonl.deleted.2026-08-12T16-17-05.822Z:102-106",
+              "memory:optimus:sessions/optimus/cdf97e5d-595f-4742-a2db-000f1dc55461.jsonl.deleted.2026-08-12T16-17-05.822Z:106-114",
+              "memory:optimus:sessions/optimus/cdf97e5d-595f-4742-a2db-000f1dc55461.jsonl.deleted.2026-08-12T16-17-05.822Z:52-58"
+            ],
+            "candidate_refs": [
+              "fact:fact-94ba6ec420b6",
+              "agent-memory:agent-memory-db0426c4737b",
+              "fact:fact-03c4a95d7014",
+              "profile:profile-ed9815cfab9d",
+              "agent-memory:agent-memory-df4fd9eee1eb",
+              "project:workflow-pilot-20261002",
+              "fact:fact-3059e115d053",
+              "fact:fact-10a7effce6c1",
+              "fact:fact-0b1df4e0735b",
+              "fact:fact-d7498dff47c8"
+            ]
+          }
+        },
+        "retrieval_strategy": {
+          "version": "hybrid-retrieval.v2",
+          "mode": "structured+lexical+vector+graph",
+          "fusion": "score-sort-baseline",
+          "fusion_version": "weighted-rrf.v1",
+          "fusion_rollout_mode": "shadow",
+          "reranker": "disabled",
+          "channels": {
+            "structured": {
+              "status": "ready",
+              "selected": 8
+            },
+            "lexical": {
+              "status": "ready",
+              "selected": 5
+            },
+            "vector": {
+              "status": "ready",
+              "selected": 4
+            },
+            "graph": {
+              "status": "ready",
+              "selected": 4
+            }
+          }
+        },
+        "retrieval_decision": {
+          "status": "supported",
+          "reason_code": "relevant_memory_found",
+          "supporting_count": 8,
+          "supporting_source_refs": [
+            "fact:fact-94ba6ec420b6",
+            "agent-memory:agent-memory-db0426c4737b",
+            "fact:fact-03c4a95d7014",
+            "memory:optimus:sessions/optimus/9db24fc3-91dc-4fc9-ba5f-7f79f5638f44.jsonl.reset.2026-08-01T00-50-04.396Z:5-5",
+            "memory:optimus:sessions/optimus/cdf97e5d-595f-4742-a2db-000f1dc55461.jsonl.deleted.2026-08-12T16-17-05.822Z:102-106",
+            "memory:optimus:sessions/optimus/cdf97e5d-595f-4742-a2db-000f1dc55461.jsonl.deleted.2026-08-12T16-17-05.822Z:106-114",
+            "memory:optimus:sessions/optimus/cdf97e5d-595f-4742-a2db-000f1dc55461.jsonl.deleted.2026-08-12T16-17-05.822Z:52-58",
+            "memory:optimus:sessions/optimus/cdf97e5d-595f-4742-a2db-000f1dc55461.jsonl.deleted.2026-08-12T16-17-05.822Z:58-86"
+          ],
+          "background_count": 8,
+          "background_source_refs": [
+            "profile:profile-ed9815cfab9d",
+            "project:workflow-pilot-20261002",
+            "agent-memory:agent-memory-df4fd9eee1eb",
+            "fact:fact-3059e115d053",
+            "fact:fact-d7498dff47c8",
+            "fact:fact-5c41e4d664ae",
+            "fact:fact-10a7effce6c1",
+            "fact:fact-0b1df4e0735b"
+          ],
+          "max_support_score": 0.94,
+          "thresholds": {
+            "vector": 0.8,
+            "graph": 0.78
+          }
+        }
+      }
+    },
+    "plan": {
+      "id": "plan-40b352a01840",
+      "mission_id": "mission-f165257f1043",
+      "version": 1,
+      "summary": "为智能体系统编写《智能体系统软件测试大纲》，通过源码分析、场景设计、文档撰写、独立审核、修订交付五个阶段完成，覆盖12个核心场景，产出完整中文测试大纲、需求覆盖矩阵、独立审查记录及修订说明",
+      "rationale": "基于[C2]项目workflow-pilot-20261002处于planning状态，需通过系统自行编写测试大纲验证工作流；基于[C1]孙总偏好先方案后执行、必须提供测试和可追踪来源；基于[C13]采用先方案、再批准、后执行、最终附证据的交付方式；基于[C15]3021数据库为事实源；基于[C16]计划由智能体系统评估生成，孙总批准后才进入执行；基于仓库实际结构（backend/routers/包含command_center_router/workflow等模块）",
+      "risk_level": "medium",
+      "raw_plan": {
+        "schema_version": "2.0",
+        "business_type": "document",
+        "summary": "为智能体系统编写《智能体系统软件测试大纲》，通过源码分析、场景设计、文档撰写、独立审核、修订交付五个阶段完成，覆盖12个核心场景，产出完整中文测试大纲、需求覆盖矩阵、独立审查记录及修订说明",
+        "rationale": "基于[C2]项目workflow-pilot-20261002处于planning状态，需通过系统自行编写测试大纲验证工作流；基于[C1]孙总偏好先方案后执行、必须提供测试和可追踪来源；基于[C13]采用先方案、再批准、后执行、最终附证据的交付方式；基于[C15]3021数据库为事实源；基于[C16]计划由智能体系统评估生成，孙总批准后才进入执行；基于仓库实际结构（backend/routers/包含command_center_router/workflow等模块）",
+        "risk_level": "medium",
+        "steps": [
+          {
+            "order_index": 1,
+            "title": "系统能力与接口范围梳理",
+            "description": "读取/Users/apple/工作桌面/Workspace/agent-system仓库源码，重点分析backend/routers/command_center_router.py、backend/routers/workflow.py、backend/models/、backend/services/等核心模块，梳理已实现的任务接收、计划拆解、审批/退回、多智能体依赖执行、独立质量审核、返工、产物保存、版本追溯、证据验收、交付状态同步、失败恢复、重复提交及幂等等能力，区分已实现/当前启用/尚未验证，输出系统能力清单和接口清单",
+            "task_type": "research",
+            "agent_id": "perceptor",
+            "executor": "openclaw",
+            "depends_on": [],
+            "input": {},
+            "required_tools": [
+              "context_search",
+              "document_workspace"
+            ],
+            "deliverables": [
+              "系统能力清单（JSON/Markdown）",
+              "接口清单（含路径、方法、参数、状态）"
+            ],
+            "acceptance_criteria": [
+              "覆盖command_center_router和workflow路由的所有端点",
+              "区分已实现/当前启用/尚未验证三类状态",
+              "每个接口标注验证状态"
+            ],
+            "evidence_required": [
+              "文件读取记录（路径+行号）",
+              "能力清单文件内容摘要"
+            ],
+            "risk_level": "low",
+            "rollback_plan": "分析失败时保留已读取记录，重新执行全量分析",
+            "phase": "research",
+            "objective": "产出系统能力与接口范围基线文档",
+            "output_contract": {
+              "artifact_types": [
+                "markdown_document",
+                "json_data"
+              ],
+              "required_fields": [
+                "summary",
+                "evidence_refs",
+                "risk_notes"
+              ]
+            },
+            "timeout_seconds": 1200,
+            "max_attempts": 3,
+            "risk_class": "L0",
+            "approval_required": false,
+            "side_effect": false,
+            "compensation": {
+              "type": "manual",
+              "instructions": "回退到上一步状态，无外部副作用需补偿"
+            },
+            "tool_requirements": [
+              {
+                "name": "背景检索",
+                "category": "context",
+                "status": "available",
+                "description": "检索项目、记忆、会话和文档背景，形成可引用上下文。",
+                "evidence_types": [
+                  "context_pack",
+                  "citations"
+                ],
+                "id": "context_search"
+              },
+              {
+                "name": "文档工作台",
+                "category": "document",
+                "status": "available",
+                "description": "处理文档结构、正文、引用与格式交付。",
+                "evidence_types": [
+                  "document_diff",
+                  "quality_notes"
+                ],
+                "id": "document_workspace"
+              }
+            ],
+            "capability_match": true,
+            "resources": [],
+            "idempotency_key": "mission-f165257f1043:plan:1:step:1",
+            "idempotency_key_generated": true
+          },
+          {
+            "order_index": 2,
+            "title": "需求覆盖矩阵设计",
+            "description": "基于步骤1产出的系统能力清单，设计12个核心测试场景的需求覆盖矩阵，场景包括：需求接收、项目背景获取、计划拆解、计划审批/退回、多智能体依赖执行、独立质量审核、返工、产物保存、版本追溯、证据验收、交付状态同步、失败恢复、重复提交及幂等，每个场景包含编号、目标、前置条件、步骤、预期结果、证据要求、优先级，实际结果统一标记为未执行",
+            "task_type": "research",
+            "agent_id": "optimus",
+            "executor": "openclaw",
+            "depends_on": [
+              1
+            ],
+            "input": {},
+            "required_tools": [
+              "context_search",
+              "document_workspace"
+            ],
+            "deliverables": [
+              "需求覆盖矩阵（Markdown表格）",
+              "12个核心场景定义"
+            ],
+            "acceptance_criteria": [
+              "覆盖全部12个核心场景",
+              "每个场景包含编号、目标、前置条件、步骤、预期结果、证据要求、优先级",
+              "实际结果字段统一为未执行"
+            ],
+            "evidence_required": [
+              "需求覆盖矩阵文件内容",
+              "场景编号连续性检查"
+            ],
+            "risk_level": "low",
+            "rollback_plan": "设计失败时基于步骤1清单重新梳理",
+            "phase": "research",
+            "objective": "产出需求覆盖矩阵与场景定义",
+            "output_contract": {
+              "artifact_types": [
+                "markdown_document"
+              ],
+              "required_fields": [
+                "summary",
+                "evidence_refs",
+                "risk_notes"
+              ]
+            },
+            "timeout_seconds": 900,
+            "max_attempts": 2,
+            "risk_class": "L0",
+            "approval_required": false,
+            "side_effect": false,
+            "compensation": {
+              "type": "manual",
+              "instructions": "回退到步骤1完成状态，无外部副作用需补偿"
+            },
+            "tool_requirements": [
+              {
+                "name": "背景检索",
+                "category": "context",
+                "status": "available",
+                "description": "检索项目、记忆、会话和文档背景，形成可引用上下文。",
+                "evidence_types": [
+                  "context_pack",
+                  "citations"
+                ],
+                "id": "context_search"
+              },
+              {
+                "name": "文档工作台",
+                "category": "document",
+                "status": "available",
+                "description": "处理文档结构、正文、引用与格式交付。",
+                "evidence_types": [
+                  "document_diff",
+                  "quality_notes"
+                ],
+                "id": "document_workspace"
+              }
+            ],
+            "capability_match": true,
+            "resources": [],
+            "idempotency_key": "mission-f165257f1043:plan:1:step:2",
+            "idempotency_key_generated": true
+          },
+          {
+            "order_index": 3,
+            "title": "测试大纲初稿撰写",
+            "description": "基于步骤1系统能力清单和步骤2需求覆盖矩阵，编写《智能体系统软件测试大纲》初稿，包含：测试范围、测试环境、正常流程测试、异常流程测试、产物质量检查、缺陷分级标准、退出条件，每个测试场景按步骤2定义的编号、目标、前置条件、步骤、预期结果、证据要求展开，实际结果统一为未执行，文档保存至/Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/deliverables/test-outline-draft.md",
+            "task_type": "writing",
+            "agent_id": "donatello",
+            "executor": "openclaw",
+            "depends_on": [
+              1,
+              2
+            ],
+            "input": {},
+            "required_tools": [
+              "document_workspace",
+              "codex"
+            ],
+            "deliverables": [
+              "测试大纲初稿（Markdown文件）"
+            ],
+            "acceptance_criteria": [
+              "包含测试范围、测试环境、正常流程、异常流程、产物质量、缺陷分级、退出条件",
+              "覆盖步骤2定义的12个核心场景",
+              "文件保存至指定目录且可打开"
+            ],
+            "evidence_required": [
+              "文件保存路径",
+              "文件内容摘要（前10行）",
+              "文件大小（字节）"
+            ],
+            "risk_level": "low",
+            "rollback_plan": "写入失败时检查目录权限，创建目录后重试；文件损坏时删除后重新写入",
+            "phase": "implementation",
+            "objective": "产出测试大纲初稿文件",
+            "output_contract": {
+              "artifact_types": [
+                "markdown_file"
+              ],
+              "required_fields": [
+                "summary",
+                "evidence_refs",
+                "risk_notes"
+              ]
+            },
+            "timeout_seconds": 1200,
+            "max_attempts": 2,
+            "risk_class": "L1",
+            "approval_required": false,
+            "side_effect": true,
+            "resources": [
+              "/Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/deliverables/"
+            ],
+            "compensation": {
+              "type": "manual",
+              "instructions": "删除已写入文件，恢复目录到写入前状态"
+            },
+            "tool_requirements": [
+              {
+                "name": "文档工作台",
+                "category": "document",
+                "status": "available",
+                "description": "处理文档结构、正文、引用与格式交付。",
+                "evidence_types": [
+                  "document_diff",
+                  "quality_notes"
+                ],
+                "id": "document_workspace"
+              },
+              {
+                "name": "Coding Agent / Codex",
+                "category": "development",
+                "status": "available",
+                "description": "在代码仓库中完成受控修改。",
+                "evidence_types": [
+                  "diff_summary"
+                ],
+                "id": "codex"
+              }
+            ],
+            "capability_match": true,
+            "idempotency_key": "mission-f165257f1043:plan:1:step:3",
+            "idempotency_key_generated": true
+          },
+          {
+            "order_index": 4,
+            "title": "独立质量审核",
+            "description": "对步骤3产出的测试大纲初稿进行独立质量审核，检查：需求覆盖完整性（12个核心场景是否全部覆盖）、场景可执行性（步骤是否清晰、预期结果是否可验证）、证据要求充分性、文档结构规范性、与步骤1系统能力清单的一致性，输出审核记录，包含发现的问题、建议修改项、严重程度分级",
+            "task_type": "review",
+            "agent_id": "ratchet",
+            "executor": "openclaw",
+            "depends_on": [
+              3
+            ],
+            "input": {},
+            "required_tools": [
+              "document_workspace",
+              "quality_checker"
+            ],
+            "deliverables": [
+              "独立审核记录（Markdown文件）"
+            ],
+            "acceptance_criteria": [
+              "审核记录包含需求覆盖完整性检查",
+              "审核记录包含场景可执行性检查",
+              "审核记录包含发现的问题列表及严重程度",
+              "文件保存至指定目录"
+            ],
+            "evidence_required": [
+              "审核记录文件路径",
+              "发现的问题数量及分级",
+              "审核通过/不通过结论"
+            ],
+            "risk_level": "low",
+            "rollback_plan": "审核失败时保留审核记录，不修改原大纲",
+            "phase": "verification",
+            "objective": "产出独立审核记录",
+            "output_contract": {
+              "artifact_types": [
+                "markdown_file"
+              ],
+              "required_fields": [
+                "summary",
+                "evidence_refs",
+                "risk_notes"
+              ]
+            },
+            "timeout_seconds": 900,
+            "max_attempts": 2,
+            "risk_class": "L1",
+            "approval_required": false,
+            "side_effect": true,
+            "resources": [
+              "/Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/deliverables/"
+            ],
+            "compensation": {
+              "type": "manual",
+              "instructions": "删除审核记录文件，恢复目录状态"
+            },
+            "tool_requirements": [
+              {
+                "name": "文档工作台",
+                "category": "document",
+                "status": "available",
+                "description": "处理文档结构、正文、引用与格式交付。",
+                "evidence_types": [
+                  "document_diff",
+                  "quality_notes"
+                ],
+                "id": "document_workspace"
+              },
+              {
+                "name": "质量检查器",
+                "category": "review",
+                "status": "available",
+                "description": "执行计划、结果和风险复核，产出问题清单。",
+                "evidence_types": [
+                  "review_report"
+                ],
+                "id": "quality_checker"
+              }
+            ],
+            "capability_match": true,
+            "idempotency_key": "mission-f165257f1043:plan:1:step:4",
+            "idempotency_key_generated": true
+          },
+          {
+            "order_index": 5,
+            "title": "大纲修订与交付",
+            "description": "基于步骤4独立审核记录，对测试大纲进行修订，处理所有发现的问题和建议修改项，更新需求覆盖矩阵标注实际审核结果，编写修订说明文档，记录每次修改的内容、原因、依据，最终交付：完整中文测试大纲（test-outline-final.md）、需求覆盖矩阵（requirements-matrix.md）、独立审查记录（review-record.md）、修订说明（revision-notes.md），所有文件保存至/Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/deliverables/，回传真实可访问路径和验收证据",
+            "task_type": "writing",
+            "agent_id": "donatello",
+            "executor": "openclaw",
+            "depends_on": [
+              4
+            ],
+            "input": {},
+            "required_tools": [
+              "document_workspace"
+            ],
+            "deliverables": [
+              "完整中文测试大纲（test-outline-final.md）",
+              "需求覆盖矩阵（requirements-matrix.md）",
+              "独立审查记录（review-record.md）",
+              "修订说明（revision-notes.md）"
+            ],
+            "acceptance_criteria": [
+              "所有文件保存至指定目录且可打开",
+              "测试大纲覆盖全部12个核心场景",
+              "需求覆盖矩阵标注实际审核结果",
+              "修订说明记录所有修改",
+              "回传真实可访问路径"
+            ],
+            "evidence_required": [
+              "四个文件的完整路径",
+              "每个文件的SHA-256哈希值",
+              "文件内容摘要（前5行）",
+              "目录ls -la输出"
+            ],
+            "risk_level": "low",
+            "rollback_plan": "修订失败时保留步骤3初稿，重新执行修订；文件写入失败时检查权限后重试",
+            "phase": "delivery",
+            "objective": "产出最终交付物并回传验收证据",
+            "output_contract": {
+              "artifact_types": [
+                "markdown_files"
+              ],
+              "required_fields": [
+                "summary",
+                "evidence_refs",
+                "risk_notes"
+              ]
+            },
+            "timeout_seconds": 1200,
+            "max_attempts": 2,
+            "risk_class": "L1",
+            "approval_required": false,
+            "side_effect": true,
+            "resources": [
+              "/Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/deliverables/"
+            ],
+            "compensation": {
+              "type": "manual",
+              "instructions": "删除已写入文件，恢复目录到步骤3完成状态，保留初稿"
+            },
+            "tool_requirements": [
+              {
+                "name": "文档工作台",
+                "category": "document",
+                "status": "available",
+                "description": "处理文档结构、正文、引用与格式交付。",
+                "evidence_types": [
+                  "document_diff",
+                  "quality_notes"
+                ],
+                "id": "document_workspace"
+              }
+            ],
+            "capability_match": true,
+            "idempotency_key": "mission-f165257f1043:plan:1:step:5",
+            "idempotency_key_generated": true
+          }
+        ],
+        "flow_spec": {
+          "flow_key": "document",
+          "version": "1.0.0",
+          "name": "文档生产交付流",
+          "business_type": "document",
+          "phases": [
+            "intake",
+            "planning",
+            "research",
+            "production",
+            "verification",
+            "delivery"
+          ],
+          "required_gates": [
+            "plan_quality",
+            "plan_approval",
+            "citation_gate",
+            "evidence_gate"
+          ],
+          "budgets": {
+            "max_steps": 12,
+            "max_parallel_steps": 3,
+            "max_replans": 2,
+            "default_timeout_seconds": 1200
+          },
+          "approval_policy": {
+            "plan_approval": true,
+            "delivery_approval": true,
+            "l3_step_approval": true
+          }
+        },
+        "risk_assessment": {
+          "highest_risk": "L1",
+          "by_level": {
+            "L0": 2,
+            "L1": 3,
+            "L2": 0,
+            "L3": 0
+          },
+          "step_approvals": [],
+          "plan_approval_required": true,
+          "delivery_approval_required": true
+        },
+        "approval_policy": {
+          "plan_approval": true,
+          "delivery_approval": true,
+          "l3_step_approval": true,
+          "highest_risk": "L1",
+          "step_approvals": []
+        },
+        "execution_policy": {
+          "runtime": "command-center",
+          "state_machine": "mission-v1",
+          "require_context_snapshot": true,
+          "require_evidence": true,
+          "idempotency_required_for_side_effects": true
+        },
+        "flow_validation": {
+          "status": "warning",
+          "flow_key": "document",
+          "flow_version": "1.0.0",
+          "blockers": [],
+          "warnings": [
+            "资源 /Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/deliverables/ 被步骤 3 和 5 并行修改，建议增加依赖或锁"
+          ],
+          "checked_rules": [
+            "flow-budget",
+            "domain-coverage",
+            "risk-class",
+            "approval-policy",
+            "idempotency",
+            "compensation",
+            "resource-conflict"
+          ]
+        },
+        "capability_registry": {
+          "version": "p1-local",
+          "agent_count": 15,
+          "tool_count": 9
+        },
+        "plan_quality": {
+          "status": "warning",
+          "score": 76,
+          "blockers": [],
+          "warnings": [
+            "资源 /Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/deliverables/ 被步骤 3 和 5 并行修改，建议增加依赖或锁",
+            "软件任务必须包含架构与测试/评估步骤",
+            "软件任务建议至少包含后端或前端实现步骤"
+          ],
+          "suggestions": [
+            "补齐每一步的工具、产物、验收标准和证据字段后再审批"
+          ],
+          "tool_summary": {
+            "total": 9,
+            "unknown": 0,
+            "unavailable": 0
+          },
+          "flow_key": "document",
+          "flow_version": "1.0.0",
+          "risk_assessment": {
+            "highest_risk": "L1",
+            "by_level": {
+              "L0": 2,
+              "L1": 3,
+              "L2": 0,
+              "L3": 0
+            },
+            "step_approvals": [],
+            "plan_approval_required": true,
+            "delivery_approval_required": true
+          },
+          "checked_rules": [
+            "schema",
+            "business-flow",
+            "risk-policy",
+            "idempotency",
+            "compensation",
+            "agent-capability",
+            "tool-registry",
+            "dependency-dag",
+            "deliverables",
+            "acceptance",
+            "evidence",
+            "domain-coverage"
+          ]
+        }
+      },
+      "status": "rejected",
+      "created_by_agent_id": "optimus",
+      "created_at": "2026-10-02T13:05:13.893245+00:00",
+      "plan_quality": {
+        "status": "warning",
+        "score": 76,
+        "blockers": [],
+        "warnings": [
+          "资源 /Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/deliverables/ 被步骤 3 和 5 并行修改，建议增加依赖或锁",
+          "软件任务必须包含架构与测试/评估步骤",
+          "软件任务建议至少包含后端或前端实现步骤"
+        ],
+        "suggestions": [
+          "补齐每一步的工具、产物、验收标准和证据字段后再审批"
+        ],
+        "tool_summary": {
+          "total": 9,
+          "unknown": 0,
+          "unavailable": 0
+        },
+        "flow_key": "document",
+        "flow_version": "1.0.0",
+        "risk_assessment": {
+          "highest_risk": "L1",
+          "by_level": {
+            "L0": 2,
+            "L1": 3,
+            "L2": 0,
+            "L3": 0
+          },
+          "step_approvals": [],
+          "plan_approval_required": true,
+          "delivery_approval_required": true
+        },
+        "checked_rules": [
+          "schema",
+          "business-flow",
+          "risk-policy",
+          "idempotency",
+          "compensation",
+          "agent-capability",
+          "tool-registry",
+          "dependency-dag",
+          "deliverables",
+          "acceptance",
+          "evidence",
+          "domain-coverage"
+        ]
+      }
+    },
+    "workflow_run": {
+      "id": "workflow-58b10815d75a",
+      "mission_id": "mission-f165257f1043",
+      "mission_run_id": "mrun-da8ef511af824802",
+      "correlation_id": "mission-2f58a34c2d2a474c",
+      "plan_version": 1,
+      "runtime": "legacy",
+      "flow_key": "document",
+      "highest_risk": "L1",
+      "selection_reason": "feature_disabled",
+      "thread_id": "workflow-58b10815d75a",
+      "checkpoint_namespace": "pilot",
+      "status": "cancelled",
+      "attempts": 0,
+      "next_attempt_at": "2026-10-02T13:05:13.920808+00:00",
+      "lease_owner": null,
+      "lease_token": null,
+      "lease_expires_at": null,
+      "last_error": null,
+      "created_at": "2026-10-02T13:05:13.920808+00:00",
+      "updated_at": "2026-10-02T13:06:09.140671+00:00",
+      "completed_at": "2026-10-02T13:06:09.140688+00:00",
+      "input": {
+        "workflow_run_id": "workflow-58b10815d75a",
+        "mission_run_id": "mrun-da8ef511af824802",
+        "correlation_id": "mission-2f58a34c2d2a474c",
+        "mission_id": "mission-f165257f1043",
+        "plan_version": 1,
+        "flow_key": "document",
+        "highest_risk": "L1",
+        "context_pack_id": "context-5900985e5c64",
+        "status": "ready",
+        "evidence_refs": []
+      },
+      "state": {
+        "workflow_run_id": "workflow-58b10815d75a",
+        "mission_run_id": "mrun-da8ef511af824802",
+        "correlation_id": "mission-2f58a34c2d2a474c",
+        "mission_id": "mission-f165257f1043",
+        "plan_version": 1,
+        "flow_key": "document",
+        "highest_risk": "L1",
+        "context_pack_id": "context-5900985e5c64",
+        "status": "ready",
+        "evidence_refs": []
+      },
+      "checkpoint": {}
+    },
+    "artifacts": [],
+    "evidence": [],
+    "acceptance_gates": [],
+    "step_approvals": [],
+    "effects": [],
+    "compensations": [],
+    "delivery_gate": null,
+    "approval": {
+      "id": "approval-e462dc4d948c",
+      "mission_id": "mission-f165257f1043",
+      "plan_version": 1,
+      "decision": "rejected",
+      "requested_at": "2026-10-02T13:05:13.904662+00:00",
+      "decided_at": "2026-10-02T13:06:09.138225+00:00",
+      "decided_by": "admin",
+      "comment": "试点计划V1退回，验证真实退回重规划流程。保留原任务目标，补齐后重新提交审批：\n1. 增加最终独立复核步骤：修订后必须由非编写者再次打开最终文件、核查审核问题闭环，不能由编写者自行交付即通过。\n2. 需求覆盖矩阵显式读取项目context.acceptance_marker，保留原文。区分文档审核结果和测试实际结果，测试实际结果必须保持未执行。\n3. 场景设计优先分配米开朗基罗(michelangelo)，文档编写优先通天晓(ultra-magnus)，独立审核救护车(ratchet)。擎天柱负责编排；避免把测试设计和写作分配给不匹配的角色。\n4. 统一产物类型为markdown_document，证据类型使用系统支持的source_refs、quality_notes、document_diff等，不要用中文句子当 evidence_type。每步明确实际文件路径并传给依赖步骤，回传artifacts/evidence/acceptance_results等结构化字段及真实SHA256。\n5. 写入范围严格限于试点deliverables目录；回滚保留历史文件，不删除既有成果。系统接口检查只能只读。上述范围内已获用户执行授权，仍经本系统计划审批后调度。",
+      "external_message_id": null
+    },
+    "events": [
+      {
+        "id": "event-a12a1faa3fa2",
+        "mission_id": "mission-f165257f1043",
+        "mission_run_id": "mrun-da8ef511af824802",
+        "correlation_id": "mission-2f58a34c2d2a474c",
+        "run_sequence": 1,
+        "event_type": "mission_received",
+        "from_status": null,
+        "to_status": "received",
+        "actor": "admin",
+        "detail": "为智能体系统自身编写《智能体系统软件测试大纲》，这是工作流验证试点的首个真实任务。请由擎天柱生成计划并经审批后组织执行，不得直接宣布完成。\n范围：需求接收、项目背景获取、计划拆解、计划审批/退回、多智能体依赖执行、独立质量审核、返工、产物保存、版本追溯、证据验收、交付状态同步、失败恢复、重复提交及幂等。\n先只编写和审核大纲，不在生产服务注入故障，不修改系统代码或配置，不重启服务，不提交Git，不发送外部消息。后续测试执行和修复作为独立任务。\n必须依据本地源码和实际接口梳理系统；区分已实现、当前启用、尚未验证。仓库 /Users/apple/工作桌面/Workspace/agent-system 中已有其他未提交改动，不得覆盖。\n建议分工：范围梳理→测试场景设计→文档整合→不同智能体独立审核→修订交付。至少覆盖12个核心场景，每个包含编号、目标、前置条件、步骤、预期结果、证据要求、优先级，实际结果统一为未执行。大纲包含测试范围、环境、正常/异常流程、产物质量、缺陷分级及退出条件。\n交付：完整中文测试大纲、需求覆盖矩阵、独立审查记录及修订说明。优先保存为实际Markdown文件到 /Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/deliverables/ 。每项产物回传真实可访问路径和验收证据，不能只提供总结或虚构路径。不可访问该目录时明确报告阻塞，不得伪造完成。\n验收：完整文件可打开，需求全覆盖，场景可执行，独立审核意见得到处理，任务/项目/产物可追溯。系统编写文档成功不代表文档中测试通过。\n规划时主动读取项目context中的专属验收标识，纳入覆盖矩阵以验证背景传递。",
+        "event_key": null,
+        "metadata": {
+          "message_id": "msg-159c13a4291e",
+          "channel": "dashboard",
+          "preplanned": false,
+          "mission_type": "software",
+          "project_id": "workflow-pilot-20261002",
+          "intent_confidence": 1.0
+        },
+        "created_at": "2026-10-02T13:02:53.569049+00:00"
+      },
+      {
+        "id": "event-569325f1a604",
+        "mission_id": "mission-f165257f1043",
+        "mission_run_id": "mrun-da8ef511af824802",
+        "correlation_id": "mission-2f58a34c2d2a474c",
+        "run_sequence": 2,
+        "event_type": "planning_started",
+        "from_status": "received",
+        "to_status": "planning",
+        "actor": "command-center:worker-2",
+        "detail": "Optimus is producing an approval-gated plan",
+        "event_key": null,
+        "metadata": {},
+        "created_at": "2026-10-02T13:02:53.857118+00:00"
+      },
+      {
+        "id": "event-55b94f9a50fd",
+        "mission_id": "mission-f165257f1043",
+        "mission_run_id": "mrun-da8ef511af824802",
+        "correlation_id": "mission-2f58a34c2d2a474c",
+        "run_sequence": 3,
+        "event_type": "context_pack_bound",
+        "from_status": "planning",
+        "to_status": "planning",
+        "actor": "optimus",
+        "detail": "Bound planning context context-5900985e5c64 to plan V1",
+        "event_key": null,
+        "metadata": {
+          "plan_version": 1,
+          "step_id": null,
+          "purpose": "planning",
+          "agent_id": "optimus",
+          "context_pack_id": "context-5900985e5c64",
+          "context_pack_version": 1,
+          "status": "ready",
+          "item_count": 16,
+          "citation_count": 16,
+          "source_types": [
+            "agent_memory",
+            "graph_memory",
+            "profile",
+            "profile_fact",
+            "project"
+          ]
+        },
+        "created_at": "2026-10-02T13:02:55.587123+00:00"
+      },
+      {
+        "id": "event-f1bd27565846",
+        "mission_id": "mission-f165257f1043",
+        "mission_run_id": "mrun-da8ef511af824802",
+        "correlation_id": "mission-2f58a34c2d2a474c",
+        "run_sequence": 4,
+        "event_type": "plan_proposed",
+        "from_status": "planning",
+        "to_status": "awaiting_approval",
+        "actor": "optimus",
+        "detail": "为智能体系统编写《智能体系统软件测试大纲》，通过源码分析、场景设计、文档撰写、独立审核、修订交付五个阶段完成，覆盖12个核心场景，产出完整中文测试大纲、需求覆盖矩阵、独立审查记录及修订说明",
+        "event_key": null,
+        "metadata": {
+          "version": 1,
+          "step_count": 5,
+          "flow_key": "document",
+          "flow_version": "1.0.0",
+          "highest_risk": "L1",
+          "quality_score": 76,
+          "workflow_runtime": "legacy",
+          "workflow_runtime_reason": "feature_disabled"
+        },
+        "created_at": "2026-10-02T13:05:13.928132+00:00"
+      },
+      {
+        "id": "event-8b2654dfbb04",
+        "mission_id": "mission-f165257f1043",
+        "mission_run_id": "mrun-da8ef511af824802",
+        "correlation_id": "mission-2f58a34c2d2a474c",
+        "run_sequence": 5,
+        "event_type": "plan_rejected",
+        "from_status": "awaiting_approval",
+        "to_status": "planning",
+        "actor": "admin",
+        "detail": "试点计划V1退回，验证真实退回重规划流程。保留原任务目标，补齐后重新提交审批：\n1. 增加最终独立复核步骤：修订后必须由非编写者再次打开最终文件、核查审核问题闭环，不能由编写者自行交付即通过。\n2. 需求覆盖矩阵显式读取项目context.acceptance_marker，保留原文。区分文档审核结果和测试实际结果，测试实际结果必须保持未执行。\n3. 场景设计优先分配米开朗基罗(michelangelo)，文档编写优先通天晓(ultra-magnus)，独立审核救护车(ratchet)。擎天柱负责编排；避免把测试设计和写作分配给不匹配的角色。\n4. 统一产物类型为markdown_document，证据类型使用系统支持的source_refs、quality_notes、document_diff等，不要用中文句子当 evidence_type。每步明确实际文件路径并传给依赖步骤，回传artifacts/evidence/acceptance_results等结构化字段及真实SHA256。\n5. 写入范围严格限于试点deliverables目录；回滚保留历史文件，不删除既有成果。系统接口检查只能只读。上述范围内已获用户执行授权，仍经本系统计划审批后调度。",
+        "event_key": null,
+        "metadata": {
+          "version": 1
+        },
+        "created_at": "2026-10-02T13:06:09.145882+00:00"
+      }
+    ],
+    "messages": [
+      {
+        "id": "msg-159c13a4291e",
+        "conversation_id": "conv-06a7b6bb64b7",
+        "mission_id": "mission-f165257f1043",
+        "direction": "inbound",
+        "external_message_id": "ui-9c14d01d25024a59b7692cad177156ab",
+        "reply_to_external_message_id": null,
+        "sender_id": "admin",
+        "content": "为智能体系统自身编写《智能体系统软件测试大纲》，这是工作流验证试点的首个真实任务。请由擎天柱生成计划并经审批后组织执行，不得直接宣布完成。\n范围：需求接收、项目背景获取、计划拆解、计划审批/退回、多智能体依赖执行、独立质量审核、返工、产物保存、版本追溯、证据验收、交付状态同步、失败恢复、重复提交及幂等。\n先只编写和审核大纲，不在生产服务注入故障，不修改系统代码或配置，不重启服务，不提交Git，不发送外部消息。后续测试执行和修复作为独立任务。\n必须依据本地源码和实际接口梳理系统；区分已实现、当前启用、尚未验证。仓库 /Users/apple/工作桌面/Workspace/agent-system 中已有其他未提交改动，不得覆盖。\n建议分工：范围梳理→测试场景设计→文档整合→不同智能体独立审核→修订交付。至少覆盖12个核心场景，每个包含编号、目标、前置条件、步骤、预期结果、证据要求、优先级，实际结果统一为未执行。大纲包含测试范围、环境、正常/异常流程、产物质量、缺陷分级及退出条件。\n交付：完整中文测试大纲、需求覆盖矩阵、独立审查记录及修订说明。优先保存为实际Markdown文件到 /Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/deliverables/ 。每项产物回传真实可访问路径和验收证据，不能只提供总结或虚构路径。不可访问该目录时明确报告阻塞，不得伪造完成。\n验收：完整文件可打开，需求全覆盖，场景可执行，独立审核意见得到处理，任务/项目/产物可追溯。系统编写文档成功不代表文档中测试通过。\n规划时主动读取项目context中的专属验收标识，纳入覆盖矩阵以验证背景传递。",
+        "message_type": "text",
+        "intent_type": "software_project",
+        "intent_confidence": 1.0,
+        "intent_reason": "由已认证的项目任务入口显式创建",
+        "execution_requested": 1,
+        "routing_status": "mission_created",
+        "target_agent_id": "optimus",
+        "resolved_project_id": "workflow-pilot-20261002",
+        "reply_to_command_message_id": null,
+        "metadata": {
+          "project_id": "workflow-pilot-20261002",
+          "title": "编写并独立审核智能体系统软件测试大纲",
+          "context": {
+            "source": "workflow-validation-pilot",
+            "output_directory": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/deliverables",
+            "phase": "outline-authoring-only",
+            "mission_type": "software",
+            "business_flow_key": "document"
+          },
+          "intent_type": "software_project",
+          "execution_requested": true,
+          "profile_user_id": "1",
+          "suppress_notification": true,
+          "_direct_mission": true,
+          "_reserve_planning": false,
+          "_planning_owner": ""
+        },
+        "created_at": "2026-10-02T13:02:53.541143+00:00"
+      }
+    ]
+  }
+}

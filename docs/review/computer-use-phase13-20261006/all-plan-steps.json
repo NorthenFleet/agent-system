@@ -1,0 +1,26 @@
+[
+  {
+    "mission_id": "mission-6f67978cafd2",
+    "plan_version": 1,
+    "status": "failed",
+    "attempt_count": 1
+  },
+  {
+    "mission_id": "mission-6f67978cafd2",
+    "plan_version": 2,
+    "status": "completed",
+    "attempt_count": 1
+  },
+  {
+    "mission_id": "mission-9ca4afe49103",
+    "plan_version": 1,
+    "status": "failed",
+    "attempt_count": 1
+  },
+  {
+    "mission_id": "mission-b0a1fde1f8ae",
+    "plan_version": 1,
+    "status": "failed",
+    "attempt_count": 1
+  }
+]

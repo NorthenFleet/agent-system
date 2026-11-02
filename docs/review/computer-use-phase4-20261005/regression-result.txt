@@ -1,0 +1,41 @@
+........................................................................ [ 69%]
+...............................                                          [100%]
+=============================== warnings summary ===============================
+backend/database.py:80
+  /Users/apple/工作桌面/Workspace/agent-system/backend/database.py:80: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+backend/routers/automation_router.py:55
+  /Users/apple/工作桌面/Workspace/agent-system/backend/routers/automation_router.py:55: PydanticDeprecatedSince20: `min_items` is deprecated and will be removed, use `min_length` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    actions: List[ActionItem] = Field(..., min_items=1, description="动作列表")
+
+backend/main_slim_v2.py:201
+  /Users/apple/工作桌面/Workspace/agent-system/backend/main_slim_v2.py:201: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+backend/venv/lib/python3.14/site-packages/fastapi/applications.py:4599
+backend/venv/lib/python3.14/site-packages/fastapi/applications.py:4599
+  /Users/apple/工作桌面/Workspace/agent-system/backend/venv/lib/python3.14/site-packages/fastapi/applications.py:4599: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)
+
+backend/main_slim_v2.py:251
+  /Users/apple/工作桌面/Workspace/agent-system/backend/main_slim_v2.py:251: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("shutdown")
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+103 passed, 6 warnings in 1.89s

@@ -1,0 +1,9 @@
+{
+  "success": true,
+  "output": "{\"status\": \"reverted\", \"summary\": \"只读核实恢复已落地，复用相同幂等键的真实文件回执；没有再次写入。\", \"receipt_ref\": \"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase12-20261006/recovery-receipt.json\", \"evidence_refs\": [\"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase12-20261006/recovery-receipt.json\", \"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase12-20261006/before-recovery.txt\"], \"risk_notes\": \"隔离固定文件适配器的崩溃恢复测试，不代表通用工具 exactly-once。\"}",
+  "error": "",
+  "duration_ms": 0,
+  "exit_code": null,
+  "output_source": "",
+  "output_candidates": []
+}

@@ -1,0 +1,11 @@
+{
+  "path": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-20261005/deliverables/C/brief.md",
+  "exists": true,
+  "sha256": "739f02d5c8358a50c97e42a345b34311c1043384ca6341eaceb7db0e7aa545de",
+  "unicode_characters": 393,
+  "cjk_characters": 242,
+  "bytes": 935,
+  "review_exists": false,
+  "B_directory_exists": false,
+  "note": "CJK count includes headings; Unicode count includes Markdown and whitespace. Agent reported wc -m 935; independently measured Unicode characters 393."
+}

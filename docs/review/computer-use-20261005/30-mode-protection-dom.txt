@@ -1,0 +1,53 @@
+- main:
+  - button "✦ OpenClaw":
+    - generic: ✦
+    - generic: OpenClaw
+  - button "进入任务工作台"
+  - button "查看智能体团队": 🤖
+  - region "智能体 Agent Space":
+    - paragraph: YOUR AI WORKFORCE
+    - heading "智能体 Agent Space" [level=1]:
+      - text: 智能体
+      - emphasis: Agent Space
+    - paragraph: 研发与办公路上的协作伙伴，把复杂任务交给擎天柱和智能体团队。
+    - tablist "任务模式":
+      - tab "代码开发" [active] [selected]
+      - tab "研发办公"
+    - region "创建智能体任务":
+      - textbox "描述你要开发、修改或排查的软件任务…": CU 草稿模式切换检查，不提交
+      - generic: ⌘
+      - combobox "⌘":
+        - option "选择 Workspace" [selected]
+        - option "OpenClaw 团队信息看板"
+        - option "one-sim 仿真"
+        - option "SacredJourney 数字文旅"
+        - option "智能体系统工作流验证与优化"
+      - generic: ✦擎天柱编排
+      - button "交给擎天柱" [disabled]:
+        - generic: ↑
+    - generic: ⌑
+    - text: 选择 Workspace 后启动任务
+    - generic: 7 项任务进行中
+    - paragraph: 快速开始
+    - button "▤ 技术文档生成":
+      - generic: ▤
+      - text: 技术文档生成
+    - button "◔ 数据分析":
+      - generic: ◔
+      - text: 数据分析
+    - button "▣ PRD 生成":
+      - generic: ▣
+      - text: PRD 生成
+    - button "▧ PPT 生成":
+      - generic: ▧
+      - text: PPT 生成
+    - button "</> 开发任务":
+      - generic: </>
+      - text: 开发任务
+  - generic: 任务由 AI 智能体协同处理；高风险步骤将进入审批流程。
+  - generic: ⌘ / Ctrl + Enter 提交
+- textbox
+- button:
+- button:
+- alert:
+  - paragraph: 任务模式已切换，请重新确认所属项目；需求草稿已保留

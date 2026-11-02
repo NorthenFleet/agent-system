@@ -1,0 +1,34 @@
+
+> frontend-v2@0.0.0 test:run
+> vitest run src/test/CommandCenterGovernance.spec.ts src/test/commandCenterLifecycle.spec.ts
+
+
+ RUN  v4.1.10 /Users/apple/工作桌面/Workspace/agent-system/frontend-v2
+
+ ❯ src/test/CommandCenterGovernance.spec.ts (1 test | 1 failed) 291ms
+     × renders lifecycle, control point, evidence gate, effect journal and compensation 290ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/CommandCenterGovernance.spec.ts > Command Center governance presentation > renders lifecycle, control point, evidence gate, effect journal and compensation
+AssertionError: expected '擎天柱指挥中心自动更新统一任务入口 · 审批后执行 · 异步协作与反馈自动…' to contain '实际操作可能已生效'
+
+Expected: "实际操作可能已生效"
+Received: "擎天柱指挥中心自动更新统一任务入口 · 审批后执行 · 异步协作与反馈自动刷新刷新生产配置发布存在未解决副作用需要核实执行结果 · production-config · 执行失败下一步：完成补偿审批、执行及证据验证后才能继续交付前往审批与反馈任务产物（尚未完成最终验收）发布日志 下载文件查看团队统计与运行健康全部任务1项目1正在推进1等待批准0待发送回执0待处理补偿1上下文快照1待审核记忆0一般讨论0待澄清0生产运行门禁就绪事实库POSTGRESQL连接池1/10 峰值 4 · 超时 0 · 失败 0 · 重连 0执行租约0 个过期 活跃 1 · 重试 2流程检查点postgresqlready · 禁止运行时建表执行实例2/2 在线 失联 0 · ready工作坊任务工作台1 个项目 · 1 项任务状态类型项目智能体来源项目范围全部项目生产配置发布等待反馈所属项目 生产系统任务类型 程序开发执行智能体 擎天柱当前步骤 更新生产配置09/16 08:10等待补偿0/1 步骤0 个总账记录智能体空间生产配置发布唯一入口：擎天柱等待反馈全员状态随自动刷新同步 · 09/16 08:100 工作中0 已分配0 阻塞0 待命智能体状态当前任务项目进度更新时间生产配置发布等待反馈mission-12345678 取消任务 目标受控发布并验证健康状态规范执行链真实状态驱动 · 从任务接收到交付与故障恢复Run mrun-1234567Trace mission-trace-1234Plan V3当前控制点存在未解决副作用需要核实执行结果 · production-config · 执行失败下一步完成补偿审批、执行及证据验证后才能继续交付已完成任务接收目标与项目绑定Mission mission- 已入库已完成背景冻结检索与引用快照已冻结 · 2 条引用已完成规范拆解合同化步骤与质检V3 · 96 分 · 1 步已完成风险审批计划与高风险步骤当前计划已授权已阻断受控执行依赖、租约与幂等1 个步骤失败，0/1 已完成已阻断证据验收产物、证据与门禁1 个强制门禁未通过已阻断故障恢复副作用与补偿闭环1 个未解决补偿已阻断交付闭环总验收与结果回执当前：等待反馈步骤0/1产物1证据1验收门禁0/1副作用1未解决补偿1统一任务视图生产系统 · 擎天柱0 个总账记录当前步骤更新生产配置擎天柱 · 运维 · 失败执行计划 V3先备份再发布 质检 96 风险 高计划质检通过检查 1 项规则更新生产配置擎天柱 · 运维失败使用受控配置进行发布阶段 release风险 L3无前置依赖有副作用幂等 mission:step:1工具deployment产物发布回执验收健康检查通过证据healthcheck副作用补偿补偿失败恢复上一版配置资源：production-config补偿幂等键：compensate:mission:step:1合同指纹：abcdef123456重新审批补偿Effect Journal1 条副作用记录已生效更新配置production-config · ops:1 · 1 条证据执行证据门禁强制阻断 · 45阻断：健康检查未通过strict · 09/16 08:09健康检查失败最终交付门禁交付阻断40/100存在未解决补偿模式 strict · 09/16 08:10任务动态持久化事件记录擎擎天柱总项目管理 · 唯一任务入口最近会话分流0 条暂无会话记录任务背景上下文已冻结未生成快照 V1 · 3 条内容 · 2 条引用 项目背景长期记忆候选 待审核 0 擎天柱从已完成任务中提炼。审核发布后，仅影响后续任务的背景检索。  暂无待审核的长期记忆 需要反馈执行遇到阻塞，请补充信息。 提交反馈并继续  反馈并重新规划 需要修改已完成的内容时，选择重新规划；新计划需再次审批。启动项目任务程序开发文档撰写选择任务所属项目 交给擎天柱"
+
+ ❯ src/test/CommandCenterGovernance.spec.ts:124:28
+    122|     await wrapper.findAll('button').find(button => button.text() === '…
+    123|     await flushPromises()
+    124|     expect(wrapper.text()).toContain('实际操作可能已生效')
+       |                            ^
+    125|     api.approveCommandCenterCompensation.mockClear()
+    126|     confirm.mockRejectedValueOnce('cancel')
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 1 passed (2)
+      Tests  1 failed | 10 passed (11)
+   Start at  02:10:29
+   Duration  1.67s (transform 204ms, setup 58ms, import 687ms, tests 301ms, environment 1.23s)
+

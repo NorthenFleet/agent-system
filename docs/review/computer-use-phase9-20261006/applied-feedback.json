@@ -1,0 +1,1248 @@
+{
+  "id": "mission-475d314c45d1",
+  "conversation_id": "conv-62b38a997997",
+  "source_message_id": "msg-585a93651479",
+  "title": "P9 已写入：核实后保持阻塞",
+  "objective": "隔离恢复测试：仅核实指定样本，保留所有文件，不外发。",
+  "status": "waiting_feedback",
+  "priority": "normal",
+  "project_id": null,
+  "mission_type": "software",
+  "requested_by": "phase9-lab",
+  "owner_user_id": "phase9-lab",
+  "plan_version": 1,
+  "current_step_id": null,
+  "requires_approval": true,
+  "approval_status": "approved",
+  "last_error": "受控写入样本：副作用 unreported-effect 的落地状态未知",
+  "lease_owner": null,
+  "lease_expires_at": null,
+  "created_at": "2026-10-05T16:51:26.681311+00:00",
+  "updated_at": "2026-10-05T16:51:26.750823+00:00",
+  "completed_at": null,
+  "context": {
+    "source": "dashboard",
+    "profile_user_id": "phase9-lab",
+    "mission_type": "software",
+    "intent_decision": {
+      "type": "software_project",
+      "confidence": 1.0,
+      "reason": "由已认证的项目任务入口显式创建",
+      "execution_requested": true
+    },
+    "user_context": {
+      "business_flow_key": "general"
+    },
+    "metadata": {
+      "project_id": "",
+      "title": "P9 已写入：核实后保持阻塞",
+      "context": {
+        "business_flow_key": "general"
+      },
+      "intent_type": "software_project",
+      "execution_requested": true,
+      "profile_user_id": "phase9-lab",
+      "suppress_notification": true,
+      "_direct_mission": true,
+      "_reserve_planning": false,
+      "_planning_owner": ""
+    }
+  },
+  "mission_run": {
+    "id": "mrun-74bc6727956b4591",
+    "mission_id": "mission-475d314c45d1",
+    "correlation_id": "mission-401a5ef5a83b4d0e",
+    "status": "waiting_feedback",
+    "active_plan_version": 1,
+    "workflow_run_id": "workflow-97de209fd1a6",
+    "outcome": "",
+    "created_at": "2026-10-05T16:51:26.681311+00:00",
+    "updated_at": "2026-10-05T16:52:33.055527+00:00",
+    "ended_at": null,
+    "metadata": {}
+  },
+  "conversation": {
+    "id": "conv-62b38a997997",
+    "channel": "dashboard",
+    "external_conversation_id": "dashboard:phase9-lab",
+    "user_external_id": "phase9-lab",
+    "owner_user_id": "phase9-lab",
+    "profile_user_id": "phase9-lab",
+    "status": "active",
+    "metadata": {
+      "project_id": "",
+      "title": "P9 已写入：核实后保持阻塞",
+      "context": {
+        "business_flow_key": "general"
+      },
+      "intent_type": "software_project",
+      "execution_requested": true,
+      "profile_user_id": "phase9-lab",
+      "suppress_notification": true,
+      "_direct_mission": true,
+      "_reserve_planning": false,
+      "_planning_owner": ""
+    },
+    "created_at": "2026-10-05T16:51:26.319575+00:00",
+    "updated_at": "2026-10-05T16:51:26.681311+00:00"
+  },
+  "steps": [
+    {
+      "id": "step-ff9593d6114d",
+      "mission_id": "mission-475d314c45d1",
+      "plan_version": 1,
+      "order_index": 1,
+      "title": "受控写入样本",
+      "description": "",
+      "task_type": "coordination",
+      "agent_id": "optimus",
+      "executor": "openclaw",
+      "status": "failed",
+      "work_run_id": null,
+      "lease_owner": null,
+      "lease_token": null,
+      "lease_expires_at": null,
+      "attempt_count": 1,
+      "started_at": "2026-10-05T16:51:26.722156+00:00",
+      "completed_at": "2026-10-05T16:51:26.725513+00:00",
+      "updated_at": "2026-10-05T16:51:26.725515+00:00",
+      "dependencies": [],
+      "input": {},
+      "result": {
+        "success": false,
+        "error": "测试夹具：未收到执行回执",
+        "summary": "测试夹具：未收到执行回执",
+        "artifacts": [],
+        "evidence": [],
+        "evidence_refs": [],
+        "acceptance_results": [],
+        "tools_used": [],
+        "risk_notes": "",
+        "outcome": "failed",
+        "receipt_preflight": {
+          "schema_version": "1.0",
+          "strategy": "existing_evidence_only",
+          "input_sha256": "26fdd11a3c78ca11d6e5f10de9ed9c3b2f02c90d72a9b4d8e4fe3b635a5ae7e1",
+          "changes": [],
+          "strict_accepted_before": false,
+          "strict_accepted": false,
+          "blockers": [],
+          "execution_repeated": false
+        },
+        "execution_quality": {
+          "status": "pass",
+          "score": 100,
+          "mode": "strict",
+          "enforced": true,
+          "accepted": false,
+          "executor_success": false,
+          "business_outcome": "failed",
+          "hard_blockers": [],
+          "blockers": [],
+          "warnings": [],
+          "evidence_refs": [],
+          "required_evidence": [
+            "coordination_notes"
+          ],
+          "required_artifact_types": [
+            "协调结论",
+            "下一步安排"
+          ],
+          "required_tools": [
+            "context_search"
+          ],
+          "acceptance_criteria": [
+            "目标、责任人和完成标准清晰"
+          ],
+          "checked_rules": [
+            "result-summary",
+            "required-evidence-types",
+            "artifact-contract",
+            "acceptance-results",
+            "tool-use",
+            "required-output-fields"
+          ]
+        },
+        "side_effects": [
+          {
+            "effect_key": "unreported-effect",
+            "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase9-20261006/applied-sample.txt",
+            "action": "受控写入样本",
+            "status": "unknown",
+            "idempotency_key": "mission-475d314c45d1:plan:1:step:1",
+            "receipt_ref": "",
+            "evidence_refs": [],
+            "metadata": {
+              "synthetic": true,
+              "reason": "executor_did_not_report_effect"
+            }
+          }
+        ],
+        "effect_quality": {
+          "status": "blocked",
+          "accepted": false,
+          "enforced": true,
+          "blockers": [
+            "副作用 unreported-effect 的落地状态未知"
+          ],
+          "warnings": [],
+          "effect_count": 1,
+          "applied_count": 0,
+          "unknown_count": 1,
+          "checked_rules": [
+            "effect-journal-present",
+            "effect-status-known",
+            "stable-idempotency-key",
+            "applied-effect-receipt"
+          ]
+        },
+        "completion_decision": {
+          "executor_success": false,
+          "accepted": false,
+          "retry_scheduled": false,
+          "attempt": 1,
+          "max_attempts": 2,
+          "receipt_retry_safe": false,
+          "enforcement": {
+            "mode": "strict",
+            "enforced": true,
+            "reason": "strict_mode",
+            "flow_key": "general",
+            "highest_risk": "L1",
+            "runtime": "legacy"
+          },
+          "effect_quality": {
+            "status": "blocked",
+            "accepted": false,
+            "enforced": true,
+            "blockers": [
+              "副作用 unreported-effect 的落地状态未知"
+            ],
+            "warnings": [],
+            "effect_count": 1,
+            "applied_count": 0,
+            "unknown_count": 1,
+            "checked_rules": [
+              "effect-journal-present",
+              "effect-status-known",
+              "stable-idempotency-key",
+              "applied-effect-receipt"
+            ]
+          }
+        },
+        "effect_ids": [
+          "effect-c90b239a8c5e3e2d4d7f"
+        ]
+      },
+      "context_binding": null,
+      "phase": "planning",
+      "objective": "受控写入样本",
+      "required_tools": [
+        "context_search"
+      ],
+      "tool_requirements": [
+        {
+          "name": "背景检索",
+          "category": "context",
+          "status": "available",
+          "description": "检索项目、记忆、会话和文档背景，形成可引用上下文。",
+          "evidence_types": [
+            "context_pack",
+            "citations"
+          ],
+          "id": "context_search"
+        }
+      ],
+      "deliverables": [
+        "协调结论",
+        "下一步安排"
+      ],
+      "output_contract": {
+        "artifact_types": [
+          "协调结论",
+          "下一步安排"
+        ],
+        "required_fields": [
+          "summary",
+          "evidence_refs",
+          "risk_notes"
+        ]
+      },
+      "acceptance_criteria": [
+        "目标、责任人和完成标准清晰"
+      ],
+      "evidence_required": [
+        "coordination_notes"
+      ],
+      "risk_level": "low",
+      "risk_class": "L1",
+      "approval_required": false,
+      "side_effect": true,
+      "resources": [
+        "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase9-20261006/applied-sample.txt"
+      ],
+      "idempotency_key": "mission-475d314c45d1:plan:1:step:1",
+      "timeout_seconds": 900,
+      "max_attempts": 2,
+      "rollback_plan": "停止后续步骤，记录失败原因并等待擎天柱重新规划。",
+      "compensation": {
+        "type": "manual",
+        "instructions": "停止后续步骤，记录失败原因并等待擎天柱重新规划。"
+      },
+      "capability_match": true,
+      "artifacts": [],
+      "evidence": [],
+      "acceptance_gate": {
+        "id": "gate-d6394151f6fdb1b08d06",
+        "mission_id": "mission-475d314c45d1",
+        "mission_run_id": "mrun-74bc6727956b4591",
+        "correlation_id": "mission-401a5ef5a83b4d0e",
+        "plan_version": 1,
+        "step_id": "step-ff9593d6114d",
+        "gate_type": "execution_evidence",
+        "mode": "strict",
+        "enforced": true,
+        "status": "pass",
+        "accepted": false,
+        "score": 100,
+        "evaluated_by": "fixture",
+        "evaluated_at": "2026-10-05T16:51:26.727347+00:00",
+        "blockers": [],
+        "warnings": [],
+        "details": {
+          "status": "pass",
+          "score": 100,
+          "mode": "strict",
+          "enforced": true,
+          "accepted": false,
+          "executor_success": false,
+          "business_outcome": "failed",
+          "hard_blockers": [],
+          "blockers": [],
+          "warnings": [],
+          "evidence_refs": [],
+          "required_evidence": [
+            "coordination_notes"
+          ],
+          "required_artifact_types": [
+            "协调结论",
+            "下一步安排"
+          ],
+          "required_tools": [
+            "context_search"
+          ],
+          "acceptance_criteria": [
+            "目标、责任人和完成标准清晰"
+          ],
+          "checked_rules": [
+            "result-summary",
+            "required-evidence-types",
+            "artifact-contract",
+            "acceptance-results",
+            "tool-use",
+            "required-output-fields"
+          ]
+        }
+      },
+      "step_approval": null,
+      "effects": [
+        {
+          "id": "effect-c90b239a8c5e3e2d4d7f",
+          "mission_id": "mission-475d314c45d1",
+          "mission_run_id": "mrun-74bc6727956b4591",
+          "correlation_id": "mission-401a5ef5a83b4d0e",
+          "plan_version": 1,
+          "step_id": "step-ff9593d6114d",
+          "work_run_id": null,
+          "effect_key": "unreported-effect",
+          "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase9-20261006/applied-sample.txt",
+          "action": "受控写入样本",
+          "status": "unknown",
+          "idempotency_key": "mission-475d314c45d1:plan:1:step:1",
+          "receipt_ref": null,
+          "fingerprint": "c90b239a8c5e3e2d4d7f99bb6066c8370c0b131f1dc1bbc7e9a817b24a7848e9",
+          "reported_at": "2026-10-05T16:51:26.728342+00:00",
+          "updated_at": "2026-10-05T16:51:26.728344+00:00",
+          "evidence_refs": [],
+          "metadata": {
+            "synthetic": true,
+            "reason": "executor_did_not_report_effect"
+          }
+        }
+      ],
+      "compensations": [
+        {
+          "id": "compensation-a17b1c081145",
+          "mission_id": "mission-475d314c45d1",
+          "mission_run_id": "mrun-74bc6727956b4591",
+          "correlation_id": "mission-401a5ef5a83b4d0e",
+          "plan_version": 1,
+          "step_id": "step-ff9593d6114d",
+          "effect_id": "effect-c90b239a8c5e3e2d4d7f",
+          "compensation_type": "verify_effect",
+          "instructions": "仅只读核实指定资源是否发生本步骤声明的副作用，禁止删除、覆盖或其他写入。只有证据确认未生效时返回 not_needed，附真实核实结果和回执；如已生效或无法确定，返回 failed 并说明事实，等待新的恢复方案审批。",
+          "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase9-20261006/applied-sample.txt",
+          "contract_hash": "31dfe651119dd134b4faebb6dc2ce48944529330f4d90fe8151897cd14ce88b0",
+          "idempotency_key": "compensate:mission-475d314c45d1:plan:1:step:1:unreported-effect",
+          "status": "failed",
+          "attempts": 1,
+          "max_attempts": 1,
+          "requested_at": "2026-10-05T16:51:26.729340+00:00",
+          "approved_at": "2026-10-05T16:52:11.193389+00:00",
+          "approved_by": "phase9-browser",
+          "approval_comment": "已确认当前补偿合同快照",
+          "authorization_expires_at": "2026-10-05T17:22:11.193376+00:00",
+          "lease_owner": null,
+          "lease_expires_at": null,
+          "last_error": "只读核实未确认无需补偿；保留阻塞，等待新的恢复方案审批。 只读核实：样本已存在，保留原文件，等待新的恢复方案。",
+          "started_at": "2026-10-05T16:52:11.219875+00:00",
+          "completed_at": "2026-10-05T16:52:11.223420+00:00",
+          "updated_at": "2026-10-05T16:52:11.223422+00:00",
+          "result": {
+            "status": "failed",
+            "summary": "只读核实未确认无需补偿；保留阻塞，等待新的恢复方案审批。 只读核实：样本已存在，保留原文件，等待新的恢复方案。",
+            "receipt_ref": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase9-20261006/compensation-a17b1c081145-verification.json",
+            "evidence_refs": [
+              "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase9-20261006/compensation-a17b1c081145-verification.json"
+            ],
+            "risk_notes": "仅核验本地隔离样本，不代表外部系统状态。",
+            "accepted": false
+          }
+        }
+      ]
+    }
+  ],
+  "context_bindings": [],
+  "planning_context": null,
+  "plan": {
+    "id": "plan-f2e525a3e597",
+    "mission_id": "mission-475d314c45d1",
+    "version": 1,
+    "summary": "模拟回执丢失",
+    "rationale": "",
+    "risk_level": "medium",
+    "raw_plan": {
+      "summary": "模拟回执丢失",
+      "steps": [
+        {
+          "title": "受控写入样本",
+          "agent_id": "optimus",
+          "task_type": "coordination",
+          "side_effect": true,
+          "risk_class": "L1",
+          "approval_required": false,
+          "resources": [
+            "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase9-20261006/applied-sample.txt"
+          ],
+          "depends_on": [],
+          "order_index": 1,
+          "required_tools": [
+            "context_search"
+          ],
+          "deliverables": [
+            "协调结论",
+            "下一步安排"
+          ],
+          "acceptance_criteria": [
+            "目标、责任人和完成标准清晰"
+          ],
+          "evidence_required": [
+            "coordination_notes"
+          ],
+          "tool_requirements": [
+            {
+              "name": "背景检索",
+              "category": "context",
+              "status": "available",
+              "description": "检索项目、记忆、会话和文档背景，形成可引用上下文。",
+              "evidence_types": [
+                "context_pack",
+                "citations"
+              ],
+              "id": "context_search"
+            }
+          ],
+          "capability_match": true,
+          "risk_level": "low",
+          "rollback_plan": "停止后续步骤，记录失败原因并等待擎天柱重新规划。",
+          "phase": "planning",
+          "objective": "受控写入样本",
+          "output_contract": {
+            "artifact_types": [
+              "协调结论",
+              "下一步安排"
+            ],
+            "required_fields": [
+              "summary",
+              "evidence_refs",
+              "risk_notes"
+            ]
+          },
+          "timeout_seconds": 900,
+          "max_attempts": 2,
+          "idempotency_key": "mission-475d314c45d1:plan:1:step:1",
+          "idempotency_key_generated": true,
+          "compensation": {
+            "type": "manual",
+            "instructions": "停止后续步骤，记录失败原因并等待擎天柱重新规划。"
+          }
+        }
+      ],
+      "schema_version": "2.0",
+      "business_type": "general",
+      "flow_spec": {
+        "flow_key": "general",
+        "version": "1.0.0",
+        "name": "通用业务执行流",
+        "business_type": "general",
+        "phases": [
+          "intake",
+          "planning",
+          "execution",
+          "verification",
+          "delivery"
+        ],
+        "required_gates": [
+          "plan_quality",
+          "plan_approval",
+          "evidence_gate"
+        ],
+        "budgets": {
+          "max_steps": 12,
+          "max_parallel_steps": 4,
+          "max_replans": 2,
+          "default_timeout_seconds": 900
+        },
+        "approval_policy": {
+          "plan_approval": true,
+          "delivery_approval": false,
+          "l3_step_approval": true
+        }
+      },
+      "risk_assessment": {
+        "highest_risk": "L1",
+        "by_level": {
+          "L0": 0,
+          "L1": 1,
+          "L2": 0,
+          "L3": 0
+        },
+        "step_approvals": [],
+        "plan_approval_required": true,
+        "delivery_approval_required": false
+      },
+      "approval_policy": {
+        "plan_approval": true,
+        "delivery_approval": false,
+        "l3_step_approval": true,
+        "highest_risk": "L1",
+        "step_approvals": []
+      },
+      "execution_policy": {
+        "runtime": "command-center",
+        "state_machine": "mission-v1",
+        "require_context_snapshot": true,
+        "require_evidence": true,
+        "idempotency_required_for_side_effects": true
+      },
+      "flow_validation": {
+        "status": "pass",
+        "flow_key": "general",
+        "flow_version": "1.0.0",
+        "blockers": [],
+        "warnings": [],
+        "checked_rules": [
+          "flow-budget",
+          "domain-coverage",
+          "risk-class",
+          "approval-policy",
+          "idempotency",
+          "compensation",
+          "resource-conflict"
+        ]
+      },
+      "capability_registry": {
+        "version": "p1-local",
+        "agent_count": 15,
+        "tool_count": 9
+      },
+      "plan_quality": {
+        "status": "pass",
+        "score": 100,
+        "blockers": [],
+        "warnings": [],
+        "suggestions": [],
+        "tool_summary": {
+          "total": 1,
+          "unknown": 0,
+          "unavailable": 0
+        },
+        "flow_key": "general",
+        "flow_version": "1.0.0",
+        "risk_assessment": {
+          "highest_risk": "L1",
+          "by_level": {
+            "L0": 0,
+            "L1": 1,
+            "L2": 0,
+            "L3": 0
+          },
+          "step_approvals": [],
+          "plan_approval_required": true,
+          "delivery_approval_required": false
+        },
+        "checked_rules": [
+          "schema",
+          "business-flow",
+          "risk-policy",
+          "idempotency",
+          "compensation",
+          "agent-capability",
+          "tool-registry",
+          "dependency-dag",
+          "deliverables",
+          "acceptance",
+          "evidence",
+          "domain-coverage"
+        ]
+      }
+    },
+    "status": "approved",
+    "created_by_agent_id": "optimus",
+    "created_at": "2026-10-05T16:51:26.697523+00:00",
+    "plan_quality": {
+      "status": "pass",
+      "score": 100,
+      "blockers": [],
+      "warnings": [],
+      "suggestions": [],
+      "tool_summary": {
+        "total": 1,
+        "unknown": 0,
+        "unavailable": 0
+      },
+      "flow_key": "general",
+      "flow_version": "1.0.0",
+      "risk_assessment": {
+        "highest_risk": "L1",
+        "by_level": {
+          "L0": 0,
+          "L1": 1,
+          "L2": 0,
+          "L3": 0
+        },
+        "step_approvals": [],
+        "plan_approval_required": true,
+        "delivery_approval_required": false
+      },
+      "checked_rules": [
+        "schema",
+        "business-flow",
+        "risk-policy",
+        "idempotency",
+        "compensation",
+        "agent-capability",
+        "tool-registry",
+        "dependency-dag",
+        "deliverables",
+        "acceptance",
+        "evidence",
+        "domain-coverage"
+      ]
+    }
+  },
+  "workflow_run": {
+    "id": "workflow-97de209fd1a6",
+    "mission_id": "mission-475d314c45d1",
+    "mission_run_id": "mrun-74bc6727956b4591",
+    "correlation_id": "mission-401a5ef5a83b4d0e",
+    "plan_version": 1,
+    "runtime": "legacy",
+    "flow_key": "general",
+    "highest_risk": "L1",
+    "selection_reason": "feature_disabled",
+    "thread_id": "workflow-97de209fd1a6",
+    "checkpoint_namespace": "pilot",
+    "status": "ready",
+    "attempts": 0,
+    "next_attempt_at": "2026-10-05T16:51:26.708152+00:00",
+    "lease_owner": null,
+    "lease_token": null,
+    "lease_expires_at": null,
+    "last_error": null,
+    "created_at": "2026-10-05T16:51:26.698472+00:00",
+    "updated_at": "2026-10-05T16:51:26.708154+00:00",
+    "completed_at": "2026-10-05T16:51:26.698472+00:00",
+    "input": {
+      "workflow_run_id": "workflow-97de209fd1a6",
+      "mission_run_id": "mrun-74bc6727956b4591",
+      "correlation_id": "mission-401a5ef5a83b4d0e",
+      "mission_id": "mission-475d314c45d1",
+      "plan_version": 1,
+      "flow_key": "general",
+      "highest_risk": "L1",
+      "context_pack_id": "",
+      "status": "ready",
+      "evidence_refs": []
+    },
+    "state": {
+      "workflow_run_id": "workflow-97de209fd1a6",
+      "mission_run_id": "mrun-74bc6727956b4591",
+      "correlation_id": "mission-401a5ef5a83b4d0e",
+      "mission_id": "mission-475d314c45d1",
+      "plan_version": 1,
+      "flow_key": "general",
+      "highest_risk": "L1",
+      "context_pack_id": "",
+      "status": "ready",
+      "evidence_refs": []
+    },
+    "checkpoint": {}
+  },
+  "artifacts": [],
+  "evidence": [],
+  "acceptance_gates": [
+    {
+      "id": "gate-d6394151f6fdb1b08d06",
+      "mission_id": "mission-475d314c45d1",
+      "mission_run_id": "mrun-74bc6727956b4591",
+      "correlation_id": "mission-401a5ef5a83b4d0e",
+      "plan_version": 1,
+      "step_id": "step-ff9593d6114d",
+      "gate_type": "execution_evidence",
+      "mode": "strict",
+      "enforced": true,
+      "status": "pass",
+      "accepted": false,
+      "score": 100,
+      "evaluated_by": "fixture",
+      "evaluated_at": "2026-10-05T16:51:26.727347+00:00",
+      "blockers": [],
+      "warnings": [],
+      "details": {
+        "status": "pass",
+        "score": 100,
+        "mode": "strict",
+        "enforced": true,
+        "accepted": false,
+        "executor_success": false,
+        "business_outcome": "failed",
+        "hard_blockers": [],
+        "blockers": [],
+        "warnings": [],
+        "evidence_refs": [],
+        "required_evidence": [
+          "coordination_notes"
+        ],
+        "required_artifact_types": [
+          "协调结论",
+          "下一步安排"
+        ],
+        "required_tools": [
+          "context_search"
+        ],
+        "acceptance_criteria": [
+          "目标、责任人和完成标准清晰"
+        ],
+        "checked_rules": [
+          "result-summary",
+          "required-evidence-types",
+          "artifact-contract",
+          "acceptance-results",
+          "tool-use",
+          "required-output-fields"
+        ]
+      }
+    }
+  ],
+  "step_approvals": [],
+  "effects": [
+    {
+      "id": "effect-c90b239a8c5e3e2d4d7f",
+      "mission_id": "mission-475d314c45d1",
+      "mission_run_id": "mrun-74bc6727956b4591",
+      "correlation_id": "mission-401a5ef5a83b4d0e",
+      "plan_version": 1,
+      "step_id": "step-ff9593d6114d",
+      "work_run_id": null,
+      "effect_key": "unreported-effect",
+      "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase9-20261006/applied-sample.txt",
+      "action": "受控写入样本",
+      "status": "unknown",
+      "idempotency_key": "mission-475d314c45d1:plan:1:step:1",
+      "receipt_ref": null,
+      "fingerprint": "c90b239a8c5e3e2d4d7f99bb6066c8370c0b131f1dc1bbc7e9a817b24a7848e9",
+      "reported_at": "2026-10-05T16:51:26.728342+00:00",
+      "updated_at": "2026-10-05T16:51:26.728344+00:00",
+      "evidence_refs": [],
+      "metadata": {
+        "synthetic": true,
+        "reason": "executor_did_not_report_effect"
+      }
+    }
+  ],
+  "compensations": [
+    {
+      "id": "compensation-a17b1c081145",
+      "mission_id": "mission-475d314c45d1",
+      "mission_run_id": "mrun-74bc6727956b4591",
+      "correlation_id": "mission-401a5ef5a83b4d0e",
+      "plan_version": 1,
+      "step_id": "step-ff9593d6114d",
+      "effect_id": "effect-c90b239a8c5e3e2d4d7f",
+      "compensation_type": "verify_effect",
+      "instructions": "仅只读核实指定资源是否发生本步骤声明的副作用，禁止删除、覆盖或其他写入。只有证据确认未生效时返回 not_needed，附真实核实结果和回执；如已生效或无法确定，返回 failed 并说明事实，等待新的恢复方案审批。",
+      "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase9-20261006/applied-sample.txt",
+      "contract_hash": "31dfe651119dd134b4faebb6dc2ce48944529330f4d90fe8151897cd14ce88b0",
+      "idempotency_key": "compensate:mission-475d314c45d1:plan:1:step:1:unreported-effect",
+      "status": "failed",
+      "attempts": 1,
+      "max_attempts": 1,
+      "requested_at": "2026-10-05T16:51:26.729340+00:00",
+      "approved_at": "2026-10-05T16:52:11.193389+00:00",
+      "approved_by": "phase9-browser",
+      "approval_comment": "已确认当前补偿合同快照",
+      "authorization_expires_at": "2026-10-05T17:22:11.193376+00:00",
+      "lease_owner": null,
+      "lease_expires_at": null,
+      "last_error": "只读核实未确认无需补偿；保留阻塞，等待新的恢复方案审批。 只读核实：样本已存在，保留原文件，等待新的恢复方案。",
+      "started_at": "2026-10-05T16:52:11.219875+00:00",
+      "completed_at": "2026-10-05T16:52:11.223420+00:00",
+      "updated_at": "2026-10-05T16:52:11.223422+00:00",
+      "result": {
+        "status": "failed",
+        "summary": "只读核实未确认无需补偿；保留阻塞，等待新的恢复方案审批。 只读核实：样本已存在，保留原文件，等待新的恢复方案。",
+        "receipt_ref": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase9-20261006/compensation-a17b1c081145-verification.json",
+        "evidence_refs": [
+          "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase9-20261006/compensation-a17b1c081145-verification.json"
+        ],
+        "risk_notes": "仅核验本地隔离样本，不代表外部系统状态。",
+        "accepted": false
+      }
+    }
+  ],
+  "delivery_gate": null,
+  "approval": {
+    "id": "approval-0573de0f8375",
+    "mission_id": "mission-475d314c45d1",
+    "plan_version": 1,
+    "decision": "approved",
+    "requested_at": "2026-10-05T16:51:26.697794+00:00",
+    "decided_at": "2026-10-05T16:51:26.707894+00:00",
+    "decided_by": "fixture",
+    "comment": "",
+    "external_message_id": null
+  },
+  "events": [
+    {
+      "id": "event-2343aa90a32b",
+      "mission_id": "mission-475d314c45d1",
+      "mission_run_id": "mrun-74bc6727956b4591",
+      "correlation_id": "mission-401a5ef5a83b4d0e",
+      "run_sequence": 1,
+      "event_type": "mission_received",
+      "from_status": null,
+      "to_status": "received",
+      "actor": "phase9-lab",
+      "detail": "隔离恢复测试：仅核实指定样本，保留所有文件，不外发。",
+      "event_key": null,
+      "metadata": {
+        "message_id": "msg-585a93651479",
+        "channel": "dashboard",
+        "preplanned": false,
+        "mission_type": "software",
+        "project_id": "",
+        "intent_confidence": 1.0
+      },
+      "created_at": "2026-10-05T16:51:26.683859+00:00"
+    },
+    {
+      "id": "event-b2786a70d48f",
+      "mission_id": "mission-475d314c45d1",
+      "mission_run_id": "mrun-74bc6727956b4591",
+      "correlation_id": "mission-401a5ef5a83b4d0e",
+      "run_sequence": 2,
+      "event_type": "planning_started",
+      "from_status": "received",
+      "to_status": "planning",
+      "actor": "fixture",
+      "detail": "Optimus is producing an approval-gated plan",
+      "event_key": null,
+      "metadata": {},
+      "created_at": "2026-10-05T16:51:26.693670+00:00"
+    },
+    {
+      "id": "event-e6906a8cc18c",
+      "mission_id": "mission-475d314c45d1",
+      "mission_run_id": "mrun-74bc6727956b4591",
+      "correlation_id": "mission-401a5ef5a83b4d0e",
+      "run_sequence": 3,
+      "event_type": "plan_proposed",
+      "from_status": "planning",
+      "to_status": "awaiting_approval",
+      "actor": "optimus",
+      "detail": "模拟回执丢失",
+      "event_key": null,
+      "metadata": {
+        "version": 1,
+        "step_count": 1,
+        "flow_key": "general",
+        "flow_version": "1.0.0",
+        "highest_risk": "L1",
+        "quality_score": 100,
+        "workflow_runtime": "legacy",
+        "workflow_runtime_reason": "feature_disabled"
+      },
+      "created_at": "2026-10-05T16:51:26.699120+00:00"
+    },
+    {
+      "id": "event-14a15889cfec",
+      "mission_id": "mission-475d314c45d1",
+      "mission_run_id": "mrun-74bc6727956b4591",
+      "correlation_id": "mission-401a5ef5a83b4d0e",
+      "run_sequence": 4,
+      "event_type": "plan_approved",
+      "from_status": "awaiting_approval",
+      "to_status": "dispatching",
+      "actor": "fixture",
+      "detail": "approved",
+      "event_key": null,
+      "metadata": {
+        "version": 1
+      },
+      "created_at": "2026-10-05T16:51:26.710060+00:00"
+    },
+    {
+      "id": "event-0cb299d4b2c7",
+      "mission_id": "mission-475d314c45d1",
+      "mission_run_id": "mrun-74bc6727956b4591",
+      "correlation_id": "mission-401a5ef5a83b4d0e",
+      "run_sequence": 5,
+      "event_type": "state_changed",
+      "from_status": "dispatching",
+      "to_status": "running",
+      "actor": "command-center",
+      "detail": "Approved plan entered execution",
+      "event_key": null,
+      "metadata": {},
+      "created_at": "2026-10-05T16:51:26.718108+00:00"
+    },
+    {
+      "id": "event-cbed9d7830a0",
+      "mission_id": "mission-475d314c45d1",
+      "mission_run_id": "mrun-74bc6727956b4591",
+      "correlation_id": "mission-401a5ef5a83b4d0e",
+      "run_sequence": 6,
+      "event_type": "step_started",
+      "from_status": "running",
+      "to_status": "running",
+      "actor": "optimus",
+      "detail": "受控写入样本",
+      "event_key": null,
+      "metadata": {
+        "step_id": "step-ff9593d6114d",
+        "step_approval_id": null
+      },
+      "created_at": "2026-10-05T16:51:26.724025+00:00"
+    },
+    {
+      "id": "event-b4af892188c4",
+      "mission_id": "mission-475d314c45d1",
+      "mission_run_id": "mrun-74bc6727956b4591",
+      "correlation_id": "mission-401a5ef5a83b4d0e",
+      "run_sequence": 7,
+      "event_type": "compensation_requested",
+      "from_status": "running",
+      "to_status": "running",
+      "actor": "fixture",
+      "detail": "副作用状态为 unknown，等待补偿审批",
+      "event_key": null,
+      "metadata": {
+        "compensation_id": "compensation-a17b1c081145",
+        "effect_id": "effect-c90b239a8c5e3e2d4d7f",
+        "step_id": "step-ff9593d6114d",
+        "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase9-20261006/applied-sample.txt",
+        "contract_hash": "31dfe651119dd134b4faebb6dc2ce48944529330f4d90fe8151897cd14ce88b0"
+      },
+      "created_at": "2026-10-05T16:51:26.730055+00:00"
+    },
+    {
+      "id": "event-b1a95ae7aa1d",
+      "mission_id": "mission-475d314c45d1",
+      "mission_run_id": "mrun-74bc6727956b4591",
+      "correlation_id": "mission-401a5ef5a83b4d0e",
+      "run_sequence": 8,
+      "event_type": "step_failed",
+      "from_status": "running",
+      "to_status": "running",
+      "actor": "fixture",
+      "detail": "受控写入样本",
+      "event_key": null,
+      "metadata": {
+        "step_id": "step-ff9593d6114d",
+        "result": {
+          "success": false,
+          "error": "测试夹具：未收到执行回执",
+          "summary": "测试夹具：未收到执行回执",
+          "artifacts": [],
+          "evidence": [],
+          "evidence_refs": [],
+          "acceptance_results": [],
+          "tools_used": [],
+          "risk_notes": "",
+          "outcome": "failed",
+          "receipt_preflight": {
+            "schema_version": "1.0",
+            "strategy": "existing_evidence_only",
+            "input_sha256": "26fdd11a3c78ca11d6e5f10de9ed9c3b2f02c90d72a9b4d8e4fe3b635a5ae7e1",
+            "changes": [],
+            "strict_accepted_before": false,
+            "strict_accepted": false,
+            "blockers": [],
+            "execution_repeated": false
+          },
+          "execution_quality": {
+            "status": "pass",
+            "score": 100,
+            "mode": "strict",
+            "enforced": true,
+            "accepted": false,
+            "executor_success": false,
+            "business_outcome": "failed",
+            "hard_blockers": [],
+            "blockers": [],
+            "warnings": [],
+            "evidence_refs": [],
+            "required_evidence": [
+              "coordination_notes"
+            ],
+            "required_artifact_types": [
+              "协调结论",
+              "下一步安排"
+            ],
+            "required_tools": [
+              "context_search"
+            ],
+            "acceptance_criteria": [
+              "目标、责任人和完成标准清晰"
+            ],
+            "checked_rules": [
+              "result-summary",
+              "required-evidence-types",
+              "artifact-contract",
+              "acceptance-results",
+              "tool-use",
+              "required-output-fields"
+            ]
+          },
+          "side_effects": [
+            {
+              "effect_key": "unreported-effect",
+              "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase9-20261006/applied-sample.txt",
+              "action": "受控写入样本",
+              "status": "unknown",
+              "idempotency_key": "mission-475d314c45d1:plan:1:step:1",
+              "receipt_ref": "",
+              "evidence_refs": [],
+              "metadata": {
+                "synthetic": true,
+                "reason": "executor_did_not_report_effect"
+              }
+            }
+          ],
+          "effect_quality": {
+            "status": "blocked",
+            "accepted": false,
+            "enforced": true,
+            "blockers": [
+              "副作用 unreported-effect 的落地状态未知"
+            ],
+            "warnings": [],
+            "effect_count": 1,
+            "applied_count": 0,
+            "unknown_count": 1,
+            "checked_rules": [
+              "effect-journal-present",
+              "effect-status-known",
+              "stable-idempotency-key",
+              "applied-effect-receipt"
+            ]
+          },
+          "completion_decision": {
+            "executor_success": false,
+            "accepted": false,
+            "retry_scheduled": false,
+            "attempt": 1,
+            "max_attempts": 2,
+            "receipt_retry_safe": false,
+            "enforcement": {
+              "mode": "strict",
+              "enforced": true,
+              "reason": "strict_mode",
+              "flow_key": "general",
+              "highest_risk": "L1",
+              "runtime": "legacy"
+            },
+            "effect_quality": {
+              "status": "blocked",
+              "accepted": false,
+              "enforced": true,
+              "blockers": [
+                "副作用 unreported-effect 的落地状态未知"
+              ],
+              "warnings": [],
+              "effect_count": 1,
+              "applied_count": 0,
+              "unknown_count": 1,
+              "checked_rules": [
+                "effect-journal-present",
+                "effect-status-known",
+                "stable-idempotency-key",
+                "applied-effect-receipt"
+              ]
+            }
+          },
+          "effect_ids": [
+            "effect-c90b239a8c5e3e2d4d7f"
+          ]
+        },
+        "next_step_status": "failed"
+      },
+      "created_at": "2026-10-05T16:51:26.731244+00:00"
+    },
+    {
+      "id": "event-5c69392bb074",
+      "mission_id": "mission-475d314c45d1",
+      "mission_run_id": "mrun-74bc6727956b4591",
+      "correlation_id": "mission-401a5ef5a83b4d0e",
+      "run_sequence": 9,
+      "event_type": "mission_blocked",
+      "from_status": "running",
+      "to_status": "waiting_feedback",
+      "actor": "command-center",
+      "detail": "受控写入样本：副作用 unreported-effect 的落地状态未知",
+      "event_key": null,
+      "metadata": {
+        "counts": {
+          "failed": 1
+        }
+      },
+      "created_at": "2026-10-05T16:51:26.753758+00:00"
+    },
+    {
+      "id": "event-ce807fcefb2b",
+      "mission_id": "mission-475d314c45d1",
+      "mission_run_id": "mrun-74bc6727956b4591",
+      "correlation_id": "mission-401a5ef5a83b4d0e",
+      "run_sequence": 10,
+      "event_type": "compensation_approved",
+      "from_status": "waiting_feedback",
+      "to_status": "waiting_feedback",
+      "actor": "phase9-browser",
+      "detail": "已确认当前补偿合同快照",
+      "event_key": null,
+      "metadata": {
+        "compensation_id": "compensation-a17b1c081145",
+        "effect_id": "effect-c90b239a8c5e3e2d4d7f",
+        "contract_hash": "31dfe651119dd134b4faebb6dc2ce48944529330f4d90fe8151897cd14ce88b0",
+        "authorization_expires_at": "2026-10-05T17:22:11.193376+00:00"
+      },
+      "created_at": "2026-10-05T16:52:11.197378+00:00"
+    },
+    {
+      "id": "event-240001531b18",
+      "mission_id": "mission-475d314c45d1",
+      "mission_run_id": "mrun-74bc6727956b4591",
+      "correlation_id": "mission-401a5ef5a83b4d0e",
+      "run_sequence": 11,
+      "event_type": "compensation_failed",
+      "from_status": "waiting_feedback",
+      "to_status": "waiting_feedback",
+      "actor": "phase9-filesystem-verifier",
+      "detail": "只读核实未确认无需补偿；保留阻塞，等待新的恢复方案审批。 只读核实：样本已存在，保留原文件，等待新的恢复方案。",
+      "event_key": null,
+      "metadata": {
+        "compensation_id": "compensation-a17b1c081145",
+        "effect_id": "effect-c90b239a8c5e3e2d4d7f",
+        "accepted": false,
+        "receipt_ref": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase9-20261006/compensation-a17b1c081145-verification.json"
+      },
+      "created_at": "2026-10-05T16:52:11.230817+00:00"
+    },
+    {
+      "id": "event-6275aaeff09a",
+      "mission_id": "mission-475d314c45d1",
+      "mission_run_id": "mrun-74bc6727956b4591",
+      "correlation_id": "mission-401a5ef5a83b4d0e",
+      "run_sequence": 12,
+      "event_type": "feedback_received",
+      "from_status": "waiting_feedback",
+      "to_status": "waiting_feedback",
+      "actor": "phase9-browser",
+      "detail": "测试：核实发现已写入，要求重新规划，但不得绕过未解决恢复项；保留原文件。",
+      "event_key": null,
+      "metadata": {
+        "message_id": "msg-015f731e7ca8",
+        "replan": true
+      },
+      "created_at": "2026-10-05T16:52:33.031479+00:00"
+    }
+  ],
+  "messages": [
+    {
+      "id": "msg-585a93651479",
+      "conversation_id": "conv-62b38a997997",
+      "mission_id": "mission-475d314c45d1",
+      "direction": "inbound",
+      "external_message_id": "ui-93265498445f41fabe73a0724a6a8012",
+      "reply_to_external_message_id": null,
+      "sender_id": "phase9-lab",
+      "content": "隔离恢复测试：仅核实指定样本，保留所有文件，不外发。",
+      "message_type": "text",
+      "intent_type": "software_project",
+      "intent_confidence": 1.0,
+      "intent_reason": "由已认证的项目任务入口显式创建",
+      "execution_requested": 1,
+      "routing_status": "mission_created",
+      "target_agent_id": "optimus",
+      "resolved_project_id": null,
+      "reply_to_command_message_id": null,
+      "metadata": {
+        "project_id": "",
+        "title": "P9 已写入：核实后保持阻塞",
+        "context": {
+          "business_flow_key": "general"
+        },
+        "intent_type": "software_project",
+        "execution_requested": true,
+        "profile_user_id": "phase9-lab",
+        "suppress_notification": true,
+        "_direct_mission": true,
+        "_reserve_planning": false,
+        "_planning_owner": ""
+      },
+      "created_at": "2026-10-05T16:51:26.681311+00:00"
+    },
+    {
+      "id": "msg-015f731e7ca8",
+      "conversation_id": "conv-62b38a997997",
+      "mission_id": "mission-475d314c45d1",
+      "direction": "inbound",
+      "external_message_id": "ui-feedback-36326de4cc7b45c49ad5604ffe097654",
+      "reply_to_external_message_id": null,
+      "sender_id": "phase9-browser",
+      "content": "测试：核实发现已写入，要求重新规划，但不得绕过未解决恢复项；保留原文件。",
+      "message_type": "text",
+      "intent_type": "",
+      "intent_confidence": 0.0,
+      "intent_reason": "",
+      "execution_requested": 0,
+      "routing_status": "",
+      "target_agent_id": "optimus",
+      "resolved_project_id": null,
+      "reply_to_command_message_id": null,
+      "metadata": {},
+      "created_at": "2026-10-05T16:52:33.027151+00:00"
+    }
+  ]
+}

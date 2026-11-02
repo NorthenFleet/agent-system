@@ -1,0 +1,37 @@
+{
+  "total": 12,
+  "by_status": {
+    "completed": 6,
+    "cancelled": 5,
+    "waiting_feedback": 1
+  },
+  "pending_approvals": 0,
+  "pending_step_approvals": 0,
+  "pending_compensations": 0,
+  "outbox_pending": 0,
+  "context_by_status": {
+    "ready": 59
+  },
+  "context_ready": 59,
+  "context_degraded": 0,
+  "routed_by_intent": {
+    "software_project": 6,
+    "discussion": 4,
+    "clarification_required": 4,
+    "mission_control": 3,
+    "finance_operation": 6
+  },
+  "discussion_count": 4,
+  "clarification_pending": 0,
+  "active": 1,
+  "memory_candidates": {
+    "total": 18,
+    "pending_review": 0,
+    "published": 17,
+    "rejected": 1,
+    "by_status": {
+      "published": 17,
+      "rejected": 1
+    }
+  }
+}

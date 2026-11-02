@@ -1,0 +1,24 @@
+Browser tab: 2116413399, Title: "智能体集群系统", URL: "http://127.0.0.1:3021/command-center".
+The following is a diff from the previous accessibility tree with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+~			78 button (expanded) 查看团队统计与运行健康, Secondary Actions: Collapse
++			1139 container
++				1140 text 全部任务 27 项目 9 正在推进 6 等待批准 0 待发送回执 0 待处理补偿 2 上下文快照 107 待审核记忆 12 一般讨论 4 待澄清 0
++			1141 container 生产运行门禁
++				1142 text 生产运行门禁
++				1143 text 就绪
++				1144 text 事实库
++				1145 text POSTGRESQL
++				1146 text 连接池
++				1147 text 3/5
++				1148 text 峰值 5 · 超时 0 · 失败 0 · 重连 0
++				1149 text 执行租约
++				1150 text 0 个过期
++				1151 text 活跃 0 · 重试 4
++				1152 text 流程检查点
++				1153 text postgresql
++				1154 text ready · 禁止运行时建表
++				1155 text 执行实例
++				1156 text 2/2 在线
++				1157 text 失联 0 · ready
+~					567 text 全员状态 随自动刷新同步 · 10/06 15:30 0 工作中 0 已分配 2 阻塞 14 待命
+The focused UI element is 78 button (expanded) 查看团队统计与运行健康, Secondary Actions: Collapse

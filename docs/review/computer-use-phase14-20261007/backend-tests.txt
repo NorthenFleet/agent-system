@@ -1,0 +1,210 @@
+FFF.............................................                         [100%]
+=================================== FAILURES ===================================
+_____________ test_download_rechecks_registered_artifact[changed] ______________
+
+tmp_path = PosixPath('/private/var/folders/kq/dz44fm994nz94zw2dfqnz_g00000gn/T/pytest-of-apple/pytest-375/test_download_rechecks_registe0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x113d78d60>
+mutation = 'changed'
+
+    @pytest.mark.parametrize('mutation', ['changed', 'missing', 'symlink'])
+    def test_download_rechecks_registered_artifact(tmp_path, monkeypatch, mutation):
+        from routers import command_center_router as router
+    
+        delivery = tmp_path / 'delivery'
+        delivery.mkdir()
+        artifact_file = delivery / 'receipt.json'
+        original = b'{"verified":true}'
+        artifact_file.write_bytes(original)
+        artifact = {'id': 'receipt', 'uri': str(artifact_file),
+                    'content_hash': hashlib.sha256(original).hexdigest()}
+        monkeypatch.setenv('COMMAND_CENTER_ARTIFACT_ROOTS', str(delivery))
+        scopes = []
+    
+        def mission(mid, **kwargs):
+            assert mid == 'owned'
+            scopes.append(kwargs['owner_user_id'])
+            return {'id': mid, 'artifacts': [artifact]}
+    
+        monkeypatch.setattr(router.command_center_service, 'get_mission', mission)
+        app = FastAPI()
+        app.include_router(router.router)
+        app.dependency_overrides[router.get_current_user] = lambda: {'id': 999, 'role': 'user'}
+        url = '/api/v3/command-center/missions/owned/artifacts/receipt/download'
+        with TestClient(app) as client:
+            good = client.get(url)
+            assert good.status_code == 200
+            assert good.content == original
+            assert good.headers['cache-control'] == 'no-store'
+            assert good.headers['x-content-type-options'] == 'nosniff'
+            assert 'attachment' in good.headers['content-disposition']
+            artifact_file.rename(delivery / 'receipt-original.json')
+            if mutation == 'changed':
+                artifact_file.write_bytes(b'altered-private-content')
+            elif mutation == 'symlink':
+                secret = tmp_path / 'private.json'
+                secret.write_bytes(b'altered-private-content')
+                artifact_file.symlink_to(secret)
+            rejected = client.get(url)
+            assert rejected.status_code == 409
+            assert b'altered-private-content' not in rejected.content
+            assert client.get(url.replace('/receipt/', '/unregistered/')).status_code == 404
+>       assert scopes == [999, 999, 999]
+E       AssertionError: assert ['', '', ''] == [999, 999, 999]
+E         
+E         At index 0 diff: '' != 999
+E         Use -v to get more diff
+
+backend/tests/test_phase14_artifact_download.py:51: AssertionError
+_____________ test_download_rechecks_registered_artifact[missing] ______________
+
+tmp_path = PosixPath('/private/var/folders/kq/dz44fm994nz94zw2dfqnz_g00000gn/T/pytest-of-apple/pytest-375/test_download_rechecks_registe1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x113eda780>
+mutation = 'missing'
+
+    @pytest.mark.parametrize('mutation', ['changed', 'missing', 'symlink'])
+    def test_download_rechecks_registered_artifact(tmp_path, monkeypatch, mutation):
+        from routers import command_center_router as router
+    
+        delivery = tmp_path / 'delivery'
+        delivery.mkdir()
+        artifact_file = delivery / 'receipt.json'
+        original = b'{"verified":true}'
+        artifact_file.write_bytes(original)
+        artifact = {'id': 'receipt', 'uri': str(artifact_file),
+                    'content_hash': hashlib.sha256(original).hexdigest()}
+        monkeypatch.setenv('COMMAND_CENTER_ARTIFACT_ROOTS', str(delivery))
+        scopes = []
+    
+        def mission(mid, **kwargs):
+            assert mid == 'owned'
+            scopes.append(kwargs['owner_user_id'])
+            return {'id': mid, 'artifacts': [artifact]}
+    
+        monkeypatch.setattr(router.command_center_service, 'get_mission', mission)
+        app = FastAPI()
+        app.include_router(router.router)
+        app.dependency_overrides[router.get_current_user] = lambda: {'id': 999, 'role': 'user'}
+        url = '/api/v3/command-center/missions/owned/artifacts/receipt/download'
+        with TestClient(app) as client:
+            good = client.get(url)
+            assert good.status_code == 200
+            assert good.content == original
+            assert good.headers['cache-control'] == 'no-store'
+            assert good.headers['x-content-type-options'] == 'nosniff'
+            assert 'attachment' in good.headers['content-disposition']
+            artifact_file.rename(delivery / 'receipt-original.json')
+            if mutation == 'changed':
+                artifact_file.write_bytes(b'altered-private-content')
+            elif mutation == 'symlink':
+                secret = tmp_path / 'private.json'
+                secret.write_bytes(b'altered-private-content')
+                artifact_file.symlink_to(secret)
+            rejected = client.get(url)
+            assert rejected.status_code == 409
+            assert b'altered-private-content' not in rejected.content
+            assert client.get(url.replace('/receipt/', '/unregistered/')).status_code == 404
+>       assert scopes == [999, 999, 999]
+E       AssertionError: assert ['', '', ''] == [999, 999, 999]
+E         
+E         At index 0 diff: '' != 999
+E         Use -v to get more diff
+
+backend/tests/test_phase14_artifact_download.py:51: AssertionError
+_____________ test_download_rechecks_registered_artifact[symlink] ______________
+
+tmp_path = PosixPath('/private/var/folders/kq/dz44fm994nz94zw2dfqnz_g00000gn/T/pytest-of-apple/pytest-375/test_download_rechecks_registe2')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x113ef1d90>
+mutation = 'symlink'
+
+    @pytest.mark.parametrize('mutation', ['changed', 'missing', 'symlink'])
+    def test_download_rechecks_registered_artifact(tmp_path, monkeypatch, mutation):
+        from routers import command_center_router as router
+    
+        delivery = tmp_path / 'delivery'
+        delivery.mkdir()
+        artifact_file = delivery / 'receipt.json'
+        original = b'{"verified":true}'
+        artifact_file.write_bytes(original)
+        artifact = {'id': 'receipt', 'uri': str(artifact_file),
+                    'content_hash': hashlib.sha256(original).hexdigest()}
+        monkeypatch.setenv('COMMAND_CENTER_ARTIFACT_ROOTS', str(delivery))
+        scopes = []
+    
+        def mission(mid, **kwargs):
+            assert mid == 'owned'
+            scopes.append(kwargs['owner_user_id'])
+            return {'id': mid, 'artifacts': [artifact]}
+    
+        monkeypatch.setattr(router.command_center_service, 'get_mission', mission)
+        app = FastAPI()
+        app.include_router(router.router)
+        app.dependency_overrides[router.get_current_user] = lambda: {'id': 999, 'role': 'user'}
+        url = '/api/v3/command-center/missions/owned/artifacts/receipt/download'
+        with TestClient(app) as client:
+            good = client.get(url)
+            assert good.status_code == 200
+            assert good.content == original
+            assert good.headers['cache-control'] == 'no-store'
+            assert good.headers['x-content-type-options'] == 'nosniff'
+            assert 'attachment' in good.headers['content-disposition']
+            artifact_file.rename(delivery / 'receipt-original.json')
+            if mutation == 'changed':
+                artifact_file.write_bytes(b'altered-private-content')
+            elif mutation == 'symlink':
+                secret = tmp_path / 'private.json'
+                secret.write_bytes(b'altered-private-content')
+                artifact_file.symlink_to(secret)
+            rejected = client.get(url)
+            assert rejected.status_code == 409
+            assert b'altered-private-content' not in rejected.content
+            assert client.get(url.replace('/receipt/', '/unregistered/')).status_code == 404
+>       assert scopes == [999, 999, 999]
+E       AssertionError: assert ['', '', ''] == [999, 999, 999]
+E         
+E         At index 0 diff: '' != 999
+E         Use -v to get more diff
+
+backend/tests/test_phase14_artifact_download.py:51: AssertionError
+=============================== warnings summary ===============================
+backend/database.py:80
+  /Users/apple/工作桌面/Workspace/agent-system/backend/database.py:80: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+backend/routers/automation_router.py:55
+  /Users/apple/工作桌面/Workspace/agent-system/backend/routers/automation_router.py:55: PydanticDeprecatedSince20: `min_items` is deprecated and will be removed, use `min_length` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    actions: List[ActionItem] = Field(..., min_items=1, description="动作列表")
+
+backend/main_slim_v2.py:202
+  /Users/apple/工作桌面/Workspace/agent-system/backend/main_slim_v2.py:202: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+backend/venv/lib/python3.14/site-packages/fastapi/applications.py:4599
+backend/venv/lib/python3.14/site-packages/fastapi/applications.py:4599
+  /Users/apple/工作桌面/Workspace/agent-system/backend/venv/lib/python3.14/site-packages/fastapi/applications.py:4599: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)
+
+backend/main_slim_v2.py:254
+  /Users/apple/工作桌面/Workspace/agent-system/backend/main_slim_v2.py:254: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("shutdown")
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED backend/tests/test_phase14_artifact_download.py::test_download_rechecks_registered_artifact[changed]
+FAILED backend/tests/test_phase14_artifact_download.py::test_download_rechecks_registered_artifact[missing]
+FAILED backend/tests/test_phase14_artifact_download.py::test_download_rechecks_registered_artifact[symlink]
+3 failed, 45 passed, 6 warnings in 61.65s (0:01:01)

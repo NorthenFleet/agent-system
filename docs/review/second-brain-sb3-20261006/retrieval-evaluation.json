@@ -1,0 +1,759 @@
+{
+  "corpus_version": "sb3-engineering-v1",
+  "corpus_hash": "ef6ef0885aac53e224f8a5d57b3aaf2ef82e16cd08ffedb13d55c7deef909a1a",
+  "source_count": 30,
+  "query_count": 50,
+  "human_reviewed": false,
+  "approval_kind": "isolated_test_fixture_only",
+  "production_modified": false,
+  "retrieval_policy": "kb-retrieval-v2",
+  "metrics": {
+    "recall_at_10": 1.0,
+    "unanswerable_abstention_rate": 1.0,
+    "citation_resolvability": 1.0,
+    "citation_count": 59,
+    "query_p95_ms": 87.49,
+    "cases_passed": 50,
+    "semantic_fidelity": "not_human_evaluated"
+  },
+  "scope_note": "60-page synthetic corpus; not a 1000-page performance or real-source semantic gate",
+  "g_sb3_passed": false,
+  "vector_decision": "keep_disabled_pending_real_quality_evidence",
+  "results": [
+    {
+      "id": "answer-00",
+      "kind": "answerable",
+      "expected_sources": [
+        "s00"
+      ],
+      "returned_sources": [
+        "s00"
+      ],
+      "recall_at_10": 1.0,
+      "abstained": false,
+      "conflicts": 0,
+      "passed": true,
+      "latency_ms": 37.7
+    },
+    {
+      "id": "answer-01",
+      "kind": "answerable",
+      "expected_sources": [
+        "s01"
+      ],
+      "returned_sources": [
+        "s01"
+      ],
+      "recall_at_10": 1.0,
+      "abstained": false,
+      "conflicts": 0,
+      "passed": true,
+      "latency_ms": 35.56
+    },
+    {
+      "id": "answer-02",
+      "kind": "answerable",
+      "expected_sources": [
+        "s02"
+      ],
+      "returned_sources": [
+        "s02"
+      ],
+      "recall_at_10": 1.0,
+      "abstained": false,
+      "conflicts": 0,
+      "passed": true,
+      "latency_ms": 35.35
+    },
+    {
+      "id": "answer-03",
+      "kind": "answerable",
+      "expected_sources": [
+        "s03"
+      ],
+      "returned_sources": [
+        "s03"
+      ],
+      "recall_at_10": 1.0,
+      "abstained": false,
+      "conflicts": 0,
+      "passed": true,
+      "latency_ms": 33.17
+    },
+    {
+      "id": "answer-04",
+      "kind": "answerable",
+      "expected_sources": [
+        "s04"
+      ],
+      "returned_sources": [
+        "s04"
+      ],
+      "recall_at_10": 1.0,
+      "abstained": false,
+      "conflicts": 0,
+      "passed": true,
+      "latency_ms": 31.62
+    },
+    {
+      "id": "answer-05",
+      "kind": "answerable",
+      "expected_sources": [
+        "s05"
+      ],
+      "returned_sources": [
+        "s05"
+      ],
+      "recall_at_10": 1.0,
+      "abstained": false,
+      "conflicts": 0,
+      "passed": true,
+      "latency_ms": 32.93
+    },
+    {
+      "id": "answer-06",
+      "kind": "answerable",
+      "expected_sources": [
+        "s06"
+      ],
+      "returned_sources": [
+        "s06"
+      ],
+      "recall_at_10": 1.0,
+      "abstained": false,
+      "conflicts": 0,
+      "passed": true,
+      "latency_ms": 34.96
+    },
+    {
+      "id": "answer-07",
+      "kind": "answerable",
+      "expected_sources": [
+        "s07"
+      ],
+      "returned_sources": [
+        "s07"
+      ],
+      "recall_at_10": 1.0,
+      "abstained": false,
+      "conflicts": 0,
+      "passed": true,
+      "latency_ms": 33.24
+    },
+    {
+      "id": "answer-08",
+      "kind": "answerable",
+      "expected_sources": [
+        "s08"
+      ],
+      "returned_sources": [
+        "s08"
+      ],
+      "recall_at_10": 1.0,
+      "abstained": false,
+      "conflicts": 0,
+      "passed": true,
+      "latency_ms": 33.44
+    },
+    {
+      "id": "answer-09",
+      "kind": "answerable",
+      "expected_sources": [
+        "s09"
+      ],
+      "returned_sources": [
+        "s09"
+      ],
+      "recall_at_10": 1.0,
+      "abstained": false,
+      "conflicts": 0,
+      "passed": true,
+      "latency_ms": 38.36
+    },
+    {
+      "id": "answer-10",
+      "kind": "answerable",
+      "expected_sources": [
+        "s10"
+      ],
+      "returned_sources": [
+        "s10"
+      ],
+      "recall_at_10": 1.0,
+      "abstained": false,
+      "conflicts": 0,
+      "passed": true,
+      "latency_ms": 28.93
+    },
+    {
+      "id": "answer-11",
+      "kind": "answerable",
+      "expected_sources": [
+        "s11"
+      ],
+      "returned_sources": [
+        "s11"
+      ],
+      "recall_at_10": 1.0,
+      "abstained": false,
+      "conflicts": 0,
+      "passed": true,
+      "latency_ms": 30.4
+    },
+    {
+      "id": "answer-12",
+      "kind": "answerable",
+      "expected_sources": [
+        "s12"
+      ],
+      "returned_sources": [
+        "s12"
+      ],
+      "recall_at_10": 1.0,
+      "abstained": false,
+      "conflicts": 0,
+      "passed": true,
+      "latency_ms": 29.99
+    },
+    {
+      "id": "answer-13",
+      "kind": "answerable",
+      "expected_sources": [
+        "s13"
+      ],
+      "returned_sources": [
+        "s13"
+      ],
+      "recall_at_10": 1.0,
+      "abstained": false,
+      "conflicts": 0,
+      "passed": true,
+      "latency_ms": 30.03
+    },
+    {
+      "id": "answer-14",
+      "kind": "answerable",
+      "expected_sources": [
+        "s14"
+      ],
+      "returned_sources": [
+        "s14"
+      ],
+      "recall_at_10": 1.0,
+      "abstained": false,
+      "conflicts": 0,
+      "passed": true,
+      "latency_ms": 34.71
+    },
+    {
+      "id": "answer-15",
+      "kind": "answerable",
+      "expected_sources": [
+        "s15"
+      ],
+      "returned_sources": [
+        "s15",
+        "s18"
+      ],
+      "recall_at_10": 1.0,
+      "abstained": false,
+      "conflicts": 0,
+      "passed": true,
+      "latency_ms": 26.71
+    },
+    {
+      "id": "answer-16",
+      "kind": "answerable",
+      "expected_sources": [
+        "s16"
+      ],
+      "returned_sources": [
+        "s16"
+      ],
+      "recall_at_10": 1.0,
+      "abstained": false,
+      "conflicts": 0,
+      "passed": true,
+      "latency_ms": 35.37
+    },
+    {
+      "id": "answer-17",
+      "kind": "answerable",
+      "expected_sources": [
+        "s17"
+      ],
+      "returned_sources": [
+        "s17"
+      ],
+      "recall_at_10": 1.0,
+      "abstained": false,
+      "conflicts": 0,
+      "passed": true,
+      "latency_ms": 31.59
+    },
+    {
+      "id": "answer-18",
+      "kind": "answerable",
+      "expected_sources": [
+        "s18"
+      ],
+      "returned_sources": [
+        "s18"
+      ],
+      "recall_at_10": 1.0,
+      "abstained": false,
+      "conflicts": 0,
+      "passed": true,
+      "latency_ms": 32.89
+    },
+    {
+      "id": "answer-19",
+      "kind": "answerable",
+      "expected_sources": [
+        "s19"
+      ],
+      "returned_sources": [
+        "s19"
+      ],
+      "recall_at_10": 1.0,
+      "abstained": false,
+      "conflicts": 0,
+      "passed": true,
+      "latency_ms": 29.66
+    },
+    {
+      "id": "answer-20",
+      "kind": "answerable",
+      "expected_sources": [
+        "s20"
+      ],
+      "returned_sources": [
+        "s20",
+        "s21"
+      ],
+      "recall_at_10": 1.0,
+      "abstained": false,
+      "conflicts": 1,
+      "passed": true,
+      "latency_ms": 29.31
+    },
+    {
+      "id": "answer-21",
+      "kind": "answerable",
+      "expected_sources": [
+        "s21"
+      ],
+      "returned_sources": [
+        "s20",
+        "s21"
+      ],
+      "recall_at_10": 1.0,
+      "abstained": false,
+      "conflicts": 1,
+      "passed": true,
+      "latency_ms": 30.96
+    },
+    {
+      "id": "answer-22",
+      "kind": "answerable",
+      "expected_sources": [
+        "s22"
+      ],
+      "returned_sources": [
+        "s22",
+        "s23"
+      ],
+      "recall_at_10": 1.0,
+      "abstained": false,
+      "conflicts": 1,
+      "passed": true,
+      "latency_ms": 37.92
+    },
+    {
+      "id": "answer-23",
+      "kind": "answerable",
+      "expected_sources": [
+        "s23"
+      ],
+      "returned_sources": [
+        "s22",
+        "s23"
+      ],
+      "recall_at_10": 1.0,
+      "abstained": false,
+      "conflicts": 1,
+      "passed": true,
+      "latency_ms": 33.32
+    },
+    {
+      "id": "answer-24",
+      "kind": "answerable",
+      "expected_sources": [
+        "s24"
+      ],
+      "returned_sources": [
+        "s24",
+        "s25"
+      ],
+      "recall_at_10": 1.0,
+      "abstained": false,
+      "conflicts": 1,
+      "passed": true,
+      "latency_ms": 28.46
+    },
+    {
+      "id": "answer-25",
+      "kind": "answerable",
+      "expected_sources": [
+        "s25"
+      ],
+      "returned_sources": [
+        "s24",
+        "s25"
+      ],
+      "recall_at_10": 1.0,
+      "abstained": false,
+      "conflicts": 1,
+      "passed": true,
+      "latency_ms": 31.07
+    },
+    {
+      "id": "answer-26",
+      "kind": "answerable",
+      "expected_sources": [
+        "s26"
+      ],
+      "returned_sources": [
+        "s26",
+        "s27"
+      ],
+      "recall_at_10": 1.0,
+      "abstained": false,
+      "conflicts": 1,
+      "passed": true,
+      "latency_ms": 29.8
+    },
+    {
+      "id": "answer-27",
+      "kind": "answerable",
+      "expected_sources": [
+        "s27"
+      ],
+      "returned_sources": [
+        "s26",
+        "s27"
+      ],
+      "recall_at_10": 1.0,
+      "abstained": false,
+      "conflicts": 1,
+      "passed": true,
+      "latency_ms": 30.25
+    },
+    {
+      "id": "answer-28",
+      "kind": "answerable",
+      "expected_sources": [
+        "s28"
+      ],
+      "returned_sources": [
+        "s28",
+        "s29"
+      ],
+      "recall_at_10": 1.0,
+      "abstained": false,
+      "conflicts": 0,
+      "passed": true,
+      "latency_ms": 37.55
+    },
+    {
+      "id": "answer-29",
+      "kind": "answerable",
+      "expected_sources": [
+        "s29"
+      ],
+      "returned_sources": [
+        "s28",
+        "s29"
+      ],
+      "recall_at_10": 1.0,
+      "abstained": false,
+      "conflicts": 0,
+      "passed": true,
+      "latency_ms": 30.27
+    },
+    {
+      "id": "absent-0",
+      "kind": "unanswerable",
+      "expected_sources": [],
+      "returned_sources": [],
+      "recall_at_10": null,
+      "abstained": true,
+      "conflicts": 0,
+      "passed": true,
+      "latency_ms": 20.34
+    },
+    {
+      "id": "absent-1",
+      "kind": "unanswerable",
+      "expected_sources": [],
+      "returned_sources": [],
+      "recall_at_10": null,
+      "abstained": true,
+      "conflicts": 0,
+      "passed": true,
+      "latency_ms": 20.25
+    },
+    {
+      "id": "absent-2",
+      "kind": "unanswerable",
+      "expected_sources": [],
+      "returned_sources": [],
+      "recall_at_10": null,
+      "abstained": true,
+      "conflicts": 0,
+      "passed": true,
+      "latency_ms": 20.43
+    },
+    {
+      "id": "absent-3",
+      "kind": "unanswerable",
+      "expected_sources": [],
+      "returned_sources": [],
+      "recall_at_10": null,
+      "abstained": true,
+      "conflicts": 0,
+      "passed": true,
+      "latency_ms": 20.28
+    },
+    {
+      "id": "absent-4",
+      "kind": "unanswerable",
+      "expected_sources": [],
+      "returned_sources": [],
+      "recall_at_10": null,
+      "abstained": true,
+      "conflicts": 0,
+      "passed": true,
+      "latency_ms": 20.85
+    },
+    {
+      "id": "absent-5",
+      "kind": "unanswerable",
+      "expected_sources": [],
+      "returned_sources": [],
+      "recall_at_10": null,
+      "abstained": true,
+      "conflicts": 0,
+      "passed": true,
+      "latency_ms": 19.8
+    },
+    {
+      "id": "absent-6",
+      "kind": "unanswerable",
+      "expected_sources": [],
+      "returned_sources": [],
+      "recall_at_10": null,
+      "abstained": true,
+      "conflicts": 0,
+      "passed": true,
+      "latency_ms": 19.94
+    },
+    {
+      "id": "absent-7",
+      "kind": "unanswerable",
+      "expected_sources": [],
+      "returned_sources": [],
+      "recall_at_10": null,
+      "abstained": true,
+      "conflicts": 0,
+      "passed": true,
+      "latency_ms": 21.13
+    },
+    {
+      "id": "absent-8",
+      "kind": "unanswerable",
+      "expected_sources": [],
+      "returned_sources": [],
+      "recall_at_10": null,
+      "abstained": true,
+      "conflicts": 0,
+      "passed": true,
+      "latency_ms": 20.84
+    },
+    {
+      "id": "absent-9",
+      "kind": "unanswerable",
+      "expected_sources": [],
+      "returned_sources": [],
+      "recall_at_10": null,
+      "abstained": true,
+      "conflicts": 0,
+      "passed": true,
+      "latency_ms": 24.38
+    },
+    {
+      "id": "conflict-0-0",
+      "kind": "conflict",
+      "expected_sources": [
+        "s20",
+        "s21"
+      ],
+      "returned_sources": [
+        "s20",
+        "s21"
+      ],
+      "recall_at_10": 1.0,
+      "abstained": false,
+      "conflicts": 1,
+      "passed": true,
+      "latency_ms": 26.44
+    },
+    {
+      "id": "conflict-0-1",
+      "kind": "conflict",
+      "expected_sources": [
+        "s20",
+        "s21"
+      ],
+      "returned_sources": [
+        "s20",
+        "s21"
+      ],
+      "recall_at_10": 1.0,
+      "abstained": false,
+      "conflicts": 1,
+      "passed": true,
+      "latency_ms": 25.62
+    },
+    {
+      "id": "conflict-1-0",
+      "kind": "conflict",
+      "expected_sources": [
+        "s22",
+        "s23"
+      ],
+      "returned_sources": [
+        "s22",
+        "s23"
+      ],
+      "recall_at_10": 1.0,
+      "abstained": false,
+      "conflicts": 1,
+      "passed": true,
+      "latency_ms": 26.18
+    },
+    {
+      "id": "conflict-1-1",
+      "kind": "conflict",
+      "expected_sources": [
+        "s22",
+        "s23"
+      ],
+      "returned_sources": [
+        "s22",
+        "s23"
+      ],
+      "recall_at_10": 1.0,
+      "abstained": false,
+      "conflicts": 1,
+      "passed": true,
+      "latency_ms": 29.79
+    },
+    {
+      "id": "conflict-2-0",
+      "kind": "conflict",
+      "expected_sources": [
+        "s24",
+        "s25"
+      ],
+      "returned_sources": [
+        "s24",
+        "s25"
+      ],
+      "recall_at_10": 1.0,
+      "abstained": false,
+      "conflicts": 1,
+      "passed": true,
+      "latency_ms": 115.0
+    },
+    {
+      "id": "conflict-2-1",
+      "kind": "conflict",
+      "expected_sources": [
+        "s24",
+        "s25"
+      ],
+      "returned_sources": [
+        "s24",
+        "s25"
+      ],
+      "recall_at_10": 1.0,
+      "abstained": false,
+      "conflicts": 1,
+      "passed": true,
+      "latency_ms": 93.47
+    },
+    {
+      "id": "conflict-3-0",
+      "kind": "conflict",
+      "expected_sources": [
+        "s26",
+        "s27"
+      ],
+      "returned_sources": [
+        "s26",
+        "s27"
+      ],
+      "recall_at_10": 1.0,
+      "abstained": false,
+      "conflicts": 1,
+      "passed": true,
+      "latency_ms": 48.96
+    },
+    {
+      "id": "conflict-3-1",
+      "kind": "conflict",
+      "expected_sources": [
+        "s26",
+        "s27"
+      ],
+      "returned_sources": [
+        "s26",
+        "s27"
+      ],
+      "recall_at_10": 1.0,
+      "abstained": false,
+      "conflicts": 1,
+      "passed": true,
+      "latency_ms": 69.9
+    },
+    {
+      "id": "temporal-new",
+      "kind": "temporal",
+      "expected_sources": [
+        "s29"
+      ],
+      "returned_sources": [
+        "s29"
+      ],
+      "recall_at_10": 1.0,
+      "abstained": false,
+      "conflicts": 0,
+      "passed": true,
+      "latency_ms": 87.49
+    },
+    {
+      "id": "temporal-old",
+      "kind": "temporal",
+      "expected_sources": [],
+      "returned_sources": [
+        "s29"
+      ],
+      "recall_at_10": null,
+      "abstained": false,
+      "conflicts": 0,
+      "passed": true,
+      "latency_ms": 68.15
+    }
+  ]
+}

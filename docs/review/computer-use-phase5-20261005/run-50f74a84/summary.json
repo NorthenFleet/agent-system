@@ -1,0 +1,21 @@
+{
+  "mission_id": "mission-af615f01684a",
+  "executor_success": true,
+  "step_status": "completed",
+  "mission_status": "completed",
+  "preflight": {
+    "schema_version": "1.0",
+    "strategy": "existing_evidence_only",
+    "input_sha256": "212b67d4f7f65d40861271f15b79b024622de84b192368c8b300af9222d1f7b7",
+    "changes": [],
+    "strict_accepted_before": true,
+    "strict_accepted": true,
+    "blockers": [],
+    "execution_repeated": false
+  },
+  "source_sha256_before": "60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee",
+  "source_sha256_after": "60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee",
+  "source_unchanged": true,
+  "database": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase5-20261005/run-50f74a84/isolated.sqlite3",
+  "notification_sender_started": false
+}

@@ -1,0 +1,73 @@
+{
+  "id": "step-1f60b7e92296",
+  "mission_id": "mission-2e60aa980e2e",
+  "plan_version": 1,
+  "order_index": 1,
+  "title": "只读哈希核验",
+  "description": "",
+  "task_type": "coordination",
+  "agent_id": "ratchet",
+  "executor": "openclaw",
+  "status": "running",
+  "work_run_id": null,
+  "lease_owner": "phase6-process-b",
+  "lease_token": "lease-33ec471c277241388803e2f8f8edfc55",
+  "lease_expires_at": "2026-10-05T15:56:30.874441+00:00",
+  "attempt_count": 2,
+  "started_at": "2026-10-05T15:54:30.618519+00:00",
+  "completed_at": null,
+  "updated_at": "2026-10-05T15:55:30.874441+00:00",
+  "dependencies": [],
+  "input": {},
+  "result": {},
+  "phase": "planning",
+  "objective": "只读哈希核验",
+  "required_tools": [
+    "test_runner"
+  ],
+  "tool_requirements": [
+    {
+      "name": "测试运行器",
+      "category": "verification",
+      "status": "available",
+      "description": "运行后端、单元或集成测试并回传输出。",
+      "evidence_types": [
+        "test_output"
+      ],
+      "id": "test_runner"
+    }
+  ],
+  "deliverables": [
+    "既有文件和哈希"
+  ],
+  "output_contract": {
+    "artifact_types": [
+      "document"
+    ],
+    "required_fields": [
+      "summary",
+      "evidence_refs",
+      "risk_notes"
+    ]
+  },
+  "acceptance_criteria": [
+    "返回实际文件SHA-256"
+  ],
+  "evidence_required": [
+    "test_output"
+  ],
+  "risk_level": "medium",
+  "risk_class": "L2",
+  "approval_required": false,
+  "side_effect": false,
+  "resources": [],
+  "idempotency_key": "mission-2e60aa980e2e:plan:1:step:1",
+  "timeout_seconds": 900,
+  "max_attempts": 2,
+  "rollback_plan": "停止后续步骤，记录失败原因并等待擎天柱重新规划。",
+  "compensation": {
+    "type": "manual",
+    "instructions": "停止后续步骤，记录失败原因并等待擎天柱重新规划。"
+  },
+  "capability_match": true
+}

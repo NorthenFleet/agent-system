@@ -1,0 +1,24 @@
+{
+  "format": "sb4-recovery-drill-v1",
+  "passed": true,
+  "checks": {
+    "active_fixed_evidence_restored": true,
+    "later_retraction_replayed": true,
+    "old_context_invalidated": true,
+    "private_projection_rebuilt": true,
+    "context_disabled_rollback": true
+  },
+  "backup_at": "2026-10-06T09:18:01.823447+00:00",
+  "revocations_at": "2026-10-06T09:18:01.832189+00:00",
+  "backup_bytes": 19076,
+  "backup_seconds": 0.007,
+  "recovery_and_verification_seconds": 0.029,
+  "projection_status": "ready",
+  "source_count": 2,
+  "approval_kind": "isolated_test_fixture_only",
+  "production_modified": false,
+  "g_sb4_passed": false,
+  "real_research_tasks": 0,
+  "observation_days": 0,
+  "scope_note": "Logical KB recovery only; not production RPO/RTO or full-system disaster recovery."
+}

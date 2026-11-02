@@ -1,0 +1,544 @@
+- generic: 隔离 STRICT 验收 · 独立 PostgreSQL · 预置计划 · 真实执行器 · 不外发通知
+- generic: 🤖
+- generic: OpenClaw
+- menubar
+- generic: OpenClaw
+- button "🌙":
+  - generic: 🌙
+- button "隔 隔离严格验收":
+  - generic: 隔
+  - generic: 隔离严格验收
+- banner:
+  - heading "擎天柱指挥中心" [level=1]
+  - generic: 自动更新
+  - paragraph: 统一任务入口 · 审批后执行 · 异步协作与反馈
+  - switch [checked]
+  - generic: 自动刷新
+  - button "刷新" [active]:
+    - generic: 刷新
+- region "当前任务与下一步":
+  - paragraph: P6 隔离界面：严格拒绝与恢复
+  - strong: 验收门禁未通过
+  - paragraph: 步骤业务结果为 blocked，不得标记为已完成；验收结果明确失败：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256；验收标准未逐项通过：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256；未证明使用必需工具：test_runner
+  - paragraph: 下一步：补齐产物、回执和验证证据后重新评估
+  - link "前往审批与反馈":
+    - /url: "#mission-actions"
+  - strong: 任务产物（尚未完成最终验收）
+  - paragraph:
+    - text: 既有修订稿
+    - button "下载文件":
+      - generic: 下载文件
+- generic "查看团队统计与运行健康"
+- tablist:
+  - tab "工作坊" [selected]
+- main:
+  - complementary:
+    - strong: 任务工作台
+    - generic: 0 个项目 · 1 项任务
+    - textbox "搜索任务/项目/智能体"
+    - combobox
+    - generic: 状态
+    - combobox
+    - generic: 类型
+    - combobox
+    - generic: 项目
+    - combobox
+    - generic: 智能体
+    - combobox
+    - generic: 来源
+    - generic: 项目范围
+    - strong: 全部项目
+    - button "P6 隔离界面：严格拒绝与恢复 等待反馈 所属项目 未绑定项目 任务类型 程序开发 执行智能体 救护车 当前步骤 核验修订稿：1000–1800 汉字 10/05 23:49 核验修订稿：1000–1800 汉字：步骤业务结果为 blocked，不得标记为已完成；验收结果明确失败：三个小节齐全，汉字数在1000至1800之间，且返回实… 0/1 步骤 2 个总账记录":
+      - strong: P6 隔离界面：严格拒绝与恢复
+      - generic: 等待反馈
+      - generic: 所属项目 未绑定项目
+      - generic: 任务类型 程序开发
+      - generic: 执行智能体 救护车
+      - generic: 当前步骤 核验修订稿：1000–1800 汉字
+      - generic: 10/05 23:49
+      - generic: 核验修订稿：1000–1800 汉字：步骤业务结果为 blocked，不得标记为已完成；验收结果明确失败：三个小节齐全，汉字数在1000至1800之间，且返回实…
+      - generic: 0/1 步骤
+      - generic: 2 个总账记录
+  - strong: 智能体空间
+  - generic: P6 隔离界面：严格拒绝与恢复
+  - generic: 唯一入口：擎天柱
+  - generic: 等待反馈
+  - generic: 总指挥
+  - generic: 项目经理
+  - generic: 开发执行
+  - generic: 保障能力
+  - button "🐝 大黄蜂 运维":
+    - generic: 🐝
+    - strong: 大黄蜂
+    - generic: 运维
+  - button "🟦 李奥纳多 架构师 / 开发负责人":
+    - generic: 🟦
+    - strong: 李奥纳多
+    - generic: 架构师 / 开发负责人
+  - button "🤖 擎天柱 总经理":
+    - generic: 🤖
+    - strong: 擎天柱
+    - generic: 总经理
+  - button "🔧 千斤顶 看板 V2 PM":
+    - generic: 🔧
+    - strong: 千斤顶
+    - generic: 看板 V2 PM
+  - button "🛡️ 铁皮 one-sim 仿真 PM":
+    - generic: 🛡️
+    - strong: 铁皮
+    - generic: one-sim 仿真 PM
+  - button "🌙 小梦 孙总个人助手":
+    - generic: 🌙
+    - strong: 小梦
+    - generic: 孙总个人助手
+  - button "🚗 感知器 资讯 / 情报":
+    - generic: 🚗
+    - strong: 感知器
+    - generic: 资讯 / 情报
+  - button "🟥 拉斐尔 后端开发":
+    - generic: 🟥
+    - strong: 拉斐尔
+    - generic: 后端开发
+  - button "🟪 多纳泰罗 前端开发":
+    - generic: 🟪
+    - strong: 多纳泰罗
+    - generic: 前端开发
+  - button "🚑 救护车 知识库":
+    - generic: 🚑
+    - strong: 救护车
+    - generic: 知识库
+  - button "🔵 通天晓 博士论文 PM":
+    - generic: 🔵
+    - strong: 通天晓
+    - generic: 博士论文 PM
+  - button "🎷 爵士 销售与客户关系":
+    - generic: 🎷
+    - strong: 爵士
+    - generic: 销售与客户关系
+  - button "🟧 米开朗基罗 测试工程":
+    - generic: 🟧
+    - strong: 米开朗基罗
+    - generic: 测试工程
+  - button "🟣 震荡波 团队优化师":
+    - generic: 🟣
+    - strong: 震荡波
+    - generic: 团队优化师
+  - button "🔷 声波 财务管理":
+    - generic: 🔷
+    - strong: 声波
+    - generic: 财务管理
+  - button "🔎 Inspector 检查与观察":
+    - generic: 🔎
+    - strong: Inspector
+    - generic: 检查与观察
+  - strong: 擎天柱
+  - generic: 总经理
+  - generic: 阻塞
+  - paragraph: 等待用户反馈
+  - generic: 用户只通过擎天柱下达任务
+  - strong: 全员状态
+  - generic: 随自动刷新同步 · 10/05 23:50
+  - generic: "0"
+  - text: 工作中
+  - generic: "0"
+  - text: 已分配
+  - generic: "2"
+  - text: 阻塞
+  - generic: "14"
+  - text: 待命
+  - table "智能体工作状态":
+    - row "智能体 状态 当前任务 项目 进度":
+      - columnheader "智能体"
+      - columnheader "状态"
+      - columnheader "当前任务"
+      - columnheader "项目"
+      - columnheader "进度"
+    - row "🤖 擎天柱 总经理 阻塞 等待用户反馈 未绑定项目 0 0%":
+      - cell "🤖 擎天柱 总经理":
+        - generic: 🤖
+        - strong: 擎天柱
+        - generic: 总经理
+      - cell "阻塞":
+        - generic: 阻塞
+      - cell "等待用户反馈"
+      - cell "未绑定项目"
+      - cell "0 0%":
+        - progressbar
+        - generic: 0%
+    - row "🚑 救护车 知识库 阻塞 核验修订稿：1000–1800 汉字 未绑定项目 70 70%":
+      - cell "🚑 救护车 知识库":
+        - generic: 🚑
+        - strong: 救护车
+        - generic: 知识库
+      - cell "阻塞":
+        - generic: 阻塞
+      - cell "核验修订稿：1000–1800 汉字"
+      - cell "未绑定项目"
+      - cell "70 70%":
+        - progressbar
+        - generic: 70%
+    - row "🌙 小梦 孙总个人助手 待命 等待调度 未绑定项目 0 0%":
+      - cell "🌙 小梦 孙总个人助手":
+        - generic: 🌙
+        - strong: 小梦
+        - generic: 孙总个人助手
+      - cell "待命":
+        - generic: 待命
+      - cell "等待调度"
+      - cell "未绑定项目"
+      - cell "0 0%":
+        - progressbar
+        - generic: 0%
+    - row "🔧 千斤顶 看板 V2 PM 待命 等待调度 未绑定项目 0 0%":
+      - cell "🔧 千斤顶 看板 V2 PM":
+        - generic: 🔧
+        - strong: 千斤顶
+        - generic: 看板 V2 PM
+      - cell "待命":
+        - generic: 待命
+      - cell "等待调度"
+      - cell "未绑定项目"
+      - cell "0 0%":
+        - progressbar
+        - generic: 0%
+    - row "🛡️ 铁皮 one-sim 仿真 PM 待命 等待调度 未绑定项目 0 0%":
+      - cell "🛡️ 铁皮 one-sim 仿真 PM":
+        - generic: 🛡️
+        - strong: 铁皮
+        - generic: one-sim 仿真 PM
+      - cell "待命":
+        - generic: 待命
+      - cell "等待调度"
+      - cell "未绑定项目"
+      - cell "0 0%":
+        - progressbar
+        - generic: 0%
+    - row "🔵 通天晓 博士论文 PM 待命 等待调度 未绑定项目 0 0%":
+      - cell "🔵 通天晓 博士论文 PM":
+        - generic: 🔵
+        - strong: 通天晓
+        - generic: 博士论文 PM
+      - cell "待命":
+        - generic: 待命
+      - cell "等待调度"
+      - cell "未绑定项目"
+      - cell "0 0%":
+        - progressbar
+        - generic: 0%
+    - row "🟪 多纳泰罗 前端开发 待命 等待调度 未绑定项目 0 0%":
+      - cell "🟪 多纳泰罗 前端开发":
+        - generic: 🟪
+        - strong: 多纳泰罗
+        - generic: 前端开发
+      - cell "待命":
+        - generic: 待命
+      - cell "等待调度"
+      - cell "未绑定项目"
+      - cell "0 0%":
+        - progressbar
+        - generic: 0%
+    - row "🟥 拉斐尔 后端开发 待命 等待调度 未绑定项目 0 0%":
+      - cell "🟥 拉斐尔 后端开发":
+        - generic: 🟥
+        - strong: 拉斐尔
+        - generic: 后端开发
+      - cell "待命":
+        - generic: 待命
+      - cell "等待调度"
+      - cell "未绑定项目"
+      - cell "0 0%":
+        - progressbar
+        - generic: 0%
+    - row "🟦 李奥纳多 架构师 / 开发负责人 待命 等待调度 未绑定项目 0 0%":
+      - cell "🟦 李奥纳多 架构师 / 开发负责人":
+        - generic: 🟦
+        - strong: 李奥纳多
+        - generic: 架构师 / 开发负责人
+      - cell "待命":
+        - generic: 待命
+      - cell "等待调度"
+      - cell "未绑定项目"
+      - cell "0 0%":
+        - progressbar
+        - generic: 0%
+    - row "🟧 米开朗基罗 测试工程 待命 等待调度 未绑定项目 0 0%":
+      - cell "🟧 米开朗基罗 测试工程":
+        - generic: 🟧
+        - strong: 米开朗基罗
+        - generic: 测试工程
+      - cell "待命":
+        - generic: 待命
+      - cell "等待调度"
+      - cell "未绑定项目"
+      - cell "0 0%":
+        - progressbar
+        - generic: 0%
+    - row "🐝 大黄蜂 运维 待命 等待调度 未绑定项目 0 0%":
+      - cell "🐝 大黄蜂 运维":
+        - generic: 🐝
+        - strong: 大黄蜂
+        - generic: 运维
+      - cell "待命":
+        - generic: 待命
+      - cell "等待调度"
+      - cell "未绑定项目"
+      - cell "0 0%":
+        - progressbar
+        - generic: 0%
+    - row "🚗 感知器 资讯 / 情报 待命 等待调度 未绑定项目 0 0%":
+      - cell "🚗 感知器 资讯 / 情报":
+        - generic: 🚗
+        - strong: 感知器
+        - generic: 资讯 / 情报
+      - cell "待命":
+        - generic: 待命
+      - cell "等待调度"
+      - cell "未绑定项目"
+      - cell "0 0%":
+        - progressbar
+        - generic: 0%
+    - row "🎷 爵士 销售与客户关系 待命 等待调度 未绑定项目 0 0%":
+      - cell "🎷 爵士 销售与客户关系":
+        - generic: 🎷
+        - strong: 爵士
+        - generic: 销售与客户关系
+      - cell "待命":
+        - generic: 待命
+      - cell "等待调度"
+      - cell "未绑定项目"
+      - cell "0 0%":
+        - progressbar
+        - generic: 0%
+    - row "🔷 声波 财务管理 待命 等待调度 未绑定项目 0 0%":
+      - cell "🔷 声波 财务管理":
+        - generic: 🔷
+        - strong: 声波
+        - generic: 财务管理
+      - cell "待命":
+        - generic: 待命
+      - cell "等待调度"
+      - cell "未绑定项目"
+      - cell "0 0%":
+        - progressbar
+        - generic: 0%
+    - row "🟣 震荡波 团队优化师 待命 等待调度 未绑定项目 0 0%":
+      - cell "🟣 震荡波 团队优化师":
+        - generic: 🟣
+        - strong: 震荡波
+        - generic: 团队优化师
+      - cell "待命":
+        - generic: 待命
+      - cell "等待调度"
+      - cell "未绑定项目"
+      - cell "0 0%":
+        - progressbar
+        - generic: 0%
+    - row "🔎 Inspector 检查与观察 待命 等待调度 未绑定项目 0 0%":
+      - cell "🔎 Inspector 检查与观察":
+        - generic: 🔎
+        - strong: Inspector
+        - generic: 检查与观察
+      - cell "待命":
+        - generic: 待命
+      - cell "等待调度"
+      - cell "未绑定项目"
+      - cell "0 0%":
+        - progressbar
+        - generic: 0%
+  - heading "P6 隔离界面：严格拒绝与恢复" [level=2]
+  - generic: 等待反馈
+  - text: mission-555decc13fb3
+  - button "取消任务":
+    - generic: 取消任务
+  - generic: 目标
+  - paragraph: 只读核验既有修订稿；先验证不满足字数要求时拒绝，再按界面反馈重规划并审批恢复。
+  - region "规范业务流进度":
+    - strong: 规范执行链
+    - generic: 真实状态驱动 · 从任务接收到交付与故障恢复
+    - generic: Run mrun-313819c
+    - generic: Trace mission-8ecdd6f585
+    - generic: Plan V1
+    - generic: 当前控制点
+    - strong: 验收门禁未通过
+    - paragraph: 步骤业务结果为 blocked，不得标记为已完成；验收结果明确失败：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256；验收标准未逐项通过：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256；未证明使用必需工具：test_runner
+    - text: 下一步
+    - paragraph: 补齐产物、回执和验证证据后重新评估
+    - article:
+      - generic: 已完成
+      - strong: 任务接收
+      - generic: 目标与项目绑定
+      - paragraph: Mission mission- 已入库
+    - article:
+      - generic: "2"
+      - generic: 待进入
+      - strong: 背景冻结
+      - generic: 检索与引用快照
+      - paragraph: 等待生成上下文快照
+    - article:
+      - generic: 需关注
+      - strong: 规范拆解
+      - generic: 合同化步骤与质检
+      - paragraph: V1 · 76 分 · 1 步
+    - article:
+      - generic: 已完成
+      - strong: 风险审批
+      - generic: 计划与高风险步骤
+      - paragraph: 当前计划已授权
+    - article:
+      - generic: 已阻断
+      - strong: 受控执行
+      - generic: 依赖、租约与幂等
+      - paragraph: 1 个步骤失败，0/1 已完成
+    - article:
+      - generic: 已阻断
+      - strong: 证据验收
+      - generic: 产物、证据与门禁
+      - paragraph: 1 个强制门禁未通过
+    - article:
+      - generic: "7"
+      - generic: 待进入
+      - strong: 故障恢复
+      - generic: 副作用与补偿闭环
+      - paragraph: 无未解决恢复项
+    - article:
+      - generic: 已阻断
+      - strong: 交付闭环
+      - generic: 总验收与结果回执
+      - paragraph: 当前：等待反馈
+    - generic: 步骤
+    - strong: 0/1
+    - generic: 产物
+    - strong: "1"
+    - generic: 证据
+    - strong: "1"
+    - generic: 验收门禁
+    - strong: 0/1
+    - generic: 副作用
+    - strong: "0"
+    - generic: 未解决补偿
+    - strong: "0"
+  - strong: 统一任务视图
+  - generic: 未绑定项目 · 救护车
+  - generic: 2 个总账记录
+  - generic: 当前步骤
+  - strong: 核验修订稿：1000–1800 汉字
+  - generic: 救护车 · 统筹 · 失败
+  - article:
+    - strong: P6 隔离界面：严格拒绝与恢复
+    - generic: v3-command-center-mission-mission-555decc13fb3
+    - generic: 指挥中心
+    - generic: 进行中
+    - generic: 擎天柱
+  - article:
+    - strong: 核验修订稿：1000–1800 汉字
+    - generic: v3-command-center-step-step-9957ece62dc0
+    - generic: 指挥中心
+    - generic: 待处理
+    - generic: 救护车
+  - strong: 执行计划 V1
+  - generic: 隔离预置计划：只读核验字数 1000–1800，不修改文件、不外发
+  - generic: 质检 76
+  - generic: 风险 中
+  - strong: 计划有警告
+  - generic: 检查 12 项规则
+  - strong: 警告
+  - generic: 领域流程缺少必要环节：架构设计、实现、测试验证
+  - generic: 软件任务必须包含架构与测试/评估步骤
+  - generic: 软件任务建议至少包含后端或前端实现步骤
+  - strong: 建议
+  - generic: 补齐每一步的工具、产物、验收标准和证据字段后再审批
+  - article:
+    - strong: 核验修订稿：1000–1800 汉字
+    - generic: 救护车 · 统筹
+    - generic: 失败
+    - paragraph: 暂无说明
+    - generic: 阶段 planning
+    - generic: 风险 L2
+    - generic: 无前置依赖
+    - generic "mission-555decc13fb3:plan:1:step:1": 幂等 mission-555decc13fb3:plan:…
+    - strong: 工具
+    - generic: 测试运行器
+    - strong: 产物
+    - generic: 既有修订稿与只读核验结果
+    - strong: 验收
+    - generic: 三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256
+    - strong: 证据
+    - generic: test_output
+    - strong: 执行证据门禁
+    - generic: 强制阻断 · 0
+    - paragraph: 阻断：步骤业务结果为 blocked，不得标记为已完成；验收结果明确失败：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256；验收标准未逐项通过：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256；未证明使用必需工具：test_runner
+    - generic: strict · 10/05 23:49
+    - generic: 证据 0
+    - paragraph: "```json { \"outcome\": \"blocked\", \"summary\": \"文件存在且三个必需小节（目标、风险与应对、验收）齐全，SHA-256 已成功计算。但按 [\\\\u4e00-\\\\u9fff] 统计的汉字数为 174，不在合同要求的 1000–1800 范围内，验收项 fail，整体 blocked。\", \"tools_used\": [\"exec:p6-readonly\"], \"artifacts\": [ { \"artifact_key\": \"a1\", \"artifact_type\": \"document\", \"title\": \"既有修订稿\", \"uri\": \"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-p…"
+  - strong: 任务动态
+  - generic: 持久化事件记录
+  - list:
+    - generic: 10/05 23:49
+    - strong: 任务阻塞
+    - paragraph: 核验修订稿：1000–1800 汉字：步骤业务结果为 blocked，不得标记为已完成；验收结果明确失败：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256；验收标准未逐项通过：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256；未证明使用必需工具：test_runner
+    - text: 指挥中心
+    - generic: 10/05 23:49
+    - strong: step_evidence_rejected
+    - paragraph: 核验修订稿：1000–1800 汉字
+    - text: 救护车
+    - generic: 10/05 23:48
+    - strong: 步骤开始
+    - paragraph: 核验修订稿：1000–1800 汉字
+    - text: 救护车
+    - generic: 10/05 23:48
+    - strong: 状态更新
+    - paragraph: Approved plan entered execution
+    - text: 指挥中心
+    - generic: 10/05 23:48
+    - strong: 计划已批准
+    - paragraph: 批准隔离反例：只读既有修订稿；实际174字不满足1000–1800时必须拒绝，不修改文件、不外发。
+    - text: phase6-browser
+    - generic: 10/05 23:47
+    - strong: 计划已提交
+    - paragraph: 隔离预置计划：只读核验字数 1000–1800，不修改文件、不外发
+    - text: 擎天柱
+    - generic: 10/05 23:47
+    - strong: 开始制定计划
+    - paragraph: Optimus is producing an approval-gated plan
+    - text: phase6-plan-fixture
+    - generic: 10/05 23:47
+    - strong: 任务已接收
+    - paragraph: 只读核验既有修订稿；先验证不满足字数要求时拒绝，再按界面反馈重规划并审批恢复。
+    - text: phase6-lab
+  - complementary:
+    - generic: 擎
+    - strong: 擎天柱
+    - generic: 总项目管理 · 唯一任务入口
+    - strong: 最近会话分流
+    - generic: 0 条
+    - generic: 暂无会话记录
+    - strong: 长期记忆候选
+    - generic: 待审核 0
+    - paragraph: 擎天柱从已完成任务中提炼。审核发布后，仅影响后续任务的背景检索。
+    - generic: 暂无待审核的长期记忆
+    - strong: 需要反馈
+    - paragraph: 核验修订稿：1000–1800 汉字：步骤业务结果为 blocked，不得标记为已完成；验收结果明确失败：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256；验收标准未逐项通过：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256；未证明使用必需工具：test_runner
+    - textbox "补充范围、约束、凭据或处理意见"
+    - button "提交反馈并继续" [disabled]:
+      - generic: 提交反馈并继续
+    - button "反馈并重新规划" [disabled]:
+      - generic: 反馈并重新规划
+    - paragraph: 需要修改已完成的内容时，选择重新规划；新计划需再次审批。
+    - strong: 启动项目任务
+    - radiogroup "segmented":
+      - radio "程序开发" [checked]
+      - generic: 程序开发
+      - radio "文档撰写"
+      - generic: 文档撰写
+    - combobox
+    - generic: 选择任务所属项目
+    - textbox "任务名称（可选）"
+    - textbox "描述目标、约束、期望结果和完成标准"
+    - button "交给擎天柱" [disabled]:
+      - generic: 交给擎天柱
+    - strong: 关联对话
+    - text: 用户
+    - paragraph: 只读核验既有修订稿；先验证不满足字数要求时拒绝，再按界面反馈重规划并审批恢复。
+- textbox
+- button:
+- button:

@@ -1,0 +1,15 @@
+Browser tab: 2116413381, Title: "智能体集群系统", URL: "http://127.0.0.1:3043/command-center".
+The following is a diff from the previous accessibility tree with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+Removed element IDs: 680-689, 695-696
++				695 text 副作用 unreported-effect 的落地状态未知 · /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase13-20261006/corrupt-sample.txt · 执行失败
+~					54 text 全员状态 随自动刷新同步 · 10/06 15:26 0 工作中 0 已分配 2 阻塞 14 待命
++					696 text 副作用 unreported-effect 的落地状态未知 · /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase13-20261006/corrupt-sample.txt · 执行失败
+~					616 text 工具 背景检索 产物 协调结论 下一步安排 验收 目标、责任人和完成标准清晰 证据 coordination_notes 副作用补偿 补偿失败 本次只读核实当前资源与回执，不再写入样本。缺失、损坏或合同不匹配时保持暂停；重新批准后仅允许引用预备的、经核实匹配合同的独立有效回执。不得覆盖旧证据，不外发。 资源：/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase13-20261006/corrupt-sample.txt 补偿幂等键：recovery:compensation-2cb668f0185c:8e07599e6a31ceddc0c5 合同指纹：8e07599e6a31 已有核实记录：恢复回执校验未通过：Expecting property name enclosed in double quotes: line 1 column 2 (char 1)；保持暂停，未自动重试。 测试夹具：执行器声称成功，必须由回执门禁核验；本次没有写入。
++					697 button 重新审批补偿
++					698 text Effect Journal 1 条副作用记录 状态未知 受控写入样本 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase13-20261006/corrupt-sample.txt · 无回执 · 0 条证据 执行证据门禁 强制阻断 · 100 strict · 10/06 15:24 证据 100 测试夹具：未收到执行回执
++					699 container
++						700 text 10/06 15:25
++						701 text 恢复核验未通过
++						702 text 恢复回执校验未通过：Expecting property name enclosed in double quotes: line 1 column 2 (char 1)；保持暂停，未自动重试。 测试夹具：执行器声称成功，必须由回执门禁核验；本次没有写入。
++						703 text 救护车
+The focused UI element is 18 button 刷新

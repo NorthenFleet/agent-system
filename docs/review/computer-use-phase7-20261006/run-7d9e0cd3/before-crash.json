@@ -1,0 +1,621 @@
+{
+  "id": "mission-2593e77a4486",
+  "conversation_id": "conv-f618f3fb99e2",
+  "source_message_id": "msg-623fef40d840",
+  "title": "P7 完整worker回执前崩溃恢复",
+  "objective": "隔离只读核验 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md，不得写入、删除、联网搜索、发送消息或创建其他任务。核验三节及100至180汉字、实际SHA-256。最终评估仅依据回执与证据，不进行其他操作。",
+  "status": "running",
+  "priority": "normal",
+  "project_id": null,
+  "mission_type": "software",
+  "requested_by": "phase7-test",
+  "owner_user_id": "phase7-test",
+  "plan_version": 1,
+  "current_step_id": null,
+  "requires_approval": true,
+  "approval_status": "approved",
+  "last_error": null,
+  "lease_owner": null,
+  "lease_expires_at": null,
+  "created_at": "2026-10-05T16:14:42.708420+00:00",
+  "updated_at": "2026-10-05T16:14:43.077054+00:00",
+  "completed_at": null,
+  "context": {
+    "source": "dashboard",
+    "profile_user_id": "phase7-test",
+    "mission_type": "software",
+    "intent_decision": {
+      "type": "software_project",
+      "confidence": 1.0,
+      "reason": "由已认证的项目任务入口显式创建",
+      "execution_requested": true
+    },
+    "user_context": {
+      "business_flow_key": "general"
+    },
+    "metadata": {
+      "project_id": "",
+      "title": "P7 完整worker回执前崩溃恢复",
+      "context": {
+        "business_flow_key": "general"
+      },
+      "intent_type": "software_project",
+      "execution_requested": true,
+      "profile_user_id": "phase7-test",
+      "suppress_notification": true,
+      "_direct_mission": true,
+      "_reserve_planning": false,
+      "_planning_owner": ""
+    }
+  },
+  "mission_run": {
+    "id": "mrun-1f8b85197ca74657",
+    "mission_id": "mission-2593e77a4486",
+    "correlation_id": "mission-602c99cbf7464cc6",
+    "status": "running",
+    "active_plan_version": 1,
+    "workflow_run_id": "workflow-4241abcdf07b",
+    "outcome": "",
+    "created_at": "2026-10-05T16:14:42.708420+00:00",
+    "updated_at": "2026-10-05T16:15:21.479830+00:00",
+    "ended_at": null,
+    "metadata": {}
+  },
+  "conversation": {
+    "id": "conv-f618f3fb99e2",
+    "channel": "dashboard",
+    "external_conversation_id": "dashboard:phase7-test",
+    "user_external_id": "phase7-test",
+    "owner_user_id": "phase7-test",
+    "profile_user_id": "phase7-test",
+    "status": "active",
+    "metadata": {
+      "project_id": "",
+      "title": "P7 完整worker回执前崩溃恢复",
+      "context": {
+        "business_flow_key": "general"
+      },
+      "intent_type": "software_project",
+      "execution_requested": true,
+      "profile_user_id": "phase7-test",
+      "suppress_notification": true,
+      "_direct_mission": true,
+      "_reserve_planning": false,
+      "_planning_owner": ""
+    },
+    "created_at": "2026-10-05T16:11:15.942220+00:00",
+    "updated_at": "2026-10-05T16:14:42.708420+00:00"
+  },
+  "steps": [
+    {
+      "id": "step-f18da62455b1",
+      "mission_id": "mission-2593e77a4486",
+      "plan_version": 1,
+      "order_index": 1,
+      "title": "只读核验既有修订稿",
+      "description": "只用 exec 调用 Python 读取 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md；统计 [\\u4e00-\\u9fff] 汉字，核验目标/风险与应对/验收三节，计算SHA-256。已有文件作为document产物，不创建文件。risk_notes填写本次只读核验的范围限制，不为空。禁止发送消息。",
+      "task_type": "coordination",
+      "agent_id": "ratchet",
+      "executor": "openclaw",
+      "status": "running",
+      "work_run_id": "wrun-54de1ed524fd44af",
+      "lease_owner": "phase7-full-worker-a",
+      "lease_token": "lease-2bbbf9c0130a465eaf48047fb2356aab",
+      "lease_expires_at": "2026-10-05T16:18:43.086274+00:00",
+      "attempt_count": 1,
+      "started_at": "2026-10-05T16:14:43.086274+00:00",
+      "completed_at": null,
+      "updated_at": "2026-10-05T16:14:43.093488+00:00",
+      "dependencies": [],
+      "input": {},
+      "result": {},
+      "context_binding": null,
+      "phase": "planning",
+      "objective": "只用 exec 调用 Python 读取 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md；统计 [\\u4e00-\\u9fff] 汉字，核验目标/风险与应对/验收三节，计算SHA-256。已有文件作为document产物，不创建文件。risk_notes填写本次只读核验的范围限制，不为空。禁止发送消息。",
+      "required_tools": [
+        "test_runner"
+      ],
+      "tool_requirements": [
+        {
+          "name": "测试运行器",
+          "category": "verification",
+          "status": "available",
+          "description": "运行后端、单元或集成测试并回传输出。",
+          "evidence_types": [
+            "test_output"
+          ],
+          "id": "test_runner"
+        }
+      ],
+      "deliverables": [
+        "既有修订稿及真实核验回执"
+      ],
+      "output_contract": {
+        "artifact_types": [
+          "document"
+        ],
+        "required_fields": [
+          "summary",
+          "evidence_refs",
+          "risk_notes"
+        ]
+      },
+      "acceptance_criteria": [
+        "三节齐全且100至180汉字，并返回实际SHA-256"
+      ],
+      "evidence_required": [
+        "test_output"
+      ],
+      "risk_level": "medium",
+      "risk_class": "L2",
+      "approval_required": false,
+      "side_effect": false,
+      "resources": [],
+      "idempotency_key": "mission-2593e77a4486:plan:1:step:1",
+      "timeout_seconds": 900,
+      "max_attempts": 2,
+      "rollback_plan": "停止后续步骤，记录失败原因并等待擎天柱重新规划。",
+      "compensation": {
+        "type": "manual",
+        "instructions": "停止后续步骤，记录失败原因并等待擎天柱重新规划。"
+      },
+      "capability_match": true,
+      "artifacts": [],
+      "evidence": [],
+      "acceptance_gate": null,
+      "step_approval": null,
+      "effects": [],
+      "compensations": []
+    }
+  ],
+  "context_bindings": [],
+  "planning_context": null,
+  "plan": {
+    "id": "plan-b4a3092af611",
+    "mission_id": "mission-2593e77a4486",
+    "version": 1,
+    "summary": "只读核验；真实执行器返回后故障接管",
+    "rationale": "",
+    "risk_level": "medium",
+    "raw_plan": {
+      "summary": "只读核验；真实执行器返回后故障接管",
+      "steps": [
+        {
+          "order_index": 1,
+          "title": "只读核验既有修订稿",
+          "agent_id": "ratchet",
+          "task_type": "coordination",
+          "description": "只用 exec 调用 Python 读取 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md；统计 [\\u4e00-\\u9fff] 汉字，核验目标/风险与应对/验收三节，计算SHA-256。已有文件作为document产物，不创建文件。risk_notes填写本次只读核验的范围限制，不为空。禁止发送消息。",
+          "side_effect": false,
+          "max_attempts": 2,
+          "depends_on": [],
+          "required_tools": [
+            "test_runner"
+          ],
+          "deliverables": [
+            "既有修订稿及真实核验回执"
+          ],
+          "evidence_required": [
+            "test_output"
+          ],
+          "acceptance_criteria": [
+            "三节齐全且100至180汉字，并返回实际SHA-256"
+          ],
+          "output_contract": {
+            "artifact_types": [
+              "document"
+            ],
+            "required_fields": [
+              "summary",
+              "evidence_refs",
+              "risk_notes"
+            ]
+          },
+          "tool_requirements": [
+            {
+              "name": "测试运行器",
+              "category": "verification",
+              "status": "available",
+              "description": "运行后端、单元或集成测试并回传输出。",
+              "evidence_types": [
+                "test_output"
+              ],
+              "id": "test_runner"
+            }
+          ],
+          "capability_match": true,
+          "risk_level": "medium",
+          "rollback_plan": "停止后续步骤，记录失败原因并等待擎天柱重新规划。",
+          "phase": "planning",
+          "objective": "只用 exec 调用 Python 读取 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md；统计 [\\u4e00-\\u9fff] 汉字，核验目标/风险与应对/验收三节，计算SHA-256。已有文件作为document产物，不创建文件。risk_notes填写本次只读核验的范围限制，不为空。禁止发送消息。",
+          "timeout_seconds": 900,
+          "risk_class": "L2",
+          "approval_required": false,
+          "resources": [],
+          "idempotency_key": "mission-2593e77a4486:plan:1:step:1",
+          "idempotency_key_generated": true,
+          "compensation": {
+            "type": "manual",
+            "instructions": "停止后续步骤，记录失败原因并等待擎天柱重新规划。"
+          }
+        }
+      ],
+      "schema_version": "2.0",
+      "business_type": "general",
+      "flow_spec": {
+        "flow_key": "general",
+        "version": "1.0.0",
+        "name": "通用业务执行流",
+        "business_type": "general",
+        "phases": [
+          "intake",
+          "planning",
+          "execution",
+          "verification",
+          "delivery"
+        ],
+        "required_gates": [
+          "plan_quality",
+          "plan_approval",
+          "evidence_gate"
+        ],
+        "budgets": {
+          "max_steps": 12,
+          "max_parallel_steps": 4,
+          "max_replans": 2,
+          "default_timeout_seconds": 900
+        },
+        "approval_policy": {
+          "plan_approval": true,
+          "delivery_approval": false,
+          "l3_step_approval": true
+        }
+      },
+      "risk_assessment": {
+        "highest_risk": "L2",
+        "by_level": {
+          "L0": 0,
+          "L1": 0,
+          "L2": 1,
+          "L3": 0
+        },
+        "step_approvals": [],
+        "plan_approval_required": true,
+        "delivery_approval_required": false
+      },
+      "approval_policy": {
+        "plan_approval": true,
+        "delivery_approval": false,
+        "l3_step_approval": true,
+        "highest_risk": "L2",
+        "step_approvals": []
+      },
+      "execution_policy": {
+        "runtime": "command-center",
+        "state_machine": "mission-v1",
+        "require_context_snapshot": true,
+        "require_evidence": true,
+        "idempotency_required_for_side_effects": true
+      },
+      "flow_validation": {
+        "status": "pass",
+        "flow_key": "general",
+        "flow_version": "1.0.0",
+        "blockers": [],
+        "warnings": [],
+        "checked_rules": [
+          "flow-budget",
+          "domain-coverage",
+          "risk-class",
+          "approval-policy",
+          "idempotency",
+          "compensation",
+          "resource-conflict"
+        ]
+      },
+      "capability_registry": {
+        "version": "p1-local",
+        "agent_count": 15,
+        "tool_count": 9
+      },
+      "plan_quality": {
+        "status": "pass",
+        "score": 100,
+        "blockers": [],
+        "warnings": [],
+        "suggestions": [],
+        "tool_summary": {
+          "total": 1,
+          "unknown": 0,
+          "unavailable": 0
+        },
+        "flow_key": "general",
+        "flow_version": "1.0.0",
+        "risk_assessment": {
+          "highest_risk": "L2",
+          "by_level": {
+            "L0": 0,
+            "L1": 0,
+            "L2": 1,
+            "L3": 0
+          },
+          "step_approvals": [],
+          "plan_approval_required": true,
+          "delivery_approval_required": false
+        },
+        "checked_rules": [
+          "schema",
+          "business-flow",
+          "risk-policy",
+          "idempotency",
+          "compensation",
+          "agent-capability",
+          "tool-registry",
+          "dependency-dag",
+          "deliverables",
+          "acceptance",
+          "evidence",
+          "domain-coverage"
+        ]
+      }
+    },
+    "status": "approved",
+    "created_by_agent_id": "optimus",
+    "created_at": "2026-10-05T16:14:42.723531+00:00",
+    "plan_quality": {
+      "status": "pass",
+      "score": 100,
+      "blockers": [],
+      "warnings": [],
+      "suggestions": [],
+      "tool_summary": {
+        "total": 1,
+        "unknown": 0,
+        "unavailable": 0
+      },
+      "flow_key": "general",
+      "flow_version": "1.0.0",
+      "risk_assessment": {
+        "highest_risk": "L2",
+        "by_level": {
+          "L0": 0,
+          "L1": 0,
+          "L2": 1,
+          "L3": 0
+        },
+        "step_approvals": [],
+        "plan_approval_required": true,
+        "delivery_approval_required": false
+      },
+      "checked_rules": [
+        "schema",
+        "business-flow",
+        "risk-policy",
+        "idempotency",
+        "compensation",
+        "agent-capability",
+        "tool-registry",
+        "dependency-dag",
+        "deliverables",
+        "acceptance",
+        "evidence",
+        "domain-coverage"
+      ]
+    }
+  },
+  "workflow_run": {
+    "id": "workflow-4241abcdf07b",
+    "mission_id": "mission-2593e77a4486",
+    "mission_run_id": "mrun-1f8b85197ca74657",
+    "correlation_id": "mission-602c99cbf7464cc6",
+    "plan_version": 1,
+    "runtime": "legacy",
+    "flow_key": "general",
+    "highest_risk": "L1",
+    "selection_reason": "isolated_worker_test",
+    "thread_id": "workflow-4241abcdf07b",
+    "checkpoint_namespace": "pilot",
+    "status": "ready",
+    "attempts": 0,
+    "next_attempt_at": "2026-10-05T16:14:42.728714+00:00",
+    "lease_owner": null,
+    "lease_token": null,
+    "lease_expires_at": null,
+    "last_error": null,
+    "created_at": "2026-10-05T16:14:42.724372+00:00",
+    "updated_at": "2026-10-05T16:14:42.728716+00:00",
+    "completed_at": "2026-10-05T16:14:42.724372+00:00",
+    "input": {
+      "workflow_run_id": "workflow-4241abcdf07b",
+      "mission_run_id": "mrun-1f8b85197ca74657",
+      "correlation_id": "mission-602c99cbf7464cc6",
+      "mission_id": "mission-2593e77a4486",
+      "plan_version": 1,
+      "flow_key": "general",
+      "highest_risk": "L1",
+      "context_pack_id": "",
+      "status": "ready",
+      "evidence_refs": []
+    },
+    "state": {
+      "workflow_run_id": "workflow-4241abcdf07b",
+      "mission_run_id": "mrun-1f8b85197ca74657",
+      "correlation_id": "mission-602c99cbf7464cc6",
+      "mission_id": "mission-2593e77a4486",
+      "plan_version": 1,
+      "flow_key": "general",
+      "highest_risk": "L1",
+      "context_pack_id": "",
+      "status": "ready",
+      "evidence_refs": []
+    },
+    "checkpoint": {}
+  },
+  "artifacts": [],
+  "evidence": [],
+  "acceptance_gates": [],
+  "step_approvals": [],
+  "effects": [],
+  "compensations": [],
+  "delivery_gate": null,
+  "approval": {
+    "id": "approval-aa7b24cfcef4",
+    "mission_id": "mission-2593e77a4486",
+    "plan_version": 1,
+    "decision": "approved",
+    "requested_at": "2026-10-05T16:14:42.723829+00:00",
+    "decided_at": "2026-10-05T16:14:42.728607+00:00",
+    "decided_by": "phase7-test",
+    "comment": "",
+    "external_message_id": null
+  },
+  "events": [
+    {
+      "id": "event-0b0ea0b1c548",
+      "mission_id": "mission-2593e77a4486",
+      "mission_run_id": "mrun-1f8b85197ca74657",
+      "correlation_id": "mission-602c99cbf7464cc6",
+      "run_sequence": 1,
+      "event_type": "mission_received",
+      "from_status": null,
+      "to_status": "received",
+      "actor": "phase7-test",
+      "detail": "隔离只读核验 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md，不得写入、删除、联网搜索、发送消息或创建其他任务。核验三节及100至180汉字、实际SHA-256。最终评估仅依据回执与证据，不进行其他操作。",
+      "event_key": null,
+      "metadata": {
+        "message_id": "msg-623fef40d840",
+        "channel": "dashboard",
+        "preplanned": false,
+        "mission_type": "software",
+        "project_id": "",
+        "intent_confidence": 1.0
+      },
+      "created_at": "2026-10-05T16:14:42.711517+00:00"
+    },
+    {
+      "id": "event-26dc8a202fcf",
+      "mission_id": "mission-2593e77a4486",
+      "mission_run_id": "mrun-1f8b85197ca74657",
+      "correlation_id": "mission-602c99cbf7464cc6",
+      "run_sequence": 2,
+      "event_type": "planning_started",
+      "from_status": "received",
+      "to_status": "planning",
+      "actor": "phase7-plan-fixture",
+      "detail": "Optimus is producing an approval-gated plan",
+      "event_key": null,
+      "metadata": {},
+      "created_at": "2026-10-05T16:14:42.721075+00:00"
+    },
+    {
+      "id": "event-7a42cf90b48f",
+      "mission_id": "mission-2593e77a4486",
+      "mission_run_id": "mrun-1f8b85197ca74657",
+      "correlation_id": "mission-602c99cbf7464cc6",
+      "run_sequence": 3,
+      "event_type": "plan_proposed",
+      "from_status": "planning",
+      "to_status": "awaiting_approval",
+      "actor": "optimus",
+      "detail": "只读核验；真实执行器返回后故障接管",
+      "event_key": null,
+      "metadata": {
+        "version": 1,
+        "step_count": 1,
+        "flow_key": "general",
+        "flow_version": "1.0.0",
+        "highest_risk": "L2",
+        "quality_score": 100,
+        "workflow_runtime": "legacy",
+        "workflow_runtime_reason": "isolated_worker_test"
+      },
+      "created_at": "2026-10-05T16:14:42.725080+00:00"
+    },
+    {
+      "id": "event-2bdf04e8c5f7",
+      "mission_id": "mission-2593e77a4486",
+      "mission_run_id": "mrun-1f8b85197ca74657",
+      "correlation_id": "mission-602c99cbf7464cc6",
+      "run_sequence": 4,
+      "event_type": "plan_approved",
+      "from_status": "awaiting_approval",
+      "to_status": "dispatching",
+      "actor": "phase7-test",
+      "detail": "approved",
+      "event_key": null,
+      "metadata": {
+        "version": 1
+      },
+      "created_at": "2026-10-05T16:14:42.729445+00:00"
+    },
+    {
+      "id": "event-3cc72e7fb31d",
+      "mission_id": "mission-2593e77a4486",
+      "mission_run_id": "mrun-1f8b85197ca74657",
+      "correlation_id": "mission-602c99cbf7464cc6",
+      "run_sequence": 5,
+      "event_type": "state_changed",
+      "from_status": "dispatching",
+      "to_status": "running",
+      "actor": "command-center",
+      "detail": "Approved plan entered execution",
+      "event_key": null,
+      "metadata": {},
+      "created_at": "2026-10-05T16:14:43.078714+00:00"
+    },
+    {
+      "id": "event-2a46f7195f0a",
+      "mission_id": "mission-2593e77a4486",
+      "mission_run_id": "mrun-1f8b85197ca74657",
+      "correlation_id": "mission-602c99cbf7464cc6",
+      "run_sequence": 6,
+      "event_type": "step_started",
+      "from_status": "running",
+      "to_status": "running",
+      "actor": "ratchet",
+      "detail": "只读核验既有修订稿",
+      "event_key": null,
+      "metadata": {
+        "step_id": "step-f18da62455b1",
+        "step_approval_id": null
+      },
+      "created_at": "2026-10-05T16:14:43.087437+00:00"
+    }
+  ],
+  "messages": [
+    {
+      "id": "msg-623fef40d840",
+      "conversation_id": "conv-f618f3fb99e2",
+      "mission_id": "mission-2593e77a4486",
+      "direction": "inbound",
+      "external_message_id": "ui-6ccb23f6f175482aa0258ec1891a3ece",
+      "reply_to_external_message_id": null,
+      "sender_id": "phase7-test",
+      "content": "隔离只读核验 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md，不得写入、删除、联网搜索、发送消息或创建其他任务。核验三节及100至180汉字、实际SHA-256。最终评估仅依据回执与证据，不进行其他操作。",
+      "message_type": "text",
+      "intent_type": "software_project",
+      "intent_confidence": 1.0,
+      "intent_reason": "由已认证的项目任务入口显式创建",
+      "execution_requested": 1,
+      "routing_status": "mission_created",
+      "target_agent_id": "optimus",
+      "resolved_project_id": null,
+      "reply_to_command_message_id": null,
+      "metadata": {
+        "project_id": "",
+        "title": "P7 完整worker回执前崩溃恢复",
+        "context": {
+          "business_flow_key": "general"
+        },
+        "intent_type": "software_project",
+        "execution_requested": true,
+        "profile_user_id": "phase7-test",
+        "suppress_notification": true,
+        "_direct_mission": true,
+        "_reserve_planning": false,
+        "_planning_owner": ""
+      },
+      "created_at": "2026-10-05T16:14:42.708420+00:00"
+    }
+  ]
+}

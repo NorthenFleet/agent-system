@@ -1,0 +1,590 @@
+- generic: 🤖
+- generic: OpenClaw
+- menubar:
+  - generic: 总览
+  - menuitem "仪表盘":
+    - generic: 仪表盘
+  - menuitem "擎天柱指挥中心":
+    - generic: 擎天柱指挥中心
+  - generic: 产品侧
+  - menuitem "项目中枢":
+    - generic: 项目中枢
+  - menuitem "程序开发":
+    - generic: 程序开发
+  - menuitem "文档管理":
+    - generic: 文档管理
+  - menuitem "财务管理":
+    - generic: 财务管理
+  - menuitem "产品矩阵":
+    - generic: 产品矩阵
+  - generic: 生产侧
+  - menuitem "数据管理":
+    - generic: 数据管理
+  - menuitem "智能体团队":
+    - generic: 智能体团队
+  - menuitem "讨论与研究":
+    - generic: 讨论与研究
+  - menuitem "知识库":
+    - generic: 知识库
+  - menuitem "工具管理":
+    - generic: 工具管理
+  - menuitem "活动社区":
+    - generic: 活动社区
+  - menuitem "情报信息":
+    - generic: 情报信息
+  - menuitem "新闻资讯":
+    - generic: 新闻资讯
+  - menuitem "任务列表":
+    - generic: 任务列表
+  - generic: 系统
+  - menuitem "系统监视":
+    - generic: 系统监视
+  - menuitem "数据分析":
+    - generic: 数据分析
+  - menuitem "记忆评测":
+    - generic: 记忆评测
+  - menuitem "用户管理":
+    - generic: 用户管理
+  - menuitem "调度中心":
+    - generic: 调度中心
+- generic: 文档管理
+- button "🌙":
+  - generic: 🌙
+- button "管 管理员":
+  - generic: 管
+  - generic: 管理员
+- banner:
+  - text: 文档撰写
+  - heading "博士论文" [level=2]
+  - generic: 第三版
+  - paragraph: 学术论文撰写、专利申报、技术报告
+  - button "新建项目":
+    - generic: 新建项目
+  - button:
+- text: 文档项目
+- heading "4 个撰写项目" [level=3]
+- textbox "搜索文档名称、类型或负责人"
+- article:
+  - strong: 博士论文
+  - generic: 进行中
+  - paragraph: 学术论文撰写、专利申报、技术报告
+  - generic: 博士论文 / 专利申报 / 技术报告
+  - generic: 7 个计划章节
+  - generic: ultra-magnus
+  - progressbar
+  - button "编辑文档信息":
+  - button "归档文档":
+- article:
+  - strong: 谋战·水面舰艇编队战术手工兵棋
+  - generic: 进行中
+  - paragraph: 《谋战·水面舰艇编队战术手工兵棋》文档族中的规则手册，负责想定规则、裁决流程、行动规则和发布验收口径。
+  - generic: 手工兵棋三册式正式文档
+  - generic: 12 个计划章节
+  - generic: ultra-magnus
+  - progressbar
+  - button "编辑文档信息":
+  - button "归档文档":
+- article:
+  - strong: 水面舰艇作战软件与兵棋推演课程
+  - generic: 进行中
+  - paragraph: 面向水面舰艇作战软件运用、智能决策与兵棋推演教学，统一组织课程体系、教学文档、课件和实作训练资源。
+  - generic: 课程教学产品组合
+  - generic: 10 个计划章节
+  - generic: ultra-magnus
+  - progressbar
+  - button "编辑文档信息":
+  - button "归档文档":
+- article:
+  - strong: CU-20261005 个人助理验收
+  - generic: 规划中
+  - paragraph: 独立测试项目，仅用于本轮 Computer Use 用户旅程验收。使用虚构数据，不涉及真实业务。
+  - generic: 研究报告
+  - generic: 4 个计划章节
+  - generic: ultra-magnus
+  - progressbar
+  - button "编辑文档信息":
+  - button "归档文档":
+- text: 项目内文档
+- heading "4 个正文版本 · 1 项交付材料 · 40 项内部数据源" [level=3]
+- switch
+- generic: 显示归档
+- button "导出正式交付包":
+  - generic: 导出正式交付包
+- button "新增文档":
+  - generic: 新增文档
+- strong: 正文版本
+- generic: 第一版、第二版、第三版分别管理，内部修订不重复占位
+- generic: 4 册
+- article:
+  - strong: 博士论文·第一版（十章初稿）
+  - generic: 第一版
+  - generic: 历史基线
+  - generic: 只读
+  - generic: 已批准
+  - generic: 未绑定
+  - generic "Word · thesis-edition-1 · 10章 · 已批准"
+  - button [disabled]:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 博士论文·第二版（Word正式母稿）
+  - generic: 第二版·Word正式母稿
+  - generic: 历史基线
+  - generic: 只读
+  - generic: 已批准
+  - generic: 未绑定
+  - generic "Word · thesis-edition-2 · 9章 · 已批准"
+  - button:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 博士论文·第三版（七章工作稿）
+  - generic: 第三版
+  - generic: 冻结交付基线
+  - generic: 只读
+  - generic: 草稿
+  - generic: 正文更新待优化
+  - generic: 交付待同步
+  - generic "Word · v25 · 正文v33 · 7章 · 草稿"
+  - button:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 博士论文·第三版 v34（七章工作稿）
+  - generic: 第三版·v34工作稿
+  - generic: 当前写作稿
+  - generic: 不进入交付包
+  - generic: 当前正文权威
+  - generic: 草稿
+  - generic: 正文更新待优化
+  - generic: 交付待同步
+  - generic "Word · v25 · 正文v34 · 7章 · 草稿"
+  - button:
+  - button:
+  - button:
+  - button [disabled]:
+- strong: 交付材料
+- generic: PPT等发布件独立管理，不计入论文正文版本
+- generic: 1 项
+- article:
+  - strong: 博士毕业答辩（v25全局态势评价）
+  - generic: 交付材料
+  - generic: 草稿
+  - generic: 正文更新待优化
+  - generic "PPT · 文档v8 · 53页 · 结构v25 · 草稿"
+  - button:
+  - button:
+  - button:
+  - button:
+- strong: 内部数据源
+- generic: 仅供数据管理与计算，不进入交付包
+- generic: 40 项
+- article:
+  - strong: 博士论文 v34 技术路线图
+  - generic: 内部
+  - generic "diagram · v0 · 0 页"
+  - button:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 图1-1 海上无人集群智能协同任务规划总体研究框架
+  - generic: 内部
+  - generic "diagram · v0 · 0 页"
+  - button:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 图1-2 海上无人集群智能协同任务规划技术路线
+  - generic: 内部
+  - generic "diagram · v0 · 0 页"
+  - button:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 图2-1 指挥控制闭环中的任务规划定位及多流关系
+  - generic: 内部
+  - generic "diagram · v0 · 0 页"
+  - button:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 图2-2 指挥决心向规划变量和任务图的映射关系
+  - generic: 内部
+  - generic "diagram · v0 · 0 页"
+  - button:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 图2-3 集中式、分层式与分布式协同控制及授权边界
+  - generic: 内部
+  - generic "diagram · v0 · 0 页"
+  - button:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 图2-4 战术知识约束的全局态势价值、优势场与分层投影
+  - generic: 内部
+  - generic "diagram · v0 · 0 页"
+  - button:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 图2-5 三类任务规划模型的耦合关系及章节映射
+  - generic: 内部
+  - generic "diagram · v0 · 0 页"
+  - button:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 图3-1 海上无人集群协同任务规划统一总体模型
+  - generic: 内部
+  - generic "diagram · v0 · 0 页"
+  - button:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 图3-2 作战对象、观测信念与全局评价状态的形成关系
+  - generic: 内部
+  - generic "diagram · v0 · 0 页"
+  - button:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 图3-4 分层约束体系、责任边界与可行域门控
+  - generic: 内部
+  - generic "diagram · v0 · 0 页"
+  - button:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 图3-5 指挥控制、任务规划与执行控制的权责边界
+  - generic: 内部
+  - generic "diagram · v0 · 0 页"
+  - button:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 图3-6 海上无人集群任务规划的信息流、控制流与证据反馈闭环
+  - generic: 内部
+  - generic "diagram · v0 · 0 页"
+  - button:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 图3-3 统一规划解的构成及其章节衔接关系
+  - generic: 内部
+  - generic "diagram · v0 · 0 页"
+  - button:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 图3-7 预先规划、执行监控与分级重规划机制
+  - generic: 内部
+  - generic "diagram · v0 · 0 页"
+  - button:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 图4-1 指挥意图、全局态势与任务需求的语义映射
+  - generic: 内部
+  - generic "diagram · v0 · 0 页"
+  - button:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 图4-2 目标处置链、态势塑造链与共享支撑任务网络
+  - generic: 内部
+  - generic "diagram · v0 · 0 页"
+  - button:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 图4-3 HTN候选任务结构的生成、剪枝与全局选择
+  - generic: 内部
+  - generic "diagram · v0 · 0 页"
+  - button:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 图4-4 任务约束的继承、分层校核与不可越权关系
+  - generic: 内部
+  - generic "diagram · v0 · 0 页"
+  - button:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 图4-5 全局态势价值约束下的MARTA兵力与资源分配结构
+  - generic: 内部
+  - generic "diagram · v0 · 0 页"
+  - button:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 图4-6 分解—分配失败反馈与最小充分修正机制
+  - generic: 内部
+  - generic "diagram · v0 · 0 页"
+  - button:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 图4-7 候选任务—兵力方案的人工审查、授权与交接门
+  - generic: 内部
+  - generic "diagram · v0 · 0 页"
+  - button:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 图5-1 第四章任务交接包向第五章任务策略集合的受约束映射
+  - generic: 内部
+  - generic "diagram · v0 · 0 页"
+  - button:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 图5-2 指挥授权、规则许可与武器释放的三重门控及撤销链
+  - generic: 内部
+  - generic "diagram · v0 · 0 页"
+  - button:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 图5-3 感知、火力与机动异构策略协同及动作所有权
+  - generic: 内部
+  - generic "diagram · v0 · 0 页"
+  - button:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 图5-4 攻击任务的策略调用图与侦察—打击—评估—脱离时序
+  - generic: 内部
+  - generic "diagram · v0 · 0 页"
+  - button:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 图5-5 阶段目标点、路径、首执行航路点与控制量的分层转换
+  - generic: 内部
+  - generic "diagram · v0 · 0 页"
+  - button:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 图5-6 任务内失败语义与L0—L3最小充分回退机制
+  - generic: 内部
+  - generic "diagram · v0 · 0 页"
+  - button:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 图5-7 任务内规划执行证据链与证据等级—主张边界
+  - generic: 内部
+  - generic "diagram · v0 · 0 页"
+  - button:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 图5-15 任务条件化共享机动网络结构与动作所有权
+  - generic: 内部
+  - generic "diagram · v0 · 0 页"
+  - button:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 图6-1 仿真验证体系的规划对象、权威状态与反馈闭环
+  - generic: 内部
+  - generic "diagram · v0 · 0 页"
+  - button:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 图6-2 单步作战裁决周期与规划评价量回投关系
+  - generic: 内部
+  - generic "diagram · v0 · 0 页"
+  - button:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 图6-3 海上无人集群统一作战想定与空间任务链
+  - generic: 内部
+  - generic "diagram · v0 · 0 页"
+  - button:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 图6-4 规则驱动基线的任务优先级、可行性门与局部选择
+  - generic: 内部
+  - generic "diagram · v0 · 0 页"
+  - button:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 图6-5 方法链、模块指标与系统级作战结论的分层映射
+  - generic: 内部
+  - generic "diagram · v0 · 0 页"
+  - button:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 图6-6 M0—M8方法谱系、E0—E5实验矩阵与策略晋级门
+  - generic: 内部
+  - generic "diagram · v0 · 0 页"
+  - button:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 图6-7 治理—规划—观察—仿真的数据闭环与权威边界
+  - generic: 内部
+  - generic "diagram · v0 · 0 页"
+  - button:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 图6-8 单次联通烟测的对象链、路径门禁与故障归因
+  - generic: 内部
+  - generic "diagram · v0 · 0 页"
+  - button:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 图6-9 任务内先导证据与完整系统验证的范围边界
+  - generic: 内部
+  - generic "diagram · v0 · 0 页"
+  - button:
+  - button:
+  - button:
+  - button:
+- article:
+  - strong: 图6-10 实验运行记录、质量门禁与论文结果形成流程
+  - generic: 内部
+  - generic "diagram · v0 · 0 页"
+  - button:
+  - button [disabled]:
+  - button:
+  - button:
+- tablist:
+  - tab "研究总览"
+  - tab "协同工作台" [selected]
+  - tab "概念与论证"
+  - tab "研究迭代"
+  - tab "参考文献"
+  - tab "排版与交付"
+- text: HUMAN × AI WORKBENCH
+- heading "协同工作台" [level=3]
+- paragraph: 左右窗口可以独立显示文档、PPT、画图或 AI，对同一资源执行单写多读。
+- radiogroup "segmented":
+  - radio "文档写作"
+  - generic: 文档写作
+  - radio "PPT 制作"
+  - generic: PPT 制作
+  - radio "版本比对"
+  - generic: 版本比对
+  - radio "文档/PPT校验"
+  - generic: 文档/PPT校验
+  - radio "图表创作"
+  - generic: 图表创作
+  - radio "论文插图"
+  - generic: 论文插图
+  - radio "PPT配图"
+  - generic: PPT配图
+  - radio "自定义" [checked]
+  - generic: 自定义
+- button:
+- button:
+- generic: 布局保存失败
+- navigation "协同窗口":
+  - radiogroup "segmented":
+    - radio "左窗口" [checked]
+    - generic: 左窗口
+    - radio "右窗口"
+    - generic: 右窗口
+- article:
+  - generic: 左窗口
+  - strong: AI 协作 · 跟随焦点
+  - radiogroup "segmented":
+    - radio "文档"
+    - generic: 文档
+    - radio "PPT"
+    - generic: PPT
+    - radio "画图"
+    - generic: 画图
+    - radio "AI" [checked]
+    - generic: AI
+  - button:
+  - generic: 跟随另一窗口
+  - button:
+  - region "AI 协作窗口":
+    - generic: HUMAN × AI
+    - strong: 协作写作
+    - button "刷新会话":
+    - generic: 跟随焦点
+    - switch "锁定 AI 目标"
+    - generic: 当前目标
+    - strong: 博士论文·第三版 v34（七章工作稿）
+    - generic: 当前章节 · 修订 0
+    - generic: 文档
+    - combobox "选择 AI 会话"
+    - generic: 协作写作
+    - combobox "选择协作智能体"
+    - generic: 通天晓 · 文档写作
+    - button "新会话":
+      - generic: 新会话
+    - paragraph: 选择目标后，可让智能体生成可审阅的修改建议
+    - generic "AI 快捷指令":
+      - button "润色":
+        - generic: 润色
+      - button "扩写":
+        - generic: 扩写
+      - button "压缩":
+        - generic: 压缩
+      - button "核查":
+        - generic: 核查
+    - textbox "AI 协作指令":
+      - /placeholder: 说明目标、语气、证据边界和必须保留的内容……
+    - generic: 0 / 4000
+    - generic: 提交时冻结当前目标快照
+    - button "生成修改建议" [disabled]:
+      - generic: 生成修改建议
+- textbox
+- button:
+- button:

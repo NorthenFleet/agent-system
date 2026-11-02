@@ -1,0 +1,637 @@
+Browser tab: 2116413284, Title: "智能体集群系统", URL: "http://127.0.0.1:3042/command-center".
+0 AXWebArea 智能体集群系统, URL: 127.0.0.1:3042/command-center
+	1 text 第十二阶段隔离测试 · 独立 PostgreSQL · 恢复审批闭环 · 恢复进程崩溃验证 · 无外发
+	2 container app
+		3 text 🤖 OpenClaw
+		4 container
+			5 text OpenClaw
+		6 button 🌙
+		7 pop up button (collapsed) 隔 隔离恢复测试, ID: el-id-3535-1, Secondary Actions: Expand
+			8 text 隔
+			9 text 隔离恢复测试
+		10 container
+			11 heading 擎天柱指挥中心, Value: 1
+				12 text 擎天柱指挥中心
+			13 text 自动更新
+			14 text 统一任务入口 · 审批后执行 · 异步协作与反馈
+			15 container
+				16 switch (settable, boolean) Value: 1, ID: el-id-3535-54
+				17 text 自动刷新
+			18 button 刷新
+				19 text 刷新
+			99 container 当前任务与下一步
+				100 text P12 恢复写入后中断：核实与重新审批
+				677 text 交付闭环已完成
+				678 text 计划、执行、证据与恢复状态均已归档
+				679 text 下一步：在顶部任务产物中下载文件，并核对审核结论
+				680 text 任务产物（已完成）
+				681 container
+					682 text 恢复回执 recovery-receipt.json 
+					683 button 下载文件
+			20 button (collapsed) 查看团队统计与运行健康, Secondary Actions: Expand
+				21 text 查看团队统计与运行健康
+			22 tab group
+				23 tab (selected, settable, boolean) 工作坊, Value: 1, ID: tab-workshop
+			24 container
+				25 text 任务工作台 0 个项目 · 1 项任务
+				26 text field (settable) el-id-3535-55
+				27 container
+					28 combo box (collapsed, settable) ID: el-id-3535-56, Secondary Actions: Expand
+					29 text 状态
+					30 image
+				31 container
+					32 combo box (collapsed, settable) ID: el-id-3535-57, Secondary Actions: Expand
+					33 text 类型
+					34 image
+				35 container
+					36 combo box (collapsed, settable) ID: el-id-3535-58, Secondary Actions: Expand
+					37 text 项目
+					38 image
+				39 container
+					40 combo box (collapsed, settable) ID: el-id-3535-59, Secondary Actions: Expand
+					41 text 智能体
+					42 image
+				43 container
+					44 combo box (collapsed, settable) ID: el-id-3535-60, Secondary Actions: Expand
+					45 text 来源
+					46 image
+				47 text 项目范围 全部项目
+				105 button P12 恢复写入后中断：核实与重新审批 已完成 所属项目 未绑定项目 任务类型 程序开发 执行智能体 救护车 当前步骤 复核恢复内容与备份一致 10/06 02:17 1/1 步骤 2 个总账记录
+					106 text P12 恢复写入后中断：核实与重新审批
+					107 text 已完成
+					108 text 所属项目
+					109 text  未绑定项目
+					110 text 任务类型
+					111 text  程序开发
+					112 text 执行智能体
+					113 text  救护车
+					114 text 当前步骤
+					115 text  复核恢复内容与备份一致
+					684 text 10/06 02:17
+					685 text 1/1 步骤
+					119 text 2 个总账记录
+			48 container
+				49 text 智能体空间
+				120 text P12 恢复写入后中断：核实与重新审批
+				51 text 唯一入口：擎天柱
+				52 text 已完成
+				121 container
+					122 text 总指挥 项目经理 开发执行 保障能力
+					123 button 🐝 大黄蜂 运维
+						124 text 🐝
+						125 text 大黄蜂
+						126 text 运维
+					127 button 🟦 李奥纳多 架构师 / 开发负责人
+						128 text 🟦
+						129 text 李奥纳多
+						130 text 架构师 / 开发负责人
+					131 button 🤖 擎天柱 总经理
+						132 text 🤖
+						133 text 擎天柱
+						134 text 总经理
+					135 button 🔧 千斤顶 看板 V2 PM
+						136 text 🔧
+						137 text 千斤顶
+						138 text 看板 V2 PM
+					139 button 🛡️ 铁皮 one-sim 仿真 PM
+						140 text 🛡️
+						141 text 铁皮
+						142 text one-sim 仿真 PM
+					143 button 🌙 小梦 孙总个人助手
+						144 text 🌙
+						145 text 小梦
+						146 text 孙总个人助手
+					147 button 🚗 感知器 资讯 / 情报
+						148 text 🚗
+						149 text 感知器
+						150 text 资讯 / 情报
+					151 button 🟥 拉斐尔 后端开发
+						152 text 🟥
+						153 text 拉斐尔
+						154 text 后端开发
+					155 button 🟪 多纳泰罗 前端开发
+						156 text 🟪
+						157 text 多纳泰罗
+						158 text 前端开发
+					159 button 🚑 救护车 知识库
+						160 text 🚑
+						161 text 救护车
+						162 text 知识库
+					163 button 🔵 通天晓 博士论文 PM
+						164 text 🔵
+						165 text 通天晓
+						166 text 博士论文 PM
+					167 button 🎷 爵士 销售与客户关系
+						168 text 🎷
+						169 text 爵士
+						170 text 销售与客户关系
+					171 button 🟧 米开朗基罗 测试工程
+						172 text 🟧
+						173 text 米开朗基罗
+						174 text 测试工程
+					175 button 🟣 震荡波 团队优化师
+						176 text 🟣
+						177 text 震荡波
+						178 text 团队优化师
+					179 button 🔷 声波 财务管理
+						180 text 🔷
+						181 text 声波
+						182 text 财务管理
+					183 button 🔎 Inspector 检查与观察
+						184 text 🔎
+						185 text Inspector
+						186 text 检查与观察
+				187 text 擎天柱
+				188 text 总经理
+				189 text 已完成
+				686 text 任务已完成
+				191 text 用户只通过擎天柱下达任务
+				53 container
+					54 text 全员状态 随自动刷新同步 · 10/06 02:18 0 工作中 0 已分配 0 阻塞 16 待命
+				55 table 智能体工作状态
+					56 row
+						57 cell
+							58 text 智能体
+						59 cell
+							60 text 状态
+						61 cell
+							62 text 当前任务
+						63 cell
+							64 text 项目
+						65 cell
+							66 text 进度
+					192 row
+						193 cell
+							194 text 🤖
+							195 text 擎天柱
+							196 text 总经理
+						197 cell
+							198 text 已完成
+						199 cell
+							200 text 任务已完成
+						201 cell
+							202 text 未绑定项目
+						203 cell
+							204 progress indicator 100
+							687 text 100%
+					206 row
+						207 cell
+							208 text 🚑
+							209 text 救护车
+							210 text 知识库
+						211 cell
+							212 text 已完成
+						213 cell
+							214 text 复核恢复内容与备份一致
+						215 cell
+							216 text 未绑定项目
+						217 cell
+							218 progress indicator 100
+							688 text 100%
+					220 row
+						221 cell
+							222 text 🌙
+							223 text 小梦
+							224 text 孙总个人助手
+						225 cell
+							226 text 待命
+						227 cell
+							228 text 等待调度
+						229 cell
+							230 text 未绑定项目
+						231 cell
+							232 progress indicator 0
+							233 text 0%
+					234 row
+						235 cell
+							236 text 🔧
+							237 text 千斤顶
+							238 text 看板 V2 PM
+						239 cell
+							240 text 待命
+						241 cell
+							242 text 等待调度
+						243 cell
+							244 text 未绑定项目
+						245 cell
+							246 progress indicator 0
+							247 text 0%
+					248 row
+						249 cell
+							250 text 🛡️
+							251 text 铁皮
+							252 text one-sim 仿真 PM
+						253 cell
+							254 text 待命
+						255 cell
+							256 text 等待调度
+						257 cell
+							258 text 未绑定项目
+						259 cell
+							260 progress indicator 0
+							261 text 0%
+					262 row
+						263 cell
+							264 text 🔵
+							265 text 通天晓
+							266 text 博士论文 PM
+						267 cell
+							268 text 待命
+						269 cell
+							270 text 等待调度
+						271 cell
+							272 text 未绑定项目
+						273 cell
+							274 progress indicator 0
+							275 text 0%
+					276 row
+						277 cell
+							278 text 🟪
+							279 text 多纳泰罗
+							280 text 前端开发
+						281 cell
+							282 text 待命
+						283 cell
+							284 text 等待调度
+						285 cell
+							286 text 未绑定项目
+						287 cell
+							288 progress indicator 0
+							289 text 0%
+					290 row
+						291 cell
+							292 text 🟥
+							293 text 拉斐尔
+							294 text 后端开发
+						295 cell
+							296 text 待命
+						297 cell
+							298 text 等待调度
+						299 cell
+							300 text 未绑定项目
+						301 cell
+							302 progress indicator 0
+							303 text 0%
+					304 row
+						305 cell
+							306 text 🟦
+							307 text 李奥纳多
+							308 text 架构师 / 开发负责人
+						309 cell
+							310 text 待命
+						311 cell
+							312 text 等待调度
+						313 cell
+							314 text 未绑定项目
+						315 cell
+							316 progress indicator 0
+							317 text 0%
+					318 row
+						319 cell
+							320 text 🟧
+							321 text 米开朗基罗
+							322 text 测试工程
+						323 cell
+							324 text 待命
+						325 cell
+							326 text 等待调度
+						327 cell
+							328 text 未绑定项目
+						329 cell
+							330 progress indicator 0
+							331 text 0%
+					332 row
+						333 cell
+							334 text 🐝
+							335 text 大黄蜂
+							336 text 运维
+						337 cell
+							338 text 待命
+						339 cell
+							340 text 等待调度
+						341 cell
+							342 text 未绑定项目
+						343 cell
+							344 progress indicator 0
+							345 text 0%
+					346 row
+						347 cell
+							348 text 🚗
+							349 text 感知器
+							350 text 资讯 / 情报
+						351 cell
+							352 text 待命
+						353 cell
+							354 text 等待调度
+						355 cell
+							356 text 未绑定项目
+						357 cell
+							358 progress indicator 0
+							359 text 0%
+					360 row
+						361 cell
+							362 text 🎷
+							363 text 爵士
+							364 text 销售与客户关系
+						365 cell
+							366 text 待命
+						367 cell
+							368 text 等待调度
+						369 cell
+							370 text 未绑定项目
+						371 cell
+							372 progress indicator 0
+							373 text 0%
+					374 row
+						375 cell
+							376 text 🔷
+							377 text 声波
+							378 text 财务管理
+						379 cell
+							380 text 待命
+						381 cell
+							382 text 等待调度
+						383 cell
+							384 text 未绑定项目
+						385 cell
+							386 progress indicator 0
+							387 text 0%
+					388 row
+						389 cell
+							390 text 🟣
+							391 text 震荡波
+							392 text 团队优化师
+						393 cell
+							394 text 待命
+						395 cell
+							396 text 等待调度
+						397 cell
+							398 text 未绑定项目
+						399 cell
+							400 progress indicator 0
+							401 text 0%
+					402 row
+						403 cell
+							404 text 🔎
+							405 text Inspector
+							406 text 检查与观察
+						407 cell
+							408 text 待命
+						409 cell
+							410 text 等待调度
+						411 cell
+							412 text 未绑定项目
+						413 cell
+							414 progress indicator 0
+							415 text 0%
+				416 heading P12 恢复写入后中断：核实与重新审批, Value: 2
+					417 text P12 恢复写入后中断：核实与重新审批
+				418 text 已完成 mission-a458581a0d71 目标 隔离恢复测试：仅核实指定样本，保留所有文件，不外发。
+				422 container 规范业务流进度
+					423 text 规范执行链
+					424 text 真实状态驱动 · 从任务接收到交付与故障恢复 Run mrun-bbedb35 Trace mission-ef2e0cfd09 Plan V2
+					425 text 当前控制点
+					689 text 交付闭环已完成
+					690 text 计划、执行、证据与恢复状态均已归档
+					428 text 下一步
+					691 text 在顶部任务产物中下载文件，并核对审核结论
+					430 container
+						431 text 已完成
+						432 text 任务接收
+						433 text 目标与项目绑定
+						434 text Mission mission- 已入库
+						435 text 2 待进入
+						436 text 背景冻结
+						437 text 检索与引用快照
+						438 text 等待生成上下文快照
+						439 text 已完成
+						440 text 规范拆解
+						441 text 合同化步骤与质检
+						614 text V2 · 100 分 · 1 步
+						664 text 已完成
+						444 text 风险审批
+						445 text 计划与高风险步骤
+						665 text 当前计划已授权
+						692 text 已完成
+						448 text 受控执行
+						449 text 依赖、租约与幂等
+						693 text 1/1 个步骤已完成
+						694 text 已完成
+						452 text 证据验收
+						453 text 产物、证据与门禁
+						695 text 1 份产物 · 1 条证据
+						696 text 已完成
+						456 text 故障恢复
+						457 text 副作用与补偿闭环
+						594 text 无未解决恢复项
+						697 text 已完成
+						460 text 交付闭环
+						461 text 总验收与结果回执
+						698 text 已通过交付门禁
+					463 text 步骤
+					699 text 1/1
+					465 text 产物
+					700 text 1
+					467 text 证据
+					701 text 1
+					469 text 验收门禁
+					702 text 2/2
+					471 text 副作用
+					703 text 1
+					473 text 未解决补偿
+					595 text 0
+				475 text 统一任务视图
+				476 text 未绑定项目 · 救护车
+				477 text 2 个总账记录
+				478 text 当前步骤
+				626 text 复核恢复内容与备份一致
+				704 text 救护车 · 统筹 · 已完成
+				481 container
+					482 text P12 恢复写入后中断：核实与重新审批 v3-command-center-mission-mission-a458581a0d71 指挥中心 已完成 擎天柱
+				628 container
+					629 text 复核恢复内容与备份一致 v3-command-center-step-step-1f0891ff3420 指挥中心 已完成 救护车
+				630 text 执行计划 V2
+				631 text 恢复后的独立只读验收：核实原内容已恢复，与备份一致，不再写入。
+				487 text 质检 100
+				488 text 风险 中
+				489 text 计划质检通过
+				490 text 检查 12 项规则
+				632 container
+					705 image
+					706 text 复核恢复内容与备份一致 救护车 · 统筹 已完成 仅使用 exec 执行只读断言：/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase12-20261006/applied-sample.txt 与 backup.txt 内容为 before-change 换行，before-recovery.txt 为 changed-by-test 换行，guard.txt 为 must-stay-unchanged 换行。读取 recovery-receipt.json 作为现成交付物，计算其 SHA256 并附上真实执行证据。禁止修改任何文件或外发。 阶段 planning 风险 L2 无前置依赖
+					634 text 幂等 mission-a458581a0d71:plan:…
+					635 text 工具 测试运行器 产物 现有 recovery-receipt.json 恢复回执 验收 目标内容与 backup.txt 一致，原写入未被重试 证据 test_output Effect Journal 1 条副作用记录 未生效 只读 cat + shasum，未修改任何文件 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase12-20261006/ · N/A（只读步骤，无写入回执） · 1 条证据 执行证据门禁 通过 · 100 strict · 10/06 02:17 执行记录 wrun-190b0624de8745be 证据 100 ```json { "outcome": "succeeded", "summary": "只读复核完成：applied-sample.txt 与 backup.txt 内容均为 'before-change\\n'，SHA-256 一致（03af3ee6...）；before-recovery.txt 内容为 'changed-by-test\\n'；guard.txt 内容为 'must-stay-unchanged\\n'；recovery-receipt.json 的 post_recovery_sha256 与当前 applied-sample.txt/backup.txt 匹配，pre_recovery_sha256 与 before-recovery.txt 匹配，回执自身 SHA-256 为 6…
+				707 text 最终交付门禁
+				708 text 可交付
+				709 container
+					710 text 100 /100
+				711 text 产物、证据、执行验收和补偿状态已统一评估。
+				712 text 模式 strict · 10/06 02:17
+				499 text 任务动态
+				500 text 持久化事件记录
+				501 content list
+					713 container
+						714 text 10/06 02:17
+						715 text 任务完成
+						716 text 隔离恢复测试验收通过。关键证据：applied-sample.txt 与 backup.txt 的 SHA-256 哈希一致（03af3ee6...），before-recovery.txt 显示测试写入内容（changed-by-test），guard.txt 保持不变（must-stay-unchanged），recovery-receipt.json 的 pre/post 哈希与对应文件匹配。所有验收项通过，无风险，无需下一步。
+						717 text 擎天柱
+					718 container
+						719 text 10/06 02:17
+						720 text 开始评估
+						721 text All steps completed; Optimus is evaluating the outcome
+						722 text phase12-worker-81190
+					723 container
+						724 text 10/06 02:17
+						725 text 步骤完成
+						726 text 复核恢复内容与备份一致
+						727 text 救护车
+					728 container
+						729 text 10/06 02:16
+						730 text 步骤开始
+						731 text 复核恢复内容与备份一致
+						732 text 救护车
+					667 container
+						668 text 10/06 02:16
+						669 text 状态更新
+						670 text Approved plan entered execution
+						671 text 指挥中心
+					672 container
+						673 text 10/06 02:16
+						674 text 计划已批准
+						675 text approved
+						676 text phase12-browser
+					636 container
+						637 text 10/06 02:16
+						638 text 计划已提交
+						639 text 恢复后的独立只读验收：核实原内容已恢复，与备份一致，不再写入。
+						640 text 擎天柱
+					641 container
+						642 text 10/06 02:16
+						643 text 继续制定计划
+						644 text Optimus is producing an approval-gated plan
+						645 text phase12-plan-fixture
+					646 container
+						647 text 10/06 02:16
+						648 text 状态更新
+						649 text Dashboard feedback received; orchestration resumed
+						650 text phase12-browser
+					651 container
+						652 text 10/06 02:16
+						653 text 收到反馈
+						654 text 恢复进程曾在文件落地后中断，现已核实并只读复用原回执。请重新规划只读验收：检查样本、备份、保留副本、保护文件及回执，不修改任何文件，保留中断和重审批历史，不外发。
+						655 text phase12-browser
+					596 container
+						597 text 10/06 02:16
+						598 text 恢复核验已完成
+						599 text 只读核实恢复已落地，复用相同幂等键的真实文件回执；没有再次写入。
+						600 text 救护车
+					601 container
+						602 text 10/06 02:16
+						603 text 恢复操作已批准
+						604 text 已确认当前补偿合同快照
+						605 text phase12-browser
+					577 container
+						578 text 10/06 02:15
+						579 text compensation_reapproval_required
+						580 text 补偿执行租约过期，必须重新审批后才能重试
+						581 text 指挥中心
+					582 container
+						583 text 10/06 02:14
+						584 text 恢复操作已批准
+						585 text 已确认当前补偿合同快照
+						586 text phase12-browser
+					502 container
+						503 text 10/06 02:12
+						504 text 恢复方案待单独审批
+						505 text 新的恢复方案已提交，需单独审批；原核实记录保留。
+						506 text fixture-planner
+					507 container
+						508 text 10/06 02:12
+						509 text 恢复核验未通过
+						510 text 只读核实未确认无需补偿；保留阻塞，等待新的恢复方案审批。 夹具只读核实：样本已改变，须审批恢复方案
+						511 text fixture-verification
+					512 container
+						513 text 10/06 02:12
+						514 text 恢复操作已批准
+						515 text approved
+						516 text fixture
+					517 container
+						518 text 10/06 02:12
+						519 text 任务阻塞
+						520 text 受控写入样本：副作用 unreported-effect 的落地状态未知
+						521 text 指挥中心
+					522 container
+						523 text 10/06 02:12
+						524 text 步骤失败
+						525 text 受控写入样本
+						526 text fixture
+					527 container
+						528 text 10/06 02:12
+						529 text 恢复审批已发起
+						530 text 副作用状态为 unknown，等待补偿审批
+						531 text fixture
+					532 container
+						533 text 10/06 02:12
+						534 text 步骤开始
+						535 text 受控写入样本
+						536 text 救护车
+					537 container
+						538 text 10/06 02:12
+						539 text 状态更新
+						540 text Approved plan entered execution
+						541 text 指挥中心
+					542 container
+						543 text 10/06 02:12
+						544 text 计划已批准
+						545 text approved
+						546 text fixture
+					547 container
+						548 text 10/06 02:12
+						549 text 计划已提交
+						550 text 模拟回执丢失
+						551 text 擎天柱
+					552 container
+						553 text 10/06 02:12
+						554 text 开始制定计划
+						555 text Optimus is producing an approval-gated plan
+						556 text fixture
+					557 container
+						558 text 10/06 02:12
+						559 text 任务已接收
+						560 text 隔离恢复测试：仅核实指定样本，保留所有文件，不外发。
+						561 text phase12-lab
+			69 container mission-actions
+				70 container
+					71 text 擎 擎天柱 总项目管理 · 唯一任务入口
+				72 container
+					73 image
+					74 text 最近会话分流 0 条 暂无会话记录
+				75 container
+					76 image
+					77 text 长期记忆候选 待审核 0 擎天柱从已完成任务中提炼。审核发布后，仅影响后续任务的背景检索。 暂无待审核的长期记忆
+				78 container
+					79 image
+					80 text 启动项目任务
+					81 Description: segmented, ID: el-id-3535-61
+						82 container
+							83 radio button (settable, integer) Description: 程序开发, Value: 1
+							84 text 程序开发
+							85 radio button (settable, integer) Description: 文档撰写, Value: 0
+							86 text 文档撰写
+					87 container
+						88 combo box (collapsed, settable) ID: el-id-3535-62, Secondary Actions: Expand
+						89 text 选择任务所属项目
+						90 image
+					91 text field (settable) el-id-3535-63
+					92 text entry area (settable) el-id-3535-64
+					93 button (disabled) 交给擎天柱
+						94 text 交给擎天柱
+				569 container
+					570 image
+					571 text 关联对话 用户 隔离恢复测试：仅核实指定样本，保留所有文件，不外发。 用户 恢复进程曾在文件落地后中断，现已核实并只读复用原回执。请重新规划只读验收：检查样本、备份、保留副本、保护文件及回执，不修改任何文件，保留中断和重审批历史，不外发。
+	95 container
+		96 container
+			97 button
+			98 button
+
+The focused UI element is 0 AXWebArea 智能体集群系统, URL: 127.0.0.1:3042/command-center

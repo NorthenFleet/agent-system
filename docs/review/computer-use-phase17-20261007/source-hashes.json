@@ -1,0 +1,5 @@
+{
+  "frontend-v2/src/test/CommandCenterGovernance.spec.ts": "f03eea41fef539fabbc34c49a2b43d85ec7104cb85933cdf4b67190ecd9254fb",
+  "backend/scripts/prepare_phase17_frontend_release.py": "0511295f3b84c6a482ff37cdd8a4f19be9ea86b313470d848c409642f6b05a66",
+  "backend/scripts/run_phase17_release_preview.py": "d0da91a085bfd733c36aacd2a07ea537ef07dea8a5a5705ff623edbdca488ac2"
+}

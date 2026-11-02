@@ -1,0 +1,973 @@
+{
+  "id": "mission-2538f40d4b5c",
+  "conversation_id": "conv-72d4e89cfbca",
+  "source_message_id": "msg-50f78c0c9bf5",
+  "title": "P5 真实执行器只读严格验收",
+  "objective": "P5 真实执行器只读严格验收",
+  "status": "waiting_feedback",
+  "priority": "normal",
+  "project_id": null,
+  "mission_type": "software",
+  "requested_by": "phase5-test",
+  "owner_user_id": "phase5-test",
+  "plan_version": 1,
+  "current_step_id": null,
+  "requires_approval": true,
+  "approval_status": "approved",
+  "last_error": "读取并核验既有修订稿：[openclaw] Could not start the CLI.\n[openclaw] Reason: connect EPERM 127.0.0.1:18789 - Local (0.0.0.0:0)\n[openclaw] Debug: set OPENCLAW_DEBUG=1 to include the stack trace.\n[openclaw] Try: openclaw doctor\n[openclaw] Help: openclaw --help",
+  "lease_owner": null,
+  "lease_expires_at": null,
+  "created_at": "2026-10-05T15:32:18.851390+00:00",
+  "updated_at": "2026-10-05T15:32:21.679242+00:00",
+  "completed_at": null,
+  "context": {
+    "source": "dashboard",
+    "profile_user_id": "phase5-test",
+    "mission_type": "software",
+    "intent_decision": {
+      "type": "software_project",
+      "confidence": 1.0,
+      "reason": "由已认证的项目任务入口显式创建",
+      "execution_requested": true
+    },
+    "user_context": {},
+    "metadata": {
+      "project_id": "",
+      "title": "",
+      "context": {},
+      "intent_type": "software_project",
+      "execution_requested": true,
+      "profile_user_id": "phase5-test",
+      "suppress_notification": true,
+      "_direct_mission": true,
+      "_reserve_planning": false,
+      "_planning_owner": ""
+    }
+  },
+  "mission_run": {
+    "id": "mrun-83c0909698ea43af",
+    "mission_id": "mission-2538f40d4b5c",
+    "correlation_id": "mission-0bc851e0abf04dc2",
+    "status": "waiting_feedback",
+    "active_plan_version": 1,
+    "workflow_run_id": "workflow-e1c72d8c3566",
+    "outcome": "",
+    "created_at": "2026-10-05T15:32:18.851390+00:00",
+    "updated_at": "2026-10-05T15:32:21.681133+00:00",
+    "ended_at": null,
+    "metadata": {}
+  },
+  "conversation": {
+    "id": "conv-72d4e89cfbca",
+    "channel": "dashboard",
+    "external_conversation_id": "dashboard:phase5-test",
+    "user_external_id": "phase5-test",
+    "owner_user_id": "phase5-test",
+    "profile_user_id": "phase5-test",
+    "status": "active",
+    "metadata": {
+      "project_id": "",
+      "title": "",
+      "context": {},
+      "intent_type": "software_project",
+      "execution_requested": true,
+      "profile_user_id": "phase5-test",
+      "suppress_notification": true,
+      "_direct_mission": true,
+      "_reserve_planning": false,
+      "_planning_owner": ""
+    },
+    "created_at": "2026-10-05T15:32:18.851390+00:00",
+    "updated_at": "2026-10-05T15:32:18.851390+00:00"
+  },
+  "steps": [
+    {
+      "id": "step-06522d435f5f",
+      "mission_id": "mission-2538f40d4b5c",
+      "plan_version": 1,
+      "order_index": 1,
+      "title": "读取并核验既有修订稿",
+      "description": "",
+      "task_type": "coordination",
+      "agent_id": "ratchet",
+      "executor": "openclaw",
+      "status": "failed",
+      "work_run_id": null,
+      "lease_owner": null,
+      "lease_token": null,
+      "lease_expires_at": null,
+      "started_at": "2026-10-05T15:32:18.894635+00:00",
+      "completed_at": "2026-10-05T15:32:21.667770+00:00",
+      "updated_at": "2026-10-05T15:32:21.667782+00:00",
+      "attempt_count": 1,
+      "dependencies": [],
+      "input": {},
+      "result": {
+        "success": false,
+        "output": "{\n  \"ok\": false,\n  \"error\": {\n    \"type\": \"cli_error\",\n    \"message\": \"connect EPERM 127.0.0.1:18789 - Local (0.0.0.0:0)\"\n  }\n}",
+        "error": "[openclaw] Could not start the CLI.\n[openclaw] Reason: connect EPERM 127.0.0.1:18789 - Local (0.0.0.0:0)\n[openclaw] Debug: set OPENCLAW_DEBUG=1 to include the stack trace.\n[openclaw] Try: openclaw doctor\n[openclaw] Help: openclaw --help",
+        "duration_ms": 0,
+        "exit_code": 1,
+        "output_source": "stdout",
+        "output_candidates": [
+          {
+            "source": "stdout",
+            "text": "{\n  \"ok\": false,\n  \"error\": {\n    \"type\": \"cli_error\",\n    \"message\": \"connect EPERM 127.0.0.1:18789 - Local (0.0.0.0:0)\"\n  }\n}"
+          }
+        ],
+        "structured_output": {
+          "ok": false,
+          "error": {
+            "type": "cli_error",
+            "message": "connect EPERM 127.0.0.1:18789 - Local (0.0.0.0:0)"
+          }
+        },
+        "summary": "{\n  \"ok\": false,\n  \"error\": {\n    \"type\": \"cli_error\",\n    \"message\": \"connect EPERM 127.0.0.1:18789 - Local (0.0.0.0:0)\"\n  }\n}",
+        "artifacts": [],
+        "evidence": [],
+        "evidence_refs": [],
+        "acceptance_results": [],
+        "tools_used": [],
+        "risk_notes": "",
+        "outcome": "failed",
+        "receipt_preflight": {
+          "schema_version": "1.0",
+          "strategy": "existing_evidence_only",
+          "input_sha256": "de4c7283b16f8a3eaf6512d34aaf2ae93afe1631d35e18d8d004b2c9bfcea7a8",
+          "changes": [],
+          "strict_accepted_before": false,
+          "strict_accepted": false,
+          "blockers": [],
+          "execution_repeated": false
+        },
+        "execution_quality": {
+          "status": "pass",
+          "score": 100,
+          "mode": "strict",
+          "enforced": true,
+          "accepted": false,
+          "executor_success": false,
+          "business_outcome": "failed",
+          "hard_blockers": [],
+          "blockers": [],
+          "warnings": [],
+          "evidence_refs": [],
+          "required_evidence": [
+            "test_output"
+          ],
+          "required_artifact_types": [
+            "document"
+          ],
+          "required_tools": [
+            "test_runner"
+          ],
+          "acceptance_criteria": [
+            "三个小节齐全，汉字数在100至180之间，且返回实际文件SHA-256"
+          ],
+          "checked_rules": [
+            "result-summary",
+            "required-evidence-types",
+            "artifact-contract",
+            "acceptance-results",
+            "tool-use",
+            "required-output-fields"
+          ]
+        },
+        "side_effects": [],
+        "effect_quality": {
+          "status": "not_applicable",
+          "accepted": true,
+          "enforced": false,
+          "blockers": [],
+          "warnings": []
+        },
+        "completion_decision": {
+          "executor_success": false,
+          "accepted": false,
+          "retry_scheduled": false,
+          "attempt": 1,
+          "max_attempts": 1,
+          "receipt_retry_safe": true,
+          "enforcement": {
+            "mode": "strict",
+            "enforced": true,
+            "reason": "strict_mode",
+            "flow_key": "software",
+            "highest_risk": "L2",
+            "runtime": "legacy"
+          },
+          "effect_quality": {
+            "status": "not_applicable",
+            "accepted": true,
+            "enforced": false,
+            "blockers": [],
+            "warnings": []
+          }
+        },
+        "effect_ids": []
+      },
+      "context_binding": null,
+      "phase": "planning",
+      "objective": "读取并核验既有修订稿",
+      "required_tools": [
+        "test_runner"
+      ],
+      "tool_requirements": [
+        {
+          "name": "测试运行器",
+          "category": "verification",
+          "status": "available",
+          "description": "运行后端、单元或集成测试并回传输出。",
+          "evidence_types": [
+            "test_output"
+          ],
+          "id": "test_runner"
+        }
+      ],
+      "deliverables": [
+        "既有修订稿及只读核验回执"
+      ],
+      "output_contract": {
+        "artifact_types": [
+          "document"
+        ],
+        "required_fields": [
+          "summary",
+          "evidence_refs",
+          "risk_notes"
+        ]
+      },
+      "acceptance_criteria": [
+        "三个小节齐全，汉字数在100至180之间，且返回实际文件SHA-256"
+      ],
+      "evidence_required": [
+        "test_output"
+      ],
+      "risk_level": "medium",
+      "risk_class": "L2",
+      "approval_required": false,
+      "side_effect": false,
+      "resources": [],
+      "idempotency_key": "mission-2538f40d4b5c:plan:1:step:1",
+      "timeout_seconds": 1200,
+      "max_attempts": 1,
+      "rollback_plan": "停止后续步骤，记录失败原因并等待擎天柱重新规划。",
+      "compensation": {
+        "type": "manual",
+        "instructions": "停止后续步骤，记录失败原因并等待擎天柱重新规划。"
+      },
+      "capability_match": true,
+      "artifacts": [],
+      "evidence": [],
+      "acceptance_gate": {
+        "id": "gate-bbf5fa075aff95ec2e4e",
+        "mission_id": "mission-2538f40d4b5c",
+        "mission_run_id": "mrun-83c0909698ea43af",
+        "correlation_id": "mission-0bc851e0abf04dc2",
+        "plan_version": 1,
+        "step_id": "step-06522d435f5f",
+        "gate_type": "execution_evidence",
+        "mode": "strict",
+        "enforced": true,
+        "status": "pass",
+        "accepted": false,
+        "score": 100,
+        "evaluated_by": "ratchet",
+        "evaluated_at": "2026-10-05T15:32:21.668265+00:00",
+        "blockers": [],
+        "warnings": [],
+        "details": {
+          "status": "pass",
+          "score": 100,
+          "mode": "strict",
+          "enforced": true,
+          "accepted": false,
+          "executor_success": false,
+          "business_outcome": "failed",
+          "hard_blockers": [],
+          "blockers": [],
+          "warnings": [],
+          "evidence_refs": [],
+          "required_evidence": [
+            "test_output"
+          ],
+          "required_artifact_types": [
+            "document"
+          ],
+          "required_tools": [
+            "test_runner"
+          ],
+          "acceptance_criteria": [
+            "三个小节齐全，汉字数在100至180之间，且返回实际文件SHA-256"
+          ],
+          "checked_rules": [
+            "result-summary",
+            "required-evidence-types",
+            "artifact-contract",
+            "acceptance-results",
+            "tool-use",
+            "required-output-fields"
+          ]
+        }
+      },
+      "step_approval": null,
+      "effects": [],
+      "compensations": []
+    }
+  ],
+  "context_bindings": [],
+  "planning_context": null,
+  "plan": {
+    "id": "plan-265cd7cad179",
+    "mission_id": "mission-2538f40d4b5c",
+    "version": 1,
+    "summary": "只读核验既有修订稿",
+    "rationale": "",
+    "risk_level": "medium",
+    "raw_plan": {
+      "summary": "只读核验既有修订稿",
+      "steps": [
+        {
+          "order_index": 1,
+          "title": "读取并核验既有修订稿",
+          "agent_id": "ratchet",
+          "task_type": "coordination",
+          "side_effect": false,
+          "max_attempts": 1,
+          "depends_on": [],
+          "required_tools": [
+            "test_runner"
+          ],
+          "deliverables": [
+            "既有修订稿及只读核验回执"
+          ],
+          "evidence_required": [
+            "test_output"
+          ],
+          "acceptance_criteria": [
+            "三个小节齐全，汉字数在100至180之间，且返回实际文件SHA-256"
+          ],
+          "output_contract": {
+            "artifact_types": [
+              "document"
+            ],
+            "required_fields": [
+              "summary",
+              "evidence_refs",
+              "risk_notes"
+            ]
+          },
+          "tool_requirements": [
+            {
+              "name": "测试运行器",
+              "category": "verification",
+              "status": "available",
+              "description": "运行后端、单元或集成测试并回传输出。",
+              "evidence_types": [
+                "test_output"
+              ],
+              "id": "test_runner"
+            }
+          ],
+          "capability_match": true,
+          "risk_level": "medium",
+          "rollback_plan": "停止后续步骤，记录失败原因并等待擎天柱重新规划。",
+          "phase": "planning",
+          "objective": "读取并核验既有修订稿",
+          "timeout_seconds": 1200,
+          "risk_class": "L2",
+          "approval_required": false,
+          "resources": [],
+          "idempotency_key": "mission-2538f40d4b5c:plan:1:step:1",
+          "idempotency_key_generated": true,
+          "compensation": {
+            "type": "manual",
+            "instructions": "停止后续步骤，记录失败原因并等待擎天柱重新规划。"
+          }
+        }
+      ],
+      "schema_version": "2.0",
+      "business_type": "software",
+      "flow_spec": {
+        "flow_key": "software",
+        "version": "1.0.0",
+        "name": "软件开发交付流",
+        "business_type": "software",
+        "phases": [
+          "intake",
+          "planning",
+          "implementation",
+          "verification",
+          "delivery"
+        ],
+        "required_gates": [
+          "plan_quality",
+          "plan_approval",
+          "test_gate",
+          "evidence_gate"
+        ],
+        "budgets": {
+          "max_steps": 12,
+          "max_parallel_steps": 4,
+          "max_replans": 2,
+          "default_timeout_seconds": 1200
+        },
+        "approval_policy": {
+          "plan_approval": true,
+          "delivery_approval": false,
+          "l3_step_approval": true
+        }
+      },
+      "risk_assessment": {
+        "highest_risk": "L2",
+        "by_level": {
+          "L0": 0,
+          "L1": 0,
+          "L2": 1,
+          "L3": 0
+        },
+        "step_approvals": [],
+        "plan_approval_required": true,
+        "delivery_approval_required": false
+      },
+      "approval_policy": {
+        "plan_approval": true,
+        "delivery_approval": false,
+        "l3_step_approval": true,
+        "highest_risk": "L2",
+        "step_approvals": []
+      },
+      "execution_policy": {
+        "runtime": "command-center",
+        "state_machine": "mission-v1",
+        "require_context_snapshot": true,
+        "require_evidence": true,
+        "idempotency_required_for_side_effects": true
+      },
+      "flow_validation": {
+        "status": "warning",
+        "flow_key": "software",
+        "flow_version": "1.0.0",
+        "blockers": [],
+        "warnings": [
+          "领域流程缺少必要环节：架构设计、实现、测试验证"
+        ],
+        "checked_rules": [
+          "flow-budget",
+          "domain-coverage",
+          "risk-class",
+          "approval-policy",
+          "idempotency",
+          "compensation",
+          "resource-conflict"
+        ]
+      },
+      "capability_registry": {
+        "version": "p1-local",
+        "agent_count": 15,
+        "tool_count": 9
+      },
+      "plan_quality": {
+        "status": "warning",
+        "score": 76,
+        "blockers": [],
+        "warnings": [
+          "领域流程缺少必要环节：架构设计、实现、测试验证",
+          "软件任务必须包含架构与测试/评估步骤",
+          "软件任务建议至少包含后端或前端实现步骤"
+        ],
+        "suggestions": [
+          "补齐每一步的工具、产物、验收标准和证据字段后再审批"
+        ],
+        "tool_summary": {
+          "total": 1,
+          "unknown": 0,
+          "unavailable": 0
+        },
+        "flow_key": "software",
+        "flow_version": "1.0.0",
+        "risk_assessment": {
+          "highest_risk": "L2",
+          "by_level": {
+            "L0": 0,
+            "L1": 0,
+            "L2": 1,
+            "L3": 0
+          },
+          "step_approvals": [],
+          "plan_approval_required": true,
+          "delivery_approval_required": false
+        },
+        "checked_rules": [
+          "schema",
+          "business-flow",
+          "risk-policy",
+          "idempotency",
+          "compensation",
+          "agent-capability",
+          "tool-registry",
+          "dependency-dag",
+          "deliverables",
+          "acceptance",
+          "evidence",
+          "domain-coverage"
+        ]
+      }
+    },
+    "status": "approved",
+    "created_by_agent_id": "optimus",
+    "created_at": "2026-10-05T15:32:18.882573+00:00",
+    "plan_quality": {
+      "status": "warning",
+      "score": 76,
+      "blockers": [],
+      "warnings": [
+        "领域流程缺少必要环节：架构设计、实现、测试验证",
+        "软件任务必须包含架构与测试/评估步骤",
+        "软件任务建议至少包含后端或前端实现步骤"
+      ],
+      "suggestions": [
+        "补齐每一步的工具、产物、验收标准和证据字段后再审批"
+      ],
+      "tool_summary": {
+        "total": 1,
+        "unknown": 0,
+        "unavailable": 0
+      },
+      "flow_key": "software",
+      "flow_version": "1.0.0",
+      "risk_assessment": {
+        "highest_risk": "L2",
+        "by_level": {
+          "L0": 0,
+          "L1": 0,
+          "L2": 1,
+          "L3": 0
+        },
+        "step_approvals": [],
+        "plan_approval_required": true,
+        "delivery_approval_required": false
+      },
+      "checked_rules": [
+        "schema",
+        "business-flow",
+        "risk-policy",
+        "idempotency",
+        "compensation",
+        "agent-capability",
+        "tool-registry",
+        "dependency-dag",
+        "deliverables",
+        "acceptance",
+        "evidence",
+        "domain-coverage"
+      ]
+    }
+  },
+  "workflow_run": {
+    "id": "workflow-e1c72d8c3566",
+    "mission_id": "mission-2538f40d4b5c",
+    "mission_run_id": "mrun-83c0909698ea43af",
+    "correlation_id": "mission-0bc851e0abf04dc2",
+    "plan_version": 1,
+    "runtime": "legacy",
+    "flow_key": "software",
+    "highest_risk": "L2",
+    "selection_reason": "feature_disabled",
+    "thread_id": "workflow-e1c72d8c3566",
+    "checkpoint_namespace": "pilot",
+    "status": "ready",
+    "attempts": 0,
+    "next_attempt_at": "2026-10-05T15:32:18.888454+00:00",
+    "lease_owner": null,
+    "lease_token": null,
+    "lease_expires_at": null,
+    "last_error": null,
+    "created_at": "2026-10-05T15:32:18.883763+00:00",
+    "updated_at": "2026-10-05T15:32:18.888455+00:00",
+    "completed_at": "2026-10-05T15:32:18.883763+00:00",
+    "input": {
+      "workflow_run_id": "workflow-e1c72d8c3566",
+      "mission_run_id": "mrun-83c0909698ea43af",
+      "correlation_id": "mission-0bc851e0abf04dc2",
+      "mission_id": "mission-2538f40d4b5c",
+      "plan_version": 1,
+      "flow_key": "software",
+      "highest_risk": "L2",
+      "context_pack_id": "",
+      "status": "ready",
+      "evidence_refs": []
+    },
+    "state": {
+      "workflow_run_id": "workflow-e1c72d8c3566",
+      "mission_run_id": "mrun-83c0909698ea43af",
+      "correlation_id": "mission-0bc851e0abf04dc2",
+      "mission_id": "mission-2538f40d4b5c",
+      "plan_version": 1,
+      "flow_key": "software",
+      "highest_risk": "L2",
+      "context_pack_id": "",
+      "status": "ready",
+      "evidence_refs": []
+    },
+    "checkpoint": {}
+  },
+  "artifacts": [],
+  "evidence": [],
+  "acceptance_gates": [
+    {
+      "id": "gate-bbf5fa075aff95ec2e4e",
+      "mission_id": "mission-2538f40d4b5c",
+      "mission_run_id": "mrun-83c0909698ea43af",
+      "correlation_id": "mission-0bc851e0abf04dc2",
+      "plan_version": 1,
+      "step_id": "step-06522d435f5f",
+      "gate_type": "execution_evidence",
+      "mode": "strict",
+      "enforced": true,
+      "status": "pass",
+      "accepted": false,
+      "score": 100,
+      "evaluated_by": "ratchet",
+      "evaluated_at": "2026-10-05T15:32:21.668265+00:00",
+      "blockers": [],
+      "warnings": [],
+      "details": {
+        "status": "pass",
+        "score": 100,
+        "mode": "strict",
+        "enforced": true,
+        "accepted": false,
+        "executor_success": false,
+        "business_outcome": "failed",
+        "hard_blockers": [],
+        "blockers": [],
+        "warnings": [],
+        "evidence_refs": [],
+        "required_evidence": [
+          "test_output"
+        ],
+        "required_artifact_types": [
+          "document"
+        ],
+        "required_tools": [
+          "test_runner"
+        ],
+        "acceptance_criteria": [
+          "三个小节齐全，汉字数在100至180之间，且返回实际文件SHA-256"
+        ],
+        "checked_rules": [
+          "result-summary",
+          "required-evidence-types",
+          "artifact-contract",
+          "acceptance-results",
+          "tool-use",
+          "required-output-fields"
+        ]
+      }
+    }
+  ],
+  "step_approvals": [],
+  "effects": [],
+  "compensations": [],
+  "delivery_gate": null,
+  "approval": {
+    "id": "approval-f95407797a2b",
+    "mission_id": "mission-2538f40d4b5c",
+    "plan_version": 1,
+    "decision": "approved",
+    "requested_at": "2026-10-05T15:32:18.882729+00:00",
+    "decided_at": "2026-10-05T15:32:18.888360+00:00",
+    "decided_by": "phase5-test",
+    "comment": "",
+    "external_message_id": null
+  },
+  "events": [
+    {
+      "id": "event-895ef8276761",
+      "mission_id": "mission-2538f40d4b5c",
+      "event_type": "mission_received",
+      "from_status": null,
+      "to_status": "received",
+      "actor": "phase5-test",
+      "detail": "P5 真实执行器只读严格验收",
+      "event_key": null,
+      "metadata": {
+        "message_id": "msg-50f78c0c9bf5",
+        "channel": "dashboard",
+        "preplanned": false,
+        "mission_type": "software",
+        "project_id": "",
+        "intent_confidence": 1.0
+      },
+      "created_at": "2026-10-05T15:32:18.852323+00:00",
+      "mission_run_id": "mrun-83c0909698ea43af",
+      "correlation_id": "mission-0bc851e0abf04dc2",
+      "run_sequence": 1
+    },
+    {
+      "id": "event-824fa3a4f2f0",
+      "mission_id": "mission-2538f40d4b5c",
+      "event_type": "planning_started",
+      "from_status": "received",
+      "to_status": "planning",
+      "actor": "phase5-test",
+      "detail": "Optimus is producing an approval-gated plan",
+      "event_key": null,
+      "metadata": {},
+      "created_at": "2026-10-05T15:32:18.881198+00:00",
+      "mission_run_id": "mrun-83c0909698ea43af",
+      "correlation_id": "mission-0bc851e0abf04dc2",
+      "run_sequence": 2
+    },
+    {
+      "id": "event-fe58e0ffcd90",
+      "mission_id": "mission-2538f40d4b5c",
+      "event_type": "plan_proposed",
+      "from_status": "planning",
+      "to_status": "awaiting_approval",
+      "actor": "optimus",
+      "detail": "只读核验既有修订稿",
+      "event_key": null,
+      "metadata": {
+        "version": 1,
+        "step_count": 1,
+        "flow_key": "software",
+        "flow_version": "1.0.0",
+        "highest_risk": "L2",
+        "quality_score": 76,
+        "workflow_runtime": "legacy",
+        "workflow_runtime_reason": "feature_disabled"
+      },
+      "created_at": "2026-10-05T15:32:18.883885+00:00",
+      "mission_run_id": "mrun-83c0909698ea43af",
+      "correlation_id": "mission-0bc851e0abf04dc2",
+      "run_sequence": 3
+    },
+    {
+      "id": "event-d9151e5a51d6",
+      "mission_id": "mission-2538f40d4b5c",
+      "event_type": "plan_approved",
+      "from_status": "awaiting_approval",
+      "to_status": "dispatching",
+      "actor": "phase5-test",
+      "detail": "approved",
+      "event_key": null,
+      "metadata": {
+        "version": 1
+      },
+      "created_at": "2026-10-05T15:32:18.888639+00:00",
+      "mission_run_id": "mrun-83c0909698ea43af",
+      "correlation_id": "mission-0bc851e0abf04dc2",
+      "run_sequence": 4
+    },
+    {
+      "id": "event-cbfb5d70b374",
+      "mission_id": "mission-2538f40d4b5c",
+      "event_type": "state_changed",
+      "from_status": "dispatching",
+      "to_status": "running",
+      "actor": "command-center",
+      "detail": "Approved plan entered execution",
+      "event_key": null,
+      "metadata": {},
+      "created_at": "2026-10-05T15:32:18.892322+00:00",
+      "mission_run_id": "mrun-83c0909698ea43af",
+      "correlation_id": "mission-0bc851e0abf04dc2",
+      "run_sequence": 5
+    },
+    {
+      "id": "event-991258cdf0e4",
+      "mission_id": "mission-2538f40d4b5c",
+      "event_type": "step_started",
+      "from_status": "running",
+      "to_status": "running",
+      "actor": "ratchet",
+      "detail": "读取并核验既有修订稿",
+      "event_key": null,
+      "metadata": {
+        "step_id": "step-06522d435f5f",
+        "step_approval_id": null
+      },
+      "created_at": "2026-10-05T15:32:18.895316+00:00",
+      "mission_run_id": "mrun-83c0909698ea43af",
+      "correlation_id": "mission-0bc851e0abf04dc2",
+      "run_sequence": 6
+    },
+    {
+      "id": "event-132a18c6fa70",
+      "mission_id": "mission-2538f40d4b5c",
+      "event_type": "step_failed",
+      "from_status": "running",
+      "to_status": "running",
+      "actor": "ratchet",
+      "detail": "读取并核验既有修订稿",
+      "event_key": null,
+      "metadata": {
+        "step_id": "step-06522d435f5f",
+        "result": {
+          "success": false,
+          "output": "{\n  \"ok\": false,\n  \"error\": {\n    \"type\": \"cli_error\",\n    \"message\": \"connect EPERM 127.0.0.1:18789 - Local (0.0.0.0:0)\"\n  }\n}",
+          "error": "[openclaw] Could not start the CLI.\n[openclaw] Reason: connect EPERM 127.0.0.1:18789 - Local (0.0.0.0:0)\n[openclaw] Debug: set OPENCLAW_DEBUG=1 to include the stack trace.\n[openclaw] Try: openclaw doctor\n[openclaw] Help: openclaw --help",
+          "duration_ms": 0,
+          "exit_code": 1,
+          "output_source": "stdout",
+          "output_candidates": [
+            {
+              "source": "stdout",
+              "text": "{\n  \"ok\": false,\n  \"error\": {\n    \"type\": \"cli_error\",\n    \"message\": \"connect EPERM 127.0.0.1:18789 - Local (0.0.0.0:0)\"\n  }\n}"
+            }
+          ],
+          "structured_output": {
+            "ok": false,
+            "error": {
+              "type": "cli_error",
+              "message": "connect EPERM 127.0.0.1:18789 - Local (0.0.0.0:0)"
+            }
+          },
+          "summary": "{\n  \"ok\": false,\n  \"error\": {\n    \"type\": \"cli_error\",\n    \"message\": \"connect EPERM 127.0.0.1:18789 - Local (0.0.0.0:0)\"\n  }\n}",
+          "artifacts": [],
+          "evidence": [],
+          "evidence_refs": [],
+          "acceptance_results": [],
+          "tools_used": [],
+          "risk_notes": "",
+          "outcome": "failed",
+          "receipt_preflight": {
+            "schema_version": "1.0",
+            "strategy": "existing_evidence_only",
+            "input_sha256": "de4c7283b16f8a3eaf6512d34aaf2ae93afe1631d35e18d8d004b2c9bfcea7a8",
+            "changes": [],
+            "strict_accepted_before": false,
+            "strict_accepted": false,
+            "blockers": [],
+            "execution_repeated": false
+          },
+          "execution_quality": {
+            "status": "pass",
+            "score": 100,
+            "mode": "strict",
+            "enforced": true,
+            "accepted": false,
+            "executor_success": false,
+            "business_outcome": "failed",
+            "hard_blockers": [],
+            "blockers": [],
+            "warnings": [],
+            "evidence_refs": [],
+            "required_evidence": [
+              "test_output"
+            ],
+            "required_artifact_types": [
+              "document"
+            ],
+            "required_tools": [
+              "test_runner"
+            ],
+            "acceptance_criteria": [
+              "三个小节齐全，汉字数在100至180之间，且返回实际文件SHA-256"
+            ],
+            "checked_rules": [
+              "result-summary",
+              "required-evidence-types",
+              "artifact-contract",
+              "acceptance-results",
+              "tool-use",
+              "required-output-fields"
+            ]
+          },
+          "side_effects": [],
+          "effect_quality": {
+            "status": "not_applicable",
+            "accepted": true,
+            "enforced": false,
+            "blockers": [],
+            "warnings": []
+          },
+          "completion_decision": {
+            "executor_success": false,
+            "accepted": false,
+            "retry_scheduled": false,
+            "attempt": 1,
+            "max_attempts": 1,
+            "receipt_retry_safe": true,
+            "enforcement": {
+              "mode": "strict",
+              "enforced": true,
+              "reason": "strict_mode",
+              "flow_key": "software",
+              "highest_risk": "L2",
+              "runtime": "legacy"
+            },
+            "effect_quality": {
+              "status": "not_applicable",
+              "accepted": true,
+              "enforced": false,
+              "blockers": [],
+              "warnings": []
+            }
+          },
+          "effect_ids": []
+        },
+        "next_step_status": "failed"
+      },
+      "created_at": "2026-10-05T15:32:21.668493+00:00",
+      "mission_run_id": "mrun-83c0909698ea43af",
+      "correlation_id": "mission-0bc851e0abf04dc2",
+      "run_sequence": 7
+    },
+    {
+      "id": "event-785c3de9a197",
+      "mission_id": "mission-2538f40d4b5c",
+      "event_type": "mission_blocked",
+      "from_status": "running",
+      "to_status": "waiting_feedback",
+      "actor": "command-center",
+      "detail": "读取并核验既有修订稿：[openclaw] Could not start the CLI.\n[openclaw] Reason: connect EPERM 127.0.0.1:18789 - Local (0.0.0.0:0)\n[openclaw] Debug: set OPENCLAW_DEBUG=1 to include the stack trace.\n[openclaw] Try: openclaw doctor\n[openclaw] Help: openclaw --help",
+      "event_key": null,
+      "metadata": {
+        "counts": {
+          "failed": 1
+        }
+      },
+      "created_at": "2026-10-05T15:32:21.679841+00:00",
+      "mission_run_id": "mrun-83c0909698ea43af",
+      "correlation_id": "mission-0bc851e0abf04dc2",
+      "run_sequence": 8
+    }
+  ],
+  "messages": [
+    {
+      "id": "msg-50f78c0c9bf5",
+      "conversation_id": "conv-72d4e89cfbca",
+      "mission_id": "mission-2538f40d4b5c",
+      "direction": "inbound",
+      "external_message_id": "ui-d0a5007a8a6546ec931eabcdb0e68895",
+      "reply_to_external_message_id": null,
+      "sender_id": "phase5-test",
+      "content": "P5 真实执行器只读严格验收",
+      "message_type": "text",
+      "intent_type": "software_project",
+      "intent_confidence": 1.0,
+      "intent_reason": "由已认证的项目任务入口显式创建",
+      "execution_requested": 1,
+      "routing_status": "mission_created",
+      "target_agent_id": "optimus",
+      "resolved_project_id": null,
+      "reply_to_command_message_id": null,
+      "metadata": {
+        "project_id": "",
+        "title": "",
+        "context": {},
+        "intent_type": "software_project",
+        "execution_requested": true,
+        "profile_user_id": "phase5-test",
+        "suppress_notification": true,
+        "_direct_mission": true,
+        "_reserve_planning": false,
+        "_planning_owner": ""
+      },
+      "created_at": "2026-10-05T15:32:18.851390+00:00"
+    }
+  ]
+}

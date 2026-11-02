@@ -1,0 +1,6 @@
+{
+  "backend/services/execution_evidence_service.py": "0420b37feb59542ee144a90de1209a1c1a55b5e53bd948fa618a60840c4fae49",
+  "backend/services/command_center_service.py": "7920177447fd8266c8674a0b0dae656b95c24ed7ca5d3e2c093264ba64473177",
+  "backend/services/command_center_worker.py": "d5a0a7d9ddc54955772d7306a5d101523c296814f08cbf8b0c0dc76825789f37",
+  "backend/tests/test_phase4_receipt_preflight.py": "90bd9f9dc3bfe7d8bd96bf496d873dcd0899d1962011815980ddf758c9cf09ef"
+}

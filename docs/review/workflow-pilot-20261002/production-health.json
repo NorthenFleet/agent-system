@@ -1,0 +1,152 @@
+{
+  "status": "ready",
+  "storage": {
+    "backend": "postgresql",
+    "source_of_truth": "postgresql+psycopg2:///team_dashboard",
+    "capabilities": {
+      "durable": true,
+      "transactional_claims": true,
+      "multi_instance": true,
+      "runtime_schema_management": false
+    }
+  },
+  "storage_runtime": {
+    "backend": "postgresql",
+    "connection_mode": "threaded_pool",
+    "pre_ping": true,
+    "status": "ready",
+    "health_window_seconds": 300,
+    "pool": {
+      "min_size": 1,
+      "max_size": 5,
+      "acquire_timeout_seconds": 5.0,
+      "acquisitions_total": 2376860,
+      "transactions_committed_total": 2376860,
+      "transactions_rolled_back_total": 0,
+      "acquire_timeouts_total": 0,
+      "connection_failures_total": 0,
+      "stale_connections_discarded_total": 0,
+      "reconnects_total": 0,
+      "in_use": 0,
+      "peak_in_use": 5,
+      "acquire_wait_ms_total": 10929.834,
+      "acquire_wait_ms_max": 90.355,
+      "last_acquire_timeout_epoch": 0.0,
+      "last_connection_failure_epoch": 0.0,
+      "acquire_wait_ms_average": 0.005
+    }
+  },
+  "work_runs": {
+    "backend": "postgresql",
+    "total": 58,
+    "active": 0,
+    "expired_active_leases": 0,
+    "retry_attempts": 3,
+    "failed": 13,
+    "lease_reclaims": 1,
+    "completed_transitions": 41,
+    "storage_runtime": {
+      "backend": "postgresql",
+      "connection_mode": "threaded_pool",
+      "pre_ping": true,
+      "status": "ready",
+      "health_window_seconds": 300,
+      "pool": {
+        "min_size": 1,
+        "max_size": 5,
+        "acquire_timeout_seconds": 5.0,
+        "acquisitions_total": 160,
+        "transactions_committed_total": 159,
+        "transactions_rolled_back_total": 1,
+        "acquire_timeouts_total": 0,
+        "connection_failures_total": 0,
+        "stale_connections_discarded_total": 0,
+        "reconnects_total": 0,
+        "in_use": 0,
+        "peak_in_use": 1,
+        "acquire_wait_ms_total": 2.382,
+        "acquire_wait_ms_max": 0.349,
+        "last_acquire_timeout_epoch": 0.0,
+        "last_connection_failure_epoch": 0.0,
+        "acquire_wait_ms_average": 0.015
+      }
+    },
+    "observed_at": "2026-10-02T13:13:35.895399+00:00"
+  },
+  "workflow_runtime": {
+    "default_runtime": "legacy",
+    "langgraph": {
+      "enabled": false,
+      "available": true,
+      "pilot_flows": [
+        "document",
+        "research"
+      ],
+      "pilot_risk_levels": [
+        "L0",
+        "L1"
+      ],
+      "checkpoint_backend": "postgresql",
+      "role": "approval and recovery execution gate"
+    },
+    "ownership": {
+      "business_state": "command_center",
+      "execution_checkpoint": "workflow_runtime",
+      "long_term_memory": "memory_service"
+    },
+    "by_status": {
+      "ready": 11,
+      "cancelled": 5
+    },
+    "by_runtime": {
+      "legacy": 16
+    },
+    "checkpoint_storage": {
+      "status": "ready",
+      "backend": "postgresql",
+      "installed_version": 9,
+      "required_version": 9,
+      "missing_tables": [],
+      "runtime_ddl": false
+    }
+  },
+  "workers": {
+    "status": "ready",
+    "required": 2,
+    "live": 2,
+    "stale": 0,
+    "stale_after_seconds": 20,
+    "workers": [
+      {
+        "id": "command-center:api-3021",
+        "role": "embedded",
+        "state": "running",
+        "started_at": "2026-09-27T13:44:55.539599+00:00",
+        "last_seen_at": "2026-10-02T13:13:35.739687+00:00",
+        "stopped_at": null,
+        "metadata": {
+          "hostname": "appledeMac-mini.local",
+          "pid": 93603,
+          "max_parallel": 3,
+          "poll_seconds": 2.0
+        },
+        "live": true
+      },
+      {
+        "id": "command-center:worker-2",
+        "role": "dedicated",
+        "state": "running",
+        "started_at": "2026-09-25T10:27:25.816123+00:00",
+        "last_seen_at": "2026-10-02T13:13:33.269129+00:00",
+        "stopped_at": null,
+        "metadata": {
+          "hostname": "appledeMac-mini.local",
+          "pid": 76230,
+          "max_parallel": 3,
+          "poll_seconds": 2.0
+        },
+        "live": true
+      }
+    ]
+  }
+}

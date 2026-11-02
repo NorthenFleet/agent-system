@@ -1,0 +1,1326 @@
+{
+    "plans": [
+        {
+            "status": "approved",
+            "quality": {
+                "score": 100,
+                "status": "pass",
+                "blockers": [
+                ],
+                "flow_key": "document",
+                "warnings": [
+                ],
+                "suggestions": [
+                ],
+                "flow_version": "1.0.0",
+                "tool_summary": {
+                    "total": 3,
+                    "unknown": 0,
+                    "unavailable": 0
+                },
+                "checked_rules": [
+                    "schema",
+                    "business-flow",
+                    "risk-policy",
+                    "idempotency",
+                    "compensation",
+                    "agent-capability",
+                    "tool-registry",
+                    "dependency-dag",
+                    "deliverables",
+                    "acceptance",
+                    "evidence",
+                    "domain-coverage"
+                ],
+                "risk_assessment": {
+                    "by_level": {
+                        "L0": 0,
+                        "L1": 2,
+                        "L2": 0,
+                        "L3": 0
+                    },
+                    "highest_risk": "L1",
+                    "step_approvals": [
+                    ],
+                    "plan_approval_required": true,
+                    "delivery_approval_required": true
+                }
+            },
+            "summary": "纯文档稳定性验收：写作智能体生成虚构晨间简报（120–180汉字），独立审核智能体核实内容与汉字数并出具审核报告",
+            "version": 1,
+            "rationale": "[C1] 孙总偏好先方案后执行、必须附证据；[C2] 项目 proj-b64156d740 为 Computer Use 用户旅程验收，使用虚构数据不涉及真实业务；[C18] 交付方式需可验证通过条件与证据；任务明确要求两步：写作+独立审核，无需研究与代码；审核必须按 Unicode 汉字范围统计而非字节数",
+            "mission_id": "mission-57e69ffb2ac2"
+        },
+        {
+            "status": "rejected",
+            "quality": {
+                "score": 100,
+                "status": "pass",
+                "blockers": [
+                ],
+                "flow_key": "document",
+                "warnings": [
+                ],
+                "suggestions": [
+                ],
+                "flow_version": "1.0.0",
+                "tool_summary": {
+                    "total": 3,
+                    "unknown": 0,
+                    "unavailable": 0
+                },
+                "checked_rules": [
+                    "schema",
+                    "business-flow",
+                    "risk-policy",
+                    "idempotency",
+                    "compensation",
+                    "agent-capability",
+                    "tool-registry",
+                    "dependency-dag",
+                    "deliverables",
+                    "acceptance",
+                    "evidence",
+                    "domain-coverage"
+                ],
+                "risk_assessment": {
+                    "by_level": {
+                        "L0": 0,
+                        "L1": 2,
+                        "L2": 0,
+                        "L3": 0
+                    },
+                    "highest_risk": "L1",
+                    "step_approvals": [
+                    ],
+                    "plan_approval_required": true,
+                    "delivery_approval_required": true
+                }
+            },
+            "summary": "虚构个人助理晚间复盘文档的撰写与独立审核，验证重复交付与计划退回流程",
+            "version": 1,
+            "rationale": "根据任务要求 [C12]，采用先方案后批准再执行的模式。本任务为纯文档任务，无需研究、无需联网、不开发代码 [C1]。两步流程：一名智能体撰写虚构晚间复盘（brief.md），另一名独立审核并给出 accepted/rejected 结论（review.md）。依据 [C15] 审批流程，计划需孙总批准后方可执行。上下文缺口：无。",
+            "mission_id": "mission-6ff004a0dc02"
+        },
+        {
+            "status": "approved",
+            "quality": {
+                "score": 100,
+                "status": "pass",
+                "blockers": [
+                ],
+                "flow_key": "document",
+                "warnings": [
+                ],
+                "suggestions": [
+                ],
+                "flow_version": "1.0.0",
+                "tool_summary": {
+                    "total": 3,
+                    "unknown": 0,
+                    "unavailable": 0
+                },
+                "checked_rules": [
+                    "schema",
+                    "business-flow",
+                    "risk-policy",
+                    "idempotency",
+                    "compensation",
+                    "agent-capability",
+                    "tool-registry",
+                    "dependency-dag",
+                    "deliverables",
+                    "acceptance",
+                    "evidence",
+                    "domain-coverage"
+                ],
+                "risk_assessment": {
+                    "by_level": {
+                        "L0": 0,
+                        "L1": 2,
+                        "L2": 0,
+                        "L3": 0
+                    },
+                    "highest_risk": "L1",
+                    "step_approvals": [
+                    ],
+                    "plan_approval_required": true,
+                    "delivery_approval_required": true
+                }
+            },
+            "summary": "虚构个人助理晚间复盘文档撰写与独立审核，验证重复交付与计划退回流程。brief.md 含已完成、未完成、明日首要行动三节，120–180 汉字；review.md 引用正文、统计汉字数并给出 accepted/rejected 结论。",
+            "version": 2,
+            "rationale": "[C1] 孙总偏好先方案后批准、证据驱动交付；[C2] 项目 proj-b64156d740 为纯虚构文档验收，不涉及真实业务；[C12] 采用先计划再批准后执行模式；[C13] 默认中文交付；[C15] 计划须孙总批准后才执行。用户补充意见要求将第三小节由「明日行动」改为「明日首要行动」，两步描述与验收标准同步更新，禁止执行旧版计划。上下文缺口：无，任务自包含。",
+            "mission_id": "mission-6ff004a0dc02"
+        }
+    ],
+    "steps": [
+        {
+            "id": "step-8b688b14cdfd",
+            "title": "生成虚构晨间简报",
+            "output": {
+                "outcome": "succeeded",
+                "summary": "已成功创建虚构晨间简报 brief.md，包含今日重点、待确认事项、风险提示三个小节，汉字数 166（符合 120-180 要求）",
+                "evidence": [
+                    {
+                        "summary": "文件内容包含三个小节：今日重点（需求评审会议、客户回访）、待确认事项（出差行程、供应商合同）、风险提示（服务器维护、网络安全）。全文 UTF-8 编码，569 字节。",
+                        "confidence": 1.0,
+                        "source_ref": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/E/brief.md",
+                        "artifact_key": "brief_md",
+                        "evidence_type": "brief.md 文件完整内容"
+                    },
+                    {
+                        "summary": "统计方法：读取 brief.md 文件内容，使用 Python re.findall(r'[\\u4e00-\\u9fff]', content) 提取所有汉字字符并计数。统计结果：166 个汉字，符合 120-180 范围要求。不含标点符号、数字、英文字母。",
+                        "confidence": 1.0,
+                        "source_ref": "Python 脚本使用正则表达式 [\\u4e00-\\u9fff] 匹配 Unicode CJK 统一汉字范围",
+                        "artifact_key": "brief_md",
+                        "evidence_type": "汉字数统计结果及统计方法说明"
+                    }
+                ],
+                "artifacts": [
+                    {
+                        "uri": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/E/brief.md",
+                        "title": "虚构晨间简报",
+                        "artifact_key": "brief_md",
+                        "content_hash": "a45ca4c1417d508045e694fbce629e66007dadaf728c615da3ae89704a4cb934",
+                        "artifact_type": "document"
+                    }
+                ],
+                "risk_notes": "无剩余风险。文件已成功创建并验证，可进入下一步审核流程。",
+                "tools_used": [
+                    "exec"
+                ],
+                "side_effects": [
+                    {
+                        "action": "created",
+                        "status": "applied",
+                        "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/E/brief.md",
+                        "effect_key": "write_brief_md",
+                        "receipt_ref": "cp /tmp/brief.md 命令执行成功，ls -la 确认文件存在",
+                        "evidence_refs": [
+                            "SHA-256: a45ca4c1417d508045e694fbce629e66007dadaf728c615da3ae89704a4cb934"
+                        ],
+                        "idempotency_key": "mission-57e69ffb2ac2:plan:1:step:1"
+                    }
+                ],
+                "acceptance_results": [
+                    {
+                        "notes": "文件已成功写入 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/E/brief.md",
+                        "status": "pass",
+                        "criterion": "文件 brief.md 存在于指定路径",
+                        "evidence_refs": [
+                            "ls -la 输出显示文件存在，大小 569 字节，时间戳 Oct 5 18:20"
+                        ]
+                    },
+                    {
+                        "notes": "三个小节均存在且内容完整",
+                        "status": "pass",
+                        "criterion": "文件包含今日重点、待确认事项、风险提示三个小节",
+                        "evidence_refs": [
+                            "文件内容包含 ## 今日重点、## 待确认事项、## 风险提示 三个 Markdown 二级标题"
+                        ]
+                    },
+                    {
+                        "notes": "166 在 120-180 范围内，符合要求",
+                        "status": "pass",
+                        "criterion": "UTF-8 文本中 Unicode 汉字数（\\u4e00–\\u9fff 范围）在 120–180 之间",
+                        "evidence_refs": [
+                            "Python 正则表达式统计结果：166 个汉字"
+                        ]
+                    }
+                ]
+            },
+            "status": "completed",
+            "quality": {
+                "mode": "pilot",
+                "score": 100,
+                "status": "pass",
+                "accepted": true,
+                "blockers": [
+                ],
+                "enforced": false,
+                "warnings": [
+                ],
+                "checked_rules": [
+                    "result-summary",
+                    "required-evidence-types",
+                    "artifact-contract",
+                    "acceptance-results",
+                    "tool-use",
+                    "required-output-fields"
+                ],
+                "evidence_refs": [
+                    "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/E/brief.md",
+                    "Python 脚本使用正则表达式 [\\u4e00-\\u9fff] 匹配 Unicode CJK 统一汉字范围",
+                    "context-f03f234562b6",
+                    "profile:profile-ed9815cfab9d",
+                    "project:proj-b64156d740",
+                    "fact:fact-94ba6ec420b6",
+                    "fact:fact-03c4a95d7014",
+                    "memory:ratchet:memory/short-term/archive/2026-08-01.md:109-111",
+                    "memory:ratchet:memory/short-term/archive/2026-08-01.md:111-116",
+                    "memory:ratchet:memory/short-term/archive/2026-08-01.md:112-121",
+                    "fact:fact-3059e115d053"
+                ],
+                "hard_blockers": [
+                ],
+                "required_tools": [
+                    "document_workspace"
+                ],
+                "business_outcome": "succeeded",
+                "executor_success": true,
+                "required_evidence": [
+                    "brief.md 文件完整内容",
+                    "汉字数统计结果及统计方法说明"
+                ],
+                "acceptance_criteria": [
+                    "文件 brief.md 存在于指定路径",
+                    "文件包含今日重点、待确认事项、风险提示三个小节",
+                    "UTF-8 文本中 Unicode 汉字数（\\u4e00–\\u9fff 范围）在 120–180 之间"
+                ],
+                "required_artifact_types": [
+                    "document"
+                ]
+            },
+            "completion": {
+                "attempt": 1,
+                "accepted": true,
+                "enforcement": {
+                    "mode": "pilot",
+                    "reason": "shadow_observation",
+                    "runtime": "legacy",
+                    "enforced": false,
+                    "flow_key": "document",
+                    "highest_risk": "L1"
+                },
+                "max_attempts": 2,
+                "effect_quality": {
+                    "status": "pass",
+                    "accepted": true,
+                    "blockers": [
+                    ],
+                    "enforced": true,
+                    "warnings": [
+                    ],
+                    "effect_count": 1,
+                    "applied_count": 1,
+                    "checked_rules": [
+                        "effect-journal-present",
+                        "effect-status-known",
+                        "stable-idempotency-key",
+                        "applied-effect-receipt"
+                    ],
+                    "unknown_count": 0
+                },
+                "retry_scheduled": false,
+                "executor_success": true
+            },
+            "mission_id": "mission-57e69ffb2ac2",
+            "order_index": 1,
+            "work_run_id": "wrun-09ade73aca564d7e",
+            "plan_version": 1,
+            "attempt_count": 1
+        },
+        {
+            "id": "step-e3dc9c372463",
+            "title": "独立审核简报内容与汉字数",
+            "output": {
+                "outcome": "succeeded",
+                "summary": "独立审核完成：brief.md 包含今日重点、待确认事项、风险提示三个小节；Unicode 汉字数 166（符合 120–180 要求）；内容为虚构商务场景，无真实业务数据。审核结论：通过。",
+                "evidence": [
+                    {
+                        "summary": "审核报告完整内容，包含内容完整性核验、汉字数核验、虚构性核验及通过结论",
+                        "confidence": 1.0,
+                        "source_ref": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/E/review.md",
+                        "artifact_key": "review_md",
+                        "evidence_type": "review_report"
+                    },
+                    {
+                        "summary": "实际读取 brief.md 全文，包含今日重点（需求评审会议、客户回访）、待确认事项（出差行程、合同审核）、风险提示（服务器维护、钓鱼邮件）",
+                        "confidence": 1.0,
+                        "source_ref": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/E/brief.md",
+                        "artifact_key": "review_md",
+                        "evidence_type": "brief.md 原文片段"
+                    },
+                    {
+                        "summary": "使用 Python 正则表达式逐字统计，实际汉字数 166，在 120-180 范围内",
+                        "confidence": 1.0,
+                        "source_ref": "Python 脚本使用 re.compile(r'[\\u4e00-\\u9fff]') 匹配 Unicode CJK 统一汉字范围",
+                        "artifact_key": "review_md",
+                        "evidence_type": "汉字统计过程与结果"
+                    }
+                ],
+                "artifacts": [
+                    {
+                        "uri": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/E/review.md",
+                        "title": "独立审核报告",
+                        "artifact_key": "review_md",
+                        "content_hash": "bb8c6e4ec4d7a6a8cc4874c188fe2e5f8cb4efa1a1337bb80f6e6943aebbd033",
+                        "artifact_type": "review_report"
+                    }
+                ],
+                "risk_notes": "无剩余风险。审核报告采用 exec 分段写入（printf 首段 + cat heredoc 追加两段），避免单条长 heredoc。",
+                "tools_used": [
+                    "exec"
+                ],
+                "side_effects": [
+                    {
+                        "action": "写入审核报告",
+                        "status": "applied",
+                        "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/E/review.md",
+                        "effect_key": "write_review_md",
+                        "receipt_ref": "shasum -a 256: bb8c6e4ec4d7a6a8cc4874c188fe2e5f8cb4efa1a1337bb80f6e6943aebbd033",
+                        "evidence_refs": [
+                            "exec 分段写入：printf 首段 + cat 追加两段"
+                        ],
+                        "idempotency_key": "mission-57e69ffb2ac2:plan:1:step:2"
+                    }
+                ],
+                "acceptance_results": [
+                    {
+                        "notes": "文件路径 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/E/review.md",
+                        "status": "pass",
+                        "criterion": "review.md 存在于指定路径",
+                        "evidence_refs": [
+                            "shasum -a 256 输出确认文件存在"
+                        ]
+                    },
+                    {
+                        "notes": "审核报告引用了今日重点、待确认事项、风险提示三个小节的原文内容",
+                        "status": "pass",
+                        "criterion": "报告中包含实际读取 brief.md 的证据",
+                        "evidence_refs": [
+                            "review.md 第二节引用 brief.md 原文片段"
+                        ]
+                    },
+                    {
+                        "notes": "使用 [\\u4e00-\\u9fff] 正则匹配，实际汉字数 166",
+                        "status": "pass",
+                        "criterion": "报告中包含按 Unicode 汉字范围统计的汉字数",
+                        "evidence_refs": [
+                            "review.md 第三节详述统计方法与结果"
+                        ]
+                    },
+                    {
+                        "notes": "结论为通过，理由：内容完整、汉字数合规、虚构性合规",
+                        "status": "pass",
+                        "criterion": "报告明确给出通过或不通过结论",
+                        "evidence_refs": [
+                            "review.md 第五节审核结论"
+                        ]
+                    }
+                ]
+            },
+            "status": "completed",
+            "quality": {
+                "mode": "pilot",
+                "score": 92,
+                "status": "warning",
+                "accepted": true,
+                "blockers": [
+                ],
+                "enforced": false,
+                "warnings": [
+                    "缺少要求的证据类型：review.md 文件完整内容, 引用的 brief.md 原文片段"
+                ],
+                "checked_rules": [
+                    "result-summary",
+                    "required-evidence-types",
+                    "artifact-contract",
+                    "acceptance-results",
+                    "tool-use",
+                    "required-output-fields"
+                ],
+                "evidence_refs": [
+                    "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/E/review.md",
+                    "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/E/brief.md",
+                    "Python 脚本使用 re.compile(r'[\\u4e00-\\u9fff]') 匹配 Unicode CJK 统一汉字范围",
+                    "context-e000e9f47ce9",
+                    "profile:profile-ed9815cfab9d",
+                    "project:proj-b64156d740",
+                    "fact:fact-94ba6ec420b6",
+                    "fact:fact-03c4a95d7014",
+                    "memory:ultra-magnus:memory/short-term/2026-08-10.md:6-7",
+                    "memory:ultra-magnus:memory/short-term/2026-08-10.md:7-10",
+                    "memory:ultra-magnus:memory/short-term/2026-08-10.md:7-11",
+                    "fact:fact-3059e115d053"
+                ],
+                "hard_blockers": [
+                ],
+                "required_tools": [
+                    "document_workspace",
+                    "quality_checker"
+                ],
+                "business_outcome": "succeeded",
+                "executor_success": true,
+                "required_evidence": [
+                    "review.md 文件完整内容",
+                    "引用的 brief.md 原文片段",
+                    "汉字统计过程与结果"
+                ],
+                "acceptance_criteria": [
+                    "review.md 存在于指定路径",
+                    "报告中包含实际读取 brief.md 的证据",
+                    "报告中包含按 Unicode 汉字范围统计的汉字数",
+                    "报告明确给出通过或不通过结论"
+                ],
+                "required_artifact_types": [
+                    "review_report"
+                ]
+            },
+            "completion": {
+                "attempt": 1,
+                "accepted": true,
+                "enforcement": {
+                    "mode": "pilot",
+                    "reason": "shadow_observation",
+                    "runtime": "legacy",
+                    "enforced": false,
+                    "flow_key": "document",
+                    "highest_risk": "L1"
+                },
+                "max_attempts": 2,
+                "effect_quality": {
+                    "status": "pass",
+                    "accepted": true,
+                    "blockers": [
+                    ],
+                    "enforced": true,
+                    "warnings": [
+                    ],
+                    "effect_count": 1,
+                    "applied_count": 1,
+                    "checked_rules": [
+                        "effect-journal-present",
+                        "effect-status-known",
+                        "stable-idempotency-key",
+                        "applied-effect-receipt"
+                    ],
+                    "unknown_count": 0
+                },
+                "retry_scheduled": false,
+                "executor_success": true
+            },
+            "mission_id": "mission-57e69ffb2ac2",
+            "order_index": 2,
+            "work_run_id": "wrun-a65a875cc66b49ef",
+            "plan_version": 1,
+            "attempt_count": 1
+        },
+        {
+            "id": "step-06a180f9474a",
+            "title": "撰写虚构个人助理晚间复盘",
+            "output": null,
+            "status": "draft",
+            "quality": null,
+            "completion": null,
+            "mission_id": "mission-6ff004a0dc02",
+            "order_index": 1,
+            "work_run_id": null,
+            "plan_version": 1,
+            "attempt_count": 0
+        },
+        {
+            "id": "step-a7edd346213d",
+            "title": "独立审核晚间复盘文档",
+            "output": null,
+            "status": "draft",
+            "quality": null,
+            "completion": null,
+            "mission_id": "mission-6ff004a0dc02",
+            "order_index": 2,
+            "work_run_id": null,
+            "plan_version": 1,
+            "attempt_count": 0
+        },
+        {
+            "id": "step-8b90cb68551f",
+            "title": "撰写虚构晚间复盘 brief.md",
+            "output": {
+                "outcome": "succeeded",
+                "summary": "虚构晚间复盘 brief.md 已写入指定路径，汉字数 178（符合 120-180 范围），包含三个必需小节",
+                "evidence": [
+                    {
+                        "summary": "文件内容已读取确认：标题「晚间复盘」+ 三个小节「已完成」「未完成」「明日首要行动」，内容为虚构个人助理晚间复盘，不涉及真实业务",
+                        "confidence": 1.0,
+                        "source_ref": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/F/brief.md",
+                        "artifact_key": "brief-md",
+                        "evidence_type": "brief.md 完整正文文本"
+                    },
+                    {
+                        "summary": "使用 Python 读取 UTF-8 文件，re.findall(r'[\\u4e00-\\u9fff]', text) 统计汉字数 = 178，总字符数 217，字节数 603",
+                        "confidence": 1.0,
+                        "source_ref": "python3 UTF-8 解码 + Unicode 范围 \\u4e00-\\u9fff 正则匹配",
+                        "artifact_key": "brief-md",
+                        "evidence_type": "汉字数统计结果"
+                    },
+                    {
+                        "summary": "目标目录已存在，文件成功写入 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/F/brief.md",
+                        "confidence": 1.0,
+                        "source_ref": "ls -la 验证目录存在 + cat 验证文件内容",
+                        "artifact_key": "brief-md",
+                        "evidence_type": "文件写入路径确认"
+                    }
+                ],
+                "artifacts": [
+                    {
+                        "uri": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/F/brief.md",
+                        "title": "虚构晚间复盘 brief.md",
+                        "artifact_key": "brief-md",
+                        "content_hash": "b4857c36812b8f6e1ce03b0278f6ef534a6a97c7b512bded7be78d91cf12d274",
+                        "artifact_type": "document"
+                    }
+                ],
+                "risk_notes": "无剩余风险。文件已落盘，字数符合要求，可进入下一步审核。",
+                "tools_used": [
+                    "exec"
+                ],
+                "side_effects": [
+                    {
+                        "action": "创建新文件",
+                        "status": "applied",
+                        "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/F/brief.md",
+                        "effect_key": "write-brief-md",
+                        "receipt_ref": "exec WRITE_OK 回执",
+                        "evidence_refs": [
+                            "文件写入路径确认"
+                        ],
+                        "idempotency_key": "mission-6ff004a0dc02:plan:2:step:1"
+                    }
+                ],
+                "acceptance_results": [
+                    {
+                        "notes": "文件已成功写入指定路径",
+                        "status": "pass",
+                        "criterion": "文件路径为 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/F/brief.md",
+                        "evidence_refs": [
+                            "文件写入路径确认"
+                        ]
+                    },
+                    {
+                        "notes": "文件包含三个 Markdown 二级标题，无其他小节",
+                        "status": "pass",
+                        "criterion": "包含且仅包含三个小节标题：已完成、未完成、明日首要行动",
+                        "evidence_refs": [
+                            "brief.md 完整正文文本"
+                        ]
+                    },
+                    {
+                        "notes": "实际统计 178 个汉字，在允许范围内",
+                        "status": "pass",
+                        "criterion": "UTF-8 文本中 Unicode 汉字范围（\\u4e00-\\u9fff）字符数在 120–180 之间（含）",
+                        "evidence_refs": [
+                            "汉字数统计结果"
+                        ]
+                    },
+                    {
+                        "notes": "仅写入 brief.md，未触碰其他文件或发送网络请求",
+                        "status": "pass",
+                        "criterion": "未对外发送、未删除或修改其他文件",
+                        "evidence_refs": [
+                            "文件写入路径确认"
+                        ]
+                    }
+                ]
+            },
+            "status": "completed",
+            "quality": {
+                "mode": "pilot",
+                "score": 92,
+                "status": "warning",
+                "accepted": true,
+                "blockers": [
+                ],
+                "enforced": false,
+                "warnings": [
+                    "缺少要求的证据类型：汉字数统计结果（读取 UTF-8 文本并统计 \\u4e00-\\u9fff 范围的计数过程）"
+                ],
+                "checked_rules": [
+                    "result-summary",
+                    "required-evidence-types",
+                    "artifact-contract",
+                    "acceptance-results",
+                    "tool-use",
+                    "required-output-fields"
+                ],
+                "evidence_refs": [
+                    "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/F/brief.md",
+                    "python3 UTF-8 解码 + Unicode 范围 \\u4e00-\\u9fff 正则匹配",
+                    "ls -la 验证目录存在 + cat 验证文件内容",
+                    "context-68e4fda9dbef",
+                    "profile:profile-ed9815cfab9d",
+                    "project:proj-b64156d740",
+                    "fact:fact-94ba6ec420b6",
+                    "fact:fact-03c4a95d7014",
+                    "memory:leonardo:memory/skills/auto-trigger-rules.md:1-37",
+                    "memory:leonardo:memory/skills/auto-trigger-rules.md:29-44",
+                    "memory:leonardo:sessions/leonardo/ebac5c84-d991-4108-9f19-448da55b5b27.jsonl:104-155",
+                    "fact:fact-3059e115d053"
+                ],
+                "hard_blockers": [
+                ],
+                "required_tools": [
+                    "document_workspace"
+                ],
+                "business_outcome": "succeeded",
+                "executor_success": true,
+                "required_evidence": [
+                    "brief.md 完整正文文本",
+                    "汉字数统计结果（读取 UTF-8 文本并统计 \\u4e00-\\u9fff 范围的计数过程）",
+                    "文件写入路径确认"
+                ],
+                "acceptance_criteria": [
+                    "文件路径为 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/F/brief.md",
+                    "包含且仅包含三个小节标题：已完成、未完成、明日首要行动",
+                    "UTF-8 文本中 Unicode 汉字范围（\\u4e00-\\u9fff）字符数在 120–180 之间（含）",
+                    "未对外发送、未删除或修改其他文件"
+                ],
+                "required_artifact_types": [
+                    "document"
+                ]
+            },
+            "completion": {
+                "attempt": 1,
+                "accepted": true,
+                "enforcement": {
+                    "mode": "pilot",
+                    "reason": "shadow_observation",
+                    "runtime": "legacy",
+                    "enforced": false,
+                    "flow_key": "document",
+                    "highest_risk": "L1"
+                },
+                "max_attempts": 2,
+                "effect_quality": {
+                    "status": "pass",
+                    "accepted": true,
+                    "blockers": [
+                    ],
+                    "enforced": true,
+                    "warnings": [
+                    ],
+                    "effect_count": 1,
+                    "applied_count": 1,
+                    "checked_rules": [
+                        "effect-journal-present",
+                        "effect-status-known",
+                        "stable-idempotency-key",
+                        "applied-effect-receipt"
+                    ],
+                    "unknown_count": 0
+                },
+                "retry_scheduled": false,
+                "executor_success": true
+            },
+            "mission_id": "mission-6ff004a0dc02",
+            "order_index": 1,
+            "work_run_id": "wrun-c79fd366e96b4bee",
+            "plan_version": 2,
+            "attempt_count": 1
+        },
+        {
+            "id": "step-7c1ac6beddcd",
+            "title": "独立审核 brief.md 并输出 review.md",
+            "output": {
+                "outcome": "succeeded",
+                "summary": "独立审核 brief.md 完成。结构核验通过（三个必需小节均存在），Unicode 汉字数统计为 178（范围 120-180），审核结论为 accepted。review.md 已写入指定路径。",
+                "evidence": [
+                    {
+                        "summary": "review.md 完整内容已通过 cat 命令读取验证，包含审核对象、正文引用、结构核验、字数统计和审核结论五个部分，共 1665 字节。",
+                        "confidence": 1.0,
+                        "source_ref": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/F/review.md",
+                        "artifact_key": "review-md",
+                        "evidence_type": "review.md 完整正文"
+                    },
+                    {
+                        "summary": "review.md 中完整引用了 brief.md 正文（以引用块格式），包含三个小节：已完成（整理书桌、超市采购、陪母亲散步）、未完成（读书计划未完成、衣服忘收）、明日首要行动（银行办分期、处理邮件、牙医检查）。",
+                        "confidence": 1.0,
+                        "source_ref": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/F/brief.md",
+                        "artifact_key": "review-md",
+                        "evidence_type": "其中引用的 brief.md 正文片段"
+                    },
+                    {
+                        "summary": "使用 Python 脚本读取 brief.md（UTF-8 编码），通过正则表达式 [\\u4e00-\\u9fff] 匹配所有 CJK 统一汉字，统计结果为 178 个汉字。文件总字节数 603，总 Unicode 字符数 217。",
+                        "confidence": 1.0,
+                        "source_ref": "python3 UTF-8 解码 + Unicode 范围 \\u4e00-\\u9fff 正则匹配",
+                        "artifact_key": "review-md",
+                        "evidence_type": "汉字数统计值"
+                    },
+                    {
+                        "summary": "审核结论为 accepted。理由：(1) 文件包含且仅包含三个必需小节；(2) Unicode 汉字数 178 在 120-180 范围内；(3) 内容为虚构个人助理晚间复盘，符合任务要求。",
+                        "confidence": 1.0,
+                        "source_ref": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/F/review.md",
+                        "artifact_key": "review-md",
+                        "evidence_type": "最终审核结论（accepted/rejected）"
+                    }
+                ],
+                "artifacts": [
+                    {
+                        "uri": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/F/review.md",
+                        "title": "brief.md 独立审核报告",
+                        "artifact_key": "review-md",
+                        "content_hash": "d1ed4d120aad3f404ff3a6c5911bca97ce81a2bd778ed1d7f73f9b5e98f64570",
+                        "artifact_type": "review_report"
+                    }
+                ],
+                "risk_notes": "无剩余风险。review.md 已成功写入，所有验收标准均通过，brief.md 保持不变。",
+                "tools_used": [
+                    "exec"
+                ],
+                "side_effects": [
+                    {
+                        "action": "创建新文件",
+                        "status": "applied",
+                        "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/F/review.md",
+                        "effect_key": "write-review-md",
+                        "receipt_ref": "shasum -a 256 输出：d1ed4d120aad3f404ff3a6c5911bca97ce81a2bd778ed1d7f73f9b5e98f64570",
+                        "evidence_refs": [
+                            "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/F/review.md"
+                        ],
+                        "idempotency_key": "mission-6ff004a0dc02:plan:2:step:2"
+                    }
+                ],
+                "acceptance_results": [
+                    {
+                        "notes": "文件已成功写入指定路径，文件大小 1665 字节。",
+                        "status": "pass",
+                        "criterion": "文件路径为 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/F/review.md",
+                        "evidence_refs": [
+                            "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/F/review.md"
+                        ]
+                    },
+                    {
+                        "notes": "review.md 的\"正文引用\"部分完整引用了 brief.md 的全部内容，使用引用块格式。",
+                        "status": "pass",
+                        "criterion": "review.md 中引用了 brief.md 的实际正文",
+                        "evidence_refs": [
+                            "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/F/review.md"
+                        ]
+                    },
+                    {
+                        "notes": "统计结果为 178 个汉字，使用 Python 正则表达式 [\\u4e00-\\u9fff] 逐字计数，区分了字节数（603）、Unicode 字符数（217）和汉字数（178）。",
+                        "status": "pass",
+                        "criterion": "明确给出 Unicode 汉字数统计结果（\\u4e00-\\u9fff 范围）",
+                        "evidence_refs": [
+                            "python3 UTF-8 解码 + Unicode 范围 \\u4e00-\\u9fff 正则匹配"
+                        ]
+                    },
+                    {
+                        "notes": "审核结论为 accepted，在\"审核结论\"部分明确标注，并给出三条理由。",
+                        "status": "pass",
+                        "criterion": "明确给出审核结论：accepted 或 rejected",
+                        "evidence_refs": [
+                            "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/F/review.md"
+                        ]
+                    },
+                    {
+                        "notes": "结论为 accepted，满足任务完成条件。",
+                        "status": "pass",
+                        "criterion": "仅当结论为 accepted 时任务才可完成",
+                        "evidence_refs": [
+                            "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/F/review.md"
+                        ]
+                    },
+                    {
+                        "notes": "仅写入 review.md 一个文件，未对外发送任何内容，未删除或修改 brief.md 及其他文件。",
+                        "status": "pass",
+                        "criterion": "未对外发送、未删除或修改其他文件",
+                        "evidence_refs": [
+                            "mission-6ff004a0dc02:plan:2:step:2"
+                        ]
+                    }
+                ]
+            },
+            "status": "completed",
+            "quality": {
+                "mode": "pilot",
+                "score": 92,
+                "status": "warning",
+                "accepted": true,
+                "blockers": [
+                ],
+                "enforced": false,
+                "warnings": [
+                    "验收标准未逐项通过：review.md 中引用了 brief.md 的实际正文片段"
+                ],
+                "checked_rules": [
+                    "result-summary",
+                    "required-evidence-types",
+                    "artifact-contract",
+                    "acceptance-results",
+                    "tool-use",
+                    "required-output-fields"
+                ],
+                "evidence_refs": [
+                    "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/F/review.md",
+                    "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/F/brief.md",
+                    "python3 UTF-8 解码 + Unicode 范围 \\u4e00-\\u9fff 正则匹配",
+                    "context-fae2230991d5",
+                    "profile:profile-ed9815cfab9d",
+                    "project:proj-b64156d740",
+                    "fact:fact-94ba6ec420b6",
+                    "fact:fact-03c4a95d7014",
+                    "memory:jazz:sessions/jazz/3a2f5668-6f6f-47e0-9b9c-061e8031a6b3.jsonl.reset.2026-07-04T01-39-41.263Z:68-68",
+                    "fact:fact-3059e115d053",
+                    "fact:fact-d7498dff47c8",
+                    "fact:fact-5c41e4d664ae"
+                ],
+                "hard_blockers": [
+                ],
+                "required_tools": [
+                    "document_workspace",
+                    "quality_checker"
+                ],
+                "business_outcome": "succeeded",
+                "executor_success": true,
+                "required_evidence": [
+                    "review.md 完整正文",
+                    "其中引用的 brief.md 正文片段",
+                    "汉字数统计值",
+                    "最终审核结论（accepted/rejected）"
+                ],
+                "acceptance_criteria": [
+                    "文件路径为 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/F/review.md",
+                    "review.md 中引用了 brief.md 的实际正文片段",
+                    "明确给出 Unicode 汉字数统计结果（\\u4e00-\\u9fff 范围）",
+                    "明确给出审核结论：accepted 或 rejected",
+                    "仅当结论为 accepted 时任务才可完成",
+                    "未对外发送、未删除或修改其他文件"
+                ],
+                "required_artifact_types": [
+                    "review_report"
+                ]
+            },
+            "completion": {
+                "attempt": 1,
+                "accepted": true,
+                "enforcement": {
+                    "mode": "pilot",
+                    "reason": "shadow_observation",
+                    "runtime": "legacy",
+                    "enforced": false,
+                    "flow_key": "document",
+                    "highest_risk": "L1"
+                },
+                "max_attempts": 2,
+                "effect_quality": {
+                    "status": "pass",
+                    "accepted": true,
+                    "blockers": [
+                    ],
+                    "enforced": true,
+                    "warnings": [
+                    ],
+                    "effect_count": 1,
+                    "applied_count": 1,
+                    "checked_rules": [
+                        "effect-journal-present",
+                        "effect-status-known",
+                        "stable-idempotency-key",
+                        "applied-effect-receipt"
+                    ],
+                    "unknown_count": 0
+                },
+                "retry_scheduled": false,
+                "executor_success": true
+            },
+            "mission_id": "mission-6ff004a0dc02",
+            "order_index": 2,
+            "work_run_id": "wrun-8313a457c0564f6f",
+            "plan_version": 2,
+            "attempt_count": 1
+        }
+    ],
+    "events": [
+        {
+            "detail": "CU-P2-20261005-E：纯文档稳定性验收。请由写作智能体生成一份虚构的个人助理晨间简报，120至180个汉字，包含今日重点、待确认事项、风险提示三个小节；再由另一位独立审核智能体核实内容和实际汉字数，写审核报告并明确通过或不通过。无需研究、无需联网、无需编写或修改软件代码。只允许写入 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/E/brief.md 和同目录 review.md；目录已存在。不得对外发送、删除文件或修改其他文件。审核必须实际读取 brief.md；统计汉字须按 Unicode 汉字范围统计，不得把字节数当字数。请先给出可批准的两步计划，完成后提供两个可下载文件。",
+            "to_status": "received",
+            "created_at": "2026-10-05T10:17:48.437290+00:00",
+            "event_type": "mission_received",
+            "mission_id": "mission-57e69ffb2ac2",
+            "from_status": null,
+            "run_sequence": 1
+        },
+        {
+            "detail": "Optimus is producing an approval-gated plan",
+            "to_status": "planning",
+            "created_at": "2026-10-05T10:17:49.971998+00:00",
+            "event_type": "planning_started",
+            "mission_id": "mission-57e69ffb2ac2",
+            "from_status": "received",
+            "run_sequence": 2
+        },
+        {
+            "detail": "Bound planning context context-10624161c882 to plan V1",
+            "to_status": "planning",
+            "created_at": "2026-10-05T10:17:51.984021+00:00",
+            "event_type": "context_pack_bound",
+            "mission_id": "mission-57e69ffb2ac2",
+            "from_status": "planning",
+            "run_sequence": 3
+        },
+        {
+            "detail": "纯文档稳定性验收：写作智能体生成虚构晨间简报（120–180汉字），独立审核智能体核实内容与汉字数并出具审核报告",
+            "to_status": "awaiting_approval",
+            "created_at": "2026-10-05T10:18:29.705950+00:00",
+            "event_type": "plan_proposed",
+            "mission_id": "mission-57e69ffb2ac2",
+            "from_status": "planning",
+            "run_sequence": 4
+        },
+        {
+            "detail": "批准此两步计划。仅允许写入约定的两个测试文件；审核不通过必须阻塞交付。",
+            "to_status": "dispatching",
+            "created_at": "2026-10-05T10:18:56.055612+00:00",
+            "event_type": "plan_approved",
+            "mission_id": "mission-57e69ffb2ac2",
+            "from_status": "awaiting_approval",
+            "run_sequence": 5
+        },
+        {
+            "detail": "Approved plan entered execution",
+            "to_status": "running",
+            "created_at": "2026-10-05T10:18:57.642651+00:00",
+            "event_type": "state_changed",
+            "mission_id": "mission-57e69ffb2ac2",
+            "from_status": "dispatching",
+            "run_sequence": 6
+        },
+        {
+            "detail": "Approved plan entered execution",
+            "to_status": "running",
+            "created_at": "2026-10-05T10:18:57.819941+00:00",
+            "event_type": "state_changed",
+            "mission_id": "mission-57e69ffb2ac2",
+            "from_status": "dispatching",
+            "run_sequence": 7
+        },
+        {
+            "detail": "生成虚构晨间简报",
+            "to_status": "running",
+            "created_at": "2026-10-05T10:18:57.851165+00:00",
+            "event_type": "step_started",
+            "mission_id": "mission-57e69ffb2ac2",
+            "from_status": "running",
+            "run_sequence": 8
+        },
+        {
+            "detail": "Bound execution context context-f03f234562b6 to plan V1",
+            "to_status": "running",
+            "created_at": "2026-10-05T10:18:58.408904+00:00",
+            "event_type": "context_pack_bound",
+            "mission_id": "mission-57e69ffb2ac2",
+            "from_status": "running",
+            "run_sequence": 9
+        },
+        {
+            "detail": "生成虚构晨间简报",
+            "to_status": "running",
+            "created_at": "2026-10-05T10:20:50.304621+00:00",
+            "event_type": "step_completed",
+            "mission_id": "mission-57e69ffb2ac2",
+            "from_status": "running",
+            "run_sequence": 10
+        },
+        {
+            "detail": "独立审核简报内容与汉字数",
+            "to_status": "running",
+            "created_at": "2026-10-05T10:20:50.831314+00:00",
+            "event_type": "step_started",
+            "mission_id": "mission-57e69ffb2ac2",
+            "from_status": "running",
+            "run_sequence": 11
+        },
+        {
+            "detail": "Bound execution context context-e000e9f47ce9 to plan V1",
+            "to_status": "running",
+            "created_at": "2026-10-05T10:20:52.251250+00:00",
+            "event_type": "context_pack_bound",
+            "mission_id": "mission-57e69ffb2ac2",
+            "from_status": "running",
+            "run_sequence": 12
+        },
+        {
+            "detail": "独立审核简报内容与汉字数",
+            "to_status": "running",
+            "created_at": "2026-10-05T10:25:07.386858+00:00",
+            "event_type": "step_completed",
+            "mission_id": "mission-57e69ffb2ac2",
+            "from_status": "running",
+            "run_sequence": 13
+        },
+        {
+            "detail": "All steps completed; Optimus is evaluating the outcome",
+            "to_status": "evaluating",
+            "created_at": "2026-10-05T10:25:09.032365+00:00",
+            "event_type": "evaluation_started",
+            "mission_id": "mission-57e69ffb2ac2",
+            "from_status": "running",
+            "run_sequence": 14
+        },
+        {
+            "detail": "两步均已完成。Step 1 由 Ratchet 生成虚构晨间简报 brief.md，包含今日重点、待确认事项、风险提示三个小节，实测 Unicode 汉字数 166（在 120–180 范围内）。Step 2 由 Ultra-Magnus 独立读取 brief.md 并核验：章节结构完整、汉字数 166 合规、内容为虚构通用商务场景无真实数据，审核结论为通过。两份文件均已写入指定目录，未触及目录外任何文件。",
+            "to_status": "completed",
+            "created_at": "2026-10-05T10:26:37.894939+00:00",
+            "event_type": "mission_completed",
+            "mission_id": "mission-57e69ffb2ac2",
+            "from_status": "evaluating",
+            "run_sequence": 15
+        },
+        {
+            "detail": "擎天柱提炼了 3 条长期记忆候选，等待管理员审核",
+            "to_status": "completed",
+            "created_at": "2026-10-05T10:26:38.190074+00:00",
+            "event_type": "memory_candidates_proposed",
+            "mission_id": "mission-57e69ffb2ac2",
+            "from_status": "completed",
+            "run_sequence": 16
+        },
+        {
+            "detail": "CU-P2-20261005-F：重复交付与计划退回测试。纯文档任务，无需研究、无需联网、不开发代码。仅两步：一名智能体写虚构的个人助理晚间复盘，另一名独立审核并给出 accepted 或 rejected，只有 accepted 才能完成。brief.md 须有已完成、未完成、明日行动三节，合计120至180个汉字，使用 Unicode 汉字范围实际统计。review.md 须引用实际读取的正文、给出汉字数和审核结论。唯一允许写入 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/F/brief.md 和同目录 review.md，目录已存在。禁止对外发送、删除或修改其他文件。先给计划等待批准，交付两个可下载文件。",
+            "to_status": "received",
+            "created_at": "2026-10-05T10:19:27.117576+00:00",
+            "event_type": "mission_received",
+            "mission_id": "mission-6ff004a0dc02",
+            "from_status": null,
+            "run_sequence": 1
+        },
+        {
+            "detail": "Optimus is producing an approval-gated plan",
+            "to_status": "planning",
+            "created_at": "2026-10-05T10:19:28.599197+00:00",
+            "event_type": "planning_started",
+            "mission_id": "mission-6ff004a0dc02",
+            "from_status": "received",
+            "run_sequence": 2
+        },
+        {
+            "detail": "Bound planning context context-0235d8b19743 to plan V1",
+            "to_status": "planning",
+            "created_at": "2026-10-05T10:19:29.257546+00:00",
+            "event_type": "context_pack_bound",
+            "mission_id": "mission-6ff004a0dc02",
+            "from_status": "planning",
+            "run_sequence": 3
+        },
+        {
+            "detail": "虚构个人助理晚间复盘文档的撰写与独立审核，验证重复交付与计划退回流程",
+            "to_status": "awaiting_approval",
+            "created_at": "2026-10-05T10:20:30.194993+00:00",
+            "event_type": "plan_proposed",
+            "mission_id": "mission-6ff004a0dc02",
+            "from_status": "planning",
+            "run_sequence": 4
+        },
+        {
+            "detail": "退回测试：把第三小节“明日行动”改为“明日首要行动”，两个步骤的描述和验收标准都必须同步。保持120至180汉字、两步和F目录不变，不得执行旧版计划。",
+            "to_status": "planning",
+            "created_at": "2026-10-05T10:21:11.488492+00:00",
+            "event_type": "plan_rejected",
+            "mission_id": "mission-6ff004a0dc02",
+            "from_status": "awaiting_approval",
+            "run_sequence": 5
+        },
+        {
+            "detail": "Optimus is producing an approval-gated plan",
+            "to_status": "planning",
+            "created_at": "2026-10-05T10:21:13.410819+00:00",
+            "event_type": "planning_resumed",
+            "mission_id": "mission-6ff004a0dc02",
+            "from_status": "planning",
+            "run_sequence": 6
+        },
+        {
+            "detail": "Bound planning context context-78fcf8748a2c to plan V2",
+            "to_status": "planning",
+            "created_at": "2026-10-05T10:21:15.000705+00:00",
+            "event_type": "context_pack_bound",
+            "mission_id": "mission-6ff004a0dc02",
+            "from_status": "planning",
+            "run_sequence": 7
+        },
+        {
+            "detail": "虚构个人助理晚间复盘文档撰写与独立审核，验证重复交付与计划退回流程。brief.md 含已完成、未完成、明日首要行动三节，120–180 汉字；review.md 引用正文、统计汉字数并给出 accepted/rejected 结论。",
+            "to_status": "awaiting_approval",
+            "created_at": "2026-10-05T10:21:49.540544+00:00",
+            "event_type": "plan_proposed",
+            "mission_id": "mission-6ff004a0dc02",
+            "from_status": "planning",
+            "run_sequence": 8
+        },
+        {
+            "detail": "批准 V2，按明日首要行动这一修订执行；仅写指定两个文件。",
+            "to_status": "dispatching",
+            "created_at": "2026-10-05T10:22:56.110715+00:00",
+            "event_type": "plan_approved",
+            "mission_id": "mission-6ff004a0dc02",
+            "from_status": "awaiting_approval",
+            "run_sequence": 9
+        },
+        {
+            "detail": "Approved plan entered execution",
+            "to_status": "running",
+            "created_at": "2026-10-05T10:22:56.758334+00:00",
+            "event_type": "state_changed",
+            "mission_id": "mission-6ff004a0dc02",
+            "from_status": "dispatching",
+            "run_sequence": 10
+        },
+        {
+            "detail": "撰写虚构晚间复盘 brief.md",
+            "to_status": "running",
+            "created_at": "2026-10-05T10:22:56.960857+00:00",
+            "event_type": "step_started",
+            "mission_id": "mission-6ff004a0dc02",
+            "from_status": "running",
+            "run_sequence": 11
+        },
+        {
+            "detail": "Bound execution context context-68e4fda9dbef to plan V2",
+            "to_status": "running",
+            "created_at": "2026-10-05T10:22:58.466928+00:00",
+            "event_type": "context_pack_bound",
+            "mission_id": "mission-6ff004a0dc02",
+            "from_status": "running",
+            "run_sequence": 12
+        },
+        {
+            "detail": "撰写虚构晚间复盘 brief.md",
+            "to_status": "running",
+            "created_at": "2026-10-05T10:26:22.227518+00:00",
+            "event_type": "step_completed",
+            "mission_id": "mission-6ff004a0dc02",
+            "from_status": "running",
+            "run_sequence": 13
+        },
+        {
+            "detail": "独立审核 brief.md 并输出 review.md",
+            "to_status": "running",
+            "created_at": "2026-10-05T10:26:24.137441+00:00",
+            "event_type": "step_started",
+            "mission_id": "mission-6ff004a0dc02",
+            "from_status": "running",
+            "run_sequence": 14
+        },
+        {
+            "detail": "Bound execution context context-fae2230991d5 to plan V2",
+            "to_status": "running",
+            "created_at": "2026-10-05T10:26:25.865519+00:00",
+            "event_type": "context_pack_bound",
+            "mission_id": "mission-6ff004a0dc02",
+            "from_status": "running",
+            "run_sequence": 15
+        },
+        {
+            "detail": "独立审核 brief.md 并输出 review.md",
+            "to_status": "running",
+            "created_at": "2026-10-05T10:28:02.141144+00:00",
+            "event_type": "step_completed",
+            "mission_id": "mission-6ff004a0dc02",
+            "from_status": "running",
+            "run_sequence": 16
+        },
+        {
+            "detail": "All steps completed; Optimus is evaluating the outcome",
+            "to_status": "evaluating",
+            "created_at": "2026-10-05T10:28:03.242227+00:00",
+            "event_type": "evaluation_started",
+            "mission_id": "mission-6ff004a0dc02",
+            "from_status": "running",
+            "run_sequence": 17
+        },
+        {
+            "detail": "两步任务全部通过。Step1 李奥纳多写入 brief.md，汉字数 178（符合 120-180），包含已完成/未完成/明日首要行动三节；Step2 Jazz 独立审核，引用实际正文并给出 Unicode 汉字数统计 178，结论 accepted，任务正常完成。两份文件路径、内容、安全边界均符合验收标准，无越权操作。",
+            "to_status": "completed",
+            "created_at": "2026-10-05T10:29:07.233039+00:00",
+            "event_type": "mission_completed",
+            "mission_id": "mission-6ff004a0dc02",
+            "from_status": "evaluating",
+            "run_sequence": 18
+        },
+        {
+            "detail": "擎天柱提炼了 2 条长期记忆候选，等待管理员审核",
+            "to_status": "completed",
+            "created_at": "2026-10-05T10:29:07.466591+00:00",
+            "event_type": "memory_candidates_proposed",
+            "mission_id": "mission-6ff004a0dc02",
+            "from_status": "completed",
+            "run_sequence": 19
+        },
+        {
+            "detail": "CU-P2-20261005-G：取消流程验收。只规划一个虚构个人助理文档任务，无需研究、无需联网、不开发代码。若批准执行，只允许在 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/G/brief.md 写入一句“这是取消流程测试文件”。先给计划等待审批；未经批准禁止写文件，禁止其他副作用。",
+            "to_status": "received",
+            "created_at": "2026-10-05T10:20:52.084061+00:00",
+            "event_type": "mission_received",
+            "mission_id": "mission-9768f64e6202",
+            "from_status": null,
+            "run_sequence": 1
+        },
+        {
+            "detail": "Optimus is producing an approval-gated plan",
+            "to_status": "planning",
+            "created_at": "2026-10-05T10:20:53.381212+00:00",
+            "event_type": "planning_started",
+            "mission_id": "mission-9768f64e6202",
+            "from_status": "received",
+            "run_sequence": 2
+        },
+        {
+            "detail": "Bound planning context context-5cdccb611299 to plan V1",
+            "to_status": "planning",
+            "created_at": "2026-10-05T10:20:54.447361+00:00",
+            "event_type": "context_pack_bound",
+            "mission_id": "mission-9768f64e6202",
+            "from_status": "planning",
+            "run_sequence": 3
+        },
+        {
+            "detail": "用户从指挥中心取消",
+            "to_status": "cancelled",
+            "created_at": "2026-10-05T10:21:26.480772+00:00",
+            "event_type": "mission_cancelled",
+            "mission_id": "mission-9768f64e6202",
+            "from_status": "planning",
+            "run_sequence": 4
+        }
+    ],
+    "missions": [
+        {
+            "id": "mission-57e69ffb2ac2",
+            "title": "CU-P2-20261005-E：纯文档稳定性验收。请由写作智能体生成一份虚构的个人助理晨间简报，120至180个汉字，包含今日重点、待确认事项、风险提示三个小",
+            "status": "completed",
+            "created_at": "2026-10-05T10:17:48.422912+00:00",
+            "last_error": null,
+            "project_id": "proj-b64156d740",
+            "updated_at": "2026-10-05T10:26:37.886927+00:00",
+            "mission_type": "document",
+            "plan_version": 1,
+            "approval_status": "approved"
+        },
+        {
+            "id": "mission-6ff004a0dc02",
+            "title": "CU-P2-20261005-F：重复交付与计划退回测试。纯文档任务，无需研究、无需联网、不开发代码。仅两步：一名智能体写虚构的个人助理晚间复盘，另一名独立审核",
+            "status": "completed",
+            "created_at": "2026-10-05T10:19:27.101922+00:00",
+            "last_error": null,
+            "project_id": "proj-b64156d740",
+            "updated_at": "2026-10-05T10:29:07.225790+00:00",
+            "mission_type": "document",
+            "plan_version": 2,
+            "approval_status": "approved"
+        },
+        {
+            "id": "mission-9768f64e6202",
+            "title": "CU-P2-20261005-G：取消流程验收。只规划一个虚构个人助理文档任务，无需研究、无需联网、不开发代码。若批准执行，只允许在 /Users/apple/",
+            "status": "cancelled",
+            "created_at": "2026-10-05T10:20:52.066441+00:00",
+            "last_error": null,
+            "project_id": "proj-b64156d740",
+            "updated_at": "2026-10-05T10:21:25.822314+00:00",
+            "mission_type": "document",
+            "plan_version": 0,
+            "approval_status": "cancelled"
+        }
+    ],
+    "captured_at": "2026-10-05T18:30:22.304195+08:00"
+}

@@ -1,0 +1,6 @@
+{
+  "scope": "isolated copy of production dist",
+  "rollback_passed": true,
+  "republish_passed": true,
+  "live_index_unchanged": true
+}

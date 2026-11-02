@@ -1,0 +1,9 @@
+{
+  "contract_hash": "8e07599e6a31ceddc0c558a72f9bd34a60156ee5f97451a6d740352460d07d72",
+  "idempotency_key": "recovery:compensation-2cb668f0185c:8e07599e6a31ceddc0c5",
+  "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase13-20261006/corrupt-sample.txt",
+  "post_recovery_sha256": "03af3ee612e6d3447a0ebc852fc0a8191ae39d60b3f80d67b84d91d61e86a400",
+  "verification": {
+    "all_passed": true
+  }
+}

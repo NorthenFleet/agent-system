@@ -1,0 +1,12 @@
+{
+  "elapsed_seconds": 60.64,
+  "status": "pending_approval",
+  "stale_operations_rejected": [
+    "heartbeat",
+    "completion"
+  ],
+  "actual_recovery_writes": 1,
+  "five_files_unchanged": true,
+  "same_contract": true,
+  "same_idempotency_key": true
+}

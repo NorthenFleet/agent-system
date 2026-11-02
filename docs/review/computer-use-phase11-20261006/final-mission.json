@@ -1,0 +1,1868 @@
+{
+  "id": "mission-6ecde497f875",
+  "conversation_id": "conv-81cc8fb7937d",
+  "source_message_id": "msg-d62cd111fcad",
+  "title": "P11 已写入：新恢复方案审批闭环",
+  "objective": "隔离恢复测试：仅核实指定样本，保留所有文件，不外发。",
+  "status": "completed",
+  "priority": "normal",
+  "project_id": null,
+  "mission_type": "software",
+  "requested_by": "phase11-lab",
+  "owner_user_id": "phase11-lab",
+  "plan_version": 2,
+  "current_step_id": null,
+  "requires_approval": true,
+  "approval_status": "approved",
+  "last_error": null,
+  "lease_owner": null,
+  "lease_expires_at": null,
+  "created_at": "2026-10-05T17:48:14.968851+00:00",
+  "updated_at": "2026-10-05T18:04:52.336474+00:00",
+  "completed_at": "2026-10-05T18:04:52.336473+00:00",
+  "context": {
+    "source": "dashboard",
+    "profile_user_id": "phase11-lab",
+    "mission_type": "software",
+    "intent_decision": {
+      "type": "software_project",
+      "confidence": 1.0,
+      "reason": "由已认证的项目任务入口显式创建",
+      "execution_requested": true
+    },
+    "user_context": {
+      "business_flow_key": "general"
+    },
+    "metadata": {
+      "project_id": "",
+      "title": "P11 已写入：新恢复方案审批闭环",
+      "context": {
+        "business_flow_key": "general"
+      },
+      "intent_type": "software_project",
+      "execution_requested": true,
+      "profile_user_id": "phase11-lab",
+      "suppress_notification": true,
+      "_direct_mission": true,
+      "_reserve_planning": false,
+      "_planning_owner": ""
+    }
+  },
+  "mission_run": {
+    "id": "mrun-2b229e1d706f428b",
+    "mission_id": "mission-6ecde497f875",
+    "correlation_id": "mission-5cbf979892d644b4",
+    "status": "completed",
+    "active_plan_version": 2,
+    "workflow_run_id": "workflow-3023b06eb4e0",
+    "outcome": "completed",
+    "created_at": "2026-10-05T17:48:14.968851+00:00",
+    "updated_at": "2026-10-05T18:05:32.946103+00:00",
+    "ended_at": "2026-10-05T18:04:52.336473+00:00",
+    "metadata": {}
+  },
+  "conversation": {
+    "id": "conv-81cc8fb7937d",
+    "channel": "dashboard",
+    "external_conversation_id": "dashboard:phase11-lab",
+    "user_external_id": "phase11-lab",
+    "owner_user_id": "phase11-lab",
+    "profile_user_id": "phase11-lab",
+    "status": "active",
+    "metadata": {
+      "project_id": "",
+      "title": "P11 已写入：新恢复方案审批闭环",
+      "context": {
+        "business_flow_key": "general"
+      },
+      "intent_type": "software_project",
+      "execution_requested": true,
+      "profile_user_id": "phase11-lab",
+      "suppress_notification": true,
+      "_direct_mission": true,
+      "_reserve_planning": false,
+      "_planning_owner": ""
+    },
+    "created_at": "2026-10-05T17:48:14.968851+00:00",
+    "updated_at": "2026-10-05T17:48:14.968851+00:00"
+  },
+  "steps": [
+    {
+      "id": "step-cb8116802bec",
+      "mission_id": "mission-6ecde497f875",
+      "plan_version": 2,
+      "order_index": 1,
+      "title": "复核恢复内容与备份一致",
+      "description": "仅使用 exec 执行只读断言：/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase11-20261006/applied-sample.txt 与 backup.txt 内容为 before-change 换行，before-recovery.txt 为 changed-by-test 换行，guard.txt 为 must-stay-unchanged 换行。读取 recovery-receipt.json 作为现成交付物，计算其 SHA256 并附上真实执行证据。禁止修改任何文件或外发。",
+      "task_type": "coordination",
+      "agent_id": "ratchet",
+      "executor": "openclaw",
+      "status": "completed",
+      "work_run_id": "wrun-7be37a488f9c41d4",
+      "lease_owner": null,
+      "lease_token": null,
+      "lease_expires_at": null,
+      "attempt_count": 1,
+      "started_at": "2026-10-05T18:03:34.071200+00:00",
+      "completed_at": "2026-10-05T18:04:26.294783+00:00",
+      "updated_at": "2026-10-05T18:04:26.294788+00:00",
+      "dependencies": [],
+      "input": {},
+      "result": {
+        "success": true,
+        "output": "{\"outcome\":\"succeeded\",\"summary\":\"只读验收通过。applied-sample.txt 内容 'before-change\\\\n' 与 backup.txt 完全一致（SHA256 均为 03af3ee612e6d3447a0ebc852fc0a8191ae39d60b3f80d67b84d91d61e86a400），before-recovery.txt 内容为 'changed-by-test\\\\n'（SHA256 c2e1f9b32dd5fdb8e6e4f825edb4105fce42e716206fb09c94996c782fd6d2eb，与回执中 pre_recovery_sha256 一致），guard.txt 内容为 'must-stay-unchanged\\\\n' 未被修改。recovery-receipt.json 作为现成交付物已读取，SHA256 为 7171346c904345c21d2911dca2cc75e2bb3653f338992d1b39b3f2c5eb0c5637，其内部 verification 字段 all_passed=true 与本次独立核验结果一致。\",\"tools_used\":[\"exec\"],\"artifacts\":[{\"artifact_key\":\"recovery-receipt\",\"artifact_type\":\"document\",\"title\":\"恢复回执 recovery-receipt.json\",\"uri\":\"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase11-20261006/recovery-receipt.json\",\"content_hash\":\"7171346c904345c21d2911dca2cc75e2bb3653f338992d1b39b3f2c5eb0c5637\"}],\"evidence\":[{\"requirement_id\":\"ev-8748f2ac57a18c07ce4b\",\"evidence_type\":\"test_output\",\"source_ref\":\"exec: cat + shasum -a 256 对 applied-sample.txt / backup.txt / before-recovery.txt / guard.txt / recovery-receipt.json 的只读输出\",\"summary\":\"applied-sample.txt=03af3ee6... 与 backup.txt=03af3ee6... 完全一致（内容均为 'before-change\\\\n'）；before-recovery.txt=c2e1f9b3...（内容为 'changed-by-test\\\\n'）；guard.txt=3f8bfab2...（内容为 'must-stay-unchanged\\\\n'）；recovery-receipt.json=7171346c... 内部 verification.all_passed=true 与独立核验一致\",\"artifact_key\":\"recovery-receipt\",\"confidence\":1.0}],\"acceptance_results\":[{\"criterion_id\":\"ac-1ce5b55ac566cb0275e6\",\"criterion\":\"目标内容与 backup.txt 一致，原写入未被重试\",\"status\":\"pass\",\"evidence_refs\":[\"ev-8748f2ac57a18c07ce4b\"],\"notes\":\"applied-sample.txt SHA256(03af3ee6...) == backup.txt SHA256(03af3ee6...)，内容均为 'before-change\\\\n'；post_recovery_sha256 与当前文件哈希一致，确认恢复成功且未重试原写入\"}],\"side_effects\":[],\"risk_notes\":\"本次为只读验收，未修改任何文件。验证范围限于 4 个样本文件内容与 recovery-receipt.json 的哈希一致性，未检查目录外其他文件状态。\"}",
+        "error": "",
+        "duration_ms": 0,
+        "exit_code": 0,
+        "output_source": "payloads[0]",
+        "output_candidates": [
+          {
+            "source": "payloads[0]",
+            "text": "{\"outcome\":\"succeeded\",\"summary\":\"只读验收通过。applied-sample.txt 内容 'before-change\\\\n' 与 backup.txt 完全一致（SHA256 均为 03af3ee612e6d3447a0ebc852fc0a8191ae39d60b3f80d67b84d91d61e86a400），before-recovery.txt 内容为 'changed-by-test\\\\n'（SHA256 c2e1f9b32dd5fdb8e6e4f825edb4105fce42e716206fb09c94996c782fd6d2eb，与回执中 pre_recovery_sha256 一致），guard.txt 内容为 'must-stay-unchanged\\\\n' 未被修改。recovery-receipt.json 作为现成交付物已读取，SHA256 为 7171346c904345c21d2911dca2cc75e2bb3653f338992d1b39b3f2c5eb0c5637，其内部 verification 字段 all_passed=true 与本次独立核验结果一致。\",\"tools_used\":[\"exec\"],\"artifacts\":[{\"artifact_key\":\"recovery-receipt\",\"artifact_type\":\"document\",\"title\":\"恢复回执 recovery-receipt.json\",\"uri\":\"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase11-20261006/recovery-receipt.json\",\"content_hash\":\"7171346c904345c21d2911dca2cc75e2bb3653f338992d1b39b3f2c5eb0c5637\"}],\"evidence\":[{\"requirement_id\":\"ev-8748f2ac57a18c07ce4b\",\"evidence_type\":\"test_output\",\"source_ref\":\"exec: cat + shasum -a 256 对 applied-sample.txt / backup.txt / before-recovery.txt / guard.txt / recovery-receipt.json 的只读输出\",\"summary\":\"applied-sample.txt=03af3ee6... 与 backup.txt=03af3ee6... 完全一致（内容均为 'before-change\\\\n'）；before-recovery.txt=c2e1f9b3...（内容为 'changed-by-test\\\\n'）；guard.txt=3f8bfab2...（内容为 'must-stay-unchanged\\\\n'）；recovery-receipt.json=7171346c... 内部 verification.all_passed=true 与独立核验一致\",\"artifact_key\":\"recovery-receipt\",\"confidence\":1.0}],\"acceptance_results\":[{\"criterion_id\":\"ac-1ce5b55ac566cb0275e6\",\"criterion\":\"目标内容与 backup.txt 一致，原写入未被重试\",\"status\":\"pass\",\"evidence_refs\":[\"ev-8748f2ac57a18c07ce4b\"],\"notes\":\"applied-sample.txt SHA256(03af3ee6...) == backup.txt SHA256(03af3ee6...)，内容均为 'before-change\\\\n'；post_recovery_sha256 与当前文件哈希一致，确认恢复成功且未重试原写入\"}],\"side_effects\":[],\"risk_notes\":\"本次为只读验收，未修改任何文件。验证范围限于 4 个样本文件内容与 recovery-receipt.json 的哈希一致性，未检查目录外其他文件状态。\"}"
+          },
+          {
+            "source": "stdout",
+            "text": "{\n  \"runId\": \"b22425b9-bc5f-4ccd-b787-eddbf9aa36c0\",\n  \"status\": \"ok\",\n  \"summary\": \"completed\",\n  \"result\": {\n    \"payloads\": [\n      {\n        \"text\": \"{\\\"outcome\\\":\\\"succeeded\\\",\\\"summary\\\":\\\"只读验收通过。applied-sample.txt 内容 'before-change\\\\\\\\n' 与 backup.txt 完全一致（SHA256 均为 03af3ee612e6d3447a0ebc852fc0a8191ae39d60b3f80d67b84d91d61e86a400），before-recovery.txt 内容为 'changed-by-test\\\\\\\\n'（SHA256 c2e1f9b32dd5fdb8e6e4f825edb4105fce42e716206fb09c94996c782fd6d2eb，与回执中 pre_recovery_sha256 一致），guard.txt 内容为 'must-stay-unchanged\\\\\\\\n' 未被修改。recovery-receipt.json 作为现成交付物已读取，SHA256 为 7171346c904345c21d2911dca2cc75e2bb3653f338992d1b39b3f2c5eb0c5637，其内部 verification 字段 all_passed=true 与本次独立核验结果一致。\\\",\\\"tools_used\\\":[\\\"exec\\\"],\\\"artifacts\\\":[{\\\"artifact_key\\\":\\\"recovery-receipt\\\",\\\"artifact_type\\\":\\\"document\\\",\\\"title\\\":\\\"恢复回执 recovery-receipt.json\\\",\\\"uri\\\":\\\"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase11-20261006/recovery-receipt.json\\\",\\\"content_hash\\\":\\\"7171346c904345c21d2911dca2cc75e2bb3653f338992d1b39b3f2c5eb0c5637\\\"}],\\\"evidence\\\":[{\\\"requirement_id\\\":\\\"ev-8748f2ac57a18c07ce4b\\\",\\\"evidence_type\\\":\\\"test_output\\\",\\\"source_ref\\\":\\\"exec: cat + shasum -a 256 对 applied-sample.txt / backup.txt / before-recovery.txt / guard.txt / recovery-receipt.json 的只读输出\\\",\\\"summary\\\":\\\"applied-sample.txt=03af3ee6... 与 backup.txt=03af3ee6... 完全一致（内容均为 'before-change\\\\\\\\n'）；before-recovery.txt=c2e1f9b3...（内容为 'changed-by-test\\\\\\\\n'）；guard.txt=3f8bfab2...（内容为 'must-stay-unchanged\\\\\\\\n'）；recovery-receipt.json=7171346c... 内部 verification.all_passed=true 与独立核验一致\\\",\\\"artifact_key\\\":\\\"recovery-receipt\\\",\\\"confidence\\\":1.0}],\\\"acceptance_results\\\":[{\\\"criterion_id\\\":\\\"ac-1ce5b55ac566cb0275e6\\\",\\\"criterion\\\":\\\"目标内容与 backup.txt 一致，原写入未被重试\\\",\\\"status\\\":\\\"pass\\\",\\\"evidence_refs\\\":[\\\"ev-8748f2ac57a18c07ce4b\\\"],\\\"notes\\\":\\\"applied-sample.txt SHA256(03af3ee6...) == backup.txt SHA256(03af3ee6...)，内容均为 'before-change\\\\\\\\n'；post_recovery_sha256 与当前文件哈希一致，确认恢复成功且未重试原写入\\\"}],\\\"side_effects\\\":[],\\\"risk_notes\\\":\\\"本次为只读验收，未修改任何文件。验证范围限于 4 个样本文件内容与 recovery-receipt.json 的哈希一致性，未检查目录外其他文件状态。\\\"}\",\n        \"mediaUrl\": null\n      }\n    ],\n    \"meta\": {\n      \"durationMs\": 50544,\n      \"agentMeta\": {\n        \"sessionId\": \"d3943451-a6f3-4476-a1a1-0f163f5631e7\",\n        \"sessionFile\": \"agent:ratchet:command-center-mission-6ecde497f875-v2-step-step-cb8116802bec-a1\",\n        \"provider\": \"bailian\",\n        \"model\": \"qwen3.7-plus\",\n        \"contextTokens\": 1000000,\n        \"contextTokensSource\": \"resolved\",\n        \"agentHarnessId\": \"openclaw\",\n        \"credentialSource\": {\n          \"kind\": \"profile\"\n        },\n        \"usage\": {\n          \"input\": 16715,\n          \"output\": 2652,\n          \"cacheRead\": 55296,\n          \"reasoningTokens\": 1464,\n          \"total\": 74663,\n          \"cost\": {\n            \"total\": 0\n          }\n        },\n        \"lastCallUsage\": {\n          \"input\": 1393,\n          \"output\": 1695,\n          \"cacheRead\": 17280,\n          \"cacheWrite\": 0,\n          \"cost\": {\n            \"total\": 0\n          },\n          \"reasoningTokens\": 867,\n          \"total\": 20368\n        },\n        \"promptTokens\": 18673,\n        \"codeModeEngaged\": false,\n        \"assistantTurns\": 4,\n        \"costUsd\": 0,\n        \"terminalReceipt\": {\n          \"runId\": \"b22425b9-bc5f-4ccd-b787-eddbf9aa36c0\",\n          \"sessionId\": \"d3943451-a6f3-4476-a1a1-0f163f5631e7\",\n          \"turnId\": \"b22425b9-bc5f-4ccd-b787-eddbf9aa36c0\",\n          \"requested\": {\n            \"provider\": \"bailian\",\n            \"model\": \"qwen3.7-plus\"\n          },\n          \"effective\": {\n            \"provider\": \"bailian\",\n            \"model\": \"qwen3.7-plus\",\n            \"responseModel\": \"qwen3.7-plus\"\n          },\n          \"successfulToolNames\": [\n            \"exec\"\n          ],\n          \"rerouted\": false\n        }\n      },\n      \"aborted\": false,\n      \"systemPromptReport\": {\n        \"source\": \"run\",\n        \"generatedAt\": 1791223415816,\n        \"sessionId\": \"d3943451-a6f3-4476-a1a1-0f163f5631e7\",\n        \"sessionKey\": \"agent:ratchet:command-center-mission-6ecde497f875-v2-step-step-cb8116802bec-a1\",\n        \"provider\": \"bailian\",\n        \"model\": \"qwen3.7-plus\",\n        \"workspaceDir\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace\",\n        \"bootstrapMaxChars\": 20000,\n        \"bootstrapTotalMaxChars\": 60000,\n        \"bootstrapTruncation\": {\n          \"warningMode\": \"always\",\n          \"warningShown\": false,\n          \"truncatedFiles\": 0,\n          \"nearLimitFiles\": 0,\n          \"totalNearLimit\": false\n        },\n        \"sandbox\": {\n          \"mode\": \"all\",\n          \"sandboxed\": true\n        },\n        \"systemPrompt\": {\n          \"chars\": 21199,\n          \"hash\": \"feb5a3822177bd037835c5e1fb1c85804d6b82837c2fa74a97abf1c0b243dcbc\",\n          \"projectContextChars\": 5878,\n          \"nonProjectContextChars\": 15321\n        },\n        \"injectedWorkspaceFiles\": [\n          {\n            \"name\": \"AGENTS.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/AGENTS.md\",\n            \"missing\": false,\n            \"rawChars\": 2540,\n            \"injectedChars\": 2540,\n            \"truncated\": false\n          },\n          {\n            \"name\": \"SOUL.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/SOUL.md\",\n            \"missing\": false,\n            \"rawChars\": 925,\n            \"injectedChars\": 925,\n            \"truncated\": false\n          },\n          {\n            \"name\": \"IDENTITY.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/IDENTITY.md\",\n            \"missing\": false,\n            \"rawChars\": 620,\n            \"injectedChars\": 620,\n            \"truncated\": false\n          },\n          {\n            \"name\": \"USER.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/USER.md\",\n            \"missing\": false,\n            \"rawChars\": 130,\n            \"injectedChars\": 130,\n            \"truncated\": false\n          },\n          {\n            \"name\": \"MEMORY.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/MEMORY.md\",\n            \"missing\": false,\n            \"rawChars\": 957,\n            \"injectedChars\": 957,\n            \"truncated\": false\n          }\n        ],\n        \"skills\": {\n          \"promptChars\": 6113,\n          \"hash\": \"d0e9d3753ccc057d73133dc751a44978b09f911c06fabca01f300712210d5e23\",\n          \"entries\": [\n            {\n              \"name\": \"alphastar-conservative-offline\",\n              \"blockChars\": 391\n            },\n            {\n              \"name\": \"alphastar-contract-policy\",\n              \"blockChars\": 355\n            },\n            {\n              \"name\": \"alphastar-data-curriculum\",\n              \"blockChars\": 341\n            },\n            {\n              \"name\": \"alphastar-human-prior\",\n              \"blockChars\": 338\n            },\n            {\n              \"name\": \"alphastar-pfsp-curriculum\",\n              \"blockChars\": 341\n            },\n            {\n              \"name\": \"alphastar-robust-evaluation\",\n              \"blockChars\": 362\n            },\n            {\n              \"name\": \"alphastar-role-league\",\n              \"blockChars\": 358\n            },\n            {\n              \"name\": \"alphastar-split-off-policy\",\n              \"blockChars\": 369\n            },\n            {\n              \"name\": \"diagram-maker\",\n              \"blockChars\": 262\n            },\n            {\n              \"name\": \"feishu-doc\",\n              \"blockChars\": 275\n            },\n            {\n              \"name\": \"feishu-drive\",\n              \"blockChars\": 302\n            },\n            {\n              \"name\": \"feishu-perm\",\n              \"blockChars\": 313\n            },\n            {\n              \"name\": \"feishu-wiki\",\n              \"blockChars\": 281\n            },\n            {\n              \"name\": \"github\",\n              \"blockChars\": 256\n            },\n            {\n              \"name\": \"ninja-dispatch\",\n              \"blockChars\": 353\n            },\n            {\n              \"name\": \"session-logs\",\n              \"blockChars\": 249\n            },\n            {\n              \"name\": \"skill-creator\",\n              \"blockChars\": 280\n            },\n            {\n              \"name\": \"tmux\",\n              \"blockChars\": 265\n            }\n          ]\n        },\n        \"tools\": {\n          \"listChars\": 0,\n          \"schemaChars\": 9578,\n          \"entries\": [\n            {\n              \"name\": \"read\",\n              \"summaryChars\": 164,\n              \"summaryHash\": \"d136f5b09e28d671addad4ca800b75b8aa6a36002bc739ead964f618d3e34829\",\n              \"schemaChars\": 481,\n              \"schemaHash\": \"b1b9b637dfe1dfade40f50c37cf840a298f1992b534cb9425b7470233a6b0cbb\",\n              \"propertiesCount\": 5\n            },\n            {\n              \"name\": \"edit\",\n              \"summaryChars\": 130,\n              \"summaryHash\": \"4149500b1f6501ec6450e4c048bdb6844764dd4a888a10846726cbbc7256152e\",\n              \"schemaChars\": 501,\n              \"schemaHash\": \"adf3140833ca927b84c66c989d6833fdcbd9de011dd2ffc59f9a2c4d3c25f127\",\n              \"propertiesCount\": 2\n            },\n            {\n              \"name\": \"write\",\n              \"summaryChars\": 49,\n              \"summaryHash\": \"f9ce3d8ac929a51498c03331b97c59bfaa2bb4d25580a5ddf0102e6a8e173aec\",\n              \"schemaChars\": 191,\n              \"schemaHash\": \"b61d2da23febf5fbda55e391526f36d283e9e9fb7f1a1dbadcf5c618a0632287\",\n              \"propertiesCount\": 2\n            },\n            {\n              \"name\": \"apply_patch\",\n              \"summaryChars\": 71,\n              \"summaryHash\": \"5c1173efe93d080a386a23216bc3e58db2e0033eb3ddea697eb2439938b7cae4\",\n              \"schemaChars\": 153,\n              \"schemaHash\": \"05521268363ff4f191472c90d69ef08a503ba9acf1d2febc50b3ee68db32ab65\",\n              \"propertiesCount\": 1\n            },\n            {\n              \"name\": \"exec\",\n              \"summaryChars\": 366,\n              \"summaryHash\": \"6a41ebbc7cd1fae376a497c1bb1662c40a5faa87e5f811bff3ae37e04fb20973\",\n              \"schemaChars\": 1122,\n              \"schemaHash\": \"29de9f248d3d8c84fbb84b347d4a46e07e766af8d1d6cabdbd8fc05aceea77e8\",\n              \"propertiesCount\": 11\n            },\n            {\n              \"name\": \"process\",\n              \"summaryChars\": 190,\n              \"summaryHash\": \"75fd9c7b8d560599081ab2621e4f897babc118254cf439bd8329a60a905a9ef1\",\n              \"schemaChars\": 1164,\n              \"schemaHash\": \"6cf3281369349e15ea532e644c8ec7f94c96fa6a4e3287272c8cfe90b0960516\",\n              \"propertiesCount\": 12\n            },\n            {\n              \"name\": \"sessions_list\",\n              \"summaryChars\": 244,\n              \"summaryHash\": \"1e39ee0ccc7ce3c6f26fe067c389bcb0da4ba845e5030e5088ab8e4027df963c\",\n              \"schemaChars\": 518,\n              \"schemaHash\": \"e878e741a7122c61cfd46c97828e7281414afb487b2e9f0c718578bdf9bf30e5\",\n              \"propertiesCount\": 10\n            },\n            {\n              \"name\": \"sessions_history\",\n              \"summaryChars\": 343,\n              \"summaryHash\": \"cf78e38bd7308164a1b54994d87e3a0511a9108d8726f223da9862197e72b4d2\",\n              \"schemaChars\": 337,\n              \"schemaHash\": \"37ca1edd9f92288e5569f580721464b9efed5ccc64fdba8709d7f66db3a7a650\",\n              \"propertiesCount\": 7\n            },\n            {\n              \"name\": \"sessions_search\",\n              \"summaryChars\": 177,\n              \"summaryHash\": \"334f96a1cafd9325d695608fe065a4a00888f6b55279d396590575b39e62728a\",\n              \"schemaChars\": 179,\n              \"schemaHash\": \"6545acec45e540d9c7d7d76b79084ce439ba35f4cd626fa4f8ec406230f0913d\",\n              \"propertiesCount\": 3\n            },\n            {\n              \"name\": \"sessions_send\",\n              \"summaryChars\": 691,\n              \"summaryHash\": \"9b4359d4a6b37c240c25c4692cf4c92bcedc5d8628daef3b0d30fd701ec0c29f\",\n              \"schemaChars\": 302,\n              \"schemaHash\": \"204249b04e35552d80609d8e7c40c461cf550564dc4ee6e573d0e00f05af84e2\",\n              \"propertiesCount\":"
+          }
+        ],
+        "context": {
+          "status": "disabled"
+        },
+        "outcome": "succeeded",
+        "summary": "只读验收通过。applied-sample.txt 内容 'before-change\\n' 与 backup.txt 完全一致（SHA256 均为 03af3ee612e6d3447a0ebc852fc0a8191ae39d60b3f80d67b84d91d61e86a400），before-recovery.txt 内容为 'changed-by-test\\n'（SHA256 c2e1f9b32dd5fdb8e6e4f825edb4105fce42e716206fb09c94996c782fd6d2eb，与回执中 pre_recovery_sha256 一致），guard.txt 内容为 'must-stay-unchanged\\n' 未被修改。recovery-receipt.json 作为现成交付物已读取，SHA256 为 7171346c904345c21d2911dca2cc75e2bb3653f338992d1b39b3f2c5eb0c5637，其内部 verification 字段 all_passed=true 与本次独立核验结果一致。",
+        "artifacts": [
+          {
+            "artifact_key": "recovery-receipt",
+            "artifact_type": "document",
+            "title": "恢复回执 recovery-receipt.json",
+            "uri": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase11-20261006/recovery-receipt.json",
+            "content_hash": "7171346c904345c21d2911dca2cc75e2bb3653f338992d1b39b3f2c5eb0c5637",
+            "metadata": {}
+          }
+        ],
+        "evidence": [
+          {
+            "evidence_type": "test_output",
+            "requirement_id": "ev-8748f2ac57a18c07ce4b",
+            "source_ref": "exec: cat + shasum -a 256 对 applied-sample.txt / backup.txt / before-recovery.txt / guard.txt / recovery-receipt.json 的只读输出",
+            "summary": "applied-sample.txt=03af3ee6... 与 backup.txt=03af3ee6... 完全一致（内容均为 'before-change\\n'）；before-recovery.txt=c2e1f9b3...（内容为 'changed-by-test\\n'）；guard.txt=3f8bfab2...（内容为 'must-stay-unchanged\\n'）；recovery-receipt.json=7171346c... 内部 verification.all_passed=true 与独立核验一致",
+            "artifact_key": "recovery-receipt",
+            "confidence": 1.0,
+            "metadata": {}
+          }
+        ],
+        "acceptance_results": [
+          {
+            "criterion": "目标内容与 backup.txt 一致，原写入未被重试",
+            "criterion_id": "ac-1ce5b55ac566cb0275e6",
+            "status": "pass",
+            "evidence_refs": [
+              "exec: cat + shasum -a 256 对 applied-sample.txt / backup.txt / before-recovery.txt / guard.txt / recovery-receipt.json 的只读输出"
+            ],
+            "notes": "applied-sample.txt SHA256(03af3ee6...) == backup.txt SHA256(03af3ee6...)，内容均为 'before-change\\n'；post_recovery_sha256 与当前文件哈希一致，确认恢复成功且未重试原写入"
+          }
+        ],
+        "tools_used": [
+          "exec"
+        ],
+        "risk_notes": "本次为只读验收，未修改任何文件。验证范围限于 4 个样本文件内容与 recovery-receipt.json 的哈希一致性，未检查目录外其他文件状态。",
+        "structured_output": {
+          "outcome": "succeeded",
+          "summary": "只读验收通过。applied-sample.txt 内容 'before-change\\n' 与 backup.txt 完全一致（SHA256 均为 03af3ee612e6d3447a0ebc852fc0a8191ae39d60b3f80d67b84d91d61e86a400），before-recovery.txt 内容为 'changed-by-test\\n'（SHA256 c2e1f9b32dd5fdb8e6e4f825edb4105fce42e716206fb09c94996c782fd6d2eb，与回执中 pre_recovery_sha256 一致），guard.txt 内容为 'must-stay-unchanged\\n' 未被修改。recovery-receipt.json 作为现成交付物已读取，SHA256 为 7171346c904345c21d2911dca2cc75e2bb3653f338992d1b39b3f2c5eb0c5637，其内部 verification 字段 all_passed=true 与本次独立核验结果一致。",
+          "tools_used": [
+            "exec"
+          ],
+          "artifacts": [
+            {
+              "artifact_key": "recovery-receipt",
+              "artifact_type": "document",
+              "title": "恢复回执 recovery-receipt.json",
+              "uri": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase11-20261006/recovery-receipt.json",
+              "content_hash": "7171346c904345c21d2911dca2cc75e2bb3653f338992d1b39b3f2c5eb0c5637"
+            }
+          ],
+          "evidence": [
+            {
+              "requirement_id": "ev-8748f2ac57a18c07ce4b",
+              "evidence_type": "test_output",
+              "source_ref": "exec: cat + shasum -a 256 对 applied-sample.txt / backup.txt / before-recovery.txt / guard.txt / recovery-receipt.json 的只读输出",
+              "summary": "applied-sample.txt=03af3ee6... 与 backup.txt=03af3ee6... 完全一致（内容均为 'before-change\\n'）；before-recovery.txt=c2e1f9b3...（内容为 'changed-by-test\\n'）；guard.txt=3f8bfab2...（内容为 'must-stay-unchanged\\n'）；recovery-receipt.json=7171346c... 内部 verification.all_passed=true 与独立核验一致",
+              "artifact_key": "recovery-receipt",
+              "confidence": 1.0
+            }
+          ],
+          "acceptance_results": [
+            {
+              "criterion_id": "ac-1ce5b55ac566cb0275e6",
+              "criterion": "目标内容与 backup.txt 一致，原写入未被重试",
+              "status": "pass",
+              "evidence_refs": [
+                "ev-8748f2ac57a18c07ce4b"
+              ],
+              "notes": "applied-sample.txt SHA256(03af3ee6...) == backup.txt SHA256(03af3ee6...)，内容均为 'before-change\\n'；post_recovery_sha256 与当前文件哈希一致，确认恢复成功且未重试原写入"
+            }
+          ],
+          "side_effects": [],
+          "risk_notes": "本次为只读验收，未修改任何文件。验证范围限于 4 个样本文件内容与 recovery-receipt.json 的哈希一致性，未检查目录外其他文件状态。"
+        },
+        "evidence_refs": [
+          "exec: cat + shasum -a 256 对 applied-sample.txt / backup.txt / before-recovery.txt / guard.txt / recovery-receipt.json 的只读输出"
+        ],
+        "receipt_preflight": {
+          "schema_version": "1.0",
+          "strategy": "existing_evidence_only",
+          "input_sha256": "6e68bb67ee0514fe116c0596badd9a2c7812c702356eb8b36591738de074f5e9",
+          "changes": [
+            {
+              "acceptance_index": 0,
+              "from": "ev-8748f2ac57a18c07ce4b",
+              "to": "exec: cat + shasum -a 256 对 applied-sample.txt / backup.txt / before-recovery.txt / guard.txt / recovery-receipt.json 的只读输出"
+            }
+          ],
+          "strict_accepted_before": true,
+          "strict_accepted": true,
+          "blockers": [],
+          "execution_repeated": false
+        },
+        "execution_quality": {
+          "status": "pass",
+          "score": 100,
+          "mode": "strict",
+          "enforced": true,
+          "accepted": true,
+          "executor_success": true,
+          "business_outcome": "succeeded",
+          "hard_blockers": [],
+          "blockers": [],
+          "warnings": [],
+          "evidence_refs": [
+            "exec: cat + shasum -a 256 对 applied-sample.txt / backup.txt / before-recovery.txt / guard.txt / recovery-receipt.json 的只读输出"
+          ],
+          "required_evidence": [
+            "test_output"
+          ],
+          "required_artifact_types": [
+            "document"
+          ],
+          "required_tools": [
+            "test_runner"
+          ],
+          "acceptance_criteria": [
+            "目标内容与 backup.txt 一致，原写入未被重试"
+          ],
+          "checked_rules": [
+            "result-summary",
+            "required-evidence-types",
+            "artifact-contract",
+            "acceptance-results",
+            "tool-use",
+            "required-output-fields"
+          ]
+        },
+        "side_effects": [],
+        "effect_quality": {
+          "status": "not_applicable",
+          "accepted": true,
+          "enforced": false,
+          "blockers": [],
+          "warnings": []
+        },
+        "completion_decision": {
+          "executor_success": true,
+          "accepted": true,
+          "retry_scheduled": false,
+          "attempt": 1,
+          "max_attempts": 2,
+          "receipt_retry_safe": true,
+          "enforcement": {
+            "mode": "strict",
+            "enforced": true,
+            "reason": "strict_mode",
+            "flow_key": "general",
+            "highest_risk": "L1",
+            "runtime": "legacy"
+          },
+          "effect_quality": {
+            "status": "not_applicable",
+            "accepted": true,
+            "enforced": false,
+            "blockers": [],
+            "warnings": []
+          }
+        },
+        "effect_ids": []
+      },
+      "context_binding": null,
+      "phase": "planning",
+      "objective": "仅使用 exec 执行只读断言：/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase11-20261006/applied-sample.txt 与 backup.txt 内容为 before-change 换行，before-recovery.txt 为 changed-by-test 换行，guard.txt 为 must-stay-unchanged 换行。读取 recovery-receipt.json 作为现成交付物，计算其 SHA256 并附上真实执行证据。禁止修改任何文件或外发。",
+      "required_tools": [
+        "test_runner"
+      ],
+      "tool_requirements": [
+        {
+          "name": "测试运行器",
+          "category": "verification",
+          "status": "available",
+          "description": "运行后端、单元或集成测试并回传输出。",
+          "evidence_types": [
+            "test_output"
+          ],
+          "id": "test_runner"
+        }
+      ],
+      "deliverables": [
+        "现有 recovery-receipt.json 恢复回执"
+      ],
+      "output_contract": {
+        "artifact_types": [
+          "document"
+        ],
+        "required_fields": [
+          "summary",
+          "evidence_refs",
+          "risk_notes"
+        ]
+      },
+      "acceptance_criteria": [
+        "目标内容与 backup.txt 一致，原写入未被重试"
+      ],
+      "evidence_required": [
+        "test_output"
+      ],
+      "risk_level": "medium",
+      "risk_class": "L2",
+      "approval_required": false,
+      "side_effect": false,
+      "resources": [],
+      "idempotency_key": "mission-6ecde497f875:plan:2:step:1",
+      "timeout_seconds": 900,
+      "max_attempts": 2,
+      "rollback_plan": "停止后续步骤，记录失败原因并等待擎天柱重新规划。",
+      "compensation": {
+        "type": "manual",
+        "instructions": "停止后续步骤，记录失败原因并等待擎天柱重新规划。"
+      },
+      "capability_match": true,
+      "artifacts": [
+        {
+          "id": "artifact-b4104a0be88732b724c3",
+          "mission_id": "mission-6ecde497f875",
+          "mission_run_id": "mrun-2b229e1d706f428b",
+          "correlation_id": "mission-5cbf979892d644b4",
+          "plan_version": 2,
+          "step_id": "step-cb8116802bec",
+          "work_run_id": "wrun-7be37a488f9c41d4",
+          "artifact_type": "document",
+          "title": "恢复回执 recovery-receipt.json",
+          "uri": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase11-20261006/recovery-receipt.json",
+          "content_hash": "7171346c904345c21d2911dca2cc75e2bb3653f338992d1b39b3f2c5eb0c5637",
+          "fingerprint": "b4104a0be88732b724c3684de53034917e7be3cd584150c050e8d2a7d2907033",
+          "created_at": "2026-10-05T18:04:26.321101+00:00",
+          "metadata": {}
+        }
+      ],
+      "evidence": [
+        {
+          "id": "evidence-90669aff4e6afa7af592",
+          "mission_id": "mission-6ecde497f875",
+          "mission_run_id": "mrun-2b229e1d706f428b",
+          "correlation_id": "mission-5cbf979892d644b4",
+          "plan_version": 2,
+          "step_id": "step-cb8116802bec",
+          "artifact_id": "artifact-b4104a0be88732b724c3",
+          "evidence_type": "test_output",
+          "source_ref": "exec: cat + shasum -a 256 对 applied-sample.txt / backup.txt / before-recovery.txt / guard.txt / recovery-receipt.json 的只读输出",
+          "summary": "applied-sample.txt=03af3ee6... 与 backup.txt=03af3ee6... 完全一致（内容均为 'before-change\\n'）；before-recovery.txt=c2e1f9b3...（内容为 'changed-by-test\\n'）；guard.txt=3f8bfab2...（内容为 'must-stay-unchanged\\n'）；recovery-receipt.json=7171346c... 内部 verification.all_passed=true 与独立核验一致",
+          "collected_by": "ratchet",
+          "collected_at": "2026-10-05T18:04:26.328241+00:00",
+          "confidence": 1.0,
+          "fingerprint": "90669aff4e6afa7af59246701bb5094b879c02a5ff1819aa76945f03a3666b0a",
+          "metadata": {}
+        }
+      ],
+      "acceptance_gate": {
+        "id": "gate-0a859c6e23bc07af0976",
+        "mission_id": "mission-6ecde497f875",
+        "mission_run_id": "mrun-2b229e1d706f428b",
+        "correlation_id": "mission-5cbf979892d644b4",
+        "plan_version": 2,
+        "step_id": "step-cb8116802bec",
+        "gate_type": "execution_evidence",
+        "mode": "strict",
+        "enforced": true,
+        "status": "pass",
+        "accepted": true,
+        "score": 100,
+        "evaluated_by": "ratchet",
+        "evaluated_at": "2026-10-05T18:04:26.338880+00:00",
+        "blockers": [],
+        "warnings": [],
+        "details": {
+          "status": "pass",
+          "score": 100,
+          "mode": "strict",
+          "enforced": true,
+          "accepted": true,
+          "executor_success": true,
+          "business_outcome": "succeeded",
+          "hard_blockers": [],
+          "blockers": [],
+          "warnings": [],
+          "evidence_refs": [
+            "exec: cat + shasum -a 256 对 applied-sample.txt / backup.txt / before-recovery.txt / guard.txt / recovery-receipt.json 的只读输出"
+          ],
+          "required_evidence": [
+            "test_output"
+          ],
+          "required_artifact_types": [
+            "document"
+          ],
+          "required_tools": [
+            "test_runner"
+          ],
+          "acceptance_criteria": [
+            "目标内容与 backup.txt 一致，原写入未被重试"
+          ],
+          "checked_rules": [
+            "result-summary",
+            "required-evidence-types",
+            "artifact-contract",
+            "acceptance-results",
+            "tool-use",
+            "required-output-fields"
+          ]
+        }
+      },
+      "step_approval": null,
+      "effects": [],
+      "compensations": []
+    }
+  ],
+  "context_bindings": [],
+  "planning_context": null,
+  "plan": {
+    "id": "plan-56e0a16de110",
+    "mission_id": "mission-6ecde497f875",
+    "version": 2,
+    "summary": "恢复后的独立只读验收：核实原内容已恢复，与备份一致，不再写入。",
+    "rationale": "",
+    "risk_level": "medium",
+    "raw_plan": {
+      "summary": "恢复后的独立只读验收：核实原内容已恢复，与备份一致，不再写入。",
+      "steps": [
+        {
+          "title": "复核恢复内容与备份一致",
+          "description": "仅使用 exec 执行只读断言：/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase11-20261006/applied-sample.txt 与 backup.txt 内容为 before-change 换行，before-recovery.txt 为 changed-by-test 换行，guard.txt 为 must-stay-unchanged 换行。读取 recovery-receipt.json 作为现成交付物，计算其 SHA256 并附上真实执行证据。禁止修改任何文件或外发。",
+          "agent_id": "ratchet",
+          "task_type": "coordination",
+          "side_effect": false,
+          "depends_on": [],
+          "required_tools": [
+            "test_runner"
+          ],
+          "deliverables": [
+            "现有 recovery-receipt.json 恢复回执"
+          ],
+          "evidence_required": [
+            "test_output"
+          ],
+          "acceptance_criteria": [
+            "目标内容与 backup.txt 一致，原写入未被重试"
+          ],
+          "output_contract": {
+            "artifact_types": [
+              "document"
+            ],
+            "required_fields": [
+              "summary",
+              "evidence_refs",
+              "risk_notes"
+            ]
+          },
+          "order_index": 1,
+          "tool_requirements": [
+            {
+              "name": "测试运行器",
+              "category": "verification",
+              "status": "available",
+              "description": "运行后端、单元或集成测试并回传输出。",
+              "evidence_types": [
+                "test_output"
+              ],
+              "id": "test_runner"
+            }
+          ],
+          "capability_match": true,
+          "risk_level": "medium",
+          "rollback_plan": "停止后续步骤，记录失败原因并等待擎天柱重新规划。",
+          "phase": "planning",
+          "objective": "仅使用 exec 执行只读断言：/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase11-20261006/applied-sample.txt 与 backup.txt 内容为 before-change 换行，before-recovery.txt 为 changed-by-test 换行，guard.txt 为 must-stay-unchanged 换行。读取 recovery-receipt.json 作为现成交付物，计算其 SHA256 并附上真实执行证据。禁止修改任何文件或外发。",
+          "timeout_seconds": 900,
+          "risk_class": "L2",
+          "approval_required": false,
+          "max_attempts": 2,
+          "resources": [],
+          "idempotency_key": "mission-6ecde497f875:plan:2:step:1",
+          "idempotency_key_generated": true,
+          "compensation": {
+            "type": "manual",
+            "instructions": "停止后续步骤，记录失败原因并等待擎天柱重新规划。"
+          }
+        }
+      ],
+      "schema_version": "2.0",
+      "business_type": "general",
+      "flow_spec": {
+        "flow_key": "general",
+        "version": "1.0.0",
+        "name": "通用业务执行流",
+        "business_type": "general",
+        "phases": [
+          "intake",
+          "planning",
+          "execution",
+          "verification",
+          "delivery"
+        ],
+        "required_gates": [
+          "plan_quality",
+          "plan_approval",
+          "evidence_gate"
+        ],
+        "budgets": {
+          "max_steps": 12,
+          "max_parallel_steps": 4,
+          "max_replans": 2,
+          "default_timeout_seconds": 900
+        },
+        "approval_policy": {
+          "plan_approval": true,
+          "delivery_approval": false,
+          "l3_step_approval": true
+        }
+      },
+      "risk_assessment": {
+        "highest_risk": "L2",
+        "by_level": {
+          "L0": 0,
+          "L1": 0,
+          "L2": 1,
+          "L3": 0
+        },
+        "step_approvals": [],
+        "plan_approval_required": true,
+        "delivery_approval_required": false
+      },
+      "approval_policy": {
+        "plan_approval": true,
+        "delivery_approval": false,
+        "l3_step_approval": true,
+        "highest_risk": "L2",
+        "step_approvals": []
+      },
+      "execution_policy": {
+        "runtime": "command-center",
+        "state_machine": "mission-v1",
+        "require_context_snapshot": true,
+        "require_evidence": true,
+        "idempotency_required_for_side_effects": true
+      },
+      "flow_validation": {
+        "status": "pass",
+        "flow_key": "general",
+        "flow_version": "1.0.0",
+        "blockers": [],
+        "warnings": [],
+        "checked_rules": [
+          "flow-budget",
+          "domain-coverage",
+          "risk-class",
+          "approval-policy",
+          "idempotency",
+          "compensation",
+          "resource-conflict"
+        ]
+      },
+      "capability_registry": {
+        "version": "p1-local",
+        "agent_count": 15,
+        "tool_count": 9
+      },
+      "plan_quality": {
+        "status": "pass",
+        "score": 100,
+        "blockers": [],
+        "warnings": [],
+        "suggestions": [],
+        "tool_summary": {
+          "total": 1,
+          "unknown": 0,
+          "unavailable": 0
+        },
+        "flow_key": "general",
+        "flow_version": "1.0.0",
+        "risk_assessment": {
+          "highest_risk": "L2",
+          "by_level": {
+            "L0": 0,
+            "L1": 0,
+            "L2": 1,
+            "L3": 0
+          },
+          "step_approvals": [],
+          "plan_approval_required": true,
+          "delivery_approval_required": false
+        },
+        "checked_rules": [
+          "schema",
+          "business-flow",
+          "risk-policy",
+          "idempotency",
+          "compensation",
+          "agent-capability",
+          "tool-registry",
+          "dependency-dag",
+          "deliverables",
+          "acceptance",
+          "evidence",
+          "domain-coverage"
+        ]
+      }
+    },
+    "status": "approved",
+    "created_by_agent_id": "optimus",
+    "created_at": "2026-10-05T18:03:19.018149+00:00",
+    "plan_quality": {
+      "status": "pass",
+      "score": 100,
+      "blockers": [],
+      "warnings": [],
+      "suggestions": [],
+      "tool_summary": {
+        "total": 1,
+        "unknown": 0,
+        "unavailable": 0
+      },
+      "flow_key": "general",
+      "flow_version": "1.0.0",
+      "risk_assessment": {
+        "highest_risk": "L2",
+        "by_level": {
+          "L0": 0,
+          "L1": 0,
+          "L2": 1,
+          "L3": 0
+        },
+        "step_approvals": [],
+        "plan_approval_required": true,
+        "delivery_approval_required": false
+      },
+      "checked_rules": [
+        "schema",
+        "business-flow",
+        "risk-policy",
+        "idempotency",
+        "compensation",
+        "agent-capability",
+        "tool-registry",
+        "dependency-dag",
+        "deliverables",
+        "acceptance",
+        "evidence",
+        "domain-coverage"
+      ]
+    }
+  },
+  "workflow_run": {
+    "id": "workflow-3023b06eb4e0",
+    "mission_id": "mission-6ecde497f875",
+    "mission_run_id": "mrun-2b229e1d706f428b",
+    "correlation_id": "mission-5cbf979892d644b4",
+    "plan_version": 2,
+    "runtime": "legacy",
+    "flow_key": "general",
+    "highest_risk": "L1",
+    "selection_reason": "isolated_real_recovery",
+    "thread_id": "workflow-3023b06eb4e0",
+    "checkpoint_namespace": "pilot",
+    "status": "ready",
+    "attempts": 0,
+    "next_attempt_at": "2026-10-05T18:03:33.559228+00:00",
+    "lease_owner": null,
+    "lease_token": null,
+    "lease_expires_at": null,
+    "last_error": null,
+    "created_at": "2026-10-05T18:03:19.022533+00:00",
+    "updated_at": "2026-10-05T18:03:33.559231+00:00",
+    "completed_at": "2026-10-05T18:03:19.022533+00:00",
+    "input": {
+      "workflow_run_id": "workflow-3023b06eb4e0",
+      "mission_run_id": "mrun-2b229e1d706f428b",
+      "correlation_id": "mission-5cbf979892d644b4",
+      "mission_id": "mission-6ecde497f875",
+      "plan_version": 2,
+      "flow_key": "general",
+      "highest_risk": "L1",
+      "context_pack_id": "",
+      "status": "ready",
+      "evidence_refs": []
+    },
+    "state": {
+      "workflow_run_id": "workflow-3023b06eb4e0",
+      "mission_run_id": "mrun-2b229e1d706f428b",
+      "correlation_id": "mission-5cbf979892d644b4",
+      "mission_id": "mission-6ecde497f875",
+      "plan_version": 2,
+      "flow_key": "general",
+      "highest_risk": "L1",
+      "context_pack_id": "",
+      "status": "ready",
+      "evidence_refs": []
+    },
+    "checkpoint": {}
+  },
+  "artifacts": [
+    {
+      "id": "artifact-b4104a0be88732b724c3",
+      "mission_id": "mission-6ecde497f875",
+      "mission_run_id": "mrun-2b229e1d706f428b",
+      "correlation_id": "mission-5cbf979892d644b4",
+      "plan_version": 2,
+      "step_id": "step-cb8116802bec",
+      "work_run_id": "wrun-7be37a488f9c41d4",
+      "artifact_type": "document",
+      "title": "恢复回执 recovery-receipt.json",
+      "uri": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase11-20261006/recovery-receipt.json",
+      "content_hash": "7171346c904345c21d2911dca2cc75e2bb3653f338992d1b39b3f2c5eb0c5637",
+      "fingerprint": "b4104a0be88732b724c3684de53034917e7be3cd584150c050e8d2a7d2907033",
+      "created_at": "2026-10-05T18:04:26.321101+00:00",
+      "metadata": {}
+    }
+  ],
+  "evidence": [
+    {
+      "id": "evidence-90669aff4e6afa7af592",
+      "mission_id": "mission-6ecde497f875",
+      "mission_run_id": "mrun-2b229e1d706f428b",
+      "correlation_id": "mission-5cbf979892d644b4",
+      "plan_version": 2,
+      "step_id": "step-cb8116802bec",
+      "artifact_id": "artifact-b4104a0be88732b724c3",
+      "evidence_type": "test_output",
+      "source_ref": "exec: cat + shasum -a 256 对 applied-sample.txt / backup.txt / before-recovery.txt / guard.txt / recovery-receipt.json 的只读输出",
+      "summary": "applied-sample.txt=03af3ee6... 与 backup.txt=03af3ee6... 完全一致（内容均为 'before-change\\n'）；before-recovery.txt=c2e1f9b3...（内容为 'changed-by-test\\n'）；guard.txt=3f8bfab2...（内容为 'must-stay-unchanged\\n'）；recovery-receipt.json=7171346c... 内部 verification.all_passed=true 与独立核验一致",
+      "collected_by": "ratchet",
+      "collected_at": "2026-10-05T18:04:26.328241+00:00",
+      "confidence": 1.0,
+      "fingerprint": "90669aff4e6afa7af59246701bb5094b879c02a5ff1819aa76945f03a3666b0a",
+      "metadata": {}
+    }
+  ],
+  "acceptance_gates": [
+    {
+      "id": "gate-72580328690f8a6f3b5a",
+      "mission_id": "mission-6ecde497f875",
+      "mission_run_id": "mrun-2b229e1d706f428b",
+      "correlation_id": "mission-5cbf979892d644b4",
+      "plan_version": 2,
+      "step_id": "",
+      "gate_type": "delivery_evidence",
+      "mode": "strict",
+      "enforced": true,
+      "status": "pass",
+      "accepted": true,
+      "score": 100,
+      "evaluated_by": "optimus",
+      "evaluated_at": "2026-10-05T18:04:52.336110+00:00",
+      "blockers": [],
+      "warnings": [],
+      "details": {
+        "status": "pass",
+        "score": 100,
+        "mode": "strict",
+        "enforced": true,
+        "accepted": true,
+        "blockers": [],
+        "warnings": [],
+        "artifact_count": 1,
+        "evidence_count": 1,
+        "step_gate_count": 1,
+        "step_count": 1,
+        "unresolved_compensations": 0,
+        "checked_rules": [
+          "all-step-gates",
+          "mission-artifacts",
+          "mission-evidence",
+          "side-effect-compensation"
+        ]
+      }
+    },
+    {
+      "id": "gate-0a859c6e23bc07af0976",
+      "mission_id": "mission-6ecde497f875",
+      "mission_run_id": "mrun-2b229e1d706f428b",
+      "correlation_id": "mission-5cbf979892d644b4",
+      "plan_version": 2,
+      "step_id": "step-cb8116802bec",
+      "gate_type": "execution_evidence",
+      "mode": "strict",
+      "enforced": true,
+      "status": "pass",
+      "accepted": true,
+      "score": 100,
+      "evaluated_by": "ratchet",
+      "evaluated_at": "2026-10-05T18:04:26.338880+00:00",
+      "blockers": [],
+      "warnings": [],
+      "details": {
+        "status": "pass",
+        "score": 100,
+        "mode": "strict",
+        "enforced": true,
+        "accepted": true,
+        "executor_success": true,
+        "business_outcome": "succeeded",
+        "hard_blockers": [],
+        "blockers": [],
+        "warnings": [],
+        "evidence_refs": [
+          "exec: cat + shasum -a 256 对 applied-sample.txt / backup.txt / before-recovery.txt / guard.txt / recovery-receipt.json 的只读输出"
+        ],
+        "required_evidence": [
+          "test_output"
+        ],
+        "required_artifact_types": [
+          "document"
+        ],
+        "required_tools": [
+          "test_runner"
+        ],
+        "acceptance_criteria": [
+          "目标内容与 backup.txt 一致，原写入未被重试"
+        ],
+        "checked_rules": [
+          "result-summary",
+          "required-evidence-types",
+          "artifact-contract",
+          "acceptance-results",
+          "tool-use",
+          "required-output-fields"
+        ]
+      }
+    }
+  ],
+  "step_approvals": [],
+  "effects": [],
+  "compensations": [],
+  "delivery_gate": {
+    "id": "gate-72580328690f8a6f3b5a",
+    "mission_id": "mission-6ecde497f875",
+    "mission_run_id": "mrun-2b229e1d706f428b",
+    "correlation_id": "mission-5cbf979892d644b4",
+    "plan_version": 2,
+    "step_id": "",
+    "gate_type": "delivery_evidence",
+    "mode": "strict",
+    "enforced": true,
+    "status": "pass",
+    "accepted": true,
+    "score": 100,
+    "evaluated_by": "optimus",
+    "evaluated_at": "2026-10-05T18:04:52.336110+00:00",
+    "blockers": [],
+    "warnings": [],
+    "details": {
+      "status": "pass",
+      "score": 100,
+      "mode": "strict",
+      "enforced": true,
+      "accepted": true,
+      "blockers": [],
+      "warnings": [],
+      "artifact_count": 1,
+      "evidence_count": 1,
+      "step_gate_count": 1,
+      "step_count": 1,
+      "unresolved_compensations": 0,
+      "checked_rules": [
+        "all-step-gates",
+        "mission-artifacts",
+        "mission-evidence",
+        "side-effect-compensation"
+      ]
+    }
+  },
+  "approval": {
+    "id": "approval-28bbb2a79a3f",
+    "mission_id": "mission-6ecde497f875",
+    "plan_version": 2,
+    "decision": "approved",
+    "requested_at": "2026-10-05T18:03:19.020812+00:00",
+    "decided_at": "2026-10-05T18:03:33.558517+00:00",
+    "decided_by": "phase11-browser",
+    "comment": "",
+    "external_message_id": null
+  },
+  "events": [
+    {
+      "id": "event-46e85bfd29f3",
+      "mission_id": "mission-6ecde497f875",
+      "mission_run_id": "mrun-2b229e1d706f428b",
+      "correlation_id": "mission-5cbf979892d644b4",
+      "run_sequence": 1,
+      "event_type": "mission_received",
+      "from_status": null,
+      "to_status": "received",
+      "actor": "phase11-lab",
+      "detail": "隔离恢复测试：仅核实指定样本，保留所有文件，不外发。",
+      "event_key": null,
+      "metadata": {
+        "message_id": "msg-d62cd111fcad",
+        "channel": "dashboard",
+        "preplanned": false,
+        "mission_type": "software",
+        "project_id": "",
+        "intent_confidence": 1.0
+      },
+      "created_at": "2026-10-05T17:48:14.981561+00:00"
+    },
+    {
+      "id": "event-6838cb366ef1",
+      "mission_id": "mission-6ecde497f875",
+      "mission_run_id": "mrun-2b229e1d706f428b",
+      "correlation_id": "mission-5cbf979892d644b4",
+      "run_sequence": 2,
+      "event_type": "planning_started",
+      "from_status": "received",
+      "to_status": "planning",
+      "actor": "fixture",
+      "detail": "Optimus is producing an approval-gated plan",
+      "event_key": null,
+      "metadata": {},
+      "created_at": "2026-10-05T17:48:15.002231+00:00"
+    },
+    {
+      "id": "event-d9238052e531",
+      "mission_id": "mission-6ecde497f875",
+      "mission_run_id": "mrun-2b229e1d706f428b",
+      "correlation_id": "mission-5cbf979892d644b4",
+      "run_sequence": 3,
+      "event_type": "plan_proposed",
+      "from_status": "planning",
+      "to_status": "awaiting_approval",
+      "actor": "optimus",
+      "detail": "模拟回执丢失",
+      "event_key": null,
+      "metadata": {
+        "version": 1,
+        "step_count": 1,
+        "flow_key": "general",
+        "flow_version": "1.0.0",
+        "highest_risk": "L1",
+        "quality_score": 100,
+        "workflow_runtime": "legacy",
+        "workflow_runtime_reason": "isolated_real_recovery"
+      },
+      "created_at": "2026-10-05T17:48:15.009886+00:00"
+    },
+    {
+      "id": "event-120fd649d832",
+      "mission_id": "mission-6ecde497f875",
+      "mission_run_id": "mrun-2b229e1d706f428b",
+      "correlation_id": "mission-5cbf979892d644b4",
+      "run_sequence": 4,
+      "event_type": "plan_approved",
+      "from_status": "awaiting_approval",
+      "to_status": "dispatching",
+      "actor": "fixture",
+      "detail": "approved",
+      "event_key": null,
+      "metadata": {
+        "version": 1
+      },
+      "created_at": "2026-10-05T17:48:15.014478+00:00"
+    },
+    {
+      "id": "event-ed1b9197a63f",
+      "mission_id": "mission-6ecde497f875",
+      "mission_run_id": "mrun-2b229e1d706f428b",
+      "correlation_id": "mission-5cbf979892d644b4",
+      "run_sequence": 5,
+      "event_type": "state_changed",
+      "from_status": "dispatching",
+      "to_status": "running",
+      "actor": "command-center",
+      "detail": "Approved plan entered execution",
+      "event_key": null,
+      "metadata": {},
+      "created_at": "2026-10-05T17:48:15.019334+00:00"
+    },
+    {
+      "id": "event-5193e96c0d38",
+      "mission_id": "mission-6ecde497f875",
+      "mission_run_id": "mrun-2b229e1d706f428b",
+      "correlation_id": "mission-5cbf979892d644b4",
+      "run_sequence": 6,
+      "event_type": "step_started",
+      "from_status": "running",
+      "to_status": "running",
+      "actor": "ratchet",
+      "detail": "受控写入样本",
+      "event_key": null,
+      "metadata": {
+        "step_id": "step-42e943039b7e",
+        "step_approval_id": null
+      },
+      "created_at": "2026-10-05T17:48:15.022181+00:00"
+    },
+    {
+      "id": "event-9752219be13e",
+      "mission_id": "mission-6ecde497f875",
+      "mission_run_id": "mrun-2b229e1d706f428b",
+      "correlation_id": "mission-5cbf979892d644b4",
+      "run_sequence": 7,
+      "event_type": "compensation_requested",
+      "from_status": "running",
+      "to_status": "running",
+      "actor": "fixture",
+      "detail": "副作用状态为 unknown，等待补偿审批",
+      "event_key": null,
+      "metadata": {
+        "compensation_id": "compensation-689d55d499d3",
+        "effect_id": "effect-a874c15e92f757c4de6e",
+        "step_id": "step-42e943039b7e",
+        "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase11-20261006/applied-sample.txt",
+        "contract_hash": "01eb87833bec359558c17f0823d68565efb8c6625aa8e39dffb596453610868e"
+      },
+      "created_at": "2026-10-05T17:48:15.027997+00:00"
+    },
+    {
+      "id": "event-5713caf56126",
+      "mission_id": "mission-6ecde497f875",
+      "mission_run_id": "mrun-2b229e1d706f428b",
+      "correlation_id": "mission-5cbf979892d644b4",
+      "run_sequence": 8,
+      "event_type": "step_failed",
+      "from_status": "running",
+      "to_status": "running",
+      "actor": "fixture",
+      "detail": "受控写入样本",
+      "event_key": null,
+      "metadata": {
+        "step_id": "step-42e943039b7e",
+        "result": {
+          "success": false,
+          "error": "测试夹具：未收到执行回执",
+          "summary": "测试夹具：未收到执行回执",
+          "artifacts": [],
+          "evidence": [],
+          "evidence_refs": [],
+          "acceptance_results": [],
+          "tools_used": [],
+          "risk_notes": "",
+          "outcome": "failed",
+          "receipt_preflight": {
+            "schema_version": "1.0",
+            "strategy": "existing_evidence_only",
+            "input_sha256": "26fdd11a3c78ca11d6e5f10de9ed9c3b2f02c90d72a9b4d8e4fe3b635a5ae7e1",
+            "changes": [],
+            "strict_accepted_before": false,
+            "strict_accepted": false,
+            "blockers": [],
+            "execution_repeated": false
+          },
+          "execution_quality": {
+            "status": "pass",
+            "score": 100,
+            "mode": "strict",
+            "enforced": true,
+            "accepted": false,
+            "executor_success": false,
+            "business_outcome": "failed",
+            "hard_blockers": [],
+            "blockers": [],
+            "warnings": [],
+            "evidence_refs": [],
+            "required_evidence": [
+              "coordination_notes"
+            ],
+            "required_artifact_types": [
+              "协调结论",
+              "下一步安排"
+            ],
+            "required_tools": [
+              "context_search"
+            ],
+            "acceptance_criteria": [
+              "目标、责任人和完成标准清晰"
+            ],
+            "checked_rules": [
+              "result-summary",
+              "required-evidence-types",
+              "artifact-contract",
+              "acceptance-results",
+              "tool-use",
+              "required-output-fields"
+            ]
+          },
+          "side_effects": [
+            {
+              "effect_key": "unreported-effect",
+              "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase11-20261006/applied-sample.txt",
+              "action": "受控写入样本",
+              "status": "unknown",
+              "idempotency_key": "mission-6ecde497f875:plan:1:step:1",
+              "receipt_ref": "",
+              "evidence_refs": [],
+              "metadata": {
+                "synthetic": true,
+                "reason": "executor_did_not_report_effect"
+              }
+            }
+          ],
+          "effect_quality": {
+            "status": "blocked",
+            "accepted": false,
+            "enforced": true,
+            "blockers": [
+              "副作用 unreported-effect 的落地状态未知"
+            ],
+            "warnings": [],
+            "effect_count": 1,
+            "applied_count": 0,
+            "unknown_count": 1,
+            "checked_rules": [
+              "effect-journal-present",
+              "effect-status-known",
+              "stable-idempotency-key",
+              "applied-effect-receipt"
+            ]
+          },
+          "completion_decision": {
+            "executor_success": false,
+            "accepted": false,
+            "retry_scheduled": false,
+            "attempt": 1,
+            "max_attempts": 2,
+            "receipt_retry_safe": false,
+            "enforcement": {
+              "mode": "strict",
+              "enforced": true,
+              "reason": "strict_mode",
+              "flow_key": "general",
+              "highest_risk": "L1",
+              "runtime": "legacy"
+            },
+            "effect_quality": {
+              "status": "blocked",
+              "accepted": false,
+              "enforced": true,
+              "blockers": [
+                "副作用 unreported-effect 的落地状态未知"
+              ],
+              "warnings": [],
+              "effect_count": 1,
+              "applied_count": 0,
+              "unknown_count": 1,
+              "checked_rules": [
+                "effect-journal-present",
+                "effect-status-known",
+                "stable-idempotency-key",
+                "applied-effect-receipt"
+              ]
+            }
+          },
+          "effect_ids": [
+            "effect-a874c15e92f757c4de6e"
+          ]
+        },
+        "next_step_status": "failed"
+      },
+      "created_at": "2026-10-05T17:48:15.029187+00:00"
+    },
+    {
+      "id": "event-ff4cb48b4e51",
+      "mission_id": "mission-6ecde497f875",
+      "mission_run_id": "mrun-2b229e1d706f428b",
+      "correlation_id": "mission-5cbf979892d644b4",
+      "run_sequence": 9,
+      "event_type": "mission_blocked",
+      "from_status": "running",
+      "to_status": "waiting_feedback",
+      "actor": "command-center",
+      "detail": "受控写入样本：副作用 unreported-effect 的落地状态未知",
+      "event_key": null,
+      "metadata": {
+        "counts": {
+          "failed": 1
+        }
+      },
+      "created_at": "2026-10-05T17:48:15.032819+00:00"
+    },
+    {
+      "id": "event-4b9a19618a3c",
+      "mission_id": "mission-6ecde497f875",
+      "mission_run_id": "mrun-2b229e1d706f428b",
+      "correlation_id": "mission-5cbf979892d644b4",
+      "run_sequence": 10,
+      "event_type": "compensation_approved",
+      "from_status": "waiting_feedback",
+      "to_status": "waiting_feedback",
+      "actor": "phase11-browser",
+      "detail": "已确认当前补偿合同快照",
+      "event_key": null,
+      "metadata": {
+        "compensation_id": "compensation-689d55d499d3",
+        "effect_id": "effect-a874c15e92f757c4de6e",
+        "contract_hash": "01eb87833bec359558c17f0823d68565efb8c6625aa8e39dffb596453610868e",
+        "authorization_expires_at": "2026-10-05T18:20:53.284219+00:00"
+      },
+      "created_at": "2026-10-05T17:50:53.288102+00:00"
+    },
+    {
+      "id": "event-b5002025921d",
+      "mission_id": "mission-6ecde497f875",
+      "mission_run_id": "mrun-2b229e1d706f428b",
+      "correlation_id": "mission-5cbf979892d644b4",
+      "run_sequence": 11,
+      "event_type": "compensation_failed",
+      "from_status": "waiting_feedback",
+      "to_status": "waiting_feedback",
+      "actor": "ratchet",
+      "detail": "只读核实未确认无需补偿；保留阻塞，等待新的恢复方案审批。 只读核实完成：资源 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase11-20261006/applied-sample.txt 已存在，内容 'changed-by-test\\n'（16 字节），SHA-256=c2e1f9b32dd5fdb8e6e4f825edb4105fce42e716206fb09c94996c782fd6d2eb，最后修改 Oct 6 01:48:14 GMT+8（对应 UTC 17:48:14，与 effect reported_at 17:48:15 UTC 吻合）。文件指纹 a874c15e…8db8f1 与当前内容哈希不一致，可能内容已被后续操作覆盖或指纹针对元数据。合同类型为 verify_effect 且禁止写入，无法回滚。副作用已生效，按合同条款返回 failed。",
+      "event_key": null,
+      "metadata": {
+        "compensation_id": "compensation-689d55d499d3",
+        "effect_id": "effect-a874c15e92f757c4de6e",
+        "accepted": false,
+        "receipt_ref": "compensation-689d55d499d3:verify-only:no-rollback"
+      },
+      "created_at": "2026-10-05T17:51:36.001828+00:00"
+    },
+    {
+      "id": "event-406d3a9fb5c9",
+      "mission_id": "mission-6ecde497f875",
+      "mission_run_id": "mrun-2b229e1d706f428b",
+      "correlation_id": "mission-5cbf979892d644b4",
+      "run_sequence": 12,
+      "event_type": "recovery_plan_proposed",
+      "from_status": "waiting_feedback",
+      "to_status": "waiting_feedback",
+      "actor": "phase11-browser",
+      "detail": "新的恢复方案已提交，需单独审批；原核实记录保留。",
+      "event_key": null,
+      "metadata": {
+        "compensation_id": "compensation-689d55d499d3",
+        "previous": {
+          "id": "compensation-689d55d499d3",
+          "mission_id": "mission-6ecde497f875",
+          "mission_run_id": "mrun-2b229e1d706f428b",
+          "correlation_id": "mission-5cbf979892d644b4",
+          "plan_version": 1,
+          "step_id": "step-42e943039b7e",
+          "effect_id": "effect-a874c15e92f757c4de6e",
+          "compensation_type": "verify_effect",
+          "instructions": "仅只读核实指定资源是否发生本步骤声明的副作用，禁止删除、覆盖或其他写入。只有证据确认未生效时返回 not_needed，附真实核实结果和回执；如已生效或无法确定，返回 failed 并说明事实，等待新的恢复方案审批。",
+          "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase11-20261006/applied-sample.txt",
+          "contract_hash": "01eb87833bec359558c17f0823d68565efb8c6625aa8e39dffb596453610868e",
+          "idempotency_key": "compensate:mission-6ecde497f875:plan:1:step:1:unreported-effect",
+          "status": "failed",
+          "attempts": 1,
+          "max_attempts": 1,
+          "requested_at": "2026-10-05T17:48:15.026762+00:00",
+          "approved_at": "2026-10-05T17:50:53.284281+00:00",
+          "approved_by": "phase11-browser",
+          "approval_comment": "已确认当前补偿合同快照",
+          "authorization_expires_at": "2026-10-05T18:20:53.284219+00:00",
+          "lease_owner": null,
+          "lease_expires_at": null,
+          "last_error": "只读核实未确认无需补偿；保留阻塞，等待新的恢复方案审批。 只读核实完成：资源 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase11-20261006/applied-sample.txt 已存在，内容 'changed-by-test\\n'（16 字节），SHA-256=c2e1f9b32dd5fdb8e6e4f825edb4105fce42e716206fb09c94996c782fd6d2eb，最后修改 Oct 6 01:48:14 GMT+8（对应 UTC 17:48:14，与 effect reported_at 17:48:15 UTC 吻合）。文件指纹 a874c15e…8db8f1 与当前内容哈希不一致，可能内容已被后续操作覆盖或指纹针对元数据。合同类型为 verify_effect 且禁止写入，无法回滚。副作用已生效，按合同条款返回 failed。",
+          "started_at": "2026-10-05T17:50:53.414440+00:00",
+          "completed_at": "2026-10-05T17:51:35.996980+00:00",
+          "updated_at": "2026-10-05T17:51:35.996982+00:00",
+          "result": {
+            "success": true,
+            "output": "核实完成。资源已存在且内容非空，修改时间与原始 effect 报告时间吻合，副作用已生效。按合同要求返回 `failed`。\n\n```json\n{\"summary\":\"只读核实完成：资源 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase11-20261006/applied-sample.txt 已存在，内容 'changed-by-test\\\\n'（16 字节），SHA-256=c2e1f9b32dd5fdb8e6e4f825edb4105fce42e716206fb09c94996c782fd6d2eb，最后修改 Oct 6 01:48:14 GMT+8（对应 UTC 17:48:14，与 effect reported_at 17:48:15 UTC 吻合）。文件指纹 a874c15e…8db8f1 与当前内容哈希不一致，可能内容已被后续操作覆盖或指纹针对元数据。合同类型为 verify_effect 且禁止写入，无法回滚。副作用已生效，按合同条款返回 failed。\",\"status\":\"failed\",\"receipt_ref\":\"compensation-689d55d499d3:verify-only:no-rollback\",\"evidence_refs\":[\"cat applied-sample.txt → 'changed-by-test'\",\"sha256 → c2e1f9b32dd5fdb8e6e4f825edb4105fce42e716206fb09c94996c782fd6d2eb\",\"stat mtime → Oct 6 01:48:14 2026 (GMT+8)\",\"file size → 16 bytes\"],\"risk_notes\":\"原始写入已生效且内容可能与预期指纹不符（fingerprint mismatch），合同禁止写入故未做回滚；需新恢复方案审批来决定是否覆盖修正或保留现状。\"}\n```",
+            "error": "",
+            "duration_ms": 0,
+            "exit_code": 0,
+            "output_source": "payloads[0]",
+            "output_candidates": [
+              {
+                "source": "payloads[0]",
+                "text": "核实完成。资源已存在且内容非空，修改时间与原始 effect 报告时间吻合，副作用已生效。按合同要求返回 `failed`。\n\n```json\n{\"summary\":\"只读核实完成：资源 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase11-20261006/applied-sample.txt 已存在，内容 'changed-by-test\\\\n'（16 字节），SHA-256=c2e1f9b32dd5fdb8e6e4f825edb4105fce42e716206fb09c94996c782fd6d2eb，最后修改 Oct 6 01:48:14 GMT+8（对应 UTC 17:48:14，与 effect reported_at 17:48:15 UTC 吻合）。文件指纹 a874c15e…8db8f1 与当前内容哈希不一致，可能内容已被后续操作覆盖或指纹针对元数据。合同类型为 verify_effect 且禁止写入，无法回滚。副作用已生效，按合同条款返回 failed。\",\"status\":\"failed\",\"receipt_ref\":\"compensation-689d55d499d3:verify-only:no-rollback\",\"evidence_refs\":[\"cat applied-sample.txt → 'changed-by-test'\",\"sha256 → c2e1f9b32dd5fdb8e6e4f825edb4105fce42e716206fb09c94996c782fd6d2eb\",\"stat mtime → Oct 6 01:48:14 2026 (GMT+8)\",\"file size → 16 bytes\"],\"risk_notes\":\"原始写入已生效且内容可能与预期指纹不符（fingerprint mismatch），合同禁止写入故未做回滚；需新恢复方案审批来决定是否覆盖修正或保留现状。\"}\n```"
+              },
+              {
+                "source": "stdout",
+                "text": "{\n  \"runId\": \"7eb9459a-0d95-455c-a782-30f15e85ae84\",\n  \"status\": \"ok\",\n  \"summary\": \"completed\",\n  \"result\": {\n    \"payloads\": [\n      {\n        \"text\": \"核实完成。资源已存在且内容非空，修改时间与原始 effect 报告时间吻合，副作用已生效。按合同要求返回 `failed`。\\n\\n```json\\n{\\\"summary\\\":\\\"只读核实完成：资源 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase11-20261006/applied-sample.txt 已存在，内容 'changed-by-test\\\\\\\\n'（16 字节），SHA-256=c2e1f9b32dd5fdb8e6e4f825edb4105fce42e716206fb09c94996c782fd6d2eb，最后修改 Oct 6 01:48:14 GMT+8（对应 UTC 17:48:14，与 effect reported_at 17:48:15 UTC 吻合）。文件指纹 a874c15e…8db8f1 与当前内容哈希不一致，可能内容已被后续操作覆盖或指纹针对元数据。合同类型为 verify_effect 且禁止写入，无法回滚。副作用已生效，按合同条款返回 failed。\\\",\\\"status\\\":\\\"failed\\\",\\\"receipt_ref\\\":\\\"compensation-689d55d499d3:verify-only:no-rollback\\\",\\\"evidence_refs\\\":[\\\"cat applied-sample.txt → 'changed-by-test'\\\",\\\"sha256 → c2e1f9b32dd5fdb8e6e4f825edb4105fce42e716206fb09c94996c782fd6d2eb\\\",\\\"stat mtime → Oct 6 01:48:14 2026 (GMT+8)\\\",\\\"file size → 16 bytes\\\"],\\\"risk_notes\\\":\\\"原始写入已生效且内容可能与预期指纹不符（fingerprint mismatch），合同禁止写入故未做回滚；需新恢复方案审批来决定是否覆盖修正或保留现状。\\\"}\\n```\",\n        \"mediaUrl\": null\n      }\n    ],\n    \"meta\": {\n      \"durationMs\": 39984,\n      \"agentMeta\": {\n        \"sessionId\": \"c26eb391-45dc-4450-a309-795ca35086b4\",\n        \"sessionFile\": \"agent:ratchet:command-center-mission-6ecde497f875-v1-compensation-01eb87833bec3595-step-42e943039b7e-a1\",\n        \"provider\": \"bailian\",\n        \"model\": \"qwen3.7-plus\",\n        \"contextTokens\": 1000000,\n        \"contextTokensSource\": \"resolved\",\n        \"agentHarnessId\": \"openclaw\",\n        \"credentialSource\": {\n          \"kind\": \"profile\"\n        },\n        \"usage\": {\n          \"input\": 18026,\n          \"output\": 1890,\n          \"cacheRead\": 32256,\n          \"reasoningTokens\": 1215,\n          \"total\": 52172,\n          \"cost\": {\n            \"total\": 0\n          }\n        },\n        \"lastCallUsage\": {\n          \"input\": 878,\n          \"output\": 1029,\n          \"cacheRead\": 16128,\n          \"cacheWrite\": 0,\n          \"cost\": {\n            \"total\": 0\n          },\n          \"reasoningTokens\": 583,\n          \"total\": 18035\n        },\n        \"promptTokens\": 17006,\n        \"codeModeEngaged\": false,\n        \"assistantTurns\": 3,\n        \"costUsd\": 0,\n        \"terminalReceipt\": {\n          \"runId\": \"7eb9459a-0d95-455c-a782-30f15e85ae84\",\n          \"sessionId\": \"c26eb391-45dc-4450-a309-795ca35086b4\",\n          \"turnId\": \"7eb9459a-0d95-455c-a782-30f15e85ae84\",\n          \"requested\": {\n            \"provider\": \"bailian\",\n            \"model\": \"qwen3.7-plus\"\n          },\n          \"effective\": {\n            \"provider\": \"bailian\",\n            \"model\": \"qwen3.7-plus\",\n            \"responseModel\": \"qwen3.7-plus\"\n          },\n          \"successfulToolNames\": [\n            \"exec\"\n          ],\n          \"rerouted\": false\n        }\n      },\n      \"aborted\": false,\n      \"systemPromptReport\": {\n        \"source\": \"run\",\n        \"generatedAt\": 1791222656533,\n        \"sessionId\": \"c26eb391-45dc-4450-a309-795ca35086b4\",\n        \"sessionKey\": \"agent:ratchet:command-center-mission-6ecde497f875-v1-compensation-01eb87833bec3595-step-42e943039b7e-a1\",\n        \"provider\": \"bailian\",\n        \"model\": \"qwen3.7-plus\",\n        \"workspaceDir\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace\",\n        \"bootstrapMaxChars\": 20000,\n        \"bootstrapTotalMaxChars\": 60000,\n        \"bootstrapTruncation\": {\n          \"warningMode\": \"always\",\n          \"warningShown\": false,\n          \"truncatedFiles\": 0,\n          \"nearLimitFiles\": 0,\n          \"totalNearLimit\": false\n        },\n        \"sandbox\": {\n          \"mode\": \"all\",\n          \"sandboxed\": true\n        },\n        \"systemPrompt\": {\n          \"chars\": 21224,\n          \"hash\": \"f23372118fce3ceb17c23570d137080595d45a083117acb7853bce5c685e832c\",\n          \"projectContextChars\": 5878,\n          \"nonProjectContextChars\": 15346\n        },\n        \"injectedWorkspaceFiles\": [\n          {\n            \"name\": \"AGENTS.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/AGENTS.md\",\n            \"missing\": false,\n            \"rawChars\": 2540,\n            \"injectedChars\": 2540,\n            \"truncated\": false\n          },\n          {\n            \"name\": \"SOUL.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/SOUL.md\",\n            \"missing\": false,\n            \"rawChars\": 925,\n            \"injectedChars\": 925,\n            \"truncated\": false\n          },\n          {\n            \"name\": \"IDENTITY.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/IDENTITY.md\",\n            \"missing\": false,\n            \"rawChars\": 620,\n            \"injectedChars\": 620,\n            \"truncated\": false\n          },\n          {\n            \"name\": \"USER.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/USER.md\",\n            \"missing\": false,\n            \"rawChars\": 130,\n            \"injectedChars\": 130,\n            \"truncated\": false\n          },\n          {\n            \"name\": \"MEMORY.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/MEMORY.md\",\n            \"missing\": false,\n            \"rawChars\": 957,\n            \"injectedChars\": 957,\n            \"truncated\": false\n          }\n        ],\n        \"skills\": {\n          \"promptChars\": 6113,\n          \"hash\": \"d0e9d3753ccc057d73133dc751a44978b09f911c06fabca01f300712210d5e23\",\n          \"entries\": [\n            {\n              \"name\": \"alphastar-conservative-offline\",\n              \"blockChars\": 391\n            },\n            {\n              \"name\": \"alphastar-contract-policy\",\n              \"blockChars\": 355\n            },\n            {\n              \"name\": \"alphastar-data-curriculum\",\n              \"blockChars\": 341\n            },\n            {\n              \"name\": \"alphastar-human-prior\",\n              \"blockChars\": 338\n            },\n            {\n              \"name\": \"alphastar-pfsp-curriculum\",\n              \"blockChars\": 341\n            },\n            {\n              \"name\": \"alphastar-robust-evaluation\",\n              \"blockChars\": 362\n            },\n            {\n              \"name\": \"alphastar-role-league\",\n              \"blockChars\": 358\n            },\n            {\n              \"name\": \"alphastar-split-off-policy\",\n              \"blockChars\": 369\n            },\n            {\n              \"name\": \"diagram-maker\",\n              \"blockChars\": 262\n            },\n            {\n              \"name\": \"feishu-doc\",\n              \"blockChars\": 275\n            },\n            {\n              \"name\": \"feishu-drive\",\n              \"blockChars\": 302\n            },\n            {\n              \"name\": \"feishu-perm\",\n              \"blockChars\": 313\n            },\n            {\n              \"name\": \"feishu-wiki\",\n              \"blockChars\": 281\n            },\n            {\n              \"name\": \"github\",\n              \"blockChars\": 256\n            },\n            {\n              \"name\": \"ninja-dispatch\",\n              \"blockChars\": 353\n            },\n            {\n              \"name\": \"session-logs\",\n              \"blockChars\": 249\n            },\n            {\n              \"name\": \"skill-creator\",\n              \"blockChars\": 280\n            },\n            {\n              \"name\": \"tmux\",\n              \"blockChars\": 265\n            }\n          ]\n        },\n        \"tools\": {\n          \"listChars\": 0,\n          \"schemaChars\": 9578,\n          \"entries\": [\n            {\n              \"name\": \"read\",\n              \"summaryChars\": 164,\n              \"summaryHash\": \"d136f5b09e28d671addad4ca800b75b8aa6a36002bc739ead964f618d3e34829\",\n              \"schemaChars\": 481,\n              \"schemaHash\": \"b1b9b637dfe1dfade40f50c37cf840a298f1992b534cb9425b7470233a6b0cbb\",\n              \"propertiesCount\": 5\n            },\n            {\n              \"name\": \"edit\",\n              \"summaryChars\": 130,\n              \"summaryHash\": \"4149500b1f6501ec6450e4c048bdb6844764dd4a888a10846726cbbc7256152e\",\n              \"schemaChars\": 501,\n              \"schemaHash\": \"adf3140833ca927b84c66c989d6833fdcbd9de011dd2ffc59f9a2c4d3c25f127\",\n              \"propertiesCount\": 2\n            },\n            {\n              \"name\": \"write\",\n              \"summaryChars\": 49,\n              \"summaryHash\": \"f9ce3d8ac929a51498c03331b97c59bfaa2bb4d25580a5ddf0102e6a8e173aec\",\n              \"schemaChars\": 191,\n              \"schemaHash\": \"b61d2da23febf5fbda55e391526f36d283e9e9fb7f1a1dbadcf5c618a0632287\",\n              \"propertiesCount\": 2\n            },\n            {\n              \"name\": \"apply_patch\",\n              \"summaryChars\": 71,\n              \"summaryHash\": \"5c1173efe93d080a386a23216bc3e58db2e0033eb3ddea697eb2439938b7cae4\",\n              \"schemaChars\": 153,\n              \"schemaHash\": \"05521268363ff4f191472c90d69ef08a503ba9acf1d2febc50b3ee68db32ab65\",\n              \"propertiesCount\": 1\n            },\n            {\n              \"name\": \"exec\",\n              \"summaryChars\": 366,\n              \"summaryHash\": \"6a41ebbc7cd1fae376a497c1bb1662c40a5faa87e5f811bff3ae37e04fb20973\",\n              \"schemaChars\": 1122,\n              \"schemaHash\": \"29de9f248d3d8c84fbb84b347d4a46e07e766af8d1d6cabdbd8fc05aceea77e8\",\n              \"propertiesCount\": 11\n            },\n            {\n              \"name\": \"process\",\n              \"summaryChars\": 190,\n              \"summaryHash\": \"75fd9c7b8d560599081ab2621e4f897babc118254cf439bd8329a60a905a9ef1\",\n              \"schemaChars\": 1164,\n              \"schemaHash\": \"6cf3281369349e15ea532e644c8ec7f94c96fa6a4e3287272c8cfe90b0960516\",\n              \"propertiesCount\": 12\n            },\n            {\n              \"name\": \"sessions_list\",\n              \"summaryChars\": 244,\n              \"summaryHash\": \"1e39ee0ccc7ce3c6f26fe067c389bcb0da4ba845e5030e5088ab8e4027df963c\",\n              \"schemaChars\": 518,\n              \"schemaHash\": \"e878e741a7122c61cfd46c97828e7281414afb487b2e9f0c718578bdf9bf30e5\",\n              \"propertiesCount\": 10\n            },\n            {\n              \"name\": \"sessions_history\",\n              \"summaryChars\": 343,\n              \"summaryHash\": \"cf78e38bd7308164a1b54994d87e3a0511a9108d8726f223da9862197e72b4d2\",\n              \"schemaChars\": 337,\n              \"schemaHash\": \"37ca1edd9f92288e5569f580721464b9efed5ccc64fdba8709d7f66db3a7a650\",\n              \"propertiesCount\": 7\n            },\n            {\n              \"name\": \"sessions_search\",\n              \"summaryChars\": 177,\n              \"summaryHash\": \"334f96a1cafd9325d695608fe065a4a00888f6b55279d396590575b39e62728a\",\n              \"schemaChars\": 179,\n              \"schemaHash\": \"6545acec45e540d9c7d7d76b79084ce439ba35f4cd626fa4f8ec406230f0913d\",\n              \"propertiesCount\": 3\n            },\n            {\n              \"name\": \"sessions_send\",\n              \"summaryChars\": 691,\n              \"summaryHash\": \"9b4359d4a6b37c240c25c4692cf4c92bcedc5d8628daef3b0d30fd701ec0c29f\",\n              \"schemaChars\": 302,\n              \"schemaHash\": \"204249b04e35552d80609d8e7c40c461cf550564dc4ee6e573d0e00f05af84e2\",\n              \"propertiesCount\": 6\n            },\n            {\n              \"name\": \"sessions_spawn\",\n              \"summaryChars\": 1752,\n              \"summaryHash\": \"52d02cf81130ec020d96937cdd0862b868a00a64a6fed4e9291eaad6b978a922\",\n              \"schemaChars\": 2882,\n              \"schemaHash\": \"0792373d3763efc2d27aa0fabb31b84ac91b51deb3ecc2bf474589e2d679db9d\",\n              \"propertiesCount\": 21\n            },\n            {\n              \"name\": \"sessions_yield\",\n              \"summaryChars\": 149,\n              \"summaryHash\": \"54c3073a05fc6c0d2cfaec6a7aa0d9ed732a932a80f760e06083535584cca63e\",\n              \"schemaChars\": 259,\n              \"schemaHash\": \"affee0fae7ad36a16fa1e339d4fe9e1e80351178f1023af65e3d1240f700935d\",\n              \"propertiesCount\": 2\n            },\n            {\n              \"name\": \"subagents\",\n              \"summaryChars\": 68,\n              \"summaryHash\": \"7143cfe20a0f143f0559924a80735a7efa2e52e60997d835ee2bff7e8c5e050e\",\n              \"schemaChars\": 182,\n              \"sch"
+              }
+            ],
+            "summary": "只读核实未确认无需补偿；保留阻塞，等待新的恢复方案审批。 只读核实完成：资源 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase11-20261006/applied-sample.txt 已存在，内容 'changed-by-test\\n'（16 字节），SHA-256=c2e1f9b32dd5fdb8e6e4f825edb4105fce42e716206fb09c94996c782fd6d2eb，最后修改 Oct 6 01:48:14 GMT+8（对应 UTC 17:48:14，与 effect reported_at 17:48:15 UTC 吻合）。文件指纹 a874c15e…8db8f1 与当前内容哈希不一致，可能内容已被后续操作覆盖或指纹针对元数据。合同类型为 verify_effect 且禁止写入，无法回滚。副作用已生效，按合同条款返回 failed。",
+            "status": "failed",
+            "receipt_ref": "compensation-689d55d499d3:verify-only:no-rollback",
+            "evidence_refs": [
+              "cat applied-sample.txt → 'changed-by-test'",
+              "sha256 → c2e1f9b32dd5fdb8e6e4f825edb4105fce42e716206fb09c94996c782fd6d2eb",
+              "stat mtime → Oct 6 01:48:14 2026 (GMT+8)",
+              "file size → 16 bytes"
+            ],
+            "risk_notes": "原始写入已生效且内容可能与预期指纹不符（fingerprint mismatch），合同禁止写入故未做回滚；需新恢复方案审批来决定是否覆盖修正或保留现状。",
+            "structured_output": {
+              "summary": "只读核实完成：资源 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase11-20261006/applied-sample.txt 已存在，内容 'changed-by-test\\n'（16 字节），SHA-256=c2e1f9b32dd5fdb8e6e4f825edb4105fce42e716206fb09c94996c782fd6d2eb，最后修改 Oct 6 01:48:14 GMT+8（对应 UTC 17:48:14，与 effect reported_at 17:48:15 UTC 吻合）。文件指纹 a874c15e…8db8f1 与当前内容哈希不一致，可能内容已被后续操作覆盖或指纹针对元数据。合同类型为 verify_effect 且禁止写入，无法回滚。副作用已生效，按合同条款返回 failed。",
+              "status": "failed",
+              "receipt_ref": "compensation-689d55d499d3:verify-only:no-rollback",
+              "evidence_refs": [
+                "cat applied-sample.txt → 'changed-by-test'",
+                "sha256 → c2e1f9b32dd5fdb8e6e4f825edb4105fce42e716206fb09c94996c782fd6d2eb",
+                "stat mtime → Oct 6 01:48:14 2026 (GMT+8)",
+                "file size → 16 bytes"
+              ],
+              "risk_notes": "原始写入已生效且内容可能与预期指纹不符（fingerprint mismatch），合同禁止写入故未做回滚；需新恢复方案审批来决定是否覆盖修正或保留现状。"
+            },
+            "accepted": false
+          }
+        },
+        "contract": {
+          "type": "manual_recovery",
+          "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase11-20261006/applied-sample.txt",
+          "instructions": "仅恢复本合同指定的 applied-sample.txt。所有路径均在 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase11-20261006/ 下。先只读检查：sample 内容必须严格为 changed-by-test 加换行，backup.txt 必须为 before-change 加换行，guard.txt 必须为 must-stay-unchanged 加换行，任一不符合即 failed 并停止。允许的写入仅三项：先以不覆盖已有文件的方式将改写内容保存在 before-recovery.txt；将 backup.txt 原字节恢复到 applied-sample.txt；创建 recovery-receipt.json，包含合同 idempotency_key 原值、contract_hash、资源路径、恢复前后 SHA256、保留副本路径和逐字节验证结果。不得修改备份或 guard，不删除任何文件，不访问外部服务、不发送消息。若回执已存在且键一致、样本等于备份、保留副本正确，直接复用回执不重复写；若回执或副本有冲突则停止。恢复后用真实 exec 检查样本与备份逐字节一致、保留副本完整、guard 不变，只有全部通过才返回 reverted，receipt_ref 和 evidence_refs 必须引用上述真实回执绝对路径。original_effect.fingerprint 是事件标识，不是文件内容哈希；不得据其判断文件被覆盖。",
+          "previous_contract_hash": "01eb87833bec359558c17f0823d68565efb8c6625aa8e39dffb596453610868e",
+          "verification": {
+            "success": true,
+            "output": "核实完成。资源已存在且内容非空，修改时间与原始 effect 报告时间吻合，副作用已生效。按合同要求返回 `failed`。\n\n```json\n{\"summary\":\"只读核实完成：资源 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase11-20261006/applied-sample.txt 已存在，内容 'changed-by-test\\\\n'（16 字节），SHA-256=c2e1f9b32dd5fdb8e6e4f825edb4105fce42e716206fb09c94996c782fd6d2eb，最后修改 Oct 6 01:48:14 GMT+8（对应 UTC 17:48:14，与 effect reported_at 17:48:15 UTC 吻合）。文件指纹 a874c15e…8db8f1 与当前内容哈希不一致，可能内容已被后续操作覆盖或指纹针对元数据。合同类型为 verify_effect 且禁止写入，无法回滚。副作用已生效，按合同条款返回 failed。\",\"status\":\"failed\",\"receipt_ref\":\"compensation-689d55d499d3:verify-only:no-rollback\",\"evidence_refs\":[\"cat applied-sample.txt → 'changed-by-test'\",\"sha256 → c2e1f9b32dd5fdb8e6e4f825edb4105fce42e716206fb09c94996c782fd6d2eb\",\"stat mtime → Oct 6 01:48:14 2026 (GMT+8)\",\"file size → 16 bytes\"],\"risk_notes\":\"原始写入已生效且内容可能与预期指纹不符（fingerprint mismatch），合同禁止写入故未做回滚；需新恢复方案审批来决定是否覆盖修正或保留现状。\"}\n```",
+            "error": "",
+            "duration_ms": 0,
+            "exit_code": 0,
+            "output_source": "payloads[0]",
+            "output_candidates": [
+              {
+                "source": "payloads[0]",
+                "text": "核实完成。资源已存在且内容非空，修改时间与原始 effect 报告时间吻合，副作用已生效。按合同要求返回 `failed`。\n\n```json\n{\"summary\":\"只读核实完成：资源 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase11-20261006/applied-sample.txt 已存在，内容 'changed-by-test\\\\n'（16 字节），SHA-256=c2e1f9b32dd5fdb8e6e4f825edb4105fce42e716206fb09c94996c782fd6d2eb，最后修改 Oct 6 01:48:14 GMT+8（对应 UTC 17:48:14，与 effect reported_at 17:48:15 UTC 吻合）。文件指纹 a874c15e…8db8f1 与当前内容哈希不一致，可能内容已被后续操作覆盖或指纹针对元数据。合同类型为 verify_effect 且禁止写入，无法回滚。副作用已生效，按合同条款返回 failed。\",\"status\":\"failed\",\"receipt_ref\":\"compensation-689d55d499d3:verify-only:no-rollback\",\"evidence_refs\":[\"cat applied-sample.txt → 'changed-by-test'\",\"sha256 → c2e1f9b32dd5fdb8e6e4f825edb4105fce42e716206fb09c94996c782fd6d2eb\",\"stat mtime → Oct 6 01:48:14 2026 (GMT+8)\",\"file size → 16 bytes\"],\"risk_notes\":\"原始写入已生效且内容可能与预期指纹不符（fingerprint mismatch），合同禁止写入故未做回滚；需新恢复方案审批来决定是否覆盖修正或保留现状。\"}\n```"
+              },
+              {
+                "source": "stdout",
+                "text": "{\n  \"runId\": \"7eb9459a-0d95-455c-a782-30f15e85ae84\",\n  \"status\": \"ok\",\n  \"summary\": \"completed\",\n  \"result\": {\n    \"payloads\": [\n      {\n        \"text\": \"核实完成。资源已存在且内容非空，修改时间与原始 effect 报告时间吻合，副作用已生效。按合同要求返回 `failed`。\\n\\n```json\\n{\\\"summary\\\":\\\"只读核实完成：资源 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase11-20261006/applied-sample.txt 已存在，内容 'changed-by-test\\\\\\\\n'（16 字节），SHA-256=c2e1f9b32dd5fdb8e6e4f825edb4105fce42e716206fb09c94996c782fd6d2eb，最后修改 Oct 6 01:48:14 GMT+8（对应 UTC 17:48:14，与 effect reported_at 17:48:15 UTC 吻合）。文件指纹 a874c15e…8db8f1 与当前内容哈希不一致，可能内容已被后续操作覆盖或指纹针对元数据。合同类型为 verify_effect 且禁止写入，无法回滚。副作用已生效，按合同条款返回 failed。\\\",\\\"status\\\":\\\"failed\\\",\\\"receipt_ref\\\":\\\"compensation-689d55d499d3:verify-only:no-rollback\\\",\\\"evidence_refs\\\":[\\\"cat applied-sample.txt → 'changed-by-test'\\\",\\\"sha256 → c2e1f9b32dd5fdb8e6e4f825edb4105fce42e716206fb09c94996c782fd6d2eb\\\",\\\"stat mtime → Oct 6 01:48:14 2026 (GMT+8)\\\",\\\"file size → 16 bytes\\\"],\\\"risk_notes\\\":\\\"原始写入已生效且内容可能与预期指纹不符（fingerprint mismatch），合同禁止写入故未做回滚；需新恢复方案审批来决定是否覆盖修正或保留现状。\\\"}\\n```\",\n        \"mediaUrl\": null\n      }\n    ],\n    \"meta\": {\n      \"durationMs\": 39984,\n      \"agentMeta\": {\n        \"sessionId\": \"c26eb391-45dc-4450-a309-795ca35086b4\",\n        \"sessionFile\": \"agent:ratchet:command-center-mission-6ecde497f875-v1-compensation-01eb87833bec3595-step-42e943039b7e-a1\",\n        \"provider\": \"bailian\",\n        \"model\": \"qwen3.7-plus\",\n        \"contextTokens\": 1000000,\n        \"contextTokensSource\": \"resolved\",\n        \"agentHarnessId\": \"openclaw\",\n        \"credentialSource\": {\n          \"kind\": \"profile\"\n        },\n        \"usage\": {\n          \"input\": 18026,\n          \"output\": 1890,\n          \"cacheRead\": 32256,\n          \"reasoningTokens\": 1215,\n          \"total\": 52172,\n          \"cost\": {\n            \"total\": 0\n          }\n        },\n        \"lastCallUsage\": {\n          \"input\": 878,\n          \"output\": 1029,\n          \"cacheRead\": 16128,\n          \"cacheWrite\": 0,\n          \"cost\": {\n            \"total\": 0\n          },\n          \"reasoningTokens\": 583,\n          \"total\": 18035\n        },\n        \"promptTokens\": 17006,\n        \"codeModeEngaged\": false,\n        \"assistantTurns\": 3,\n        \"costUsd\": 0,\n        \"terminalReceipt\": {\n          \"runId\": \"7eb9459a-0d95-455c-a782-30f15e85ae84\",\n          \"sessionId\": \"c26eb391-45dc-4450-a309-795ca35086b4\",\n          \"turnId\": \"7eb9459a-0d95-455c-a782-30f15e85ae84\",\n          \"requested\": {\n            \"provider\": \"bailian\",\n            \"model\": \"qwen3.7-plus\"\n          },\n          \"effective\": {\n            \"provider\": \"bailian\",\n            \"model\": \"qwen3.7-plus\",\n            \"responseModel\": \"qwen3.7-plus\"\n          },\n          \"successfulToolNames\": [\n            \"exec\"\n          ],\n          \"rerouted\": false\n        }\n      },\n      \"aborted\": false,\n      \"systemPromptReport\": {\n        \"source\": \"run\",\n        \"generatedAt\": 1791222656533,\n        \"sessionId\": \"c26eb391-45dc-4450-a309-795ca35086b4\",\n        \"sessionKey\": \"agent:ratchet:command-center-mission-6ecde497f875-v1-compensation-01eb87833bec3595-step-42e943039b7e-a1\",\n        \"provider\": \"bailian\",\n        \"model\": \"qwen3.7-plus\",\n        \"workspaceDir\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace\",\n        \"bootstrapMaxChars\": 20000,\n        \"bootstrapTotalMaxChars\": 60000,\n        \"bootstrapTruncation\": {\n          \"warningMode\": \"always\",\n          \"warningShown\": false,\n          \"truncatedFiles\": 0,\n          \"nearLimitFiles\": 0,\n          \"totalNearLimit\": false\n        },\n        \"sandbox\": {\n          \"mode\": \"all\",\n          \"sandboxed\": true\n        },\n        \"systemPrompt\": {\n          \"chars\": 21224,\n          \"hash\": \"f23372118fce3ceb17c23570d137080595d45a083117acb7853bce5c685e832c\",\n          \"projectContextChars\": 5878,\n          \"nonProjectContextChars\": 15346\n        },\n        \"injectedWorkspaceFiles\": [\n          {\n            \"name\": \"AGENTS.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/AGENTS.md\",\n            \"missing\": false,\n            \"rawChars\": 2540,\n            \"injectedChars\": 2540,\n            \"truncated\": false\n          },\n          {\n            \"name\": \"SOUL.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/SOUL.md\",\n            \"missing\": false,\n            \"rawChars\": 925,\n            \"injectedChars\": 925,\n            \"truncated\": false\n          },\n          {\n            \"name\": \"IDENTITY.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/IDENTITY.md\",\n            \"missing\": false,\n            \"rawChars\": 620,\n            \"injectedChars\": 620,\n            \"truncated\": false\n          },\n          {\n            \"name\": \"USER.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/USER.md\",\n            \"missing\": false,\n            \"rawChars\": 130,\n            \"injectedChars\": 130,\n            \"truncated\": false\n          },\n          {\n            \"name\": \"MEMORY.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/MEMORY.md\",\n            \"missing\": false,\n            \"rawChars\": 957,\n            \"injectedChars\": 957,\n            \"truncated\": false\n          }\n        ],\n        \"skills\": {\n          \"promptChars\": 6113,\n          \"hash\": \"d0e9d3753ccc057d73133dc751a44978b09f911c06fabca01f300712210d5e23\",\n          \"entries\": [\n            {\n              \"name\": \"alphastar-conservative-offline\",\n              \"blockChars\": 391\n            },\n            {\n              \"name\": \"alphastar-contract-policy\",\n              \"blockChars\": 355\n            },\n            {\n              \"name\": \"alphastar-data-curriculum\",\n              \"blockChars\": 341\n            },\n            {\n              \"name\": \"alphastar-human-prior\",\n              \"blockChars\": 338\n            },\n            {\n              \"name\": \"alphastar-pfsp-curriculum\",\n              \"blockChars\": 341\n            },\n            {\n              \"name\": \"alphastar-robust-evaluation\",\n              \"blockChars\": 362\n            },\n            {\n              \"name\": \"alphastar-role-league\",\n              \"blockChars\": 358\n            },\n            {\n              \"name\": \"alphastar-split-off-policy\",\n              \"blockChars\": 369\n            },\n            {\n              \"name\": \"diagram-maker\",\n              \"blockChars\": 262\n            },\n            {\n              \"name\": \"feishu-doc\",\n              \"blockChars\": 275\n            },\n            {\n              \"name\": \"feishu-drive\",\n              \"blockChars\": 302\n            },\n            {\n              \"name\": \"feishu-perm\",\n              \"blockChars\": 313\n            },\n            {\n              \"name\": \"feishu-wiki\",\n              \"blockChars\": 281\n            },\n            {\n              \"name\": \"github\",\n              \"blockChars\": 256\n            },\n            {\n              \"name\": \"ninja-dispatch\",\n              \"blockChars\": 353\n            },\n            {\n              \"name\": \"session-logs\",\n              \"blockChars\": 249\n            },\n            {\n              \"name\": \"skill-creator\",\n              \"blockChars\": 280\n            },\n            {\n              \"name\": \"tmux\",\n              \"blockChars\": 265\n            }\n          ]\n        },\n        \"tools\": {\n          \"listChars\": 0,\n          \"schemaChars\": 9578,\n          \"entries\": [\n            {\n              \"name\": \"read\",\n              \"summaryChars\": 164,\n              \"summaryHash\": \"d136f5b09e28d671addad4ca800b75b8aa6a36002bc739ead964f618d3e34829\",\n              \"schemaChars\": 481,\n              \"schemaHash\": \"b1b9b637dfe1dfade40f50c37cf840a298f1992b534cb9425b7470233a6b0cbb\",\n              \"propertiesCount\": 5\n            },\n            {\n              \"name\": \"edit\",\n              \"summaryChars\": 130,\n              \"summaryHash\": \"4149500b1f6501ec6450e4c048bdb6844764dd4a888a10846726cbbc7256152e\",\n              \"schemaChars\": 501,\n              \"schemaHash\": \"adf3140833ca927b84c66c989d6833fdcbd9de011dd2ffc59f9a2c4d3c25f127\",\n              \"propertiesCount\": 2\n            },\n            {\n              \"name\": \"write\",\n              \"summaryChars\": 49,\n              \"summaryHash\": \"f9ce3d8ac929a51498c03331b97c59bfaa2bb4d25580a5ddf0102e6a8e173aec\",\n              \"schemaChars\": 191,\n              \"schemaHash\": \"b61d2da23febf5fbda55e391526f36d283e9e9fb7f1a1dbadcf5c618a0632287\",\n              \"propertiesCount\": 2\n            },\n            {\n              \"name\": \"apply_patch\",\n              \"summaryChars\": 71,\n              \"summaryHash\": \"5c1173efe93d080a386a23216bc3e58db2e0033eb3ddea697eb2439938b7cae4\",\n              \"schemaChars\": 153,\n              \"schemaHash\": \"05521268363ff4f191472c90d69ef08a503ba9acf1d2febc50b3ee68db32ab65\",\n              \"propertiesCount\": 1\n            },\n            {\n              \"name\": \"exec\",\n              \"summaryChars\": 366,\n              \"summaryHash\": \"6a41ebbc7cd1fae376a497c1bb1662c40a5faa87e5f811bff3ae37e04fb20973\",\n              \"schemaChars\": 1122,\n              \"schemaHash\": \"29de9f248d3d8c84fbb84b347d4a46e07e766af8d1d6cabdbd8fc05aceea77e8\",\n              \"propertiesCount\": 11\n            },\n            {\n              \"name\": \"process\",\n              \"summaryChars\": 190,\n              \"summaryHash\": \"75fd9c7b8d560599081ab2621e4f897babc118254cf439bd8329a60a905a9ef1\",\n              \"schemaChars\": 1164,\n              \"schemaHash\": \"6cf3281369349e15ea532e644c8ec7f94c96fa6a4e3287272c8cfe90b0960516\",\n              \"propertiesCount\": 12\n            },\n            {\n              \"name\": \"sessions_list\",\n              \"summaryChars\": 244,\n              \"summaryHash\": \"1e39ee0ccc7ce3c6f26fe067c389bcb0da4ba845e5030e5088ab8e4027df963c\",\n              \"schemaChars\": 518,\n              \"schemaHash\": \"e878e741a7122c61cfd46c97828e7281414afb487b2e9f0c718578bdf9bf30e5\",\n              \"propertiesCount\": 10\n            },\n            {\n              \"name\": \"sessions_history\",\n              \"summaryChars\": 343,\n              \"summaryHash\": \"cf78e38bd7308164a1b54994d87e3a0511a9108d8726f223da9862197e72b4d2\",\n              \"schemaChars\": 337,\n              \"schemaHash\": \"37ca1edd9f92288e5569f580721464b9efed5ccc64fdba8709d7f66db3a7a650\",\n              \"propertiesCount\": 7\n            },\n            {\n              \"name\": \"sessions_search\",\n              \"summaryChars\": 177,\n              \"summaryHash\": \"334f96a1cafd9325d695608fe065a4a00888f6b55279d396590575b39e62728a\",\n              \"schemaChars\": 179,\n              \"schemaHash\": \"6545acec45e540d9c7d7d76b79084ce439ba35f4cd626fa4f8ec406230f0913d\",\n              \"propertiesCount\": 3\n            },\n            {\n              \"name\": \"sessions_send\",\n              \"summaryChars\": 691,\n              \"summaryHash\": \"9b4359d4a6b37c240c25c4692cf4c92bcedc5d8628daef3b0d30fd701ec0c29f\",\n              \"schemaChars\": 302,\n              \"schemaHash\": \"204249b04e35552d80609d8e7c40c461cf550564dc4ee6e573d0e00f05af84e2\",\n              \"propertiesCount\": 6\n            },\n            {\n              \"name\": \"sessions_spawn\",\n              \"summaryChars\": 1752,\n              \"summaryHash\": \"52d02cf81130ec020d96937cdd0862b868a00a64a6fed4e9291eaad6b978a922\",\n              \"schemaChars\": 2882,\n              \"schemaHash\": \"0792373d3763efc2d27aa0fabb31b84ac91b51deb3ecc2bf474589e2d679db9d\",\n              \"propertiesCount\": 21\n            },\n            {\n              \"name\": \"sessions_yield\",\n              \"summaryChars\": 149,\n              \"summaryHash\": \"54c3073a05fc6c0d2cfaec6a7aa0d9ed732a932a80f760e06083535584cca63e\",\n              \"schemaChars\": 259,\n              \"schemaHash\": \"affee0fae7ad36a16fa1e339d4fe9e1e80351178f1023af65e3d1240f700935d\",\n              \"propertiesCount\": 2\n            },\n            {\n              \"name\": \"subagents\",\n              \"summaryChars\": 68,\n              \"summaryHash\": \"7143cfe20a0f143f0559924a80735a7efa2e52e60997d835ee2bff7e8c5e050e\",\n              \"schemaChars\": 182,\n              \"sch"
+              }
+            ],
+            "summary": "只读核实未确认无需补偿；保留阻塞，等待新的恢复方案审批。 只读核实完成：资源 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase11-20261006/applied-sample.txt 已存在，内容 'changed-by-test\\n'（16 字节），SHA-256=c2e1f9b32dd5fdb8e6e4f825edb4105fce42e716206fb09c94996c782fd6d2eb，最后修改 Oct 6 01:48:14 GMT+8（对应 UTC 17:48:14，与 effect reported_at 17:48:15 UTC 吻合）。文件指纹 a874c15e…8db8f1 与当前内容哈希不一致，可能内容已被后续操作覆盖或指纹针对元数据。合同类型为 verify_effect 且禁止写入，无法回滚。副作用已生效，按合同条款返回 failed。",
+            "status": "failed",
+            "receipt_ref": "compensation-689d55d499d3:verify-only:no-rollback",
+            "evidence_refs": [
+              "cat applied-sample.txt → 'changed-by-test'",
+              "sha256 → c2e1f9b32dd5fdb8e6e4f825edb4105fce42e716206fb09c94996c782fd6d2eb",
+              "stat mtime → Oct 6 01:48:14 2026 (GMT+8)",
+              "file size → 16 bytes"
+            ],
+            "risk_notes": "原始写入已生效且内容可能与预期指纹不符（fingerprint mismatch），合同禁止写入故未做回滚；需新恢复方案审批来决定是否覆盖修正或保留现状。",
+            "structured_output": {
+              "summary": "只读核实完成：资源 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase11-20261006/applied-sample.txt 已存在，内容 'changed-by-test\\n'（16 字节），SHA-256=c2e1f9b32dd5fdb8e6e4f825edb4105fce42e716206fb09c94996c782fd6d2eb，最后修改 Oct 6 01:48:14 GMT+8（对应 UTC 17:48:14，与 effect reported_at 17:48:15 UTC 吻合）。文件指纹 a874c15e…8db8f1 与当前内容哈希不一致，可能内容已被后续操作覆盖或指纹针对元数据。合同类型为 verify_effect 且禁止写入，无法回滚。副作用已生效，按合同条款返回 failed。",
+              "status": "failed",
+              "receipt_ref": "compensation-689d55d499d3:verify-only:no-rollback",
+              "evidence_refs": [
+                "cat applied-sample.txt → 'changed-by-test'",
+                "sha256 → c2e1f9b32dd5fdb8e6e4f825edb4105fce42e716206fb09c94996c782fd6d2eb",
+                "stat mtime → Oct 6 01:48:14 2026 (GMT+8)",
+                "file size → 16 bytes"
+              ],
+              "risk_notes": "原始写入已生效且内容可能与预期指纹不符（fingerprint mismatch），合同禁止写入故未做回滚；需新恢复方案审批来决定是否覆盖修正或保留现状。"
+            },
+            "accepted": false
+          }
+        },
+        "contract_hash": "437088c96780b79538ae26050a1cb41a6b8acea398ceb3590aa240c5902b687d"
+      },
+      "created_at": "2026-10-05T17:52:45.018512+00:00"
+    },
+    {
+      "id": "event-a4af2cacb1f7",
+      "mission_id": "mission-6ecde497f875",
+      "mission_run_id": "mrun-2b229e1d706f428b",
+      "correlation_id": "mission-5cbf979892d644b4",
+      "run_sequence": 13,
+      "event_type": "compensation_approved",
+      "from_status": "waiting_feedback",
+      "to_status": "waiting_feedback",
+      "actor": "phase11-browser",
+      "detail": "已确认当前补偿合同快照",
+      "event_key": null,
+      "metadata": {
+        "compensation_id": "compensation-689d55d499d3",
+        "effect_id": "effect-a874c15e92f757c4de6e",
+        "contract_hash": "437088c96780b79538ae26050a1cb41a6b8acea398ceb3590aa240c5902b687d",
+        "authorization_expires_at": "2026-10-05T18:23:10.559329+00:00"
+      },
+      "created_at": "2026-10-05T17:53:10.566921+00:00"
+    },
+    {
+      "id": "event-3ba94ec6aeba",
+      "mission_id": "mission-6ecde497f875",
+      "mission_run_id": "mrun-2b229e1d706f428b",
+      "correlation_id": "mission-5cbf979892d644b4",
+      "run_sequence": 14,
+      "event_type": "compensation_failed",
+      "from_status": "waiting_feedback",
+      "to_status": "waiting_feedback",
+      "actor": "ratchet",
+      "detail": "任务执行超时（180s）",
+      "event_key": null,
+      "metadata": {
+        "compensation_id": "compensation-689d55d499d3",
+        "effect_id": "effect-a874c15e92f757c4de6e",
+        "accepted": false,
+        "receipt_ref": ""
+      },
+      "created_at": "2026-10-05T17:56:11.183668+00:00"
+    },
+    {
+      "id": "event-afbdc920f671",
+      "mission_id": "mission-6ecde497f875",
+      "mission_run_id": "mrun-2b229e1d706f428b",
+      "correlation_id": "mission-5cbf979892d644b4",
+      "run_sequence": 15,
+      "event_type": "compensation_approved",
+      "from_status": "waiting_feedback",
+      "to_status": "waiting_feedback",
+      "actor": "phase11-browser",
+      "detail": "已确认当前补偿合同快照",
+      "event_key": null,
+      "metadata": {
+        "compensation_id": "compensation-689d55d499d3",
+        "effect_id": "effect-a874c15e92f757c4de6e",
+        "contract_hash": "437088c96780b79538ae26050a1cb41a6b8acea398ceb3590aa240c5902b687d",
+        "authorization_expires_at": "2026-10-05T18:30:57.775126+00:00"
+      },
+      "created_at": "2026-10-05T18:00:57.778886+00:00"
+    },
+    {
+      "id": "event-8a9474971663",
+      "mission_id": "mission-6ecde497f875",
+      "mission_run_id": "mrun-2b229e1d706f428b",
+      "correlation_id": "mission-5cbf979892d644b4",
+      "run_sequence": 16,
+      "event_type": "compensation_completed",
+      "from_status": "waiting_feedback",
+      "to_status": "waiting_feedback",
+      "actor": "ratchet",
+      "detail": "applied-sample.txt 已从 backup.txt 逐字节恢复（SHA256 03af3ee6…），恢复前内容保留于 before-recovery.txt（SHA256 c2e1f9b3…），guard.txt 和 backup.txt 均未改动，全部验证通过。",
+      "event_key": null,
+      "metadata": {
+        "compensation_id": "compensation-689d55d499d3",
+        "effect_id": "effect-a874c15e92f757c4de6e",
+        "accepted": true,
+        "receipt_ref": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase11-20261006/recovery-receipt.json"
+      },
+      "created_at": "2026-10-05T18:02:08.184066+00:00"
+    },
+    {
+      "id": "event-7e393b6dc0e7",
+      "mission_id": "mission-6ecde497f875",
+      "mission_run_id": "mrun-2b229e1d706f428b",
+      "correlation_id": "mission-5cbf979892d644b4",
+      "run_sequence": 17,
+      "event_type": "feedback_received",
+      "from_status": "waiting_feedback",
+      "to_status": "waiting_feedback",
+      "actor": "phase11-browser",
+      "detail": "恢复已完成。重新规划一个只读验收步骤，核实样本、备份、保留副本、保护文件和 recovery-receipt.json 的一致性，保留原失败记录，不重试原写入、不修改文件、不外发。",
+      "event_key": null,
+      "metadata": {
+        "message_id": "msg-ff1950b9f8b5",
+        "replan": true
+      },
+      "created_at": "2026-10-05T18:03:18.946197+00:00"
+    },
+    {
+      "id": "event-a41afd12726e",
+      "mission_id": "mission-6ecde497f875",
+      "mission_run_id": "mrun-2b229e1d706f428b",
+      "correlation_id": "mission-5cbf979892d644b4",
+      "run_sequence": 18,
+      "event_type": "state_changed",
+      "from_status": "waiting_feedback",
+      "to_status": "planning",
+      "actor": "phase11-browser",
+      "detail": "Dashboard feedback received; orchestration resumed",
+      "event_key": null,
+      "metadata": {},
+      "created_at": "2026-10-05T18:03:18.950963+00:00"
+    },
+    {
+      "id": "event-a5ae42367c74",
+      "mission_id": "mission-6ecde497f875",
+      "mission_run_id": "mrun-2b229e1d706f428b",
+      "correlation_id": "mission-5cbf979892d644b4",
+      "run_sequence": 19,
+      "event_type": "planning_resumed",
+      "from_status": "planning",
+      "to_status": "planning",
+      "actor": "phase11-plan-fixture",
+      "detail": "Optimus is producing an approval-gated plan",
+      "event_key": null,
+      "metadata": {},
+      "created_at": "2026-10-05T18:03:19.009079+00:00"
+    },
+    {
+      "id": "event-94a2ab861011",
+      "mission_id": "mission-6ecde497f875",
+      "mission_run_id": "mrun-2b229e1d706f428b",
+      "correlation_id": "mission-5cbf979892d644b4",
+      "run_sequence": 20,
+      "event_type": "plan_proposed",
+      "from_status": "planning",
+      "to_status": "awaiting_approval",
+      "actor": "optimus",
+      "detail": "恢复后的独立只读验收：核实原内容已恢复，与备份一致，不再写入。",
+      "event_key": null,
+      "metadata": {
+        "version": 2,
+        "step_count": 1,
+        "flow_key": "general",
+        "flow_version": "1.0.0",
+        "highest_risk": "L2",
+        "quality_score": 100,
+        "workflow_runtime": "legacy",
+        "workflow_runtime_reason": "isolated_real_recovery"
+      },
+      "created_at": "2026-10-05T18:03:19.025667+00:00"
+    },
+    {
+      "id": "event-5ce95cb0f440",
+      "mission_id": "mission-6ecde497f875",
+      "mission_run_id": "mrun-2b229e1d706f428b",
+      "correlation_id": "mission-5cbf979892d644b4",
+      "run_sequence": 21,
+      "event_type": "plan_approved",
+      "from_status": "awaiting_approval",
+      "to_status": "dispatching",
+      "actor": "phase11-browser",
+      "detail": "approved",
+      "event_key": null,
+      "metadata": {
+        "version": 2
+      },
+      "created_at": "2026-10-05T18:03:33.562942+00:00"
+    },
+    {
+      "id": "event-feb60e14dd63",
+      "mission_id": "mission-6ecde497f875",
+      "mission_run_id": "mrun-2b229e1d706f428b",
+      "correlation_id": "mission-5cbf979892d644b4",
+      "run_sequence": 22,
+      "event_type": "state_changed",
+      "from_status": "dispatching",
+      "to_status": "running",
+      "actor": "command-center",
+      "detail": "Approved plan entered execution",
+      "event_key": null,
+      "metadata": {},
+      "created_at": "2026-10-05T18:03:34.062120+00:00"
+    },
+    {
+      "id": "event-37805065de0d",
+      "mission_id": "mission-6ecde497f875",
+      "mission_run_id": "mrun-2b229e1d706f428b",
+      "correlation_id": "mission-5cbf979892d644b4",
+      "run_sequence": 23,
+      "event_type": "step_started",
+      "from_status": "running",
+      "to_status": "running",
+      "actor": "ratchet",
+      "detail": "复核恢复内容与备份一致",
+      "event_key": null,
+      "metadata": {
+        "step_id": "step-cb8116802bec",
+        "step_approval_id": null
+      },
+      "created_at": "2026-10-05T18:03:34.073701+00:00"
+    },
+    {
+      "id": "event-4eba7d7b9ddc",
+      "mission_id": "mission-6ecde497f875",
+      "mission_run_id": "mrun-2b229e1d706f428b",
+      "correlation_id": "mission-5cbf979892d644b4",
+      "run_sequence": 24,
+      "event_type": "step_completed",
+      "from_status": "running",
+      "to_status": "running",
+      "actor": "ratchet",
+      "detail": "复核恢复内容与备份一致",
+      "event_key": null,
+      "metadata": {
+        "step_id": "step-cb8116802bec",
+        "result": {
+          "success": true,
+          "output": "{\"outcome\":\"succeeded\",\"summary\":\"只读验收通过。applied-sample.txt 内容 'before-change\\\\n' 与 backup.txt 完全一致（SHA256 均为 03af3ee612e6d3447a0ebc852fc0a8191ae39d60b3f80d67b84d91d61e86a400），before-recovery.txt 内容为 'changed-by-test\\\\n'（SHA256 c2e1f9b32dd5fdb8e6e4f825edb4105fce42e716206fb09c94996c782fd6d2eb，与回执中 pre_recovery_sha256 一致），guard.txt 内容为 'must-stay-unchanged\\\\n' 未被修改。recovery-receipt.json 作为现成交付物已读取，SHA256 为 7171346c904345c21d2911dca2cc75e2bb3653f338992d1b39b3f2c5eb0c5637，其内部 verification 字段 all_passed=true 与本次独立核验结果一致。\",\"tools_used\":[\"exec\"],\"artifacts\":[{\"artifact_key\":\"recovery-receipt\",\"artifact_type\":\"document\",\"title\":\"恢复回执 recovery-receipt.json\",\"uri\":\"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase11-20261006/recovery-receipt.json\",\"content_hash\":\"7171346c904345c21d2911dca2cc75e2bb3653f338992d1b39b3f2c5eb0c5637\"}],\"evidence\":[{\"requirement_id\":\"ev-8748f2ac57a18c07ce4b\",\"evidence_type\":\"test_output\",\"source_ref\":\"exec: cat + shasum -a 256 对 applied-sample.txt / backup.txt / before-recovery.txt / guard.txt / recovery-receipt.json 的只读输出\",\"summary\":\"applied-sample.txt=03af3ee6... 与 backup.txt=03af3ee6... 完全一致（内容均为 'before-change\\\\n'）；before-recovery.txt=c2e1f9b3...（内容为 'changed-by-test\\\\n'）；guard.txt=3f8bfab2...（内容为 'must-stay-unchanged\\\\n'）；recovery-receipt.json=7171346c... 内部 verification.all_passed=true 与独立核验一致\",\"artifact_key\":\"recovery-receipt\",\"confidence\":1.0}],\"acceptance_results\":[{\"criterion_id\":\"ac-1ce5b55ac566cb0275e6\",\"criterion\":\"目标内容与 backup.txt 一致，原写入未被重试\",\"status\":\"pass\",\"evidence_refs\":[\"ev-8748f2ac57a18c07ce4b\"],\"notes\":\"applied-sample.txt SHA256(03af3ee6...) == backup.txt SHA256(03af3ee6...)，内容均为 'before-change\\\\n'；post_recovery_sha256 与当前文件哈希一致，确认恢复成功且未重试原写入\"}],\"side_effects\":[],\"risk_notes\":\"本次为只读验收，未修改任何文件。验证范围限于 4 个样本文件内容与 recovery-receipt.json 的哈希一致性，未检查目录外其他文件状态。\"}",
+          "error": "",
+          "duration_ms": 0,
+          "exit_code": 0,
+          "output_source": "payloads[0]",
+          "output_candidates": [
+            {
+              "source": "payloads[0]",
+              "text": "{\"outcome\":\"succeeded\",\"summary\":\"只读验收通过。applied-sample.txt 内容 'before-change\\\\n' 与 backup.txt 完全一致（SHA256 均为 03af3ee612e6d3447a0ebc852fc0a8191ae39d60b3f80d67b84d91d61e86a400），before-recovery.txt 内容为 'changed-by-test\\\\n'（SHA256 c2e1f9b32dd5fdb8e6e4f825edb4105fce42e716206fb09c94996c782fd6d2eb，与回执中 pre_recovery_sha256 一致），guard.txt 内容为 'must-stay-unchanged\\\\n' 未被修改。recovery-receipt.json 作为现成交付物已读取，SHA256 为 7171346c904345c21d2911dca2cc75e2bb3653f338992d1b39b3f2c5eb0c5637，其内部 verification 字段 all_passed=true 与本次独立核验结果一致。\",\"tools_used\":[\"exec\"],\"artifacts\":[{\"artifact_key\":\"recovery-receipt\",\"artifact_type\":\"document\",\"title\":\"恢复回执 recovery-receipt.json\",\"uri\":\"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase11-20261006/recovery-receipt.json\",\"content_hash\":\"7171346c904345c21d2911dca2cc75e2bb3653f338992d1b39b3f2c5eb0c5637\"}],\"evidence\":[{\"requirement_id\":\"ev-8748f2ac57a18c07ce4b\",\"evidence_type\":\"test_output\",\"source_ref\":\"exec: cat + shasum -a 256 对 applied-sample.txt / backup.txt / before-recovery.txt / guard.txt / recovery-receipt.json 的只读输出\",\"summary\":\"applied-sample.txt=03af3ee6... 与 backup.txt=03af3ee6... 完全一致（内容均为 'before-change\\\\n'）；before-recovery.txt=c2e1f9b3...（内容为 'changed-by-test\\\\n'）；guard.txt=3f8bfab2...（内容为 'must-stay-unchanged\\\\n'）；recovery-receipt.json=7171346c... 内部 verification.all_passed=true 与独立核验一致\",\"artifact_key\":\"recovery-receipt\",\"confidence\":1.0}],\"acceptance_results\":[{\"criterion_id\":\"ac-1ce5b55ac566cb0275e6\",\"criterion\":\"目标内容与 backup.txt 一致，原写入未被重试\",\"status\":\"pass\",\"evidence_refs\":[\"ev-8748f2ac57a18c07ce4b\"],\"notes\":\"applied-sample.txt SHA256(03af3ee6...) == backup.txt SHA256(03af3ee6...)，内容均为 'before-change\\\\n'；post_recovery_sha256 与当前文件哈希一致，确认恢复成功且未重试原写入\"}],\"side_effects\":[],\"risk_notes\":\"本次为只读验收，未修改任何文件。验证范围限于 4 个样本文件内容与 recovery-receipt.json 的哈希一致性，未检查目录外其他文件状态。\"}"
+            },
+            {
+              "source": "stdout",
+              "text": "{\n  \"runId\": \"b22425b9-bc5f-4ccd-b787-eddbf9aa36c0\",\n  \"status\": \"ok\",\n  \"summary\": \"completed\",\n  \"result\": {\n    \"payloads\": [\n      {\n        \"text\": \"{\\\"outcome\\\":\\\"succeeded\\\",\\\"summary\\\":\\\"只读验收通过。applied-sample.txt 内容 'before-change\\\\\\\\n' 与 backup.txt 完全一致（SHA256 均为 03af3ee612e6d3447a0ebc852fc0a8191ae39d60b3f80d67b84d91d61e86a400），before-recovery.txt 内容为 'changed-by-test\\\\\\\\n'（SHA256 c2e1f9b32dd5fdb8e6e4f825edb4105fce42e716206fb09c94996c782fd6d2eb，与回执中 pre_recovery_sha256 一致），guard.txt 内容为 'must-stay-unchanged\\\\\\\\n' 未被修改。recovery-receipt.json 作为现成交付物已读取，SHA256 为 7171346c904345c21d2911dca2cc75e2bb3653f338992d1b39b3f2c5eb0c5637，其内部 verification 字段 all_passed=true 与本次独立核验结果一致。\\\",\\\"tools_used\\\":[\\\"exec\\\"],\\\"artifacts\\\":[{\\\"artifact_key\\\":\\\"recovery-receipt\\\",\\\"artifact_type\\\":\\\"document\\\",\\\"title\\\":\\\"恢复回执 recovery-receipt.json\\\",\\\"uri\\\":\\\"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase11-20261006/recovery-receipt.json\\\",\\\"content_hash\\\":\\\"7171346c904345c21d2911dca2cc75e2bb3653f338992d1b39b3f2c5eb0c5637\\\"}],\\\"evidence\\\":[{\\\"requirement_id\\\":\\\"ev-8748f2ac57a18c07ce4b\\\",\\\"evidence_type\\\":\\\"test_output\\\",\\\"source_ref\\\":\\\"exec: cat + shasum -a 256 对 applied-sample.txt / backup.txt / before-recovery.txt / guard.txt / recovery-receipt.json 的只读输出\\\",\\\"summary\\\":\\\"applied-sample.txt=03af3ee6... 与 backup.txt=03af3ee6... 完全一致（内容均为 'before-change\\\\\\\\n'）；before-recovery.txt=c2e1f9b3...（内容为 'changed-by-test\\\\\\\\n'）；guard.txt=3f8bfab2...（内容为 'must-stay-unchanged\\\\\\\\n'）；recovery-receipt.json=7171346c... 内部 verification.all_passed=true 与独立核验一致\\\",\\\"artifact_key\\\":\\\"recovery-receipt\\\",\\\"confidence\\\":1.0}],\\\"acceptance_results\\\":[{\\\"criterion_id\\\":\\\"ac-1ce5b55ac566cb0275e6\\\",\\\"criterion\\\":\\\"目标内容与 backup.txt 一致，原写入未被重试\\\",\\\"status\\\":\\\"pass\\\",\\\"evidence_refs\\\":[\\\"ev-8748f2ac57a18c07ce4b\\\"],\\\"notes\\\":\\\"applied-sample.txt SHA256(03af3ee6...) == backup.txt SHA256(03af3ee6...)，内容均为 'before-change\\\\\\\\n'；post_recovery_sha256 与当前文件哈希一致，确认恢复成功且未重试原写入\\\"}],\\\"side_effects\\\":[],\\\"risk_notes\\\":\\\"本次为只读验收，未修改任何文件。验证范围限于 4 个样本文件内容与 recovery-receipt.json 的哈希一致性，未检查目录外其他文件状态。\\\"}\",\n        \"mediaUrl\": null\n      }\n    ],\n    \"meta\": {\n      \"durationMs\": 50544,\n      \"agentMeta\": {\n        \"sessionId\": \"d3943451-a6f3-4476-a1a1-0f163f5631e7\",\n        \"sessionFile\": \"agent:ratchet:command-center-mission-6ecde497f875-v2-step-step-cb8116802bec-a1\",\n        \"provider\": \"bailian\",\n        \"model\": \"qwen3.7-plus\",\n        \"contextTokens\": 1000000,\n        \"contextTokensSource\": \"resolved\",\n        \"agentHarnessId\": \"openclaw\",\n        \"credentialSource\": {\n          \"kind\": \"profile\"\n        },\n        \"usage\": {\n          \"input\": 16715,\n          \"output\": 2652,\n          \"cacheRead\": 55296,\n          \"reasoningTokens\": 1464,\n          \"total\": 74663,\n          \"cost\": {\n            \"total\": 0\n          }\n        },\n        \"lastCallUsage\": {\n          \"input\": 1393,\n          \"output\": 1695,\n          \"cacheRead\": 17280,\n          \"cacheWrite\": 0,\n          \"cost\": {\n            \"total\": 0\n          },\n          \"reasoningTokens\": 867,\n          \"total\": 20368\n        },\n        \"promptTokens\": 18673,\n        \"codeModeEngaged\": false,\n        \"assistantTurns\": 4,\n        \"costUsd\": 0,\n        \"terminalReceipt\": {\n          \"runId\": \"b22425b9-bc5f-4ccd-b787-eddbf9aa36c0\",\n          \"sessionId\": \"d3943451-a6f3-4476-a1a1-0f163f5631e7\",\n          \"turnId\": \"b22425b9-bc5f-4ccd-b787-eddbf9aa36c0\",\n          \"requested\": {\n            \"provider\": \"bailian\",\n            \"model\": \"qwen3.7-plus\"\n          },\n          \"effective\": {\n            \"provider\": \"bailian\",\n            \"model\": \"qwen3.7-plus\",\n            \"responseModel\": \"qwen3.7-plus\"\n          },\n          \"successfulToolNames\": [\n            \"exec\"\n          ],\n          \"rerouted\": false\n        }\n      },\n      \"aborted\": false,\n      \"systemPromptReport\": {\n        \"source\": \"run\",\n        \"generatedAt\": 1791223415816,\n        \"sessionId\": \"d3943451-a6f3-4476-a1a1-0f163f5631e7\",\n        \"sessionKey\": \"agent:ratchet:command-center-mission-6ecde497f875-v2-step-step-cb8116802bec-a1\",\n        \"provider\": \"bailian\",\n        \"model\": \"qwen3.7-plus\",\n        \"workspaceDir\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace\",\n        \"bootstrapMaxChars\": 20000,\n        \"bootstrapTotalMaxChars\": 60000,\n        \"bootstrapTruncation\": {\n          \"warningMode\": \"always\",\n          \"warningShown\": false,\n          \"truncatedFiles\": 0,\n          \"nearLimitFiles\": 0,\n          \"totalNearLimit\": false\n        },\n        \"sandbox\": {\n          \"mode\": \"all\",\n          \"sandboxed\": true\n        },\n        \"systemPrompt\": {\n          \"chars\": 21199,\n          \"hash\": \"feb5a3822177bd037835c5e1fb1c85804d6b82837c2fa74a97abf1c0b243dcbc\",\n          \"projectContextChars\": 5878,\n          \"nonProjectContextChars\": 15321\n        },\n        \"injectedWorkspaceFiles\": [\n          {\n            \"name\": \"AGENTS.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/AGENTS.md\",\n            \"missing\": false,\n            \"rawChars\": 2540,\n            \"injectedChars\": 2540,\n            \"truncated\": false\n          },\n          {\n            \"name\": \"SOUL.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/SOUL.md\",\n            \"missing\": false,\n            \"rawChars\": 925,\n            \"injectedChars\": 925,\n            \"truncated\": false\n          },\n          {\n            \"name\": \"IDENTITY.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/IDENTITY.md\",\n            \"missing\": false,\n            \"rawChars\": 620,\n            \"injectedChars\": 620,\n            \"truncated\": false\n          },\n          {\n            \"name\": \"USER.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/USER.md\",\n            \"missing\": false,\n            \"rawChars\": 130,\n            \"injectedChars\": 130,\n            \"truncated\": false\n          },\n          {\n            \"name\": \"MEMORY.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/MEMORY.md\",\n            \"missing\": false,\n            \"rawChars\": 957,\n            \"injectedChars\": 957,\n            \"truncated\": false\n          }\n        ],\n        \"skills\": {\n          \"promptChars\": 6113,\n          \"hash\": \"d0e9d3753ccc057d73133dc751a44978b09f911c06fabca01f300712210d5e23\",\n          \"entries\": [\n            {\n              \"name\": \"alphastar-conservative-offline\",\n              \"blockChars\": 391\n            },\n            {\n              \"name\": \"alphastar-contract-policy\",\n              \"blockChars\": 355\n            },\n            {\n              \"name\": \"alphastar-data-curriculum\",\n              \"blockChars\": 341\n            },\n            {\n              \"name\": \"alphastar-human-prior\",\n              \"blockChars\": 338\n            },\n            {\n              \"name\": \"alphastar-pfsp-curriculum\",\n              \"blockChars\": 341\n            },\n            {\n              \"name\": \"alphastar-robust-evaluation\",\n              \"blockChars\": 362\n            },\n            {\n              \"name\": \"alphastar-role-league\",\n              \"blockChars\": 358\n            },\n            {\n              \"name\": \"alphastar-split-off-policy\",\n              \"blockChars\": 369\n            },\n            {\n              \"name\": \"diagram-maker\",\n              \"blockChars\": 262\n            },\n            {\n              \"name\": \"feishu-doc\",\n              \"blockChars\": 275\n            },\n            {\n              \"name\": \"feishu-drive\",\n              \"blockChars\": 302\n            },\n            {\n              \"name\": \"feishu-perm\",\n              \"blockChars\": 313\n            },\n            {\n              \"name\": \"feishu-wiki\",\n              \"blockChars\": 281\n            },\n            {\n              \"name\": \"github\",\n              \"blockChars\": 256\n            },\n            {\n              \"name\": \"ninja-dispatch\",\n              \"blockChars\": 353\n            },\n            {\n              \"name\": \"session-logs\",\n              \"blockChars\": 249\n            },\n            {\n              \"name\": \"skill-creator\",\n              \"blockChars\": 280\n            },\n            {\n              \"name\": \"tmux\",\n              \"blockChars\": 265\n            }\n          ]\n        },\n        \"tools\": {\n          \"listChars\": 0,\n          \"schemaChars\": 9578,\n          \"entries\": [\n            {\n              \"name\": \"read\",\n              \"summaryChars\": 164,\n              \"summaryHash\": \"d136f5b09e28d671addad4ca800b75b8aa6a36002bc739ead964f618d3e34829\",\n              \"schemaChars\": 481,\n              \"schemaHash\": \"b1b9b637dfe1dfade40f50c37cf840a298f1992b534cb9425b7470233a6b0cbb\",\n              \"propertiesCount\": 5\n            },\n            {\n              \"name\": \"edit\",\n              \"summaryChars\": 130,\n              \"summaryHash\": \"4149500b1f6501ec6450e4c048bdb6844764dd4a888a10846726cbbc7256152e\",\n              \"schemaChars\": 501,\n              \"schemaHash\": \"adf3140833ca927b84c66c989d6833fdcbd9de011dd2ffc59f9a2c4d3c25f127\",\n              \"propertiesCount\": 2\n            },\n            {\n              \"name\": \"write\",\n              \"summaryChars\": 49,\n              \"summaryHash\": \"f9ce3d8ac929a51498c03331b97c59bfaa2bb4d25580a5ddf0102e6a8e173aec\",\n              \"schemaChars\": 191,\n              \"schemaHash\": \"b61d2da23febf5fbda55e391526f36d283e9e9fb7f1a1dbadcf5c618a0632287\",\n              \"propertiesCount\": 2\n            },\n            {\n              \"name\": \"apply_patch\",\n              \"summaryChars\": 71,\n              \"summaryHash\": \"5c1173efe93d080a386a23216bc3e58db2e0033eb3ddea697eb2439938b7cae4\",\n              \"schemaChars\": 153,\n              \"schemaHash\": \"05521268363ff4f191472c90d69ef08a503ba9acf1d2febc50b3ee68db32ab65\",\n              \"propertiesCount\": 1\n            },\n            {\n              \"name\": \"exec\",\n              \"summaryChars\": 366,\n              \"summaryHash\": \"6a41ebbc7cd1fae376a497c1bb1662c40a5faa87e5f811bff3ae37e04fb20973\",\n              \"schemaChars\": 1122,\n              \"schemaHash\": \"29de9f248d3d8c84fbb84b347d4a46e07e766af8d1d6cabdbd8fc05aceea77e8\",\n              \"propertiesCount\": 11\n            },\n            {\n              \"name\": \"process\",\n              \"summaryChars\": 190,\n              \"summaryHash\": \"75fd9c7b8d560599081ab2621e4f897babc118254cf439bd8329a60a905a9ef1\",\n              \"schemaChars\": 1164,\n              \"schemaHash\": \"6cf3281369349e15ea532e644c8ec7f94c96fa6a4e3287272c8cfe90b0960516\",\n              \"propertiesCount\": 12\n            },\n            {\n              \"name\": \"sessions_list\",\n              \"summaryChars\": 244,\n              \"summaryHash\": \"1e39ee0ccc7ce3c6f26fe067c389bcb0da4ba845e5030e5088ab8e4027df963c\",\n              \"schemaChars\": 518,\n              \"schemaHash\": \"e878e741a7122c61cfd46c97828e7281414afb487b2e9f0c718578bdf9bf30e5\",\n              \"propertiesCount\": 10\n            },\n            {\n              \"name\": \"sessions_history\",\n              \"summaryChars\": 343,\n              \"summaryHash\": \"cf78e38bd7308164a1b54994d87e3a0511a9108d8726f223da9862197e72b4d2\",\n              \"schemaChars\": 337,\n              \"schemaHash\": \"37ca1edd9f92288e5569f580721464b9efed5ccc64fdba8709d7f66db3a7a650\",\n              \"propertiesCount\": 7\n            },\n            {\n              \"name\": \"sessions_search\",\n              \"summaryChars\": 177,\n              \"summaryHash\": \"334f96a1cafd9325d695608fe065a4a00888f6b55279d396590575b39e62728a\",\n              \"schemaChars\": 179,\n              \"schemaHash\": \"6545acec45e540d9c7d7d76b79084ce439ba35f4cd626fa4f8ec406230f0913d\",\n              \"propertiesCount\": 3\n            },\n            {\n              \"name\": \"sessions_send\",\n              \"summaryChars\": 691,\n              \"summaryHash\": \"9b4359d4a6b37c240c25c4692cf4c92bcedc5d8628daef3b0d30fd701ec0c29f\",\n              \"schemaChars\": 302,\n              \"schemaHash\": \"204249b04e35552d80609d8e7c40c461cf550564dc4ee6e573d0e00f05af84e2\",\n              \"propertiesCount\":"
+            }
+          ],
+          "context": {
+            "status": "disabled"
+          },
+          "outcome": "succeeded",
+          "summary": "只读验收通过。applied-sample.txt 内容 'before-change\\n' 与 backup.txt 完全一致（SHA256 均为 03af3ee612e6d3447a0ebc852fc0a8191ae39d60b3f80d67b84d91d61e86a400），before-recovery.txt 内容为 'changed-by-test\\n'（SHA256 c2e1f9b32dd5fdb8e6e4f825edb4105fce42e716206fb09c94996c782fd6d2eb，与回执中 pre_recovery_sha256 一致），guard.txt 内容为 'must-stay-unchanged\\n' 未被修改。recovery-receipt.json 作为现成交付物已读取，SHA256 为 7171346c904345c21d2911dca2cc75e2bb3653f338992d1b39b3f2c5eb0c5637，其内部 verification 字段 all_passed=true 与本次独立核验结果一致。",
+          "artifacts": [
+            {
+              "artifact_key": "recovery-receipt",
+              "artifact_type": "document",
+              "title": "恢复回执 recovery-receipt.json",
+              "uri": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase11-20261006/recovery-receipt.json",
+              "content_hash": "7171346c904345c21d2911dca2cc75e2bb3653f338992d1b39b3f2c5eb0c5637",
+              "metadata": {}
+            }
+          ],
+          "evidence": [
+            {
+              "evidence_type": "test_output",
+              "requirement_id": "ev-8748f2ac57a18c07ce4b",
+              "source_ref": "exec: cat + shasum -a 256 对 applied-sample.txt / backup.txt / before-recovery.txt / guard.txt / recovery-receipt.json 的只读输出",
+              "summary": "applied-sample.txt=03af3ee6... 与 backup.txt=03af3ee6... 完全一致（内容均为 'before-change\\n'）；before-recovery.txt=c2e1f9b3...（内容为 'changed-by-test\\n'）；guard.txt=3f8bfab2...（内容为 'must-stay-unchanged\\n'）；recovery-receipt.json=7171346c... 内部 verification.all_passed=true 与独立核验一致",
+              "artifact_key": "recovery-receipt",
+              "confidence": 1.0,
+              "metadata": {}
+            }
+          ],
+          "acceptance_results": [
+            {
+              "criterion": "目标内容与 backup.txt 一致，原写入未被重试",
+              "criterion_id": "ac-1ce5b55ac566cb0275e6",
+              "status": "pass",
+              "evidence_refs": [
+                "exec: cat + shasum -a 256 对 applied-sample.txt / backup.txt / before-recovery.txt / guard.txt / recovery-receipt.json 的只读输出"
+              ],
+              "notes": "applied-sample.txt SHA256(03af3ee6...) == backup.txt SHA256(03af3ee6...)，内容均为 'before-change\\n'；post_recovery_sha256 与当前文件哈希一致，确认恢复成功且未重试原写入"
+            }
+          ],
+          "tools_used": [
+            "exec"
+          ],
+          "risk_notes": "本次为只读验收，未修改任何文件。验证范围限于 4 个样本文件内容与 recovery-receipt.json 的哈希一致性，未检查目录外其他文件状态。",
+          "structured_output": {
+            "outcome": "succeeded",
+            "summary": "只读验收通过。applied-sample.txt 内容 'before-change\\n' 与 backup.txt 完全一致（SHA256 均为 03af3ee612e6d3447a0ebc852fc0a8191ae39d60b3f80d67b84d91d61e86a400），before-recovery.txt 内容为 'changed-by-test\\n'（SHA256 c2e1f9b32dd5fdb8e6e4f825edb4105fce42e716206fb09c94996c782fd6d2eb，与回执中 pre_recovery_sha256 一致），guard.txt 内容为 'must-stay-unchanged\\n' 未被修改。recovery-receipt.json 作为现成交付物已读取，SHA256 为 7171346c904345c21d2911dca2cc75e2bb3653f338992d1b39b3f2c5eb0c5637，其内部 verification 字段 all_passed=true 与本次独立核验结果一致。",
+            "tools_used": [
+              "exec"
+            ],
+            "artifacts": [
+              {
+                "artifact_key": "recovery-receipt",
+                "artifact_type": "document",
+                "title": "恢复回执 recovery-receipt.json",
+                "uri": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase11-20261006/recovery-receipt.json",
+                "content_hash": "7171346c904345c21d2911dca2cc75e2bb3653f338992d1b39b3f2c5eb0c5637"
+              }
+            ],
+            "evidence": [
+              {
+                "requirement_id": "ev-8748f2ac57a18c07ce4b",
+                "evidence_type": "test_output",
+                "source_ref": "exec: cat + shasum -a 256 对 applied-sample.txt / backup.txt / before-recovery.txt / guard.txt / recovery-receipt.json 的只读输出",
+                "summary": "applied-sample.txt=03af3ee6... 与 backup.txt=03af3ee6... 完全一致（内容均为 'before-change\\n'）；before-recovery.txt=c2e1f9b3...（内容为 'changed-by-test\\n'）；guard.txt=3f8bfab2...（内容为 'must-stay-unchanged\\n'）；recovery-receipt.json=7171346c... 内部 verification.all_passed=true 与独立核验一致",
+                "artifact_key": "recovery-receipt",
+                "confidence": 1.0
+              }
+            ],
+            "acceptance_results": [
+              {
+                "criterion_id": "ac-1ce5b55ac566cb0275e6",
+                "criterion": "目标内容与 backup.txt 一致，原写入未被重试",
+                "status": "pass",
+                "evidence_refs": [
+                  "ev-8748f2ac57a18c07ce4b"
+                ],
+                "notes": "applied-sample.txt SHA256(03af3ee6...) == backup.txt SHA256(03af3ee6...)，内容均为 'before-change\\n'；post_recovery_sha256 与当前文件哈希一致，确认恢复成功且未重试原写入"
+              }
+            ],
+            "side_effects": [],
+            "risk_notes": "本次为只读验收，未修改任何文件。验证范围限于 4 个样本文件内容与 recovery-receipt.json 的哈希一致性，未检查目录外其他文件状态。"
+          },
+          "evidence_refs": [
+            "exec: cat + shasum -a 256 对 applied-sample.txt / backup.txt / before-recovery.txt / guard.txt / recovery-receipt.json 的只读输出"
+          ],
+          "receipt_preflight": {
+            "schema_version": "1.0",
+            "strategy": "existing_evidence_only",
+            "input_sha256": "6e68bb67ee0514fe116c0596badd9a2c7812c702356eb8b36591738de074f5e9",
+            "changes": [
+              {
+                "acceptance_index": 0,
+                "from": "ev-8748f2ac57a18c07ce4b",
+                "to": "exec: cat + shasum -a 256 对 applied-sample.txt / backup.txt / before-recovery.txt / guard.txt / recovery-receipt.json 的只读输出"
+              }
+            ],
+            "strict_accepted_before": true,
+            "strict_accepted": true,
+            "blockers": [],
+            "execution_repeated": false
+          },
+          "execution_quality": {
+            "status": "pass",
+            "score": 100,
+            "mode": "strict",
+            "enforced": true,
+            "accepted": true,
+            "executor_success": true,
+            "business_outcome": "succeeded",
+            "hard_blockers": [],
+            "blockers": [],
+            "warnings": [],
+            "evidence_refs": [
+              "exec: cat + shasum -a 256 对 applied-sample.txt / backup.txt / before-recovery.txt / guard.txt / recovery-receipt.json 的只读输出"
+            ],
+            "required_evidence": [
+              "test_output"
+            ],
+            "required_artifact_types": [
+              "document"
+            ],
+            "required_tools": [
+              "test_runner"
+            ],
+            "acceptance_criteria": [
+              "目标内容与 backup.txt 一致，原写入未被重试"
+            ],
+            "checked_rules": [
+              "result-summary",
+              "required-evidence-types",
+              "artifact-contract",
+              "acceptance-results",
+              "tool-use",
+              "required-output-fields"
+            ]
+          },
+          "side_effects": [],
+          "effect_quality": {
+            "status": "not_applicable",
+            "accepted": true,
+            "enforced": false,
+            "blockers": [],
+            "warnings": []
+          },
+          "completion_decision": {
+            "executor_success": true,
+            "accepted": true,
+            "retry_scheduled": false,
+            "attempt": 1,
+            "max_attempts": 2,
+            "receipt_retry_safe": true,
+            "enforcement": {
+              "mode": "strict",
+              "enforced": true,
+              "reason": "strict_mode",
+              "flow_key": "general",
+              "highest_risk": "L1",
+              "runtime": "legacy"
+            },
+            "effect_quality": {
+              "status": "not_applicable",
+              "accepted": true,
+              "enforced": false,
+              "blockers": [],
+              "warnings": []
+            }
+          },
+          "effect_ids": []
+        },
+        "next_step_status": "completed"
+      },
+      "created_at": "2026-10-05T18:04:26.364224+00:00"
+    },
+    {
+      "id": "event-2a4dd94515e3",
+      "mission_id": "mission-6ecde497f875",
+      "mission_run_id": "mrun-2b229e1d706f428b",
+      "correlation_id": "mission-5cbf979892d644b4",
+      "run_sequence": 25,
+      "event_type": "evaluation_started",
+      "from_status": "running",
+      "to_status": "evaluating",
+      "actor": "phase11-real-recovery-worker",
+      "detail": "All steps completed; Optimus is evaluating the outcome",
+      "event_key": null,
+      "metadata": {},
+      "created_at": "2026-10-05T18:04:26.696405+00:00"
+    },
+    {
+      "id": "event-af065ad38fcb",
+      "mission_id": "mission-6ecde497f875",
+      "mission_run_id": "mrun-2b229e1d706f428b",
+      "correlation_id": "mission-5cbf979892d644b4",
+      "run_sequence": 26,
+      "event_type": "mission_completed",
+      "from_status": "evaluating",
+      "to_status": "completed",
+      "actor": "optimus",
+      "detail": "隔离恢复测试验收通过。独立只读核验确认：applied-sample.txt 与 backup.txt SHA256 完全一致（03af3ee6...），before-recovery.txt 内容符合预期（c2e1f9b3...），guard.txt 未被修改，recovery-receipt.json 的 all_passed=true 与独立核验结果一致。所有文件保留，未外发。",
+      "event_key": null,
+      "metadata": {},
+      "created_at": "2026-10-05T18:04:52.338824+00:00"
+    }
+  ],
+  "messages": [
+    {
+      "id": "msg-d62cd111fcad",
+      "conversation_id": "conv-81cc8fb7937d",
+      "mission_id": "mission-6ecde497f875",
+      "direction": "inbound",
+      "external_message_id": "ui-914a3d00be4640549a00b8854db890e3",
+      "reply_to_external_message_id": null,
+      "sender_id": "phase11-lab",
+      "content": "隔离恢复测试：仅核实指定样本，保留所有文件，不外发。",
+      "message_type": "text",
+      "intent_type": "software_project",
+      "intent_confidence": 1.0,
+      "intent_reason": "由已认证的项目任务入口显式创建",
+      "execution_requested": 1,
+      "routing_status": "mission_created",
+      "target_agent_id": "optimus",
+      "resolved_project_id": null,
+      "reply_to_command_message_id": null,
+      "metadata": {
+        "project_id": "",
+        "title": "P11 已写入：新恢复方案审批闭环",
+        "context": {
+          "business_flow_key": "general"
+        },
+        "intent_type": "software_project",
+        "execution_requested": true,
+        "profile_user_id": "phase11-lab",
+        "suppress_notification": true,
+        "_direct_mission": true,
+        "_reserve_planning": false,
+        "_planning_owner": ""
+      },
+      "created_at": "2026-10-05T17:48:14.968851+00:00"
+    },
+    {
+      "id": "msg-ff1950b9f8b5",
+      "conversation_id": "conv-81cc8fb7937d",
+      "mission_id": "mission-6ecde497f875",
+      "direction": "inbound",
+      "external_message_id": "ui-feedback-dfb841cfd64f432eb0aa62ea1c265b39",
+      "reply_to_external_message_id": null,
+      "sender_id": "phase11-browser",
+      "content": "恢复已完成。重新规划一个只读验收步骤，核实样本、备份、保留副本、保护文件和 recovery-receipt.json 的一致性，保留原失败记录，不重试原写入、不修改文件、不外发。",
+      "message_type": "text",
+      "intent_type": "",
+      "intent_confidence": 0.0,
+      "intent_reason": "",
+      "execution_requested": 0,
+      "routing_status": "",
+      "target_agent_id": "optimus",
+      "resolved_project_id": null,
+      "reply_to_command_message_id": null,
+      "metadata": {},
+      "created_at": "2026-10-05T18:03:18.938885+00:00"
+    }
+  ]
+}

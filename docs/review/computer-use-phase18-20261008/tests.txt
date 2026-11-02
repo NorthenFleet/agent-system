@@ -1,0 +1,13 @@
+
+> frontend-v2@0.0.0 test:run
+> vitest run src/test/missionDraft.spec.ts src/test/CommandCenterGovernance.spec.ts src/test/artifactDownload.spec.ts src/test/commandCenterLifecycle.spec.ts
+
+
+ RUN  v4.1.10 /Users/apple/工作桌面/Workspace/agent-system/frontend-v2
+
+
+ Test Files  4 passed (4)
+      Tests  19 passed (19)
+   Start at  00:09:38
+   Duration  2.04s (transform 367ms, setup 137ms, import 928ms, tests 361ms, environment 3.02s)
+

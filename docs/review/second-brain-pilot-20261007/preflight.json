@@ -1,0 +1,21 @@
+{
+  "checks": {
+    "postgresql_configured": false,
+    "pdf_parser_available": true,
+    "private_source_root": false,
+    "knowledge_schema": false,
+    "workrun_schema": false
+  },
+  "ready": false,
+  "feature_enabled": "false",
+  "format": "kb-pilot-preflight-v1",
+  "captured_at": "2026-10-07T02:05:10.201400+00:00",
+  "production_modified": false,
+  "pilot_owner_configured": false,
+  "context_db_configured": false,
+  "not_checked": [
+    "knowledge_schema",
+    "workrun_schema"
+  ],
+  "scope": "explicit environment configuration; not live-process attestation"
+}

@@ -1,0 +1,37 @@
+{
+  "default_runtime": "legacy",
+  "langgraph": {
+    "enabled": false,
+    "available": true,
+    "pilot_flows": [
+      "document",
+      "research"
+    ],
+    "pilot_risk_levels": [
+      "L0",
+      "L1"
+    ],
+    "checkpoint_backend": "postgresql",
+    "role": "approval and recovery execution gate"
+  },
+  "ownership": {
+    "business_state": "command_center",
+    "execution_checkpoint": "workflow_runtime",
+    "long_term_memory": "memory_service"
+  },
+  "by_status": {
+    "ready": 11,
+    "cancelled": 2
+  },
+  "by_runtime": {
+    "legacy": 13
+  },
+  "checkpoint_storage": {
+    "status": "ready",
+    "backend": "postgresql",
+    "installed_version": 9,
+    "required_version": 9,
+    "missing_tables": [],
+    "runtime_ddl": false
+  }
+}

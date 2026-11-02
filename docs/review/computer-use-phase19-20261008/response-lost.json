@@ -1,0 +1,173 @@
+{
+  "success": true,
+  "mission": {
+    "id": "mission-59d00529cac2",
+    "conversation_id": "conv-9df4fc4ee30c",
+    "source_message_id": "msg-f3b2b014c6ed",
+    "title": "重新交付：阶段十九交付样本",
+    "objective": "重新交付任务 phase19-delivery 的产物 phase19-artifact。\n原路径：/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase19-20261008/delivery.txt\n原登记 SHA256：16b6d58d68a2da6ba6497ccd170710d57ec26e8c25b66b07acb0f0e9c8bdf547\n下载失败原因：文件已变化，与该任务登记的版本不一致\n保留原文件与原证据；先只读核实原因，再提出新版本交付计划，审批后执行。新文件使用独立路径，登记实际内容哈希并重新验收。",
+    "status": "received",
+    "priority": "normal",
+    "project_id": "phase19-project",
+    "mission_type": "document",
+    "requested_by": "phase19",
+    "owner_user_id": "phase19",
+    "plan_version": 0,
+    "current_step_id": null,
+    "requires_approval": true,
+    "approval_status": "pending",
+    "last_error": null,
+    "lease_owner": null,
+    "lease_expires_at": null,
+    "created_at": "2026-10-07T16:26:00.671944+00:00",
+    "updated_at": "2026-10-07T16:26:00.671944+00:00",
+    "completed_at": null,
+    "context": {
+      "source": "dashboard",
+      "profile_user_id": "phase19",
+      "mission_type": "document",
+      "intent_decision": {
+        "type": "document_project",
+        "confidence": 1.0,
+        "reason": "由已认证的项目任务入口显式创建",
+        "execution_requested": true
+      },
+      "user_context": {
+        "mission_type": "document",
+        "business_flow_key": "document"
+      },
+      "metadata": {
+        "project_id": "phase19-project",
+        "title": "重新交付：阶段十九交付样本",
+        "context": {
+          "mission_type": "document",
+          "business_flow_key": "document"
+        },
+        "intent_type": "document_project",
+        "execution_requested": true,
+        "profile_user_id": "phase19",
+        "suppress_notification": true,
+        "_creation_fingerprint": "5d89a5662385983e0e4b7cc0805bf5d9c8992fd12cf3c1048cd1c44a2e7d0cd6",
+        "_direct_mission": true,
+        "_reserve_planning": false,
+        "_planning_owner": ""
+      }
+    },
+    "mission_run": {
+      "id": "mrun-e7919e7d13c24750",
+      "mission_id": "mission-59d00529cac2",
+      "correlation_id": "mission-adb7f09954494427",
+      "status": "received",
+      "active_plan_version": 0,
+      "workflow_run_id": null,
+      "outcome": "",
+      "created_at": "2026-10-07T16:26:00.671944+00:00",
+      "updated_at": "2026-10-07T16:26:00.748204+00:00",
+      "ended_at": null,
+      "metadata": {}
+    },
+    "conversation": {
+      "id": "conv-9df4fc4ee30c",
+      "channel": "dashboard",
+      "external_conversation_id": "dashboard-create:a841ed06a5a365e9f7e1f433b88300248dbd6a77912bf3916868d28f8f1bb74e",
+      "user_external_id": "phase19",
+      "owner_user_id": "phase19",
+      "profile_user_id": "phase19",
+      "status": "active",
+      "metadata": {
+        "project_id": "phase19-project",
+        "title": "重新交付：阶段十九交付样本",
+        "context": {
+          "mission_type": "document",
+          "business_flow_key": "document"
+        },
+        "intent_type": "document_project",
+        "execution_requested": true,
+        "profile_user_id": "phase19",
+        "suppress_notification": true,
+        "_creation_fingerprint": "5d89a5662385983e0e4b7cc0805bf5d9c8992fd12cf3c1048cd1c44a2e7d0cd6",
+        "_direct_mission": true,
+        "_reserve_planning": false,
+        "_planning_owner": ""
+      },
+      "created_at": "2026-10-07T16:26:00.671944+00:00",
+      "updated_at": "2026-10-07T16:26:00.671944+00:00"
+    },
+    "steps": [],
+    "context_bindings": [],
+    "planning_context": null,
+    "plan": null,
+    "workflow_run": null,
+    "artifacts": [],
+    "evidence": [],
+    "acceptance_gates": [],
+    "step_approvals": [],
+    "effects": [],
+    "compensations": [],
+    "delivery_gate": null,
+    "approval": null,
+    "events": [
+      {
+        "id": "event-db09d3b0b0f6",
+        "mission_id": "mission-59d00529cac2",
+        "mission_run_id": "mrun-e7919e7d13c24750",
+        "correlation_id": "mission-adb7f09954494427",
+        "run_sequence": 1,
+        "event_type": "mission_received",
+        "from_status": null,
+        "to_status": "received",
+        "actor": "phase19",
+        "detail": "重新交付任务 phase19-delivery 的产物 phase19-artifact。\n原路径：/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase19-20261008/delivery.txt\n原登记 SHA256：16b6d58d68a2da6ba6497ccd170710d57ec26e8c25b66b07acb0f0e9c8bdf547\n下载失败原因：文件已变化，与该任务登记的版本不一致\n保留原文件与原证据；先只读核实原因，再提出新版本交付计划，审批后执行。新文件使用独立路径，登记实际内容哈希并重新验收。",
+        "event_key": null,
+        "metadata": {
+          "message_id": "msg-f3b2b014c6ed",
+          "channel": "dashboard",
+          "preplanned": false,
+          "mission_type": "document",
+          "project_id": "phase19-project",
+          "intent_confidence": 1.0
+        },
+        "created_at": "2026-10-07T16:26:00.705235+00:00"
+      }
+    ],
+    "advisor_reviews": [],
+    "messages": [
+      {
+        "id": "msg-f3b2b014c6ed",
+        "conversation_id": "conv-9df4fc4ee30c",
+        "mission_id": "mission-59d00529cac2",
+        "direction": "inbound",
+        "external_message_id": "ui-key-2f90d6fd-0e07-4a67-b44a-1bc1a0d0ca2e",
+        "reply_to_external_message_id": null,
+        "sender_id": "phase19",
+        "content": "重新交付任务 phase19-delivery 的产物 phase19-artifact。\n原路径：/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase19-20261008/delivery.txt\n原登记 SHA256：16b6d58d68a2da6ba6497ccd170710d57ec26e8c25b66b07acb0f0e9c8bdf547\n下载失败原因：文件已变化，与该任务登记的版本不一致\n保留原文件与原证据；先只读核实原因，再提出新版本交付计划，审批后执行。新文件使用独立路径，登记实际内容哈希并重新验收。",
+        "message_type": "text",
+        "intent_type": "document_project",
+        "intent_confidence": 1.0,
+        "intent_reason": "由已认证的项目任务入口显式创建",
+        "execution_requested": 1,
+        "routing_status": "mission_created",
+        "target_agent_id": "optimus",
+        "resolved_project_id": "phase19-project",
+        "reply_to_command_message_id": null,
+        "metadata": {
+          "project_id": "phase19-project",
+          "title": "重新交付：阶段十九交付样本",
+          "context": {
+            "mission_type": "document",
+            "business_flow_key": "document"
+          },
+          "intent_type": "document_project",
+          "execution_requested": true,
+          "profile_user_id": "phase19",
+          "suppress_notification": true,
+          "_creation_fingerprint": "5d89a5662385983e0e4b7cc0805bf5d9c8992fd12cf3c1048cd1c44a2e7d0cd6",
+          "_direct_mission": true,
+          "_reserve_planning": false,
+          "_planning_owner": ""
+        },
+        "created_at": "2026-10-07T16:26:00.671944+00:00"
+      }
+    ]
+  }
+}

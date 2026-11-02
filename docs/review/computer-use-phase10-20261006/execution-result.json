@@ -1,0 +1,286 @@
+{
+  "id": "step-4b131883dd50",
+  "mission_id": "mission-c41a10573374",
+  "plan_version": 2,
+  "order_index": 1,
+  "title": "复核恢复内容与备份一致",
+  "description": "",
+  "task_type": "coordination",
+  "agent_id": "optimus",
+  "executor": "openclaw",
+  "status": "completed",
+  "work_run_id": null,
+  "lease_owner": null,
+  "lease_token": null,
+  "lease_expires_at": null,
+  "attempt_count": 1,
+  "started_at": "2026-10-05T17:20:50.287346+00:00",
+  "completed_at": "2026-10-05T17:20:50.344699+00:00",
+  "updated_at": "2026-10-05T17:20:50.344717+00:00",
+  "dependencies": [],
+  "input": {},
+  "result": {
+    "success": true,
+    "outcome": "succeeded",
+    "summary": "PASS: restored original content",
+    "tools_used": [
+      "exec"
+    ],
+    "artifacts": [
+      {
+        "artifact_key": "a1",
+        "artifact_type": "test_report",
+        "title": "只读复核记录",
+        "uri": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase10-20261006/step-4b131883dd50-verification.txt",
+        "content_hash": "cdb12ec200f56c2457cd11f0e554781109636a897d60f18b8d66d46d12fe05cf",
+        "metadata": {}
+      }
+    ],
+    "evidence": [
+      {
+        "evidence_type": "test_output",
+        "requirement_id": "ev-3a2bf3782d16c7e64f6c",
+        "source_ref": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase10-20261006/step-4b131883dd50-verification.txt",
+        "summary": "PASS: restored original content",
+        "artifact_key": "a1",
+        "confidence": 1.0,
+        "metadata": {}
+      }
+    ],
+    "acceptance_results": [
+      {
+        "criterion": "目标内容与 backup.txt 一致，原写入未被重试",
+        "criterion_id": "ac-c39aeb36a7d32d7486e9",
+        "status": "pass",
+        "evidence_refs": [
+          "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase10-20261006/step-4b131883dd50-verification.txt"
+        ],
+        "notes": ""
+      }
+    ],
+    "side_effects": [],
+    "risk_notes": "受控本地文件适配器，仅验证隔离样本。",
+    "evidence_refs": [
+      "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase10-20261006/step-4b131883dd50-verification.txt"
+    ],
+    "receipt_preflight": {
+      "schema_version": "1.0",
+      "strategy": "existing_evidence_only",
+      "input_sha256": "4ee57c153433023dd23a8f719b68c7e6302f09eae6dd5abf2684274b7572cd8a",
+      "changes": [],
+      "strict_accepted_before": true,
+      "strict_accepted": true,
+      "blockers": [],
+      "execution_repeated": false
+    },
+    "execution_quality": {
+      "status": "pass",
+      "score": 100,
+      "mode": "strict",
+      "enforced": true,
+      "accepted": true,
+      "executor_success": true,
+      "business_outcome": "succeeded",
+      "hard_blockers": [],
+      "blockers": [],
+      "warnings": [],
+      "evidence_refs": [
+        "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase10-20261006/step-4b131883dd50-verification.txt"
+      ],
+      "required_evidence": [
+        "test_output"
+      ],
+      "required_artifact_types": [
+        "test_report"
+      ],
+      "required_tools": [
+        "test_runner"
+      ],
+      "acceptance_criteria": [
+        "目标内容与 backup.txt 一致，原写入未被重试"
+      ],
+      "checked_rules": [
+        "result-summary",
+        "required-evidence-types",
+        "artifact-contract",
+        "acceptance-results",
+        "tool-use",
+        "required-output-fields"
+      ]
+    },
+    "effect_quality": {
+      "status": "not_applicable",
+      "accepted": true,
+      "enforced": false,
+      "blockers": [],
+      "warnings": []
+    },
+    "completion_decision": {
+      "executor_success": true,
+      "accepted": true,
+      "retry_scheduled": false,
+      "attempt": 1,
+      "max_attempts": 2,
+      "receipt_retry_safe": true,
+      "enforcement": {
+        "mode": "strict",
+        "enforced": true,
+        "reason": "strict_mode",
+        "flow_key": "general",
+        "highest_risk": "L2",
+        "runtime": "legacy"
+      },
+      "effect_quality": {
+        "status": "not_applicable",
+        "accepted": true,
+        "enforced": false,
+        "blockers": [],
+        "warnings": []
+      }
+    },
+    "effect_ids": []
+  },
+  "phase": "planning",
+  "objective": "复核恢复内容与备份一致",
+  "required_tools": [
+    "test_runner"
+  ],
+  "tool_requirements": [
+    {
+      "name": "测试运行器",
+      "category": "verification",
+      "status": "available",
+      "description": "运行后端、单元或集成测试并回传输出。",
+      "evidence_types": [
+        "test_output"
+      ],
+      "id": "test_runner"
+    }
+  ],
+  "deliverables": [
+    "只读复核记录"
+  ],
+  "output_contract": {
+    "artifact_types": [
+      "test_report"
+    ],
+    "required_fields": [
+      "summary",
+      "evidence_refs",
+      "risk_notes"
+    ]
+  },
+  "acceptance_criteria": [
+    "目标内容与 backup.txt 一致，原写入未被重试"
+  ],
+  "evidence_required": [
+    "test_output"
+  ],
+  "risk_level": "medium",
+  "risk_class": "L2",
+  "approval_required": false,
+  "side_effect": false,
+  "resources": [],
+  "idempotency_key": "mission-c41a10573374:plan:2:step:1",
+  "timeout_seconds": 900,
+  "max_attempts": 2,
+  "rollback_plan": "停止后续步骤，记录失败原因并等待擎天柱重新规划。",
+  "compensation": {
+    "type": "manual",
+    "instructions": "停止后续步骤，记录失败原因并等待擎天柱重新规划。"
+  },
+  "capability_match": true,
+  "artifacts": [
+    {
+      "id": "artifact-5eb684b1e9769e47703b",
+      "mission_id": "mission-c41a10573374",
+      "mission_run_id": "mrun-840791327aaa4119",
+      "correlation_id": "mission-cadcebae32244a76",
+      "plan_version": 2,
+      "step_id": "step-4b131883dd50",
+      "work_run_id": null,
+      "artifact_type": "test_report",
+      "title": "只读复核记录",
+      "uri": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase10-20261006/step-4b131883dd50-verification.txt",
+      "content_hash": "cdb12ec200f56c2457cd11f0e554781109636a897d60f18b8d66d46d12fe05cf",
+      "fingerprint": "5eb684b1e9769e47703b19337bafcdf102df310a12e79f0ee3577d3d3e12ba14",
+      "created_at": "2026-10-05T17:20:50.347979+00:00",
+      "metadata": {}
+    }
+  ],
+  "evidence": [
+    {
+      "id": "evidence-a9d03b03b430fe29c096",
+      "mission_id": "mission-c41a10573374",
+      "mission_run_id": "mrun-840791327aaa4119",
+      "correlation_id": "mission-cadcebae32244a76",
+      "plan_version": 2,
+      "step_id": "step-4b131883dd50",
+      "artifact_id": "artifact-5eb684b1e9769e47703b",
+      "evidence_type": "test_output",
+      "source_ref": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase10-20261006/step-4b131883dd50-verification.txt",
+      "summary": "PASS: restored original content",
+      "collected_by": "phase10-controlled-executor",
+      "collected_at": "2026-10-05T17:20:50.350250+00:00",
+      "confidence": 1.0,
+      "fingerprint": "a9d03b03b430fe29c096e619084aafd62105df30372a52b6c43eacfb5215fc4a",
+      "metadata": {}
+    }
+  ],
+  "acceptance_gate": {
+    "id": "gate-e730942f8fcda8094414",
+    "mission_id": "mission-c41a10573374",
+    "mission_run_id": "mrun-840791327aaa4119",
+    "correlation_id": "mission-cadcebae32244a76",
+    "plan_version": 2,
+    "step_id": "step-4b131883dd50",
+    "gate_type": "execution_evidence",
+    "mode": "strict",
+    "enforced": true,
+    "status": "pass",
+    "accepted": true,
+    "score": 100,
+    "evaluated_by": "phase10-controlled-executor",
+    "evaluated_at": "2026-10-05T17:20:50.355520+00:00",
+    "blockers": [],
+    "warnings": [],
+    "details": {
+      "status": "pass",
+      "score": 100,
+      "mode": "strict",
+      "enforced": true,
+      "accepted": true,
+      "executor_success": true,
+      "business_outcome": "succeeded",
+      "hard_blockers": [],
+      "blockers": [],
+      "warnings": [],
+      "evidence_refs": [
+        "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase10-20261006/step-4b131883dd50-verification.txt"
+      ],
+      "required_evidence": [
+        "test_output"
+      ],
+      "required_artifact_types": [
+        "test_report"
+      ],
+      "required_tools": [
+        "test_runner"
+      ],
+      "acceptance_criteria": [
+        "目标内容与 backup.txt 一致，原写入未被重试"
+      ],
+      "checked_rules": [
+        "result-summary",
+        "required-evidence-types",
+        "artifact-contract",
+        "acceptance-results",
+        "tool-use",
+        "required-output-fields"
+      ]
+    }
+  },
+  "step_approval": null,
+  "effects": [],
+  "compensations": []
+}

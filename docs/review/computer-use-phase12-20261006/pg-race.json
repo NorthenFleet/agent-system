@@ -1,0 +1,16 @@
+[
+  {
+    "mission_id": "mission-ec6fed58d975",
+    "changed_field": "lease_expires_at",
+    "stale_scan_updates": 0,
+    "new_lease_preserved": true,
+    "false_reapproval_events": 0
+  },
+  {
+    "mission_id": "mission-be6c96c78965",
+    "changed_field": "lease_token",
+    "stale_scan_updates": 0,
+    "new_lease_preserved": true,
+    "false_reapproval_events": 0
+  }
+]

@@ -1,0 +1,23 @@
+{
+  "mission-6f67978cafd2": {
+    "name": "missing",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase13-20261006/missing-sample.txt",
+    "valid": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase13-20261006/missing-receipt-valid.json",
+    "invalid": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase13-20261006/missing-receipt-invalid.json",
+    "compensation_id": "compensation-31b283395efc"
+  },
+  "mission-9ca4afe49103": {
+    "name": "corrupt",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase13-20261006/corrupt-sample.txt",
+    "valid": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase13-20261006/corrupt-receipt-valid.json",
+    "invalid": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase13-20261006/corrupt-receipt-invalid.json",
+    "compensation_id": "compensation-2cb668f0185c"
+  },
+  "mission-b0a1fde1f8ae": {
+    "name": "mismatch",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase13-20261006/mismatch-sample.txt",
+    "valid": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase13-20261006/mismatch-receipt-valid.json",
+    "invalid": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase13-20261006/mismatch-receipt-invalid.json",
+    "compensation_id": "compensation-c652f6980c2b"
+  }
+}

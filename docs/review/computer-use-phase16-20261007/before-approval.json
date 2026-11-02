@@ -1,0 +1,575 @@
+{
+  "id": "mission-c872ccc3b49e",
+  "conversation_id": "conv-173efd61bb1b",
+  "source_message_id": "msg-b41509ebea90",
+  "title": "重新交付：阶段十六交付样本",
+  "objective": "重新交付任务 phase16-delivery 的产物 phase16-artifact。\n原路径：/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/delivery.txt\n原登记 SHA256：9159d1d0d56c6a1ae42b9ba0d878d0a8cf18b02406377d330c8d35d8170f3892\n下载失败原因：文件已变化，与该任务登记的版本不一致\n保留原文件与原证据；先只读核实原因，再提出新版本交付计划，审批后执行。新文件使用独立路径，登记实际内容哈希并重新验收。",
+  "status": "awaiting_approval",
+  "priority": "normal",
+  "project_id": "phase16-project",
+  "mission_type": "document",
+  "requested_by": "phase16-browser",
+  "owner_user_id": "phase16",
+  "plan_version": 1,
+  "current_step_id": null,
+  "requires_approval": true,
+  "approval_status": "pending",
+  "last_error": null,
+  "lease_owner": null,
+  "lease_expires_at": null,
+  "created_at": "2026-10-07T02:33:20.659696+00:00",
+  "updated_at": "2026-10-07T02:33:20.734573+00:00",
+  "completed_at": null,
+  "context": {
+    "source": "dashboard",
+    "profile_user_id": "phase16",
+    "mission_type": "document",
+    "intent_decision": {
+      "type": "document_project",
+      "confidence": 1.0,
+      "reason": "由已认证的项目任务入口显式创建",
+      "execution_requested": true
+    },
+    "user_context": {
+      "business_flow_key": "general"
+    },
+    "metadata": {
+      "project_id": "phase16-project",
+      "title": "重新交付：阶段十六交付样本",
+      "context": {
+        "business_flow_key": "general"
+      },
+      "intent_type": "document_project",
+      "execution_requested": true,
+      "profile_user_id": "phase16",
+      "suppress_notification": true,
+      "_direct_mission": true,
+      "_reserve_planning": false,
+      "_planning_owner": ""
+    }
+  },
+  "mission_run": {
+    "id": "mrun-354eb0d84c6d4e15",
+    "mission_id": "mission-c872ccc3b49e",
+    "correlation_id": "mission-100f9a2bb8214a01",
+    "status": "awaiting_approval",
+    "active_plan_version": 1,
+    "workflow_run_id": "workflow-41eb207e7e93",
+    "outcome": "",
+    "created_at": "2026-10-07T02:33:20.659696+00:00",
+    "updated_at": "2026-10-07T02:33:20.752872+00:00",
+    "ended_at": null,
+    "metadata": {}
+  },
+  "conversation": {
+    "id": "conv-173efd61bb1b",
+    "channel": "dashboard",
+    "external_conversation_id": "dashboard:phase16-browser",
+    "user_external_id": "phase16-browser",
+    "owner_user_id": "phase16",
+    "profile_user_id": "phase16",
+    "status": "active",
+    "metadata": {
+      "project_id": "phase16-project",
+      "title": "重新交付：阶段十六交付样本",
+      "context": {
+        "business_flow_key": "general"
+      },
+      "intent_type": "document_project",
+      "execution_requested": true,
+      "profile_user_id": "phase16",
+      "suppress_notification": true,
+      "_direct_mission": true,
+      "_reserve_planning": false,
+      "_planning_owner": ""
+    },
+    "created_at": "2026-10-07T02:33:20.659696+00:00",
+    "updated_at": "2026-10-07T02:33:20.659696+00:00"
+  },
+  "steps": [
+    {
+      "id": "step-db794894479f",
+      "mission_id": "mission-c872ccc3b49e",
+      "plan_version": 1,
+      "order_index": 1,
+      "title": "创建并核验独立交付版本",
+      "description": "仅允许使用 exec/Python：读取旧文件 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/delivery.txt 并验证其 SHA256 为 da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505；使用独占创建模式 x 创建新文件 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/redelivery-v2.txt，内容严格为 Phase 16 redelivery verified 加一个换行。若新路径已存在则只读核对，不覆盖。创建后回读并计算实际 SHA256，确认旧文件哈希未变。返回新文件为 document artifact，并为写入返回 side_effects applied、当前合同幂等键以及真实工具回执。只允许写入该新路径，不修改旧文件或任何其他文件，不外发、不联网。",
+      "task_type": "coordination",
+      "agent_id": "ratchet",
+      "executor": "openclaw",
+      "status": "draft",
+      "work_run_id": null,
+      "lease_owner": null,
+      "lease_token": null,
+      "lease_expires_at": null,
+      "attempt_count": 0,
+      "started_at": null,
+      "completed_at": null,
+      "updated_at": "2026-10-07T02:33:20.728770+00:00",
+      "dependencies": [],
+      "input": {},
+      "result": {},
+      "context_binding": null,
+      "phase": "planning",
+      "objective": "仅允许使用 exec/Python：读取旧文件 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/delivery.txt 并验证其 SHA256 为 da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505；使用独占创建模式 x 创建新文件 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/redelivery-v2.txt，内容严格为 Phase 16 redelivery verified 加一个换行。若新路径已存在则只读核对，不覆盖。创建后回读并计算实际 SHA256，确认旧文件哈希未变。返回新文件为 document artifact，并为写入返回 side_effects applied、当前合同幂等键以及真实工具回执。只允许写入该新路径，不修改旧文件或任何其他文件，不外发、不联网。",
+      "required_tools": [
+        "test_runner"
+      ],
+      "tool_requirements": [
+        {
+          "name": "测试运行器",
+          "category": "verification",
+          "status": "available",
+          "description": "运行后端、单元或集成测试并回传输出。",
+          "evidence_types": [
+            "test_output"
+          ],
+          "id": "test_runner"
+        }
+      ],
+      "deliverables": [
+        "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/redelivery-v2.txt"
+      ],
+      "output_contract": {
+        "artifact_types": [
+          "document"
+        ],
+        "required_fields": [
+          "summary",
+          "evidence_refs",
+          "risk_notes"
+        ]
+      },
+      "acceptance_criteria": [
+        "新文件内容严格为 Phase 16 redelivery verified 加换行，旧文件哈希保持不变，返回实际内容哈希及工具证据"
+      ],
+      "evidence_required": [
+        "test_output"
+      ],
+      "risk_level": "low",
+      "risk_class": "L1",
+      "approval_required": false,
+      "side_effect": true,
+      "resources": [
+        "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/redelivery-v2.txt"
+      ],
+      "idempotency_key": "mission-c872ccc3b49e:plan:1:step:1",
+      "timeout_seconds": 900,
+      "max_attempts": 2,
+      "rollback_plan": "不删除或覆盖文件；出现异常时仅只读核实并报告，人工决定后续处理。",
+      "compensation": {
+        "type": "manual",
+        "instructions": "不删除或覆盖文件；出现异常时仅只读核实并报告，人工决定后续处理。"
+      },
+      "capability_match": true,
+      "artifacts": [],
+      "evidence": [],
+      "acceptance_gate": null,
+      "step_approval": null,
+      "effects": [],
+      "compensations": []
+    }
+  ],
+  "context_bindings": [],
+  "planning_context": null,
+  "plan": {
+    "id": "plan-132c2eed4798",
+    "mission_id": "mission-c872ccc3b49e",
+    "version": 1,
+    "summary": "受控重新交付：保留原证据，在独立路径创建并核验新文件。",
+    "rationale": "",
+    "risk_level": "medium",
+    "raw_plan": {
+      "summary": "受控重新交付：保留原证据，在独立路径创建并核验新文件。",
+      "steps": [
+        {
+          "title": "创建并核验独立交付版本",
+          "description": "仅允许使用 exec/Python：读取旧文件 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/delivery.txt 并验证其 SHA256 为 da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505；使用独占创建模式 x 创建新文件 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/redelivery-v2.txt，内容严格为 Phase 16 redelivery verified 加一个换行。若新路径已存在则只读核对，不覆盖。创建后回读并计算实际 SHA256，确认旧文件哈希未变。返回新文件为 document artifact，并为写入返回 side_effects applied、当前合同幂等键以及真实工具回执。只允许写入该新路径，不修改旧文件或任何其他文件，不外发、不联网。",
+          "agent_id": "ratchet",
+          "task_type": "coordination",
+          "side_effect": true,
+          "risk_class": "L1",
+          "approval_required": false,
+          "resources": [
+            "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/redelivery-v2.txt"
+          ],
+          "rollback_plan": "不删除或覆盖文件；出现异常时仅只读核实并报告，人工决定后续处理。",
+          "depends_on": [],
+          "required_tools": [
+            "test_runner"
+          ],
+          "deliverables": [
+            "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/redelivery-v2.txt"
+          ],
+          "evidence_required": [
+            "test_output"
+          ],
+          "acceptance_criteria": [
+            "新文件内容严格为 Phase 16 redelivery verified 加换行，旧文件哈希保持不变，返回实际内容哈希及工具证据"
+          ],
+          "output_contract": {
+            "artifact_types": [
+              "document"
+            ],
+            "required_fields": [
+              "summary",
+              "evidence_refs",
+              "risk_notes"
+            ]
+          },
+          "order_index": 1,
+          "tool_requirements": [
+            {
+              "name": "测试运行器",
+              "category": "verification",
+              "status": "available",
+              "description": "运行后端、单元或集成测试并回传输出。",
+              "evidence_types": [
+                "test_output"
+              ],
+              "id": "test_runner"
+            }
+          ],
+          "capability_match": true,
+          "risk_level": "low",
+          "phase": "planning",
+          "objective": "仅允许使用 exec/Python：读取旧文件 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/delivery.txt 并验证其 SHA256 为 da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505；使用独占创建模式 x 创建新文件 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/redelivery-v2.txt，内容严格为 Phase 16 redelivery verified 加一个换行。若新路径已存在则只读核对，不覆盖。创建后回读并计算实际 SHA256，确认旧文件哈希未变。返回新文件为 document artifact，并为写入返回 side_effects applied、当前合同幂等键以及真实工具回执。只允许写入该新路径，不修改旧文件或任何其他文件，不外发、不联网。",
+          "timeout_seconds": 900,
+          "max_attempts": 2,
+          "idempotency_key": "mission-c872ccc3b49e:plan:1:step:1",
+          "idempotency_key_generated": true,
+          "compensation": {
+            "type": "manual",
+            "instructions": "不删除或覆盖文件；出现异常时仅只读核实并报告，人工决定后续处理。"
+          }
+        }
+      ],
+      "schema_version": "2.0",
+      "business_type": "general",
+      "flow_spec": {
+        "flow_key": "general",
+        "version": "1.0.0",
+        "name": "通用业务执行流",
+        "business_type": "general",
+        "phases": [
+          "intake",
+          "planning",
+          "execution",
+          "verification",
+          "delivery"
+        ],
+        "required_gates": [
+          "plan_quality",
+          "plan_approval",
+          "evidence_gate"
+        ],
+        "budgets": {
+          "max_steps": 12,
+          "max_parallel_steps": 4,
+          "max_replans": 2,
+          "default_timeout_seconds": 900
+        },
+        "approval_policy": {
+          "plan_approval": true,
+          "delivery_approval": false,
+          "l3_step_approval": true
+        }
+      },
+      "risk_assessment": {
+        "highest_risk": "L1",
+        "by_level": {
+          "L0": 0,
+          "L1": 1,
+          "L2": 0,
+          "L3": 0
+        },
+        "step_approvals": [],
+        "plan_approval_required": true,
+        "delivery_approval_required": false
+      },
+      "approval_policy": {
+        "plan_approval": true,
+        "delivery_approval": false,
+        "l3_step_approval": true,
+        "highest_risk": "L1",
+        "step_approvals": []
+      },
+      "execution_policy": {
+        "runtime": "command-center",
+        "state_machine": "mission-v1",
+        "require_context_snapshot": true,
+        "require_evidence": true,
+        "idempotency_required_for_side_effects": true
+      },
+      "flow_validation": {
+        "status": "pass",
+        "flow_key": "general",
+        "flow_version": "1.0.0",
+        "blockers": [],
+        "warnings": [],
+        "checked_rules": [
+          "flow-budget",
+          "domain-coverage",
+          "risk-class",
+          "approval-policy",
+          "idempotency",
+          "compensation",
+          "resource-conflict"
+        ]
+      },
+      "capability_registry": {
+        "version": "p1-local",
+        "agent_count": 15,
+        "tool_count": 10
+      },
+      "plan_quality": {
+        "status": "pass",
+        "score": 100,
+        "blockers": [],
+        "warnings": [],
+        "suggestions": [],
+        "tool_summary": {
+          "total": 1,
+          "unknown": 0,
+          "unavailable": 0
+        },
+        "flow_key": "general",
+        "flow_version": "1.0.0",
+        "risk_assessment": {
+          "highest_risk": "L1",
+          "by_level": {
+            "L0": 0,
+            "L1": 1,
+            "L2": 0,
+            "L3": 0
+          },
+          "step_approvals": [],
+          "plan_approval_required": true,
+          "delivery_approval_required": false
+        },
+        "checked_rules": [
+          "schema",
+          "business-flow",
+          "risk-policy",
+          "idempotency",
+          "compensation",
+          "agent-capability",
+          "tool-registry",
+          "dependency-dag",
+          "deliverables",
+          "acceptance",
+          "evidence",
+          "domain-coverage"
+        ]
+      }
+    },
+    "status": "pending",
+    "created_by_agent_id": "optimus",
+    "created_at": "2026-10-07T02:33:20.726804+00:00",
+    "plan_quality": {
+      "status": "pass",
+      "score": 100,
+      "blockers": [],
+      "warnings": [],
+      "suggestions": [],
+      "tool_summary": {
+        "total": 1,
+        "unknown": 0,
+        "unavailable": 0
+      },
+      "flow_key": "general",
+      "flow_version": "1.0.0",
+      "risk_assessment": {
+        "highest_risk": "L1",
+        "by_level": {
+          "L0": 0,
+          "L1": 1,
+          "L2": 0,
+          "L3": 0
+        },
+        "step_approvals": [],
+        "plan_approval_required": true,
+        "delivery_approval_required": false
+      },
+      "checked_rules": [
+        "schema",
+        "business-flow",
+        "risk-policy",
+        "idempotency",
+        "compensation",
+        "agent-capability",
+        "tool-registry",
+        "dependency-dag",
+        "deliverables",
+        "acceptance",
+        "evidence",
+        "domain-coverage"
+      ]
+    }
+  },
+  "workflow_run": {
+    "id": "workflow-41eb207e7e93",
+    "mission_id": "mission-c872ccc3b49e",
+    "mission_run_id": "mrun-354eb0d84c6d4e15",
+    "correlation_id": "mission-100f9a2bb8214a01",
+    "plan_version": 1,
+    "runtime": "legacy",
+    "flow_key": "general",
+    "highest_risk": "L1",
+    "selection_reason": "isolated_redelivery",
+    "thread_id": "workflow-41eb207e7e93",
+    "checkpoint_namespace": "pilot",
+    "status": "ready",
+    "attempts": 0,
+    "next_attempt_at": "2026-10-07T02:33:20.732934+00:00",
+    "lease_owner": null,
+    "lease_token": null,
+    "lease_expires_at": null,
+    "last_error": null,
+    "created_at": "2026-10-07T02:33:20.732934+00:00",
+    "updated_at": "2026-10-07T02:33:20.732934+00:00",
+    "completed_at": "2026-10-07T02:33:20.732934+00:00",
+    "input": {
+      "workflow_run_id": "workflow-41eb207e7e93",
+      "mission_run_id": "mrun-354eb0d84c6d4e15",
+      "correlation_id": "mission-100f9a2bb8214a01",
+      "mission_id": "mission-c872ccc3b49e",
+      "plan_version": 1,
+      "flow_key": "general",
+      "highest_risk": "L1",
+      "context_pack_id": "",
+      "status": "ready",
+      "evidence_refs": []
+    },
+    "state": {
+      "workflow_run_id": "workflow-41eb207e7e93",
+      "mission_run_id": "mrun-354eb0d84c6d4e15",
+      "correlation_id": "mission-100f9a2bb8214a01",
+      "mission_id": "mission-c872ccc3b49e",
+      "plan_version": 1,
+      "flow_key": "general",
+      "highest_risk": "L1",
+      "context_pack_id": "",
+      "status": "ready",
+      "evidence_refs": []
+    },
+    "checkpoint": {}
+  },
+  "artifacts": [],
+  "evidence": [],
+  "acceptance_gates": [],
+  "step_approvals": [],
+  "effects": [],
+  "compensations": [],
+  "delivery_gate": null,
+  "approval": {
+    "id": "approval-555b423af920",
+    "mission_id": "mission-c872ccc3b49e",
+    "plan_version": 1,
+    "decision": "pending",
+    "requested_at": "2026-10-07T02:33:20.730022+00:00",
+    "decided_at": null,
+    "decided_by": null,
+    "comment": null,
+    "external_message_id": null
+  },
+  "events": [
+    {
+      "id": "event-5631907a3d5c",
+      "mission_id": "mission-c872ccc3b49e",
+      "mission_run_id": "mrun-354eb0d84c6d4e15",
+      "correlation_id": "mission-100f9a2bb8214a01",
+      "run_sequence": 1,
+      "event_type": "mission_received",
+      "from_status": null,
+      "to_status": "received",
+      "actor": "phase16-browser",
+      "detail": "重新交付任务 phase16-delivery 的产物 phase16-artifact。\n原路径：/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/delivery.txt\n原登记 SHA256：9159d1d0d56c6a1ae42b9ba0d878d0a8cf18b02406377d330c8d35d8170f3892\n下载失败原因：文件已变化，与该任务登记的版本不一致\n保留原文件与原证据；先只读核实原因，再提出新版本交付计划，审批后执行。新文件使用独立路径，登记实际内容哈希并重新验收。",
+      "event_key": null,
+      "metadata": {
+        "message_id": "msg-b41509ebea90",
+        "channel": "dashboard",
+        "preplanned": false,
+        "mission_type": "document",
+        "project_id": "phase16-project",
+        "intent_confidence": 1.0
+      },
+      "created_at": "2026-10-07T02:33:20.684166+00:00"
+    },
+    {
+      "id": "event-6aa31eb5c47d",
+      "mission_id": "mission-c872ccc3b49e",
+      "mission_run_id": "mrun-354eb0d84c6d4e15",
+      "correlation_id": "mission-100f9a2bb8214a01",
+      "run_sequence": 2,
+      "event_type": "planning_started",
+      "from_status": "received",
+      "to_status": "planning",
+      "actor": "phase16-plan-fixture",
+      "detail": "Optimus is producing an approval-gated plan",
+      "event_key": null,
+      "metadata": {},
+      "created_at": "2026-10-07T02:33:20.719067+00:00"
+    },
+    {
+      "id": "event-67a48b98d50b",
+      "mission_id": "mission-c872ccc3b49e",
+      "mission_run_id": "mrun-354eb0d84c6d4e15",
+      "correlation_id": "mission-100f9a2bb8214a01",
+      "run_sequence": 3,
+      "event_type": "plan_proposed",
+      "from_status": "planning",
+      "to_status": "awaiting_approval",
+      "actor": "optimus",
+      "detail": "受控重新交付：保留原证据，在独立路径创建并核验新文件。",
+      "event_key": null,
+      "metadata": {
+        "version": 1,
+        "step_count": 1,
+        "flow_key": "general",
+        "flow_version": "1.0.0",
+        "highest_risk": "L1",
+        "quality_score": 100,
+        "workflow_runtime": "legacy",
+        "workflow_runtime_reason": "isolated_redelivery"
+      },
+      "created_at": "2026-10-07T02:33:20.736151+00:00"
+    }
+  ],
+  "messages": [
+    {
+      "id": "msg-b41509ebea90",
+      "conversation_id": "conv-173efd61bb1b",
+      "mission_id": "mission-c872ccc3b49e",
+      "direction": "inbound",
+      "external_message_id": "ui-dbe46e2115334c56a48680d7d4cce706",
+      "reply_to_external_message_id": null,
+      "sender_id": "phase16-browser",
+      "content": "重新交付任务 phase16-delivery 的产物 phase16-artifact。\n原路径：/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/delivery.txt\n原登记 SHA256：9159d1d0d56c6a1ae42b9ba0d878d0a8cf18b02406377d330c8d35d8170f3892\n下载失败原因：文件已变化，与该任务登记的版本不一致\n保留原文件与原证据；先只读核实原因，再提出新版本交付计划，审批后执行。新文件使用独立路径，登记实际内容哈希并重新验收。",
+      "message_type": "text",
+      "intent_type": "document_project",
+      "intent_confidence": 1.0,
+      "intent_reason": "由已认证的项目任务入口显式创建",
+      "execution_requested": 1,
+      "routing_status": "mission_created",
+      "target_agent_id": "optimus",
+      "resolved_project_id": "phase16-project",
+      "reply_to_command_message_id": null,
+      "metadata": {
+        "project_id": "phase16-project",
+        "title": "重新交付：阶段十六交付样本",
+        "context": {
+          "business_flow_key": "general"
+        },
+        "intent_type": "document_project",
+        "execution_requested": true,
+        "profile_user_id": "phase16",
+        "suppress_notification": true,
+        "_direct_mission": true,
+        "_reserve_planning": false,
+        "_planning_owner": ""
+      },
+      "created_at": "2026-10-07T02:33:20.659696+00:00"
+    }
+  ]
+}

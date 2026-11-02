@@ -1,0 +1,7 @@
+{
+  "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase10-20261006/applied-sample.txt",
+  "restored_content": "before-change\n",
+  "idempotency_key": "recovery:compensation-d7e3a0d1f134:29f628d28f50c1e58bc1",
+  "backup": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase10-20261006/backup.txt",
+  "preserved_changed_copy": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase10-20261006/before-recovery.txt"
+}

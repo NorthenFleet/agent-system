@@ -1,0 +1,6 @@
+{
+  "pid": 23907,
+  "lease_seconds": 240,
+  "heartbeat_seconds": 60,
+  "worker_id": "phase7-full-worker-b"
+}

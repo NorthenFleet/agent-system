@@ -1,0 +1,18 @@
+{
+  "docs/review/computer-use-phase16-20261007/delivery.txt": {
+    "sha256": "da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505",
+    "mtime_ns": 1791340363844622633
+  },
+  "docs/review/computer-use-phase16-20261007/mission-snapshot.json": {
+    "sha256": "71b9efb3df2a5bb389645fcc0b4e739dc2af1b72435ad9ec82484198513f3430",
+    "mtime_ns": 1791340363845022554
+  },
+  "docs/review/computer-use-phase15-20261007/mission-snapshot.json": {
+    "sha256": "52e48e09ee687db900f363d5bedab45c19d5be47f949b2a4df22146453a368b0",
+    "mtime_ns": 1791339906714866277
+  },
+  "docs/review/computer-use-phase13-20261006/final-missions.json": {
+    "sha256": "203701da41542a786524f9ca123db86e7eb27ca427fb4762a21ab6bb9eb6c58b",
+    "mtime_ns": 1791271844004946902
+  }
+}

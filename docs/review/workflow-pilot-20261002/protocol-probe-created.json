@@ -1,0 +1,185 @@
+{
+  "success": true,
+  "mission": {
+    "id": "mission-e6ed0e9b0400",
+    "conversation_id": "conv-06a7b6bb64b7",
+    "source_message_id": "msg-c48a5caa3178",
+    "title": "工作流协议最小闭环验证",
+    "objective": "验证修复后的文档交付协议。只创建一个简短 Markdown 文件 protocol-probe.md，内容包含：标题、任务编号占位、三条验证结论。文件必须保存到指定目录，使用原生 write/edit 工具分段写入，禁止单条 shell heredoc。返回真实绝对路径、SHA-256、文件行数和结构化验收结果。不得修改代码、配置或现有交付物，不发送外部消息。",
+    "status": "received",
+    "priority": "normal",
+    "project_id": "workflow-pilot-20261002",
+    "mission_type": "software",
+    "requested_by": "admin",
+    "owner_user_id": "1",
+    "plan_version": 0,
+    "current_step_id": null,
+    "requires_approval": true,
+    "approval_status": "pending",
+    "last_error": null,
+    "lease_owner": null,
+    "lease_expires_at": null,
+    "created_at": "2026-10-03T07:35:03.194531+00:00",
+    "updated_at": "2026-10-03T07:35:03.194531+00:00",
+    "completed_at": null,
+    "context": {
+      "source": "dashboard",
+      "profile_user_id": "1",
+      "mission_type": "software",
+      "intent_decision": {
+        "type": "software_project",
+        "confidence": 1.0,
+        "reason": "由已认证的项目任务入口显式创建",
+        "execution_requested": true
+      },
+      "user_context": {
+        "source": "workflow-pilot-phase-2",
+        "output_directory": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/protocol-probe",
+        "phase": "protocol-probe",
+        "suppress_notification": true,
+        "mission_type": "software",
+        "business_flow_key": "document"
+      },
+      "metadata": {
+        "project_id": "workflow-pilot-20261002",
+        "title": "工作流协议最小闭环验证",
+        "context": {
+          "source": "workflow-pilot-phase-2",
+          "output_directory": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/protocol-probe",
+          "phase": "protocol-probe",
+          "suppress_notification": true,
+          "mission_type": "software",
+          "business_flow_key": "document"
+        },
+        "intent_type": "software_project",
+        "execution_requested": true,
+        "profile_user_id": "1",
+        "suppress_notification": true,
+        "_direct_mission": true,
+        "_reserve_planning": false,
+        "_planning_owner": ""
+      }
+    },
+    "mission_run": {
+      "id": "mrun-1bf8f55fed654773",
+      "mission_id": "mission-e6ed0e9b0400",
+      "correlation_id": "mission-3466b5e1050f4051",
+      "status": "received",
+      "active_plan_version": 0,
+      "workflow_run_id": null,
+      "outcome": "",
+      "created_at": "2026-10-03T07:35:03.194531+00:00",
+      "updated_at": "2026-10-03T07:35:03.255260+00:00",
+      "ended_at": null,
+      "metadata": {}
+    },
+    "conversation": {
+      "id": "conv-06a7b6bb64b7",
+      "channel": "dashboard",
+      "external_conversation_id": "dashboard:admin",
+      "user_external_id": "admin",
+      "owner_user_id": "1",
+      "profile_user_id": "1",
+      "status": "active",
+      "metadata": {
+        "project_id": "workflow-pilot-20261002",
+        "title": "工作流协议最小闭环验证",
+        "context": {
+          "source": "workflow-pilot-phase-2",
+          "output_directory": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/protocol-probe",
+          "phase": "protocol-probe",
+          "suppress_notification": true,
+          "mission_type": "software",
+          "business_flow_key": "document"
+        },
+        "intent_type": "software_project",
+        "execution_requested": true,
+        "profile_user_id": "1",
+        "suppress_notification": true,
+        "_direct_mission": true,
+        "_reserve_planning": false,
+        "_planning_owner": ""
+      },
+      "created_at": "2026-07-30T14:21:43.444848+00:00",
+      "updated_at": "2026-10-03T07:35:03.194531+00:00"
+    },
+    "steps": [],
+    "context_bindings": [],
+    "planning_context": null,
+    "plan": null,
+    "workflow_run": null,
+    "artifacts": [],
+    "evidence": [],
+    "acceptance_gates": [],
+    "step_approvals": [],
+    "effects": [],
+    "compensations": [],
+    "delivery_gate": null,
+    "approval": null,
+    "events": [
+      {
+        "id": "event-0bb97a493615",
+        "mission_id": "mission-e6ed0e9b0400",
+        "mission_run_id": "mrun-1bf8f55fed654773",
+        "correlation_id": "mission-3466b5e1050f4051",
+        "run_sequence": 1,
+        "event_type": "mission_received",
+        "from_status": null,
+        "to_status": "received",
+        "actor": "admin",
+        "detail": "验证修复后的文档交付协议。只创建一个简短 Markdown 文件 protocol-probe.md，内容包含：标题、任务编号占位、三条验证结论。文件必须保存到指定目录，使用原生 write/edit 工具分段写入，禁止单条 shell heredoc。返回真实绝对路径、SHA-256、文件行数和结构化验收结果。不得修改代码、配置或现有交付物，不发送外部消息。",
+        "event_key": null,
+        "metadata": {
+          "message_id": "msg-c48a5caa3178",
+          "channel": "dashboard",
+          "preplanned": false,
+          "mission_type": "software",
+          "project_id": "workflow-pilot-20261002",
+          "intent_confidence": 1.0
+        },
+        "created_at": "2026-10-03T07:35:03.214774+00:00"
+      }
+    ],
+    "messages": [
+      {
+        "id": "msg-c48a5caa3178",
+        "conversation_id": "conv-06a7b6bb64b7",
+        "mission_id": "mission-e6ed0e9b0400",
+        "direction": "inbound",
+        "external_message_id": "ui-43623f10d198444d9a19c84b7aa4f067",
+        "reply_to_external_message_id": null,
+        "sender_id": "admin",
+        "content": "验证修复后的文档交付协议。只创建一个简短 Markdown 文件 protocol-probe.md，内容包含：标题、任务编号占位、三条验证结论。文件必须保存到指定目录，使用原生 write/edit 工具分段写入，禁止单条 shell heredoc。返回真实绝对路径、SHA-256、文件行数和结构化验收结果。不得修改代码、配置或现有交付物，不发送外部消息。",
+        "message_type": "text",
+        "intent_type": "software_project",
+        "intent_confidence": 1.0,
+        "intent_reason": "由已认证的项目任务入口显式创建",
+        "execution_requested": 1,
+        "routing_status": "mission_created",
+        "target_agent_id": "optimus",
+        "resolved_project_id": "workflow-pilot-20261002",
+        "reply_to_command_message_id": null,
+        "metadata": {
+          "project_id": "workflow-pilot-20261002",
+          "title": "工作流协议最小闭环验证",
+          "context": {
+            "source": "workflow-pilot-phase-2",
+            "output_directory": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/protocol-probe",
+            "phase": "protocol-probe",
+            "suppress_notification": true,
+            "mission_type": "software",
+            "business_flow_key": "document"
+          },
+          "intent_type": "software_project",
+          "execution_requested": true,
+          "profile_user_id": "1",
+          "suppress_notification": true,
+          "_direct_mission": true,
+          "_reserve_planning": false,
+          "_planning_owner": ""
+        },
+        "created_at": "2026-10-03T07:35:03.194531+00:00"
+      }
+    ]
+  }
+}

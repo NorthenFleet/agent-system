@@ -1,0 +1,34 @@
+{
+  "mission_id": "mission-a458581a0d71",
+  "status": "completed",
+  "delivery_score": 100,
+  "physical_restore_writes": 1,
+  "compensation_attempts": 3,
+  "original_write_attempts": 1,
+  "readonly_step_attempts": 1,
+  "files_hash_and_mtime_unchanged_after_crash": true,
+  "sent_notifications": 0,
+  "download": "/Users/apple/Downloads/recovery-receipt (1).json",
+  "download_matches": true,
+  "session_keys": [
+    "command-center-mission-a458581a0d71-v1-compensation-77c9ffe8da4ac0f6-step-7200245e3a92-a2",
+    "command-center-mission-a458581a0d71-v1-compensation-77c9ffe8da4ac0f6-step-7200245e3a92-a3",
+    "command-center-mission-a458581a0d71-v2-step-step-1f0891ff3420-a1",
+    "command-center-mission-a458581a0d71-v2-evaluation"
+  ],
+  "backend_tests": 69,
+  "frontend_tests": 11,
+  "pg_race_cases": 2,
+  "interruption": {
+    "elapsed_seconds": 60.64,
+    "status": "pending_approval",
+    "stale_operations_rejected": [
+      "heartbeat",
+      "completion"
+    ],
+    "actual_recovery_writes": 1,
+    "five_files_unchanged": true,
+    "same_contract": true,
+    "same_idempotency_key": true
+  }
+}

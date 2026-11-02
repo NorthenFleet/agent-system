@@ -1,0 +1,1132 @@
+{
+  "agents": [
+    {
+      "id": "bumblebee",
+      "name": "大黄蜂",
+      "role": "运维",
+      "task_types": [
+        "operations",
+        "general"
+      ]
+    },
+    {
+      "id": "donatello",
+      "name": "多纳泰罗",
+      "role": "前端开发",
+      "task_types": [
+        "frontend",
+        "ui",
+        "general"
+      ]
+    },
+    {
+      "id": "ironhide",
+      "name": "铁皮",
+      "role": "仿真与运维方案",
+      "task_types": [
+        "architecture",
+        "operations",
+        "coordination"
+      ]
+    },
+    {
+      "id": "jazz",
+      "name": "爵士",
+      "role": "销售与客户关系",
+      "task_types": [
+        "sales",
+        "operations",
+        "general"
+      ]
+    },
+    {
+      "id": "leonardo",
+      "name": "李奥纳多",
+      "role": "架构师",
+      "task_types": [
+        "architecture",
+        "coordination",
+        "general"
+      ]
+    },
+    {
+      "id": "main",
+      "name": "主控",
+      "role": "通用协调",
+      "task_types": [
+        "general",
+        "coordination"
+      ]
+    },
+    {
+      "id": "michelangelo",
+      "name": "米开朗基罗",
+      "role": "测试工程",
+      "task_types": [
+        "testing",
+        "review",
+        "general"
+      ]
+    },
+    {
+      "id": "optimus",
+      "name": "擎天柱",
+      "role": "总项目管理",
+      "task_types": [
+        "coordination",
+        "general",
+        "review"
+      ]
+    },
+    {
+      "id": "perceptor",
+      "name": "感知器",
+      "role": "资料与情报",
+      "task_types": [
+        "research",
+        "knowledge",
+        "general"
+      ]
+    },
+    {
+      "id": "raphael",
+      "name": "拉斐尔",
+      "role": "后端开发",
+      "task_types": [
+        "backend",
+        "api",
+        "database",
+        "general"
+      ]
+    },
+    {
+      "id": "ratchet",
+      "name": "救护车",
+      "role": "知识库与质量修复",
+      "task_types": [
+        "knowledge",
+        "review",
+        "testing",
+        "general"
+      ]
+    },
+    {
+      "id": "shockwave",
+      "name": "声波",
+      "role": "质量审查",
+      "task_types": [
+        "review",
+        "testing",
+        "research",
+        "general"
+      ]
+    },
+    {
+      "id": "soundwave",
+      "name": "声波",
+      "role": "财务管理",
+      "task_types": [
+        "finance",
+        "operations",
+        "general"
+      ]
+    },
+    {
+      "id": "ultra-magnus",
+      "name": "通天晓",
+      "role": "文档与结构",
+      "task_types": [
+        "writing",
+        "document",
+        "review",
+        "general"
+      ]
+    },
+    {
+      "id": "wheeljack",
+      "name": "千斤顶",
+      "role": "架构与方案",
+      "task_types": [
+        "architecture",
+        "coordination",
+        "general"
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "id": "agent_run",
+      "name": "智能体执行",
+      "category": "agent",
+      "status": "available",
+      "description": "调用指定智能体完成通用分析、执行或复核。",
+      "evidence_types": [
+        "result_summary"
+      ]
+    },
+    {
+      "id": "build_runner",
+      "name": "前端构建器",
+      "category": "verification",
+      "status": "available",
+      "description": "执行前端类型检查、构建或等价界面验证。",
+      "evidence_types": [
+        "build_output"
+      ]
+    },
+    {
+      "id": "codex",
+      "name": "Coding Agent / Codex",
+      "category": "development",
+      "status": "available",
+      "description": "在代码仓库中完成受控修改。",
+      "evidence_types": [
+        "diff_summary"
+      ]
+    },
+    {
+      "id": "context_search",
+      "name": "背景检索",
+      "category": "context",
+      "status": "available",
+      "description": "检索项目、记忆、会话和文档背景，形成可引用上下文。",
+      "evidence_types": [
+        "context_pack",
+        "citations"
+      ]
+    },
+    {
+      "id": "document_workspace",
+      "name": "文档工作台",
+      "category": "document",
+      "status": "available",
+      "description": "处理文档结构、正文、引用与格式交付。",
+      "evidence_types": [
+        "document_diff",
+        "quality_notes"
+      ]
+    },
+    {
+      "id": "finance_reconcile",
+      "name": "财务核对工具",
+      "category": "finance",
+      "status": "available",
+      "description": "校验金额、对象、科目、凭证和对账证据链。",
+      "evidence_types": [
+        "finance_evidence"
+      ]
+    },
+    {
+      "id": "ops_check",
+      "name": "运维检查工具",
+      "category": "operations",
+      "status": "available",
+      "description": "检查服务状态、配置变更和运行回执。",
+      "evidence_types": [
+        "ops_log"
+      ]
+    },
+    {
+      "id": "quality_checker",
+      "name": "质量检查器",
+      "category": "review",
+      "status": "available",
+      "description": "执行计划、结果和风险复核，产出问题清单。",
+      "evidence_types": [
+        "review_report"
+      ]
+    },
+    {
+      "id": "test_runner",
+      "name": "测试运行器",
+      "category": "verification",
+      "status": "available",
+      "description": "运行后端、单元或集成测试并回传输出。",
+      "evidence_types": [
+        "test_output"
+      ]
+    }
+  ],
+  "task_agent_defaults": {
+    "architecture": "leonardo",
+    "backend": "raphael",
+    "api": "raphael",
+    "database": "raphael",
+    "frontend": "donatello",
+    "ui": "donatello",
+    "testing": "michelangelo",
+    "research": "perceptor",
+    "knowledge": "ratchet",
+    "writing": "ultra-magnus",
+    "document": "ultra-magnus",
+    "operations": "bumblebee",
+    "finance": "soundwave",
+    "sales": "jazz",
+    "review": "shockwave",
+    "coordination": "optimus",
+    "general": "optimus"
+  },
+  "task_type_defaults": {
+    "architecture": {
+      "required_tools": [
+        "context_search"
+      ],
+      "deliverables": [
+        "架构边界与接口契约",
+        "验收标准"
+      ],
+      "acceptance_criteria": [
+        "覆盖目标范围、依赖、风险和验收口径"
+      ],
+      "evidence_required": [
+        "architecture_notes"
+      ]
+    },
+    "backend": {
+      "required_tools": [
+        "codex",
+        "test_runner"
+      ],
+      "deliverables": [
+        "后端/API 实现",
+        "测试结果"
+      ],
+      "acceptance_criteria": [
+        "相关接口或服务行为符合计划",
+        "后端测试或等价验证通过"
+      ],
+      "evidence_required": [
+        "diff_summary",
+        "test_output"
+      ]
+    },
+    "api": {
+      "required_tools": [
+        "codex",
+        "test_runner"
+      ],
+      "deliverables": [
+        "API 实现",
+        "接口测试结果"
+      ],
+      "acceptance_criteria": [
+        "接口契约稳定且有验证证据"
+      ],
+      "evidence_required": [
+        "diff_summary",
+        "test_output"
+      ]
+    },
+    "database": {
+      "required_tools": [
+        "codex",
+        "test_runner"
+      ],
+      "deliverables": [
+        "数据结构或迁移实现",
+        "回归结果"
+      ],
+      "acceptance_criteria": [
+        "数据读写、迁移和回滚路径可验证"
+      ],
+      "evidence_required": [
+        "diff_summary",
+        "test_output"
+      ]
+    },
+    "frontend": {
+      "required_tools": [
+        "codex",
+        "build_runner"
+      ],
+      "deliverables": [
+        "前端交互实现",
+        "构建或界面验证结果"
+      ],
+      "acceptance_criteria": [
+        "页面状态与错误处理完整",
+        "前端构建或等价验证通过"
+      ],
+      "evidence_required": [
+        "diff_summary",
+        "build_output"
+      ]
+    },
+    "ui": {
+      "required_tools": [
+        "codex",
+        "build_runner"
+      ],
+      "deliverables": [
+        "界面实现",
+        "视觉/交互验证结果"
+      ],
+      "acceptance_criteria": [
+        "关键状态和响应式布局可验证"
+      ],
+      "evidence_required": [
+        "diff_summary",
+        "build_output"
+      ]
+    },
+    "testing": {
+      "required_tools": [
+        "test_runner"
+      ],
+      "deliverables": [
+        "测试/回归结果",
+        "问题清单"
+      ],
+      "acceptance_criteria": [
+        "关键路径有可复现验证证据"
+      ],
+      "evidence_required": [
+        "test_output"
+      ]
+    },
+    "research": {
+      "required_tools": [
+        "context_search"
+      ],
+      "deliverables": [
+        "资料清单",
+        "证据摘要"
+      ],
+      "acceptance_criteria": [
+        "关键事实保留来源或引用编号"
+      ],
+      "evidence_required": [
+        "citations"
+      ]
+    },
+    "knowledge": {
+      "required_tools": [
+        "context_search"
+      ],
+      "deliverables": [
+        "知识整理结果",
+        "待沉淀记忆候选"
+      ],
+      "acceptance_criteria": [
+        "区分事实、推断和待核验信息"
+      ],
+      "evidence_required": [
+        "source_refs"
+      ]
+    },
+    "writing": {
+      "required_tools": [
+        "document_workspace"
+      ],
+      "deliverables": [
+        "文档结构或正文",
+        "引用/证据说明"
+      ],
+      "acceptance_criteria": [
+        "结构、论证、引用和交付目标一致"
+      ],
+      "evidence_required": [
+        "document_diff",
+        "quality_notes"
+      ]
+    },
+    "document": {
+      "required_tools": [
+        "document_workspace"
+      ],
+      "deliverables": [
+        "文档交付物",
+        "引用/证据说明"
+      ],
+      "acceptance_criteria": [
+        "结构、事实和格式符合交付目标"
+      ],
+      "evidence_required": [
+        "document_diff",
+        "quality_notes"
+      ]
+    },
+    "review": {
+      "required_tools": [
+        "quality_checker"
+      ],
+      "deliverables": [
+        "审查结论",
+        "问题与风险清单"
+      ],
+      "acceptance_criteria": [
+        "明确通过、退回或需补充的判断"
+      ],
+      "evidence_required": [
+        "review_report"
+      ]
+    },
+    "finance": {
+      "required_tools": [
+        "finance_reconcile"
+      ],
+      "deliverables": [
+        "财务处理结果",
+        "凭证/对账证据"
+      ],
+      "acceptance_criteria": [
+        "金额、对象、科目和证据链一致"
+      ],
+      "evidence_required": [
+        "finance_evidence"
+      ]
+    },
+    "operations": {
+      "required_tools": [
+        "ops_check"
+      ],
+      "deliverables": [
+        "运维处理结果",
+        "状态检查证据"
+      ],
+      "acceptance_criteria": [
+        "服务状态或配置变更有回执"
+      ],
+      "evidence_required": [
+        "ops_log"
+      ]
+    },
+    "sales": {
+      "required_tools": [
+        "context_search"
+      ],
+      "deliverables": [
+        "客户/销售跟进结果",
+        "风险说明"
+      ],
+      "acceptance_criteria": [
+        "客户目标、下一步和责任人清晰"
+      ],
+      "evidence_required": [
+        "coordination_notes"
+      ]
+    },
+    "coordination": {
+      "required_tools": [
+        "context_search"
+      ],
+      "deliverables": [
+        "协调结论",
+        "下一步安排"
+      ],
+      "acceptance_criteria": [
+        "目标、责任人和完成标准清晰"
+      ],
+      "evidence_required": [
+        "coordination_notes"
+      ]
+    },
+    "general": {
+      "required_tools": [
+        "agent_run"
+      ],
+      "deliverables": [
+        "任务输出",
+        "风险说明"
+      ],
+      "acceptance_criteria": [
+        "输出直接回应用户目标"
+      ],
+      "evidence_required": [
+        "result_summary"
+      ]
+    }
+  },
+  "business_flow_contract": {
+    "schema_version": "1.0",
+    "flows": [
+      {
+        "flow_key": "document",
+        "version": "1.0.0",
+        "business_type": "document",
+        "name": "文档生产交付流",
+        "phases": [
+          "intake",
+          "planning",
+          "research",
+          "production",
+          "verification",
+          "delivery"
+        ],
+        "required_task_groups": [
+          {
+            "name": "资料与证据",
+            "any_of": [
+              "research",
+              "knowledge"
+            ]
+          },
+          {
+            "name": "内容生产",
+            "any_of": [
+              "writing",
+              "document"
+            ]
+          },
+          {
+            "name": "审校",
+            "any_of": [
+              "review"
+            ]
+          }
+        ],
+        "required_gates": [
+          "plan_quality",
+          "plan_approval",
+          "citation_gate",
+          "evidence_gate"
+        ],
+        "budgets": {
+          "max_steps": 12,
+          "max_parallel_steps": 3,
+          "max_replans": 2,
+          "default_timeout_seconds": 1200
+        },
+        "approval_policy": {
+          "plan_approval": true,
+          "delivery_approval": true,
+          "l3_step_approval": true
+        }
+      },
+      {
+        "flow_key": "finance",
+        "version": "1.0.0",
+        "business_type": "finance",
+        "name": "财务处理流",
+        "phases": [
+          "intake",
+          "validation",
+          "processing",
+          "verification",
+          "approval",
+          "delivery"
+        ],
+        "required_task_groups": [
+          {
+            "name": "财务处理",
+            "any_of": [
+              "finance"
+            ]
+          },
+          {
+            "name": "独立复核",
+            "any_of": [
+              "review"
+            ]
+          }
+        ],
+        "required_gates": [
+          "plan_quality",
+          "plan_approval",
+          "finance_review",
+          "human_approval",
+          "evidence_gate"
+        ],
+        "budgets": {
+          "max_steps": 10,
+          "max_parallel_steps": 2,
+          "max_replans": 1,
+          "default_timeout_seconds": 900
+        },
+        "approval_policy": {
+          "plan_approval": true,
+          "delivery_approval": true,
+          "l3_step_approval": true
+        }
+      },
+      {
+        "flow_key": "general",
+        "version": "1.0.0",
+        "business_type": "general",
+        "name": "通用业务执行流",
+        "phases": [
+          "intake",
+          "planning",
+          "execution",
+          "verification",
+          "delivery"
+        ],
+        "required_task_groups": [],
+        "required_gates": [
+          "plan_quality",
+          "plan_approval",
+          "evidence_gate"
+        ],
+        "budgets": {
+          "max_steps": 12,
+          "max_parallel_steps": 4,
+          "max_replans": 2,
+          "default_timeout_seconds": 900
+        },
+        "approval_policy": {
+          "plan_approval": true,
+          "delivery_approval": false,
+          "l3_step_approval": true
+        }
+      },
+      {
+        "flow_key": "operations",
+        "version": "1.0.0",
+        "business_type": "operations",
+        "name": "运维操作流",
+        "phases": [
+          "intake",
+          "planning",
+          "operation",
+          "verification",
+          "delivery"
+        ],
+        "required_task_groups": [
+          {
+            "name": "运维执行",
+            "any_of": [
+              "operations"
+            ]
+          },
+          {
+            "name": "状态验证",
+            "any_of": [
+              "testing",
+              "review"
+            ]
+          }
+        ],
+        "required_gates": [
+          "plan_quality",
+          "plan_approval",
+          "ops_check",
+          "evidence_gate"
+        ],
+        "budgets": {
+          "max_steps": 10,
+          "max_parallel_steps": 2,
+          "max_replans": 1,
+          "default_timeout_seconds": 900
+        },
+        "approval_policy": {
+          "plan_approval": true,
+          "delivery_approval": false,
+          "l3_step_approval": true
+        }
+      },
+      {
+        "flow_key": "research",
+        "version": "1.0.0",
+        "business_type": "research",
+        "name": "情报研究流",
+        "phases": [
+          "intake",
+          "planning",
+          "research",
+          "verification",
+          "delivery"
+        ],
+        "required_task_groups": [
+          {
+            "name": "资料检索",
+            "any_of": [
+              "research",
+              "knowledge"
+            ]
+          },
+          {
+            "name": "交叉验证",
+            "any_of": [
+              "review"
+            ]
+          }
+        ],
+        "required_gates": [
+          "plan_quality",
+          "plan_approval",
+          "source_gate",
+          "evidence_gate"
+        ],
+        "budgets": {
+          "max_steps": 12,
+          "max_parallel_steps": 4,
+          "max_replans": 2,
+          "default_timeout_seconds": 900
+        },
+        "approval_policy": {
+          "plan_approval": true,
+          "delivery_approval": false,
+          "l3_step_approval": true
+        }
+      },
+      {
+        "flow_key": "software",
+        "version": "1.0.0",
+        "business_type": "software",
+        "name": "软件开发交付流",
+        "phases": [
+          "intake",
+          "planning",
+          "implementation",
+          "verification",
+          "delivery"
+        ],
+        "required_task_groups": [
+          {
+            "name": "架构设计",
+            "any_of": [
+              "architecture"
+            ]
+          },
+          {
+            "name": "实现",
+            "any_of": [
+              "backend",
+              "api",
+              "database",
+              "frontend",
+              "ui"
+            ]
+          },
+          {
+            "name": "测试验证",
+            "any_of": [
+              "testing",
+              "review"
+            ]
+          }
+        ],
+        "required_gates": [
+          "plan_quality",
+          "plan_approval",
+          "test_gate",
+          "evidence_gate"
+        ],
+        "budgets": {
+          "max_steps": 12,
+          "max_parallel_steps": 4,
+          "max_replans": 2,
+          "default_timeout_seconds": 1200
+        },
+        "approval_policy": {
+          "plan_approval": true,
+          "delivery_approval": false,
+          "l3_step_approval": true
+        }
+      }
+    ],
+    "risk_levels": {
+      "L0": {
+        "name": "只读分析",
+        "legacy_level": "low",
+        "step_approval": false,
+        "max_attempts": 3,
+        "description": "不改变业务或外部系统状态。"
+      },
+      "L1": {
+        "name": "可逆内部变更",
+        "legacy_level": "low",
+        "step_approval": false,
+        "max_attempts": 2,
+        "description": "受控的内部写入，可验证且可回滚。"
+      },
+      "L2": {
+        "name": "重要业务变更",
+        "legacy_level": "medium",
+        "step_approval": false,
+        "max_attempts": 2,
+        "description": "影响重要数据或运行状态，必须有证据和补偿路径。"
+      },
+      "L3": {
+        "name": "不可逆或外部动作",
+        "legacy_level": "high",
+        "step_approval": true,
+        "max_attempts": 1,
+        "description": "付款、删除、生产发布、外部发送或权限变更。"
+      }
+    },
+    "contracts": {
+      "flow": {
+        "required": [
+          "flow_key",
+          "version",
+          "business_type",
+          "phases",
+          "required_gates",
+          "budgets",
+          "approval_policy"
+        ],
+        "identity": [
+          "flow_key",
+          "version"
+        ]
+      },
+      "step": {
+        "required": [
+          "order_index",
+          "title",
+          "objective",
+          "phase",
+          "task_type",
+          "agent_id",
+          "depends_on",
+          "output_contract",
+          "acceptance_criteria",
+          "evidence_required",
+          "risk_class",
+          "timeout_seconds",
+          "max_attempts",
+          "idempotency_key",
+          "rollback_plan"
+        ],
+        "identity": [
+          "mission_id",
+          "plan_version",
+          "order_index"
+        ]
+      },
+      "artifact": {
+        "required": [
+          "artifact_type",
+          "title",
+          "uri",
+          "content_hash",
+          "produced_by_step_id"
+        ],
+        "optional": [
+          "media_type",
+          "size",
+          "version",
+          "metadata"
+        ],
+        "immutable_fields": [
+          "content_hash",
+          "produced_by_step_id"
+        ]
+      },
+      "evidence": {
+        "required": [
+          "evidence_type",
+          "source_ref",
+          "summary",
+          "collected_by",
+          "collected_at"
+        ],
+        "optional": [
+          "artifact_id",
+          "confidence",
+          "metadata"
+        ],
+        "accepted_types": [
+          "context_pack",
+          "citations",
+          "diff_summary",
+          "test_output",
+          "build_output",
+          "review_report",
+          "document_diff",
+          "finance_evidence",
+          "ops_log",
+          "result_summary"
+        ]
+      },
+      "approval": {
+        "required": [
+          "scope",
+          "subject_ref",
+          "decision",
+          "decided_by",
+          "decided_at"
+        ],
+        "decision_values": [
+          "pending",
+          "approved",
+          "rejected",
+          "cancelled"
+        ],
+        "scope_values": [
+          "plan",
+          "step",
+          "delivery"
+        ]
+      }
+    },
+    "state_machines": {
+      "mission": {
+        "received": [
+          "planning",
+          "cancelled"
+        ],
+        "planning": [
+          "awaiting_approval",
+          "waiting_feedback",
+          "failed",
+          "cancelled"
+        ],
+        "awaiting_approval": [
+          "dispatching",
+          "planning",
+          "cancelled"
+        ],
+        "dispatching": [
+          "running",
+          "waiting_feedback",
+          "cancelled"
+        ],
+        "running": [
+          "waiting_feedback",
+          "evaluating",
+          "cancelled"
+        ],
+        "waiting_feedback": [
+          "planning",
+          "dispatching",
+          "running",
+          "cancelled"
+        ],
+        "evaluating": [
+          "completed",
+          "waiting_feedback",
+          "failed",
+          "cancelled"
+        ],
+        "completed": [],
+        "failed": [
+          "planning",
+          "cancelled"
+        ],
+        "cancelled": []
+      },
+      "step": {
+        "draft": [
+          "ready",
+          "cancelled"
+        ],
+        "ready": [
+          "awaiting_approval",
+          "running",
+          "cancelled"
+        ],
+        "awaiting_approval": [
+          "ready",
+          "failed",
+          "cancelled"
+        ],
+        "running": [
+          "completed",
+          "failed",
+          "ready",
+          "cancelled"
+        ],
+        "completed": [],
+        "failed": [
+          "ready",
+          "cancelled"
+        ],
+        "cancelled": []
+      }
+    }
+  },
+  "workflow_runtime": {
+    "default_runtime": "legacy",
+    "langgraph": {
+      "enabled": false,
+      "available": true,
+      "pilot_flows": [
+        "document",
+        "research"
+      ],
+      "pilot_risk_levels": [
+        "L0",
+        "L1"
+      ],
+      "checkpoint_backend": "postgresql",
+      "role": "approval and recovery execution gate"
+    },
+    "ownership": {
+      "business_state": "command_center",
+      "execution_checkpoint": "workflow_runtime",
+      "long_term_memory": "memory_service"
+    },
+    "by_status": {
+      "ready": 11,
+      "cancelled": 2
+    },
+    "by_runtime": {
+      "legacy": 13
+    },
+    "checkpoint_storage": {
+      "status": "ready",
+      "backend": "postgresql",
+      "installed_version": 9,
+      "required_version": 9,
+      "missing_tables": [],
+      "runtime_ddl": false
+    }
+  },
+  "execution_evidence": {
+    "schema_version": "1.0",
+    "modes": {
+      "shadow": "record findings without changing step outcome",
+      "pilot": "enforce for eligible LangGraph document/research runs",
+      "strict": "enforce for every mission"
+    },
+    "required_result_fields": [
+      "summary",
+      "artifacts",
+      "evidence",
+      "acceptance_results",
+      "tools_used",
+      "risk_notes"
+    ],
+    "artifact_identity": [
+      "artifact_type",
+      "title",
+      "uri",
+      "content_hash"
+    ],
+    "evidence_identity": [
+      "evidence_type",
+      "source_ref",
+      "summary"
+    ]
+  },
+  "step_approval": {
+    "schema_version": "1.0",
+    "required_for": [
+      "approval_required=true",
+      "risk_class=L3"
+    ],
+    "binding": "mission_id + plan_version + step_id + contract_hash",
+    "single_use": true,
+    "approval_ttl_seconds": 1800,
+    "request_ttl_seconds": 86400,
+    "retry_policy": "a consumed approval is never reused after an interrupted execution"
+  },
+  "compensation": {
+    "schema_version": "1.0",
+    "effect_statuses": [
+      "applied",
+      "not_applied",
+      "unknown"
+    ],
+    "compensation_statuses": [
+      "pending_approval",
+      "ready",
+      "running",
+      "completed",
+      "failed",
+      "rejected",
+      "cancelled"
+    ],
+    "policy": {
+      "automatic_execution": false,
+      "approval_required": true,
+      "approval_single_use": true,
+      "approval_ttl_env": "COMMAND_CENTER_COMPENSATION_APPROVAL_TTL",
+      "unknown_effect_requires_review": true,
+      "stable_idempotency_key_required": true,
+      "interrupted_execution_requires_reapproval": true
+    }
+  }
+}

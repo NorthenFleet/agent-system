@@ -1,0 +1,51 @@
+- main:
+  - button "✦ OpenClaw":
+    - generic: ✦
+    - generic: OpenClaw
+  - button "进入任务工作台"
+  - button "查看智能体团队": 🤖
+  - region "智能体 Agent Space":
+    - paragraph: YOUR AI WORKFORCE
+    - heading "智能体 Agent Space" [level=1]:
+      - text: 智能体
+      - emphasis: Agent Space
+    - paragraph: 研发与办公路上的协作伙伴，把复杂任务交给擎天柱和智能体团队。
+    - tablist "任务模式":
+      - tab "代码开发"
+      - tab "研发办公" [selected]
+    - region "创建智能体任务":
+      - textbox "描述你要生成、分析或整理的办公任务…": CU-20261005-D 修复回归。只写文档，不开发代码，无需联网或额外资料研究。为虚构的个人助理试点写100至200个汉字的简报，包含目标、三个里程碑、两条风险及应对、验收清单，不含预算。仅两步：通天晓写brief.md；救护车独立审查并写review.md，明确accepted或rejected，只有accepted方可交付。目录已存在：/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-20261005/deliverables/D/。仅允许写入该目录内这两个新文件，其他文件、代码、配置和外部消息均不得修改或发送。允许用原生write/edit或exec短命令落盘。要求真实文件、UTF-8解码后汉字数、全文证据、SHA256和准确的side_effects回执；严格复制合同幂等键。文档产物类型使用document，审查产物类型使用review_report。先出计划等待批准。
+      - generic: ⌘
+      - combobox "⌘":
+        - option "选择 Workspace"
+        - option "博士论文"
+        - option "谋战·水面舰艇编队战术手工兵棋"
+        - option "水面舰艇作战软件与兵棋推演课程"
+        - option "CU-20261005 个人助理验收" [selected]
+      - generic: ✦擎天柱编排
+      - button "交给擎天柱":
+        - generic: ↑
+    - generic: ⌑
+    - text: CU-20261005 个人助理验收
+    - generic: 6 项任务进行中
+    - paragraph: 快速开始
+    - button "▤ 技术文档生成":
+      - generic: ▤
+      - text: 技术文档生成
+    - button "◔ 数据分析":
+      - generic: ◔
+      - text: 数据分析
+    - button "▣ PRD 生成":
+      - generic: ▣
+      - text: PRD 生成
+    - button "▧ PPT 生成":
+      - generic: ▧
+      - text: PPT 生成
+    - button "</> 开发任务":
+      - generic: </>
+      - text: 开发任务
+  - generic: 任务由 AI 智能体协同处理；高风险步骤将进入审批流程。
+  - generic: ⌘ / Ctrl + Enter 提交
+- textbox
+- button:
+- button:

@@ -1,0 +1,24 @@
+{
+  "format": "kb-intake-recovery-v1",
+  "captured_at": "2026-10-07T16:11:05.146484+00:00",
+  "checks": {
+    "all_30_source_blobs_verified": true,
+    "all_span_hashes_verified": true,
+    "pending_candidate_hashes_verified": true,
+    "restored_record_counts_match": true,
+    "external_work_run_links_detached": true,
+    "access_epoch_advanced": true,
+    "live_knowledge_unchanged": true,
+    "temporary_schema_removed": true
+  },
+  "passed": true,
+  "source_count": 30,
+  "span_count": 908,
+  "pending_candidates": 30,
+  "backup_bytes": 926475,
+  "recovery_seconds": 0.273,
+  "production_knowledge_modified": false,
+  "later_production_revocation_tested": false,
+  "production_rpo_rto_certified": false,
+  "g_sb4_passed": false
+}

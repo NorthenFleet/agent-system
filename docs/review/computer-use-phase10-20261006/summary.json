@@ -1,0 +1,11 @@
+{
+  "mission_id": "mission-c41a10573374",
+  "status": "completed",
+  "recovery_state": "completed",
+  "execution_score": 100,
+  "backup_matches": true,
+  "changed_copy_preserved": true,
+  "approval_gate_verified": true,
+  "download_matches": true,
+  "download_path": "/Users/apple/Downloads/step-4b131883dd50-verification.txt"
+}

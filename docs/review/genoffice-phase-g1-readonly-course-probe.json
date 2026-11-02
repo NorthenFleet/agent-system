@@ -1,0 +1,37 @@
+{
+  "schema": "openclaw.genoffice-phase-g1-readonly-gold.v1",
+  "created_at": "2026-09-25T11:43:52.326540Z",
+  "manifest_path": "/Users/apple/工作桌面/Workspace/agent-system/specs/active/word-cowriting-phase0-gold-documents.json",
+  "manifest_sha256": "b121d3f1a237efbf498315919dfc1bdee16ea7c23de3745b907deab965dc0ba4",
+  "scope": "docs_read/docs_check/render page 1 only; no source or candidate write",
+  "uploaded_source_retention": "GenOffice HTTP FileStore retains uploads for its vendor-defined short TTL (currently about one hour); the isolated Electron original copy is removed after each proof",
+  "status": "passed",
+  "documents": [
+    {
+      "id": "course-plan-original-20h",
+      "source_sha256": "625c5adc0d113828d4fa64b3bd7f6ee477cbc1f3335a67af6e9190c9b1347bc4",
+      "source_bytes": 45619,
+      "release_version": "0.10.1038",
+      "mcp_version": "0.10.0",
+      "read": {
+        "blocks": 367,
+        "range": "0-0",
+        "item_count": 1
+      },
+      "check": {
+        "counts": {
+          "error": 0,
+          "warning": 2,
+          "info": 0
+        },
+        "issue_count": 2,
+        "truncated": false
+      },
+      "render_page_1": {
+        "sha256": "a98ade245a7f028cff600b3d39a52b5ffc30148a0439465d51554efd13e611bb",
+        "bytes": 72824
+      },
+      "status": "passed"
+    }
+  ]
+}

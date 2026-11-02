@@ -1,0 +1,34 @@
+{
+  "format": "kb-authorized-intake-v1",
+  "captured_at": "2026-10-07T16:10:09.643535+00:00",
+  "project_id": "workflow-pilot-20261002",
+  "owner_user_id": "1",
+  "space_id": "ks-089499632d9fb01a8414035daed61f8f",
+  "counts": {
+    "kb_sources": 30,
+    "kb_source_versions": 30,
+    "kb_ingest_jobs": 30,
+    "kb_change_sets": 30,
+    "kb_pages": 0,
+    "kb_releases": 0
+  },
+  "batches": [
+    20,
+    10
+  ],
+  "work_runs_in_review": 30,
+  "all_source_hashes_match": true,
+  "credential_pattern_matches": 0,
+  "scan_is_not_human_privacy_review": true,
+  "candidate_reviewed_count": 0,
+  "human_gold_count": 0,
+  "published_count": 0,
+  "private_run_relative_path": "backend/data/second-brain/intake-20261007T161008Z",
+  "backup_bytes": 926475,
+  "ingest_method": "explicit local one-shot; extractive-v1; PostgreSQL WorkRun ledger",
+  "persisted_flags_changed": false,
+  "service_restarted": false,
+  "pilot_started": false,
+  "retention_policy_approved": false,
+  "external_model_calls": 0
+}

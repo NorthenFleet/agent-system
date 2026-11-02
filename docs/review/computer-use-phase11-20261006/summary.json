@@ -1,0 +1,55 @@
+{
+  "mission_id": "mission-6ecde497f875",
+  "status": "completed",
+  "compensation_attempts": 3,
+  "calls": [
+    {
+      "file": "call-1-result.json",
+      "success": true,
+      "error": "",
+      "tools": [
+        "exec"
+      ],
+      "model": "qwen3.7-plus"
+    },
+    {
+      "file": "call-2-result.json",
+      "success": false,
+      "error": "任务执行超时（180s）",
+      "tools": null,
+      "model": null
+    },
+    {
+      "file": "call-3-result.json",
+      "success": true,
+      "error": "",
+      "tools": [
+        "exec"
+      ],
+      "model": "qwen3.7-plus"
+    },
+    {
+      "file": "call-4-result.json",
+      "success": true,
+      "error": "",
+      "tools": [
+        "exec"
+      ],
+      "model": "qwen3.7-plus"
+    },
+    {
+      "file": "call-5-result.json",
+      "success": true,
+      "error": "",
+      "tools": [],
+      "model": "qwen3.7-plus"
+    }
+  ],
+  "download": "/Users/apple/Downloads/recovery-receipt.json",
+  "download_matches": true,
+  "files_unchanged_during_readonly_acceptance": true,
+  "original_write_attempts": 1,
+  "sent_notifications": 0,
+  "backend_tests": 66,
+  "frontend_tests": 11
+}

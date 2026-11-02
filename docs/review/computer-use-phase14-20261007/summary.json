@@ -1,0 +1,14 @@
+{
+  "duration_seconds": 150.68,
+  "workers": 4,
+  "cases": 60,
+  "valid_completed": 24,
+  "changed_receipt_blocked": 12,
+  "changed_resource_blocked": 12,
+  "unapproved_not_executed": 12,
+  "executions": 48,
+  "duplicate_executions": 0,
+  "sent_notifications": 0,
+  "samples": 148,
+  "passed": true
+}

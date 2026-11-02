@@ -1,0 +1,35 @@
+{
+  "status": "pass",
+  "score": 100,
+  "mode": "strict",
+  "enforced": true,
+  "accepted": true,
+  "executor_success": true,
+  "business_outcome": "succeeded",
+  "hard_blockers": [],
+  "blockers": [],
+  "warnings": [],
+  "evidence_refs": [
+    "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md"
+  ],
+  "required_evidence": [
+    "test_output"
+  ],
+  "required_artifact_types": [
+    "document"
+  ],
+  "required_tools": [
+    "test_runner"
+  ],
+  "acceptance_criteria": [
+    "三节齐全且100至180汉字，并返回实际SHA-256"
+  ],
+  "checked_rules": [
+    "result-summary",
+    "required-evidence-types",
+    "artifact-contract",
+    "acceptance-results",
+    "tool-use",
+    "required-output-fields"
+  ]
+}

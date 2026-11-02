@@ -1,0 +1,51 @@
+智能体系统工作流试点执行报告
+更新：2026-10-02 21:33:25 北京时间
+项目：workflow-pilot-20261002
+任务：mission-f165257f1043
+当前任务状态：waiting_feedback；计划版本：V4
+
+一、结论
+首轮完整闭环验收不通过：首步两次执行都未提交有效结构化交付结果，系统停在waiting_feedback，下游独立审核未执行。已有文件不代表通过内容审核或工作流验收。
+
+二、真实执行记录
+1. 通过项目API建档，再向擎天柱任务入口提交需求；浏览器确认项目与任务可见。
+2. V1/V2计划被退回。确认驳回意见未进入规划提示、项目验收字段未被检索。
+3. V3无法解析后使用了软件开发兜底计划，被人工拒绝，未执行代码开发。
+4. V4形成五步文档流程，完成范围审核后通过正式审批接口启动。
+5. 首步已产生需求矩阵和大纲初稿；执行器返回会话摘要而非结构化证据，系统判失败、下游未启动。
+6. 通过正式反馈接口恢复首步；重试改写了矩阵（观察者已另存前后版本），第二次执行返回工具调用片段而非最终交付JSON，再次被阻断。
+
+三、当前步骤
+1. 米开朗基罗只读梳理核心源码/接口并编写场景及覆盖矩阵：failed，执行次数 2
+2. 通天晓编写完整大纲初稿：ready，执行次数 0
+3. 救护车独立审核：ready，执行次数 0
+4. 通天晓根据审核意见修订：ready，执行次数 0
+5. 救护车最终复核：ready，执行次数 0
+
+四、产物核验
+requirements-matrix.md：15003 字节；SHA256 fde51cc47c26d08a0ba5f608d89719fbd5b604f1596d143f7fb91246bbb80533
+test-outline-draft.md：12243 字节；SHA256 6ba5a3b7711546defc15e1fb8cdd97b735478cd4fd4cd422979545298017e3f6
+缺少：test-outline-final.md、review-record.md、revision-notes.md、final-review.md
+文件结构、可读性及哈希已检查；初稿内容混用了旧版和当前指挥中心流程，尚不能验收。
+
+五、缺陷与修复
+WF-001 [P1] 驳回意见未进入重新规划提示和检索；状态：source_fixed_isolated_tests_passed_not_deployed
+WF-002 [P1] 项目context中的目标及验收条件未进入背景；状态：source_fixed_isolated_tests_passed_not_deployed
+WF-003 [P1] 文档任务解析失败后兜底为前后端代码开发；状态：source_fixed_isolated_tests_passed_not_deployed
+WF-004 [P2] 规划期间背景已冻结但详情显示等待；状态：source_fixed_isolated_tests_passed_not_deployed
+WF-005 [P2] 软件项目内文档任务被要求含代码实现；状态：source_fixed_isolated_tests_passed_not_deployed
+WF-006 [P2] 步骤描述要求写文档但副作用字段声明只读；状态：documented_not_fixed
+WF-007 [P1] 执行器收到会话压缩摘要而非结构化交付结果，任务失败；状态：live_failed_twice_protocol_diagnostics_fixed_not_deployed
+WF-008 [P1] 反馈恢复会重新派发，但执行提示和检索未包含用户反馈；状态：source_fixed_isolated_tests_passed_not_deployed
+
+六、验证边界
+86项隔离自动化测试通过；测试代码与数据库在 /private/tmp/workflow-pilot-tests 中运行。
+测试覆盖规划意见传递、背景显示、项目验收字段传递、文档业务流、兜底计划、执行反馈及既有审批/证据/同步等回归。
+这些结果不等于线上86个业务场景已通过。
+修复仅保存于源代码，尚未重启线上服务加载；已有其他未提交改动未覆盖。
+不对正式环境做故障注入，不改数据库记录伪造成功，不代替智能体编写正式交付大纲。
+任务审批、反馈补传和恢复是人工介入，未计为自动闭环通过。
+
+七、继续条件
+处理执行器摘要返回和反馈传递问题，验证首步提交真实结构化证据，再继续写作、独立审核、修订和最终复核。
+通过文档验收后，按正式大纲开展隔离场景测试与线上只读核验，再发布回归结果。

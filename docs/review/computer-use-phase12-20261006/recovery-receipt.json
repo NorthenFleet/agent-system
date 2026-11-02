@@ -1,0 +1,11 @@
+{
+  "idempotency_key": "recovery:compensation-5976242a7f3d:77c9ffe8da4ac0f6c33f",
+  "contract_hash": "77c9ffe8da4ac0f6c33feba94b1cb1478b11980861b74587f0607a7c6479d780",
+  "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase12-20261006/applied-sample.txt",
+  "pre_recovery_sha256": "c2e1f9b32dd5fdb8e6e4f825edb4105fce42e716206fb09c94996c782fd6d2eb",
+  "post_recovery_sha256": "03af3ee612e6d3447a0ebc852fc0a8191ae39d60b3f80d67b84d91d61e86a400",
+  "retention_copy_path": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase12-20261006/before-recovery.txt",
+  "verification": {
+    "all_passed": true
+  }
+}

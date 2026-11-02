@@ -1,0 +1,13 @@
+........................................................................ [ 59%]
+.................................................                        [100%]
+=============================== warnings summary ===============================
+database.py:80
+  /Users/apple/工作桌面/Workspace/agent-system/backend/database.py:80: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+tests/knowledge/test_api.py::test_http_auth_role_gates_and_owner_is_not_client_selected
+  /Users/apple/工作桌面/Workspace/agent-system/backend/models/task_plan.py:23: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+121 passed, 2 warnings in 13.89s

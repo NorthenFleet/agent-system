@@ -1,0 +1,7 @@
+{
+  "backend/services/command_center_service.py": "d8113b359e79742ce0a2c41aa0079c52b62d8ff7ca826248e3fa278e818c10c1",
+  "backend/tests/test_phase8_write_recovery.py": "b15b481f6500668590672a0f8d5f3df3089522871d1392caf830c560a96db102",
+  "backend/tests/test_command_center_service.py": "4f97506569ee0f9f702aaf1806f1f21333cbb5200f9c507ee93872b36bdb6837",
+  "backend/tests/test_step_approval_service.py": "c9135252e6fdb8d079d5431517b22a50101d9b745812b721a67b96d8f6fb0443",
+  "backend/scripts/run_phase8_write_lab.py": "ccfa1b41e5ee6a1cde786389a0cca185544204979878d890a882f4023df9c329"
+}

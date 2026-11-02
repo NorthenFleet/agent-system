@@ -1,0 +1,9 @@
+{
+  "success": true,
+  "output": "{\"status\": \"reverted\", \"summary\": \"测试夹具：执行器声称成功，必须由回执门禁核验；本次没有写入。\", \"receipt_ref\": \"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase13-20261006/missing-receipt-invalid.json\", \"receipt_sha256\": \"0000000000000000000000000000000000000000000000000000000000000000\", \"evidence_refs\": [\"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase13-20261006/missing-receipt-invalid.json\"]}",
+  "error": "",
+  "duration_ms": 0,
+  "exit_code": null,
+  "output_source": "",
+  "output_candidates": []
+}

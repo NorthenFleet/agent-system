@@ -1,0 +1,5 @@
+{"status": 200, "hash": "16b6d58d68a2da6ba6497ccd170710d57ec26e8c25b66b07acb0f0e9c8bdf547"}
+{"status": 409, "detail": "文件已变化，与该任务登记的版本不一致"}
+{"status": 409, "detail": "文件已变化，与该任务登记的版本不一致"}
+{"status": 409, "detail": "文件不可读取"}
+{"status": 200, "hash": "16b6d58d68a2da6ba6497ccd170710d57ec26e8c25b66b07acb0f0e9c8bdf547"}

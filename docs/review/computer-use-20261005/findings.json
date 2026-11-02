@@ -1,0 +1,103 @@
+{
+  "date": "2026-10-05",
+  "verdict": "not_accepted",
+  "report": "REPORT.md",
+  "business_source_modified": false,
+  "findings": [
+    {
+      "id": "F01",
+      "priority": "P0",
+      "title": "纯文档需求回退到软件计划且退回无效",
+      "scenario": "A",
+      "status": "open",
+      "evidence": [
+        "06-plan-v1-dom.txt",
+        "08-plan-v2-dom.txt"
+      ],
+      "details": "REPORT.md#f01"
+    },
+    {
+      "id": "F02",
+      "priority": "P1",
+      "title": "项目创建落库后保存反馈未闭环",
+      "scenario": "project",
+      "status": "open",
+      "evidence": [
+        "09-project-save-response-dom.txt",
+        "10-project-after-reload-dom.txt"
+      ],
+      "details": "REPORT.md#f02"
+    },
+    {
+      "id": "F03",
+      "priority": "P1",
+      "title": "无产物的阻塞进入潜在删除补偿",
+      "scenario": "B",
+      "status": "open",
+      "evidence": [
+        "17-B-blocked-dom.txt",
+        "18-feedback-dom.txt"
+      ],
+      "details": "REPORT.md#f03"
+    },
+    {
+      "id": "F04",
+      "priority": "P1",
+      "title": "执行回执幂等键与合同不一致",
+      "scenario": "C",
+      "status": "open",
+      "evidence": [
+        "database-evidence.json",
+        "22-C-blocked-dom.txt"
+      ],
+      "details": "REPORT.md#f04"
+    },
+    {
+      "id": "F05",
+      "priority": "P1",
+      "title": "字数证据不准确且工具回退合同未对齐",
+      "scenario": "C",
+      "status": "open",
+      "evidence": [
+        "file-verification.json",
+        "database-evidence.json"
+      ],
+      "details": "REPORT.md#f05"
+    },
+    {
+      "id": "F06",
+      "priority": "P1",
+      "title": "局部通过和整体阻断的呈现含混",
+      "scenario": "C",
+      "status": "open",
+      "evidence": [
+        "22-C-blocked-dom.txt",
+        "23-C-after-refresh-dom.txt"
+      ],
+      "details": "REPORT.md#f06"
+    },
+    {
+      "id": "F07",
+      "priority": "P1",
+      "title": "任务详情缺少直接打开交付物的入口",
+      "scenario": "historical",
+      "status": "open",
+      "evidence": [
+        "16-historical-completed-dom.txt"
+      ],
+      "details": "REPORT.md#f07"
+    },
+    {
+      "id": "F08",
+      "priority": "P2",
+      "title": "任务决策首屏优先级与草稿保护不足",
+      "scenario": "frontend",
+      "status": "open",
+      "evidence": [
+        "05-home-mode-dom.txt",
+        "screenshots/13-workbench-mobile.jpg"
+      ],
+      "details": "REPORT.md#f08"
+    }
+  ]
+}

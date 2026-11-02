@@ -1,0 +1,17 @@
+{
+  "backend/services/command_center_service.py": {
+    "phase13_sha256": "5ca3c2cec385d8524d2eec3c51849ad1123550a4ddd01c7f67ca407c43e14d00",
+    "current_sha256": "80964d5479a17c3a4e58264c30e7b60621e1f33fd559404c8de7ce452a2a88f5",
+    "matches": false
+  },
+  "backend/services/compensation_service.py": {
+    "phase13_sha256": "6261d4c91214bfad0ff18a28ad9a88c6e4f16686b8b273d3f8223536637f6efb",
+    "current_sha256": "6261d4c91214bfad0ff18a28ad9a88c6e4f16686b8b273d3f8223536637f6efb",
+    "matches": true
+  },
+  "backend/services/command_center_worker.py": {
+    "phase13_sha256": "a2e92380213b2ec1a56e1ae3a6c5851b583337121bc42d9838c1bea90a38201e",
+    "current_sha256": "da6bb68792330a006b5cfba0d96b759d820b9291a987884b2a365562b06bbc9c",
+    "matches": false
+  }
+}

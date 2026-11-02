@@ -1,0 +1,9 @@
+{
+  "contract_hash": "5251229f8bff2d327a41ca7377cf94fc53347170803835785d657a970acba5a2",
+  "idempotency_key": "recovery:compensation-31b283395efc:5251229f8bff2d327a41",
+  "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase13-20261006/missing-sample.txt",
+  "post_recovery_sha256": "03af3ee612e6d3447a0ebc852fc0a8191ae39d60b3f80d67b84d91d61e86a400",
+  "verification": {
+    "all_passed": true
+  }
+}

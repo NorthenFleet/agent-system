@@ -1,0 +1,89 @@
+{
+  "project_id": "workflow-pilot-20261002",
+  "mission_id": "mission-f165257f1043",
+  "issues": [
+    {
+      "id": "WF-001",
+      "severity": "P1",
+      "title": "驳回意见未进入重新规划提示和检索",
+      "evidence": "plan-v1-rejection.json; plan-v2-feedback-and-rejection.json",
+      "fix": "规划收集plan_rejected和feedback_received事件",
+      "status": "source_fixed_isolated_tests_passed_not_deployed"
+    },
+    {
+      "id": "WF-002",
+      "severity": "P1",
+      "title": "项目context中的目标及验收条件未进入背景",
+      "evidence": "created-project.json; plan V2把design_doc_id误当专属验收标识",
+      "fix": "按白名单投影目标、范围、验收条件并置于大设计文档前",
+      "status": "source_fixed_isolated_tests_passed_not_deployed"
+    },
+    {
+      "id": "WF-003",
+      "severity": "P1",
+      "title": "文档任务解析失败后兜底为前后端代码开发",
+      "evidence": "plan-v3-rejected-unsafe-fallback.json",
+      "fix": "以已解析的业务流选择兜底计划",
+      "status": "source_fixed_isolated_tests_passed_not_deployed"
+    },
+    {
+      "id": "WF-004",
+      "severity": "P2",
+      "title": "规划期间背景已冻结但详情显示等待",
+      "evidence": "context-regression-before.txt; mission snapshots plan_version=0",
+      "fix": "规划中显示下一版已冻结背景；保留其真实版本号",
+      "status": "source_fixed_isolated_tests_passed_not_deployed"
+    },
+    {
+      "id": "WF-005",
+      "severity": "P2",
+      "title": "软件项目内文档任务被要求含代码实现",
+      "evidence": "plan V2 plan_quality warnings",
+      "fix": "质检依据业务流而非项目类型或关键词",
+      "status": "source_fixed_isolated_tests_passed_not_deployed"
+    },
+    {
+      "id": "WF-006",
+      "severity": "P2",
+      "title": "步骤描述要求写文档但副作用字段声明只读",
+      "evidence": "plan-v4-approval.json step 1",
+      "status": "documented_not_fixed",
+      "manual_resolution": "本次审批明确限定仅写deliverables目录；不得判合同一致性测试通过"
+    },
+    {
+      "id": "WF-007",
+      "severity": "P1",
+      "title": "执行器收到会话压缩摘要而非结构化交付结果，任务失败",
+      "status": "live_failed_twice_protocol_diagnostics_fixed_not_deployed",
+      "evidence": "step1-recovery-feedback.json; latest-mission.json",
+      "note": "首次会话摘要、重试工具调用片段；协议异常识别已补测试，执行器为何未返回最终JSON仍待修复"
+    },
+    {
+      "id": "WF-008",
+      "severity": "P1",
+      "title": "反馈恢复会重新派发，但执行提示和检索未包含用户反馈",
+      "fix": "将近期执行反馈加入步骤提示和检索，并明确不扩大原审批权限",
+      "status": "source_fixed_isolated_tests_passed_not_deployed"
+    }
+  ],
+  "validation": {
+    "isolated_tests_passed": 86,
+    "live_end_to_end": "failed_at_step1_result_submission",
+    "live_fixes_deployed": false,
+    "manual_interventions": [
+      "API创建项目和任务",
+      "人工计划审核和退回",
+      "feedback接口补传被遗漏的要求",
+      "人工批准V4，保留错误质检和副作用声明缺陷记录"
+    ],
+    "environment_notes": [
+      "legacy runtime",
+      "LangGraph disabled",
+      "2 workers healthy",
+      "agent health endpoint empty",
+      "browser expired development session recovered after reload"
+    ],
+    "final_mission_status": "waiting_feedback",
+    "attempts": 2
+  }
+}

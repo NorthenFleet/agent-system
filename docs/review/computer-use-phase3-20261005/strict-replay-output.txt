@@ -1,0 +1,157 @@
+[
+  {
+    "step_id": "step-3165a27e7a5e",
+    "plan_version": 1,
+    "live_status": "failed",
+    "strict_quality": {
+      "status": "blocked",
+      "score": 0,
+      "mode": "strict",
+      "enforced": true,
+      "accepted": false,
+      "executor_success": true,
+      "business_outcome": "blocked",
+      "hard_blockers": [
+        "步骤业务结果为 blocked，不得标记为已完成",
+        "验收结果明确失败：明确列出'风险与应对'小节的有无状态及原文引用, 所有小节都存在时，业务结果可为 passed"
+      ],
+      "blockers": [
+        "步骤业务结果为 blocked，不得标记为已完成",
+        "验收结果明确失败：明确列出'风险与应对'小节的有无状态及原文引用, 所有小节都存在时，业务结果可为 passed",
+        "缺少要求的交付物类型：结构化审核报告（通过 evidence 返回，非文件交付）",
+        "验收标准未逐项通过：明确列出'风险与应对'小节的有无状态及原文引用, 所有小节都存在时，业务结果可为 passed",
+        "未证明使用必需工具：document_workspace"
+      ],
+      "warnings": [],
+      "evidence_refs": [
+        "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/draft.md",
+        "审核结论"
+      ],
+      "required_evidence": [
+        "文件读取成功的确认信息",
+        "每个必需小节的有/无判定",
+        "每个存在小节的原文标题引用（用于验证匹配）",
+        "缺失小节的明确声明",
+        "最终业务结果：blocked 或 passed",
+        "如为 blocked，明确列出哪些验收项失败"
+      ],
+      "required_artifact_types": [
+        "结构化审核报告（通过 evidence 返回，非文件交付）"
+      ],
+      "required_tools": [
+        "document_workspace"
+      ],
+      "acceptance_criteria": [
+        "成功读取指定路径的 draft.md 文件",
+        "明确列出'目标'小节的有无状态及原文引用",
+        "明确列出'风险与应对'小节的有无状态及原文引用",
+        "明确列出'验收'小节的有无状态及原文引用",
+        "任一必需小节缺失时，业务结果必须为 blocked 并明确标注失败的验收项",
+        "所有小节都存在时，业务结果可为 passed"
+      ],
+      "checked_rules": [
+        "result-summary",
+        "required-evidence-types",
+        "artifact-contract",
+        "acceptance-results",
+        "tool-use",
+        "required-output-fields"
+      ]
+    }
+  },
+  {
+    "step_id": "step-a66097305e14",
+    "plan_version": 3,
+    "live_status": "completed",
+    "strict_quality": {
+      "status": "pass",
+      "score": 100,
+      "mode": "strict",
+      "enforced": true,
+      "accepted": true,
+      "executor_success": true,
+      "business_outcome": "succeeded",
+      "hard_blockers": [],
+      "blockers": [],
+      "warnings": [],
+      "evidence_refs": [
+        "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md"
+      ],
+      "required_evidence": [
+        "document_diff",
+        "test_output"
+      ],
+      "required_artifact_types": [
+        "document"
+      ],
+      "required_tools": [
+        "document_workspace"
+      ],
+      "acceptance_criteria": [
+        "revised.md 存在于 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/",
+        "revised.md 包含\"目标\"\"风险与应对\"\"验收\"三个小节",
+        "\"风险与应对\"小节至少包含两条风险及各自应对",
+        "全文 Unicode 汉字数（\\u4e00-\\u9fff）在 100 至 180 之间",
+        "draft.md 未被修改或删除"
+      ],
+      "checked_rules": [
+        "result-summary",
+        "required-evidence-types",
+        "artifact-contract",
+        "acceptance-results",
+        "tool-use",
+        "required-output-fields"
+      ]
+    }
+  },
+  {
+    "step_id": "step-b8f23a3e846e",
+    "plan_version": 3,
+    "live_status": "completed",
+    "strict_quality": {
+      "status": "blocked",
+      "score": 70,
+      "mode": "strict",
+      "enforced": true,
+      "accepted": false,
+      "executor_success": true,
+      "business_outcome": "succeeded",
+      "hard_blockers": [],
+      "blockers": [
+        "验收标准未逐项通过：draft.md 与 revised.md 均未被修改或删除"
+      ],
+      "warnings": [],
+      "evidence_refs": [
+        "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/review.md",
+        "exec:python3 Unicode 汉字统计脚本"
+      ],
+      "required_evidence": [
+        "review_report",
+        "test_output"
+      ],
+      "required_artifact_types": [
+        "review_report"
+      ],
+      "required_tools": [
+        "document_workspace",
+        "quality_checker"
+      ],
+      "acceptance_criteria": [
+        "review.md 存在于 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/",
+        "review.md 包含 accepted 或 rejected 明确结论",
+        "review.md 逐项列出三节验收结果并引用 revised.md 原文",
+        "review.md 包含 Unicode 汉字数统计结果（\\u4e00-\\u9fff 范围）",
+        "仅当结论为 accepted 时步骤完成",
+        "draft.md 与 revised.md 均未被修改或删除"
+      ],
+      "checked_rules": [
+        "result-summary",
+        "required-evidence-types",
+        "artifact-contract",
+        "acceptance-results",
+        "tool-use",
+        "required-output-fields"
+      ]
+    }
+  }
+]

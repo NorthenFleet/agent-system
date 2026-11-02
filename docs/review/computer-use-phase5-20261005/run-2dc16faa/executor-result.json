@@ -1,0 +1,14 @@
+{
+  "success": false,
+  "output": "{\n  \"ok\": false,\n  \"error\": {\n    \"type\": \"cli_error\",\n    \"message\": \"connect EPERM 127.0.0.1:18789 - Local (0.0.0.0:0)\"\n  }\n}",
+  "error": "[openclaw] Could not start the CLI.\n[openclaw] Reason: connect EPERM 127.0.0.1:18789 - Local (0.0.0.0:0)\n[openclaw] Debug: set OPENCLAW_DEBUG=1 to include the stack trace.\n[openclaw] Try: openclaw doctor\n[openclaw] Help: openclaw --help",
+  "duration_ms": 0,
+  "exit_code": 1,
+  "output_source": "stdout",
+  "output_candidates": [
+    {
+      "source": "stdout",
+      "text": "{\n  \"ok\": false,\n  \"error\": {\n    \"type\": \"cli_error\",\n    \"message\": \"connect EPERM 127.0.0.1:18789 - Local (0.0.0.0:0)\"\n  }\n}"
+    }
+  ]
+}

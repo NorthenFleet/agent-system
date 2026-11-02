@@ -1,0 +1,9 @@
+{
+  "success": false,
+  "output": "",
+  "error": "任务执行超时（180s）",
+  "duration_ms": 180020,
+  "exit_code": null,
+  "output_source": "",
+  "output_candidates": []
+}

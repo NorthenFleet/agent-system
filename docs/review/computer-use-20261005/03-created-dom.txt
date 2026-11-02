@@ -1,0 +1,1245 @@
+- generic: 🤖
+- generic: OpenClaw
+- menubar:
+  - generic: 总览
+  - menuitem "仪表盘":
+    - generic: 仪表盘
+  - menuitem "擎天柱指挥中心":
+    - generic: 擎天柱指挥中心
+  - generic: 产品侧
+  - menuitem "项目中枢":
+    - generic: 项目中枢
+  - menuitem "程序开发":
+    - generic: 程序开发
+  - menuitem "文档管理":
+    - generic: 文档管理
+  - menuitem "财务管理":
+    - generic: 财务管理
+  - menuitem "产品矩阵":
+    - generic: 产品矩阵
+  - generic: 生产侧
+  - menuitem "数据管理":
+    - generic: 数据管理
+  - menuitem "智能体团队":
+    - generic: 智能体团队
+  - menuitem "讨论与研究":
+    - generic: 讨论与研究
+  - menuitem "知识库":
+    - generic: 知识库
+  - menuitem "工具管理":
+    - generic: 工具管理
+  - menuitem "活动社区":
+    - generic: 活动社区
+  - menuitem "情报信息":
+    - generic: 情报信息
+  - menuitem "新闻资讯":
+    - generic: 新闻资讯
+  - menuitem "任务列表":
+    - generic: 任务列表
+  - generic: 系统
+  - menuitem "系统监视":
+    - generic: 系统监视
+  - menuitem "数据分析":
+    - generic: 数据分析
+  - menuitem "记忆评测":
+    - generic: 记忆评测
+  - menuitem "用户管理":
+    - generic: 用户管理
+  - menuitem "调度中心":
+    - generic: 调度中心
+- generic: OpenClaw
+- button "🌙":
+  - generic: 🌙
+- button "管 管理员":
+  - generic: 管
+  - generic: 管理员
+- banner:
+  - heading "擎天柱指挥中心" [level=1]
+  - generic: 运行中
+  - paragraph: 统一任务入口 · 审批后执行 · 异步协作与反馈
+  - switch [checked]
+  - generic: 自动刷新
+  - button "刷新":
+    - generic: 刷新
+- generic: 全部任务
+- strong: "20"
+- generic: 项目
+- strong: "7"
+- generic: 正在推进
+- strong: "5"
+- generic: 等待批准
+- strong: "0"
+- generic: 待发送回执
+- strong: "0"
+- generic: 待处理补偿
+- strong: "0"
+- generic: 上下文快照
+- strong: "84"
+- generic: 待审核记忆
+- strong: "2"
+- generic: 一般讨论
+- strong: "4"
+- generic: 待澄清
+- strong: "0"
+- region "生产运行门禁":
+  - generic: 生产运行门禁
+  - generic: 就绪
+  - generic: 事实库
+  - strong: POSTGRESQL
+  - generic: 连接池
+  - strong: 3/5
+  - generic: 峰值 5 · 超时 0 · 失败 0 · 重连 0
+  - generic: 执行租约
+  - strong: 0 个过期
+  - generic: 活跃 0 · 重试 4
+  - generic: 流程检查点
+  - strong: postgresql
+  - generic: ready · 禁止运行时建表
+  - generic: 执行实例
+  - strong: 2/2 在线
+  - generic: 失联 0 · ready
+- tablist:
+  - tab "工作坊" [selected]
+- main:
+  - complementary:
+    - strong: 任务工作台
+    - generic: 7 个项目 · 20 项任务
+    - textbox "搜索任务/项目/智能体"
+    - combobox
+    - generic: 状态
+    - combobox
+    - generic: 类型
+    - combobox
+    - generic: 项目
+    - combobox
+    - generic: 智能体
+    - combobox
+    - generic: 来源
+    - generic: 项目范围
+    - strong: 全部项目
+    - button "CU-20261005-A 委托与计划退回验收 规划中 所属项目 智能体系统工作流验证与优化 任务类型 程序开发 执行智能体 擎天柱 当前步骤 等待擎天柱规划 10/05 16:57 0/0 步骤 1 个总账记录":
+      - strong: CU-20261005-A 委托与计划退回验收
+      - generic: 规划中
+      - generic: 所属项目 智能体系统工作流验证与优化
+      - generic: 任务类型 程序开发
+      - generic: 执行智能体 擎天柱
+      - generic: 当前步骤 等待擎天柱规划
+      - generic: 10/05 16:57
+      - generic: 0/0 步骤
+      - generic: 1 个总账记录
+    - button "编写并独立审核智能体系统软件测试大纲（正式验证） 等待反馈 所属项目 智能体系统工作流验证与优化 任务类型 程序开发 执行智能体 通天晓 当前步骤 根据审核意见修订大纲 10/03 21:28 One or more mission steps failed 4/7 步骤 8 个总账记录":
+      - strong: 编写并独立审核智能体系统软件测试大纲（正式验证）
+      - generic: 等待反馈
+      - generic: 所属项目 智能体系统工作流验证与优化
+      - generic: 任务类型 程序开发
+      - generic: 执行智能体 通天晓
+      - generic: 当前步骤 根据审核意见修订大纲
+      - generic: 10/03 21:28
+      - generic: One or more mission steps failed
+      - generic: 4/7 步骤
+      - generic: 8 个总账记录
+    - button "工作流协议最小闭环验证 已完成 所属项目 智能体系统工作流验证与优化 任务类型 程序开发 执行智能体 救护车 当前步骤 结构化验收与交付报告 10/03 15:41 4/4 步骤 5 个总账记录":
+      - strong: 工作流协议最小闭环验证
+      - generic: 已完成
+      - generic: 所属项目 智能体系统工作流验证与优化
+      - generic: 任务类型 程序开发
+      - generic: 执行智能体 救护车
+      - generic: 当前步骤 结构化验收与交付报告
+      - generic: 10/03 15:41
+      - generic: 4/4 步骤
+      - generic: 5 个总账记录
+    - button "工作流协议最小闭环验证 已取消 所属项目 智能体系统工作流验证与优化 任务类型 程序开发 执行智能体 救护车 当前步骤 事实核查与审校 10/03 15:33 0/4 步骤 5 个总账记录":
+      - strong: 工作流协议最小闭环验证
+      - generic: 已取消
+      - generic: 所属项目 智能体系统工作流验证与优化
+      - generic: 任务类型 程序开发
+      - generic: 执行智能体 救护车
+      - generic: 当前步骤 事实核查与审校
+      - generic: 10/03 15:33
+      - generic: 0/4 步骤
+      - generic: 5 个总账记录
+    - button "工作流协议最小闭环验证 已取消 所属项目 智能体系统工作流验证与优化 任务类型 程序开发 执行智能体 救护车 当前步骤 事实核查与审校 10/03 15:30 0/4 步骤 5 个总账记录":
+      - strong: 工作流协议最小闭环验证
+      - generic: 已取消
+      - generic: 所属项目 智能体系统工作流验证与优化
+      - generic: 任务类型 程序开发
+      - generic: 执行智能体 救护车
+      - generic: 当前步骤 事实核查与审校
+      - generic: 10/03 15:30
+      - generic: 0/4 步骤
+      - generic: 5 个总账记录
+    - button "工作流协议最小闭环验证 等待反馈 所属项目 智能体系统工作流验证与优化 任务类型 程序开发 执行智能体 擎天柱 当前步骤 使用 write 工具创建 protocol-probe.md 10/03 15:27 One or more mission steps failed 1/3 步骤 4 个总账记录":
+      - strong: 工作流协议最小闭环验证
+      - generic: 等待反馈
+      - generic: 所属项目 智能体系统工作流验证与优化
+      - generic: 任务类型 程序开发
+      - generic: 执行智能体 擎天柱
+      - generic: 当前步骤 使用 write 工具创建 protocol-probe.md
+      - generic: 10/03 15:27
+      - generic: One or more mission steps failed
+      - generic: 1/3 步骤
+      - generic: 4 个总账记录
+    - button "工作流协议最小闭环验证 已取消 所属项目 智能体系统工作流验证与优化 任务类型 程序开发 执行智能体 擎天柱 当前步骤 验证文件完整性并输出结构化验收结果 10/03 15:22 0/3 步骤 4 个总账记录":
+      - strong: 工作流协议最小闭环验证
+      - generic: 已取消
+      - generic: 所属项目 智能体系统工作流验证与优化
+      - generic: 任务类型 程序开发
+      - generic: 执行智能体 擎天柱
+      - generic: 当前步骤 验证文件完整性并输出结构化验收结果
+      - generic: 10/03 15:22
+      - generic: 0/3 步骤
+      - generic: 4 个总账记录
+    - button "编写并独立审核智能体系统软件测试大纲 等待反馈 所属项目 智能体系统工作流验证与优化 任务类型 程序开发 执行智能体 米开朗基罗 当前步骤 米开朗基罗只读梳理核心源码/接口并编写场景及覆盖矩阵 10/02 21:29 One or more mission steps failed 0/5 步骤 6 个总账记录":
+      - strong: 编写并独立审核智能体系统软件测试大纲
+      - generic: 等待反馈
+      - generic: 所属项目 智能体系统工作流验证与优化
+      - generic: 任务类型 程序开发
+      - generic: 执行智能体 米开朗基罗
+      - generic: 当前步骤 米开朗基罗只读梳理核心源码/接口并编写场景及覆盖矩阵
+      - generic: 10/02 21:29
+      - generic: One or more mission steps failed
+      - generic: 0/5 步骤
+      - generic: 6 个总账记录
+    - button "One-Sim 产品讲解网站（集群协同能力测试） 已完成 所属项目 one-sim 仿真 任务类型 程序开发 执行智能体 擎天柱 当前步骤 最终交付报告修订与闭环审校 09/20 13:38 3/3 步骤 4 个总账记录":
+      - strong: One-Sim 产品讲解网站（集群协同能力测试）
+      - generic: 已完成
+      - generic: 所属项目 one-sim 仿真
+      - generic: 任务类型 程序开发
+      - generic: 执行智能体 擎天柱
+      - generic: 当前步骤 最终交付报告修订与闭环审校
+      - generic: 09/20 13:38
+      - generic: 3/3 步骤
+      - generic: 4 个总账记录
+    - button "孙总要求实施方案 B：在 3021 团队看板中增加智能体记忆库功能，让所有智能体记忆可以在 3021 前端浏览、搜索、查… 已取消 所属项目 OpenClaw 团队信息看板 任务类型 程序开发 执行智能体 擎天柱 当前步骤 等待擎天柱规划 08/02 13:14 0/0 步骤 1 个总账记录":
+      - strong: 孙总要求实施方案 B：在 3021 团队看板中增加智能体记忆库功能，让所有智能体记忆可以在 3021 前端浏览、搜索、查…
+      - generic: 已取消
+      - generic: 所属项目 OpenClaw 团队信息看板
+      - generic: 任务类型 程序开发
+      - generic: 执行智能体 擎天柱
+      - generic: 当前步骤 等待擎天柱规划
+      - generic: 08/02 13:14
+      - generic: 0/0 步骤
+      - generic: 1 个总账记录
+    - button "孙总要求实施方案 B：在 3021 团队看板中增加智能体记忆库功能，让所有智能体记忆可以在 3021 前端浏览、搜索、查… 已取消 所属项目 OpenClaw 团队信息看板 任务类型 程序开发 执行智能体 擎天柱 当前步骤 等待擎天柱规划 08/02 13:14 0/0 步骤 1 个总账记录":
+      - strong: 孙总要求实施方案 B：在 3021 团队看板中增加智能体记忆库功能，让所有智能体记忆可以在 3021 前端浏览、搜索、查…
+      - generic: 已取消
+      - generic: 所属项目 OpenClaw 团队信息看板
+      - generic: 任务类型 程序开发
+      - generic: 执行智能体 擎天柱
+      - generic: 当前步骤 等待擎天柱规划
+      - generic: 08/02 13:14
+      - generic: 0/0 步骤
+      - generic: 1 个总账记录
+    - button "孙总要求实施方案 B：在 3021 团队看板中增加智能体记忆库功能，让所有智能体记忆可以在 3021 前端浏览、搜索、查… 已完成 所属项目 OpenClaw 团队信息看板 任务类型 程序开发 执行智能体 米开朗基罗 当前步骤 测试、审查与验收 08/04 12:25 4/4 步骤 5 个总账记录":
+      - strong: 孙总要求实施方案 B：在 3021 团队看板中增加智能体记忆库功能，让所有智能体记忆可以在 3021 前端浏览、搜索、查…
+      - generic: 已完成
+      - generic: 所属项目 OpenClaw 团队信息看板
+      - generic: 任务类型 程序开发
+      - generic: 执行智能体 米开朗基罗
+      - generic: 当前步骤 测试、审查与验收
+      - generic: 08/04 12:25
+      - generic: 4/4 步骤
+      - generic: 5 个总账记录
+    - button "按方案执行 用户确认执行：按方案执行 Canvas 执行轨迹可视化，Phase 1-5 共11h，分2天完成。归属项目：… 等待反馈 所属项目 OpenClaw 团队信息看板 任务类型 程序开发 执行智能体 千斤顶 当前步骤 Canvas 集成与渲染 08/02 16:35 One or more mission steps failed 3/7 步骤 8 个总账记录":
+      - strong: 按方案执行 用户确认执行：按方案执行 Canvas 执行轨迹可视化，Phase 1-5 共11h，分2天完成。归属项目：…
+      - generic: 等待反馈
+      - generic: 所属项目 OpenClaw 团队信息看板
+      - generic: 任务类型 程序开发
+      - generic: 执行智能体 千斤顶
+      - generic: 当前步骤 Canvas 集成与渲染
+      - generic: 08/02 16:35
+      - generic: One or more mission steps failed
+      - generic: 3/7 步骤
+      - generic: 8 个总账记录
+    - button "联调验证：请在 OpenClaw 团队信息看板项目中创建一项程序开发任务，仅核对指挥中心的意图路由和项目绑定，不执行代码… 已取消 所属项目 OpenClaw 团队信息看板 任务类型 程序开发 执行智能体 擎天柱 当前步骤 等待擎天柱规划 07/31 19:23 0/0 步骤 1 个总账记录":
+      - strong: 联调验证：请在 OpenClaw 团队信息看板项目中创建一项程序开发任务，仅核对指挥中心的意图路由和项目绑定，不执行代码…
+      - generic: 已取消
+      - generic: 所属项目 OpenClaw 团队信息看板
+      - generic: 任务类型 程序开发
+      - generic: 执行智能体 擎天柱
+      - generic: 当前步骤 等待擎天柱规划
+      - generic: 07/31 19:23
+      - generic: 0/0 步骤
+      - generic: 1 个总账记录
+    - button "课程生产迭代 1-1 已完成 所属项目 水面舰艇作战软件与兵棋推演课程 任务类型 程序开发 执行智能体 通天晓 当前步骤 统一20学时课程口径 07/31 16:19 1/1 步骤 2 个总账记录":
+      - strong: 课程生产迭代 1-1
+      - generic: 已完成
+      - generic: 所属项目 水面舰艇作战软件与兵棋推演课程
+      - generic: 任务类型 程序开发
+      - generic: 执行智能体 通天晓
+      - generic: 当前步骤 统一20学时课程口径
+      - generic: 07/31 16:19
+      - generic: 1/1 步骤
+      - generic: 2 个总账记录
+    - button "第三阶段 Skill 与工作流验收。除指挥中心自身的任务、审批、审计和通知记录外，只执行只读检查，禁止修改项目文件、系统… 已完成 所属项目 未绑定项目 任务类型 程序开发 执行智能体 震荡波 当前步骤 震荡波独立复核 07/31 15:59 5/5 步骤 6 个总账记录":
+      - strong: 第三阶段 Skill 与工作流验收。除指挥中心自身的任务、审批、审计和通知记录外，只执行只读检查，禁止修改项目文件、系统…
+      - generic: 已完成
+      - generic: 所属项目 未绑定项目
+      - generic: 任务类型 程序开发
+      - generic: 执行智能体 震荡波
+      - generic: 当前步骤 震荡波独立复核
+      - generic: 07/31 15:59
+      - generic: 5/5 步骤
+      - generic: 6 个总账记录
+    - button "第二阶段上下文自动传递验收 已完成 所属项目 OpenClaw 团队信息看板 任务类型 程序开发 执行智能体 擎天柱 当前步骤 引用独立核对与证据报告 07/31 08:16 2/2 步骤 3 个总账记录":
+      - strong: 第二阶段上下文自动传递验收
+      - generic: 已完成
+      - generic: 所属项目 OpenClaw 团队信息看板
+      - generic: 任务类型 程序开发
+      - generic: 执行智能体 擎天柱
+      - generic: 当前步骤 引用独立核对与证据报告
+      - generic: 07/31 08:16
+      - generic: 2/2 步骤
+      - generic: 3 个总账记录
+    - button "第二阶段上下文自动传递验收 已取消 所属项目 OpenClaw 团队信息看板 任务类型 程序开发 执行智能体 擎天柱 当前步骤 目标分析与执行 07/31 08:11 0/2 步骤 3 个总账记录":
+      - strong: 第二阶段上下文自动传递验收
+      - generic: 已取消
+      - generic: 所属项目 OpenClaw 团队信息看板
+      - generic: 任务类型 程序开发
+      - generic: 执行智能体 擎天柱
+      - generic: 当前步骤 目标分析与执行
+      - generic: 07/31 08:11
+      - generic: 0/2 步骤
+      - generic: 3 个总账记录
+    - button "异步执行闭环验证 已完成 所属项目 未绑定项目 任务类型 程序开发 执行智能体 李奥纳多 当前步骤 文本一致性复核 07/30 22:23 2/2 步骤 3 个总账记录":
+      - strong: 异步执行闭环验证
+      - generic: 已完成
+      - generic: 所属项目 未绑定项目
+      - generic: 任务类型 程序开发
+      - generic: 执行智能体 李奥纳多
+      - generic: 当前步骤 文本一致性复核
+      - generic: 07/30 22:23
+      - generic: 2/2 步骤
+      - generic: 3 个总账记录
+    - button "指挥中心端到端验证 已取消 所属项目 未绑定项目 任务类型 程序开发 执行智能体 擎天柱 当前步骤 人工审批决策 07/30 22:31 0/7 步骤 8 个总账记录":
+      - strong: 指挥中心端到端验证
+      - generic: 已取消
+      - generic: 所属项目 未绑定项目
+      - generic: 任务类型 程序开发
+      - generic: 执行智能体 擎天柱
+      - generic: 当前步骤 人工审批决策
+      - generic: 07/30 22:31
+      - generic: 0/7 步骤
+      - generic: 8 个总账记录
+  - strong: 智能体空间
+  - generic: 编写并独立审核智能体系统软件测试大纲（正式验证）
+  - generic: 唯一入口：擎天柱
+  - generic: 等待反馈
+  - generic: 总指挥
+  - generic: 项目经理
+  - generic: 开发执行
+  - generic: 保障能力
+  - button "🐝 大黄蜂 运维":
+    - generic: 🐝
+    - strong: 大黄蜂
+    - generic: 运维
+  - button "🟦 李奥纳多 架构师 / 开发负责人":
+    - generic: 🟦
+    - strong: 李奥纳多
+    - generic: 架构师 / 开发负责人
+  - button "🤖 擎天柱 总经理":
+    - generic: 🤖
+    - strong: 擎天柱
+    - generic: 总经理
+  - button "🔧 千斤顶 看板 V2 PM":
+    - generic: 🔧
+    - strong: 千斤顶
+    - generic: 看板 V2 PM
+  - button "🛡️ 铁皮 one-sim 仿真 PM":
+    - generic: 🛡️
+    - strong: 铁皮
+    - generic: one-sim 仿真 PM
+  - button "🌙 小梦 孙总个人助手":
+    - generic: 🌙
+    - strong: 小梦
+    - generic: 孙总个人助手
+  - button "🚗 感知器 资讯 / 情报":
+    - generic: 🚗
+    - strong: 感知器
+    - generic: 资讯 / 情报
+  - button "🟥 拉斐尔 后端开发":
+    - generic: 🟥
+    - strong: 拉斐尔
+    - generic: 后端开发
+  - button "🟪 多纳泰罗 前端开发":
+    - generic: 🟪
+    - strong: 多纳泰罗
+    - generic: 前端开发
+  - button "🚑 救护车 知识库":
+    - generic: 🚑
+    - strong: 救护车
+    - generic: 知识库
+  - button "🔵 通天晓 博士论文 PM":
+    - generic: 🔵
+    - strong: 通天晓
+    - generic: 博士论文 PM
+  - button "🎷 爵士 销售与客户关系":
+    - generic: 🎷
+    - strong: 爵士
+    - generic: 销售与客户关系
+  - button "🟧 米开朗基罗 测试工程":
+    - generic: 🟧
+    - strong: 米开朗基罗
+    - generic: 测试工程
+  - button "🟣 震荡波 团队优化师":
+    - generic: 🟣
+    - strong: 震荡波
+    - generic: 团队优化师
+  - button "🔷 声波 财务管理":
+    - generic: 🔷
+    - strong: 声波
+    - generic: 财务管理
+  - button "🔎 Inspector 检查与观察":
+    - generic: 🔎
+    - strong: Inspector
+    - generic: 检查与观察
+  - strong: 擎天柱
+  - generic: 总经理
+  - generic: 统筹中
+  - paragraph: 根据审核意见修订大纲
+  - generic: 用户只通过擎天柱下达任务
+  - strong: 全员状态
+  - generic: 随自动刷新同步 · 10/05 16:58
+  - generic: "3"
+  - text: 工作中
+  - generic: "1"
+  - text: 已分配
+  - generic: "1"
+  - text: 阻塞
+  - generic: "11"
+  - text: 待命
+  - table "智能体工作状态":
+    - row "智能体 状态 当前任务 项目 进度":
+      - columnheader "智能体"
+      - columnheader "状态"
+      - columnheader "当前任务"
+      - columnheader "项目"
+      - columnheader "进度"
+    - row "🔵 通天晓 博士论文 PM 阻塞 根据审核意见修订大纲 智能体系统工作流验证与优化 70 70%":
+      - cell "🔵 通天晓 博士论文 PM":
+        - generic: 🔵
+        - strong: 通天晓
+        - generic: 博士论文 PM
+      - cell "阻塞":
+        - generic: 阻塞
+      - cell "根据审核意见修订大纲"
+      - cell "智能体系统工作流验证与优化"
+      - cell "70 70%":
+        - progressbar
+        - generic: 70%
+    - row "🤖 擎天柱 总经理 统筹中 根据审核意见修订大纲 并行 2 项 智能体系统工作流验证与优化 57 57%":
+      - cell "🤖 擎天柱 总经理":
+        - generic: 🤖
+        - strong: 擎天柱
+        - generic: 总经理
+      - cell "统筹中":
+        - generic: 统筹中
+      - cell "根据审核意见修订大纲 并行 2 项":
+        - text: 根据审核意见修订大纲
+        - generic: 并行 2 项
+      - cell "智能体系统工作流验证与优化"
+      - cell "57 57%":
+        - progressbar
+        - generic: 57%
+    - row "🔧 千斤顶 看板 V2 PM 执行中 Canvas 集成与渲染 OpenClaw 团队信息看板 35 35%":
+      - cell "🔧 千斤顶 看板 V2 PM":
+        - generic: 🔧
+        - strong: 千斤顶
+        - generic: 看板 V2 PM
+      - cell "执行中":
+        - generic: 执行中
+      - cell "Canvas 集成与渲染"
+      - cell "OpenClaw 团队信息看板"
+      - cell "35 35%":
+        - progressbar
+        - generic: 35%
+    - row "🟧 米开朗基罗 测试工程 执行中 米开朗基罗只读梳理核心源码/接口并编写场景及覆盖矩阵 智能体系统工作流验证与优化 35 35%":
+      - cell "🟧 米开朗基罗 测试工程":
+        - generic: 🟧
+        - strong: 米开朗基罗
+        - generic: 测试工程
+      - cell "执行中":
+        - generic: 执行中
+      - cell "米开朗基罗只读梳理核心源码/接口并编写场景及覆盖矩阵"
+      - cell "智能体系统工作流验证与优化"
+      - cell "35 35%":
+        - progressbar
+        - generic: 35%
+    - row "🚑 救护车 知识库 已分配 Ratchet 最终复审 未绑定项目 20 20%":
+      - cell "🚑 救护车 知识库":
+        - generic: 🚑
+        - strong: 救护车
+        - generic: 知识库
+      - cell "已分配":
+        - generic: 已分配
+      - cell "Ratchet 最终复审"
+      - cell "未绑定项目"
+      - cell "20 20%":
+        - progressbar
+        - generic: 20%
+    - row "🌙 小梦 孙总个人助手 待命 等待调度 未绑定项目 0 0%":
+      - cell "🌙 小梦 孙总个人助手":
+        - generic: 🌙
+        - strong: 小梦
+        - generic: 孙总个人助手
+      - cell "待命":
+        - generic: 待命
+      - cell "等待调度"
+      - cell "未绑定项目"
+      - cell "0 0%":
+        - progressbar
+        - generic: 0%
+    - row "🛡️ 铁皮 one-sim 仿真 PM 待命 等待调度 未绑定项目 0 0%":
+      - cell "🛡️ 铁皮 one-sim 仿真 PM":
+        - generic: 🛡️
+        - strong: 铁皮
+        - generic: one-sim 仿真 PM
+      - cell "待命":
+        - generic: 待命
+      - cell "等待调度"
+      - cell "未绑定项目"
+      - cell "0 0%":
+        - progressbar
+        - generic: 0%
+    - row "🟪 多纳泰罗 前端开发 待命 等待调度 未绑定项目 0 0%":
+      - cell "🟪 多纳泰罗 前端开发":
+        - generic: 🟪
+        - strong: 多纳泰罗
+        - generic: 前端开发
+      - cell "待命":
+        - generic: 待命
+      - cell "等待调度"
+      - cell "未绑定项目"
+      - cell "0 0%":
+        - progressbar
+        - generic: 0%
+    - row "🟥 拉斐尔 后端开发 待命 等待调度 未绑定项目 0 0%":
+      - cell "🟥 拉斐尔 后端开发":
+        - generic: 🟥
+        - strong: 拉斐尔
+        - generic: 后端开发
+      - cell "待命":
+        - generic: 待命
+      - cell "等待调度"
+      - cell "未绑定项目"
+      - cell "0 0%":
+        - progressbar
+        - generic: 0%
+    - row "🟦 李奥纳多 架构师 / 开发负责人 待命 等待调度 未绑定项目 0 0%":
+      - cell "🟦 李奥纳多 架构师 / 开发负责人":
+        - generic: 🟦
+        - strong: 李奥纳多
+        - generic: 架构师 / 开发负责人
+      - cell "待命":
+        - generic: 待命
+      - cell "等待调度"
+      - cell "未绑定项目"
+      - cell "0 0%":
+        - progressbar
+        - generic: 0%
+    - row "🐝 大黄蜂 运维 待命 等待调度 未绑定项目 0 0%":
+      - cell "🐝 大黄蜂 运维":
+        - generic: 🐝
+        - strong: 大黄蜂
+        - generic: 运维
+      - cell "待命":
+        - generic: 待命
+      - cell "等待调度"
+      - cell "未绑定项目"
+      - cell "0 0%":
+        - progressbar
+        - generic: 0%
+    - row "🚗 感知器 资讯 / 情报 待命 等待调度 未绑定项目 0 0%":
+      - cell "🚗 感知器 资讯 / 情报":
+        - generic: 🚗
+        - strong: 感知器
+        - generic: 资讯 / 情报
+      - cell "待命":
+        - generic: 待命
+      - cell "等待调度"
+      - cell "未绑定项目"
+      - cell "0 0%":
+        - progressbar
+        - generic: 0%
+    - row "🎷 爵士 销售与客户关系 待命 等待调度 未绑定项目 0 0%":
+      - cell "🎷 爵士 销售与客户关系":
+        - generic: 🎷
+        - strong: 爵士
+        - generic: 销售与客户关系
+      - cell "待命":
+        - generic: 待命
+      - cell "等待调度"
+      - cell "未绑定项目"
+      - cell "0 0%":
+        - progressbar
+        - generic: 0%
+    - row "🔷 声波 财务管理 待命 等待调度 未绑定项目 0 0%":
+      - cell "🔷 声波 财务管理":
+        - generic: 🔷
+        - strong: 声波
+        - generic: 财务管理
+      - cell "待命":
+        - generic: 待命
+      - cell "等待调度"
+      - cell "未绑定项目"
+      - cell "0 0%":
+        - progressbar
+        - generic: 0%
+    - row "🟣 震荡波 团队优化师 待命 等待调度 未绑定项目 0 0%":
+      - cell "🟣 震荡波 团队优化师":
+        - generic: 🟣
+        - strong: 震荡波
+        - generic: 团队优化师
+      - cell "待命":
+        - generic: 待命
+      - cell "等待调度"
+      - cell "未绑定项目"
+      - cell "0 0%":
+        - progressbar
+        - generic: 0%
+    - row "🔎 Inspector 检查与观察 待命 等待调度 未绑定项目 0 0%":
+      - cell "🔎 Inspector 检查与观察":
+        - generic: 🔎
+        - strong: Inspector
+        - generic: 检查与观察
+      - cell "待命":
+        - generic: 待命
+      - cell "等待调度"
+      - cell "未绑定项目"
+      - cell "0 0%":
+        - progressbar
+        - generic: 0%
+  - heading "编写并独立审核智能体系统软件测试大纲（正式验证）" [level=2]
+  - generic: 等待反馈
+  - text: mission-c969c75d628a
+  - button "取消任务":
+    - generic: 取消任务
+  - generic: 目标
+  - paragraph: 为智能体系统自身编写并独立审核一份软件测试大纲。最终唯一主交付物必须写入 /Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/deliverables/agent-system-software-test-outline.md。大纲应覆盖：项目中心建项、擎天柱中心任务下派、计划生成与审批、智能体执行、依赖与状态流转、产物与证据链、独立审核、交付验收、失败重试与反馈闭环。不得以聊天摘要、临时沙箱路径或仅口头说明代替该文件。
+  - region "规范业务流进度":
+    - strong: 规范执行链
+    - generic: 真实状态驱动 · 从任务接收到交付与故障恢复
+    - generic: Run mrun-d3ead3c
+    - generic: Trace mission-53d56457de
+    - generic: Plan V2
+    - generic: 当前控制点
+    - strong: 执行步骤失败
+    - paragraph: 根据审核意见修订大纲：请查看执行记录
+    - text: 下一步
+    - paragraph: 先确认副作用和补偿状态，再决定重试或调整计划
+    - article:
+      - generic: 已完成
+      - strong: 任务接收
+      - generic: 目标与项目绑定
+      - paragraph: Mission mission- 已入库
+    - article:
+      - generic: 已完成
+      - strong: 背景冻结
+      - generic: 检索与引用快照
+      - paragraph: 已冻结 · 29 条引用
+    - article:
+      - generic: 需关注
+      - strong: 规范拆解
+      - generic: 合同化步骤与质检
+      - paragraph: V2 · 92 分 · 7 步
+    - article:
+      - generic: 已完成
+      - strong: 风险审批
+      - generic: 计划与高风险步骤
+      - paragraph: 当前计划已授权
+    - article:
+      - generic: 已阻断
+      - strong: 受控执行
+      - generic: 依赖、租约与幂等
+      - paragraph: 1 个步骤失败，4/7 已完成
+    - article:
+      - generic: 已完成
+      - strong: 证据验收
+      - generic: 产物、证据与门禁
+      - paragraph: 4 份产物 · 57 条证据
+    - article:
+      - generic: 已完成
+      - strong: 故障恢复
+      - generic: 副作用与补偿闭环
+      - paragraph: 无未解决恢复项
+    - article:
+      - generic: 已阻断
+      - strong: 交付闭环
+      - generic: 总验收与结果回执
+      - paragraph: 当前：等待反馈
+    - generic: 步骤
+    - strong: 4/7
+    - generic: 产物
+    - strong: "4"
+    - generic: 证据
+    - strong: "57"
+    - generic: 验收门禁
+    - strong: 4/5
+    - generic: 副作用
+    - strong: "5"
+    - generic: 未解决补偿
+    - strong: "0"
+  - strong: 统一任务视图
+  - generic: 智能体系统工作流验证与优化 · 通天晓
+  - generic: 8 个总账记录
+  - generic: 当前步骤
+  - strong: 根据审核意见修订大纲
+  - generic: 通天晓 · 撰写 · 失败
+  - article:
+    - strong: 编写并独立审核智能体系统软件测试大纲（正式验证）
+    - generic: v3-command-center-mission-mission-c969c75d628a
+    - generic: 指挥中心
+    - generic: 审查中
+    - generic: 擎天柱
+  - article:
+    - strong: 工作流需求调研与资料收集
+    - generic: v3-command-center-step-step-761750a41f9c
+    - generic: 指挥中心
+    - generic: 已完成
+    - generic: 通天晓
+  - article:
+    - strong: 测试大纲结构设计
+    - generic: v3-command-center-step-step-a6e0ae06a17c
+    - generic: 指挥中心
+    - generic: 已完成
+    - generic: 通天晓
+  - article:
+    - strong: 撰写测试大纲初稿
+    - generic: v3-command-center-step-step-d0a0ba07d6e0
+    - generic: 指挥中心
+    - generic: 已完成
+    - generic: 通天晓
+  - article:
+    - strong: Ratchet 第一轮独立审核
+    - generic: v3-command-center-step-step-386791aa1725
+    - generic: 指挥中心
+    - generic: 已完成
+    - generic: 救护车
+  - article:
+    - strong: 根据审核意见修订大纲
+    - generic: v3-command-center-step-step-33221a47c8d3
+    - generic: 指挥中心
+    - generic: 待处理
+    - generic: 通天晓
+  - article:
+    - strong: Ratchet 最终复审
+    - generic: v3-command-center-step-step-9b46d46f86b8
+    - generic: 指挥中心
+    - generic: 待处理
+    - generic: 救护车
+  - article:
+    - strong: 最终验收与交付确认
+    - generic: v3-command-center-step-step-63b58693a5c4
+    - generic: 指挥中心
+    - generic: 待处理
+    - generic: 擎天柱
+  - strong: 执行计划 V2
+  - generic: 由 ultra-magnus 编写智能体系统软件测试大纲并写入指定 durable_workspace 路径，经 ratchet 独立审核、修订、复审后，由 optimus 完成最终验收，交付物覆盖完整工作流闭环、异常恢复与证据验收三类测试。
+  - generic: 质检 92
+  - generic: 风险 中
+  - strong: 计划有警告
+  - generic: 检查 12 项规则
+  - strong: 警告
+  - generic: 资源 write_lock:agent-system-software-test-outline.md 被步骤 3 和 5 并行修改，建议增加依赖或锁
+  - strong: 建议
+  - generic: 补齐每一步的工具、产物、验收标准和证据字段后再审批
+  - article:
+    - strong: 工作流需求调研与资料收集
+    - generic: 通天晓 · 研究
+    - generic: 已完成
+    - paragraph: ultra-magnus 调研智能体系统完整工作流（项目中心建项、擎天柱中心任务下派、计划生成与审批、智能体执行、依赖与状态流转、产物与证据链、独立审核、交付验收、失败重试与反馈闭环），收集现有工作流规范、TASK_CONTRACT、BUSINESS_FLOW_CONTRACT 及项目仓库中的设计文档，形成调研笔记写入 durable_workspace。涉及代码或配置检索时，执行智能体调用 coding-agent/Codex 辅助。
+    - generic: 阶段 research
+    - generic: 风险 L1
+    - generic: 无前置依赖
+    - generic: 有副作用
+    - generic "mission-c969c75d628a:plan:2:step:1": 幂等 mission-c969c75d628a:plan:…
+    - strong: 工具
+    - generic: 背景检索
+    - generic: 文档工作台
+    - generic: Coding Agent / Codex
+    - strong: 产物
+    - generic: 调研笔记 research-notes.md
+    - strong: 验收
+    - generic: 调研笔记覆盖全部 9 个工作流环节
+    - generic: 调研笔记包含现有工作流规范与验收标准汇总
+    - generic: 文件写入 durable_workspace 而非临时路径
+    - strong: 证据
+    - generic: research-notes.md 文件绝对路径
+    - generic: 文件行数与字节数
+    - generic: 9 个工作流环节覆盖清单
+    - strong: Effect Journal
+    - generic: 1 条副作用记录
+    - generic: 已生效
+    - strong: create
+    - generic: /Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/deliverables/research-notes.md · exec cat >> redirect · 2 条证据
+    - strong: 执行证据门禁
+    - generic: 通过 · 92
+    - paragraph: 警告：未证明使用必需工具：context_search, document_workspace, codex
+    - generic: pilot · 10/03 21:12
+    - text: 执行记录 wrun-1d7c7438bb6845e1
+    - generic: 证据 92
+    - generic: 背景 context-d9755777ccc4 V1 · 8 条引用
+    - paragraph: "调研笔记已完成，覆盖全部 9 个工作流环节。现在生成最终 JSON 输出。 ```json { \"outcome\": \"succeeded\", \"summary\": \"工作流需求调研完成，形成调研笔记覆盖 9 个核心环节，基于源码只读分析和已有交付物汇总，为后续大纲编写提供资料依据。\", \"tools_used\": [\"exec\", \"read\"], \"artifacts\": [ { \"artifact_key\": \"research-notes\", \"artifact_type\": \"research_notes\", \"title\": \"智能体系统工作流调研笔记\", \"uri\": \"/Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pi…"
+    - paragraph: 执行证据有警告：未证明使用必需工具：context_search, document_workspace, codex
+  - article:
+    - strong: 测试大纲结构设计
+    - generic: 通天晓 · 架构
+    - generic: 已完成
+    - paragraph: ultra-magnus 基于调研笔记设计测试大纲章节结构，覆盖三大类测试：完整工作流闭环测试、异常与恢复测试、证据与验收测试。每个测试主题定义标准化模板（目标、前置条件、步骤、预期结果、证据要求）。结构设计文档写入 durable_workspace。
+    - generic: 阶段 planning
+    - generic: 风险 L1
+    - generic: "依赖 #1 工作流需求调研与资料收集"
+    - generic: 有副作用
+    - generic "mission-c969c75d628a:plan:2:step:2": 幂等 mission-c969c75d628a:plan:…
+    - strong: 工具
+    - generic: 背景检索
+    - generic: 文档工作台
+    - strong: 产物
+    - generic: 大纲结构设计文档 outline-structure.md
+    - strong: 验收
+    - generic: 结构覆盖工作流闭环、异常恢复、证据验收三类测试
+    - generic: 每个测试主题模板包含目标、前置条件、步骤、预期结果、证据要求五要素
+    - generic: 结构文档写入 durable_workspace
+    - strong: 证据
+    - generic: outline-structure.md 文件绝对路径
+    - generic: 章节列表与测试主题数量
+    - strong: Effect Journal
+    - generic: 1 条副作用记录
+    - generic: 已生效
+    - strong: create
+    - generic: /Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/deliverables/outline-structure.md · exec printf > outline-structure.md · 2 条证据
+    - strong: 执行证据门禁
+    - generic: 通过 · 92
+    - paragraph: 警告：未证明使用必需工具：context_search, document_workspace
+    - generic: pilot · 10/03 21:14
+    - text: 执行记录 wrun-e53c7b9abb1c412a
+    - generic: 证据 92
+    - generic: 背景 context-ee72ed1213a1 V2 · 8 条引用
+    - paragraph: "\"{\"outcome\":\"succeeded\",\"summary\":\"测试大纲结构设计完成。基于调研笔记设计了 7 章 + 3 附录的大纲结构，覆盖三大类测试（A 类完整工作流闭环 9 个、B 类异常与恢复 8 个、C 类证据与验收 7 个，共 24 个测试场景）。每个测试主题定义标准化五要素模板（目标、前置条件、步骤、预期结果、证据要求）。结构文档已写入 durable_workspace。\",\"tools_used\":[\"exec\",\"read\"],\"artifacts\":[{\"artifact_key\":\"outline-structure\",\"artifact_type\":\"structure_doc\",\"title\":\"智能体系统软件测试大纲 — 结构设计文档\",\"uri\":\"/Users/apple…"
+    - paragraph: 执行证据有警告：未证明使用必需工具：context_search, document_workspace
+  - article:
+    - strong: 撰写测试大纲初稿
+    - generic: 通天晓 · 撰写
+    - generic: 已完成
+    - paragraph: ultra-magnus 依据调研笔记和结构设计撰写完整测试大纲初稿。大纲覆盖：项目中心建项、擎天柱中心任务下派、计划生成与审批、智能体执行、依赖与状态流转、产物与证据链、独立审核、交付验收、失败重试与反馈闭环。使用 document_workspace 将文件写入 /Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/deliverables/agent-system-software-test-outline.md。长文档分段写入，不得使用长 heredoc。
+    - generic: 阶段 production
+    - generic: 风险 L1
+    - generic: "依赖 #2 测试大纲结构设计"
+    - generic: 有副作用
+    - generic "mission-c969c75d628a:plan:2:step:3": 幂等 mission-c969c75d628a:plan:…
+    - strong: 工具
+    - generic: 文档工作台
+    - strong: 产物
+    - generic: 测试大纲初稿 agent-system-software-test-outline.md
+    - strong: 验收
+    - generic: 主交付物位于 /Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/deliverables/agent-system-software-test-outline.md
+    - generic: 文件为非空 Markdown
+    - generic: 覆盖全部 9 个工作流环节
+    - generic: 每个测试主题包含目标、前置条件、步骤、预期结果、证据要求
+    - strong: 证据
+    - generic: 主文件绝对路径
+    - generic: 文件行数与字节数
+    - generic: 环节覆盖矩阵
+    - strong: Effect Journal
+    - generic: 1 条副作用记录
+    - generic: 已生效
+    - strong: create
+    - generic: /Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/deliverables/agent-system-software-test-outline.md · exec 命令执行成功 · 3 条证据
+    - strong: 执行证据门禁
+    - generic: 通过 · 92
+    - paragraph: 警告：未证明使用必需工具：document_workspace
+    - generic: pilot · 10/03 21:21
+    - text: 执行记录 wrun-ab2b8616207a4bf4
+    - generic: 证据 92
+    - generic: 背景 context-8ffa8841de75 V3 · 8 条引用
+    - paragraph: "{\"outcome\":\"succeeded\",\"summary\":\"测试大纲初稿撰写完成并写入持久工作区。文档共 7 章 + 3 附录，覆盖 24 个测试场景（A 类 9 个完整工作流闭环、B 类 8 个异常与恢复、C 类 7 个证据与验收），每个场景包含标准化五要素模板（目标、前置条件、步骤、预期结果、证据要求）。采用 8 段 exec cat 追加写入方式完成，未使用单条 heredoc。\",\"tools_used\":[\"exec\"],\"artifacts\":[{\"artifact_key\":\"test_outline_draft\",\"artifact_type\":\"test_outline_draft\",\"title\":\"智能体系统软件测试大纲 — 初稿\",\"uri\":\"/Users/apple/工作桌面…"
+    - paragraph: 执行证据有警告：未证明使用必需工具：document_workspace
+  - article:
+    - strong: Ratchet 第一轮独立审核
+    - generic: 救护车 · 评估
+    - generic: 已完成
+    - paragraph: ratchet 对 ultra-magnus 撰写的测试大纲初稿进行独立审核。审核要点：覆盖度（9 个工作流环节是否齐全）、每主题五要素完整性、证据要求可验证性、异常与恢复场景覆盖度。审核报告写入 durable_workspace 独立文件 review-report-round1.md，逐项给出通过或退回结论，总体结论为 accepted 或 rejected。不得由 ultra-magnus 自审。
+    - generic: 阶段 verification
+    - generic: 风险 L1
+    - generic: "依赖 #3 撰写测试大纲初稿"
+    - generic: 有副作用
+    - generic "mission-c969c75d628a:plan:2:step:4": 幂等 mission-c969c75d628a:plan:…
+    - strong: 工具
+    - generic: 质量检查器
+    - generic: 文档工作台
+    - generic: 背景检索
+    - strong: 产物
+    - generic: 审核报告 review-report-round1.md
+    - strong: 验收
+    - generic: 审核报告位于 /Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/deliverables/review-report-round1.md
+    - generic: 报告逐项给出通过或退回结论
+    - generic: 报告包含总体结论 accepted 或 rejected
+    - generic: 审核由 ratchet 独立完成
+    - strong: 证据
+    - generic: review-report-round1.md 文件绝对路径
+    - generic: 总体结论
+    - generic: 退回项列表（如有）
+    - generic: 审核覆盖的环节清单
+    - strong: Effect Journal
+    - generic: 1 条副作用记录
+    - generic: 已生效
+    - strong: 写入审核报告
+    - generic: /Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/deliverables/review-report-round1.md · exec cat 写入成功 · 2 条证据
+    - strong: 执行证据门禁
+    - generic: 通过 · 92
+    - paragraph: 警告：未证明使用必需工具：document_workspace, context_search
+    - generic: pilot · 10/03 21:24
+    - text: 执行记录 wrun-f8ef808abbfa4d16
+    - generic: 证据 92
+    - generic: 背景 context-f7b05a9dcac6 V4 · 8 条引用
+    - paragraph: "{\"outcome\":\"succeeded\",\"summary\":\"救护车 (Ratchet) 完成对通天晓 (Ultra Magnus) 撰写的测试大纲初稿的独立审核。审核覆盖 4 个维度：覆盖度（9 环节齐全，通过）、五要素完整性（24/24 场景完整，通过）、证据可验证性（20/24 通过，2 项退回）、异常与恢复覆盖度（8 核心场景覆盖，缺少并发/安全/数据一致性场景）。总体结论 rejected，存在 3 项退回修改项（R-1 A-001 证据细化、R-2 C-006 追溯方法、R-3 补充并发与数据一致性场景）和 4 项建议改进项。审核报告已写入持久工作区。\",\"tools_used\":[\"exec\",\"read\"],\"artifacts\":[{\"artifact_key\":\"review_repo…"
+    - paragraph: 执行证据有警告：未证明使用必需工具：document_workspace, context_search
+  - article:
+    - strong: 根据审核意见修订大纲
+    - generic: 通天晓 · 撰写
+    - generic: 失败
+    - paragraph: ultra-magnus 根据 ratchet 第一轮审核报告中指出的退回项和修改建议，修订测试大纲主文档。修订使用 document_workspace 对主文档进行精确修改，保持与步骤 3 同一资源锁 write_lock:agent-system-software-test-outline.md，确保顺序写入。修订完成后提交修订说明。
+    - generic: 阶段 production
+    - generic: 风险 L1
+    - generic: "依赖 #4 Ratchet 第一轮独立审核"
+    - generic: 有副作用
+    - generic "mission-c969c75d628a:plan:2:step:5": 幂等 mission-c969c75d628a:plan:…
+    - strong: 工具
+    - generic: 文档工作台
+    - generic: 背景检索
+    - strong: 产物
+    - generic: 修订后测试大纲 agent-system-software-test-outline.md
+    - generic: 修订说明 revision-notes.md
+    - strong: 验收
+    - generic: 所有 ratchet 退回项均已修订并逐条对应
+    - generic: 修订后文件位于指定路径
+    - generic: 修订未破坏已通过的章节
+    - generic: 修订说明列出每项修订对应的审核意见编号
+    - strong: 证据
+    - generic: 修订项列表与对应审核意见编号
+    - generic: 修订后文件路径与行数
+    - generic: revision-notes.md 文件路径
+    - strong: 副作用补偿
+    - generic: 已补偿
+    - paragraph: ultra-magnus 使用 document_workspace 回退修订或从上一版本恢复后重新修订
+    - generic: 资源：write_lock:agent-system-software-test-outline.md
+    - generic: 补偿幂等键：compensate:mission-c969c75d628a:plan:2:step:5:unreported-effect
+    - generic: 合同指纹：34766927346a
+    - strong: Effect Journal
+    - generic: 1 条副作用记录
+    - generic: 已恢复
+    - strong: 根据 ratchet 审核意见修订测试大纲并保留修订证据
+    - generic: write_lock:agent-system-software-test-outline.md · deliverables/compensation-receipt-81475970a531.json · 5 条证据
+    - strong: 执行证据门禁
+    - generic: Shadow 观察 · 0
+    - paragraph: 阻断：执行器返回会话摘要，尚未提交结构化交付结果；步骤业务结果为 failed，不得标记为已完成
+    - generic: pilot · 10/03 21:28
+    - text: 执行记录 wrun-1c8ce2c467b0418f
+    - generic: 证据 0
+    - generic: 背景 context-ae4e0fb1d2b8 V5 · 8 条引用
+    - paragraph: "<analysis> Let me chronologically analyze each part of the conversation: 1. **User's Initial Message**: A complex task assignment within an OpenClaw multi-agent system. The agent (Ultra Magnus/通天晓) is executing step 5 of an approved plan (mission-c969c75d628a). The task is to revise a software test outline based on ratchet's (救护车) first-round review feedback…"
+    - paragraph: 执行证据不足：缺少要求的证据类型：修订项列表与对应审核意见编号, 修订后文件路径与行数, revision-notes.md 文件路径；缺少要求的交付物类型：test_outline_revised, revision_notes
+  - article:
+    - generic: "6"
+    - strong: Ratchet 最终复审
+    - generic: 救护车 · 评估
+    - generic: 待执行
+    - paragraph: ratchet 对 ultra-magnus 修订后的测试大纲进行最终复审。复审要点：第一轮退回项是否全部修复、整体覆盖度与可验证性是否达标、修订说明与审核意见是否逐条对应。复审报告写入 durable_workspace 独立文件 verification-report.md，包含最终结论 accepted 或 rejected。只有 accepted 版本才能进入最终验收。
+    - generic: 阶段 verification
+    - generic: 风险 L2
+    - generic: "依赖 #5 根据审核意见修订大纲"
+    - generic: 有副作用
+    - generic "mission-c969c75d628a:plan:2:step:6": 幂等 mission-c969c75d628a:plan:…
+    - strong: 工具
+    - generic: 质量检查器
+    - generic: 文档工作台
+    - generic: 背景检索
+    - strong: 产物
+    - generic: 复审报告 verification-report.md
+    - strong: 验收
+    - generic: 复审报告位于 /Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/deliverables/verification-report.md
+    - generic: 最终结论为 accepted 或 rejected
+    - generic: 只有 accepted 才能进入步骤 7
+    - generic: 复审由 ratchet 独立完成
+    - generic: 逐项确认第一轮退回项修复状态
+    - strong: 证据
+    - generic: verification-report.md 文件绝对路径
+    - generic: 最终结论
+    - generic: 逐项验收结论
+    - generic: 退回项修复确认清单
+  - article:
+    - generic: "7"
+    - strong: 最终验收与交付确认
+    - generic: 擎天柱 · 评估
+    - generic: 待执行
+    - paragraph: optimus 执行最终验收：1）确认主交付物位于指定绝对路径且为非空 Markdown 文件；2）计算文件 SHA-256 哈希；3）检查文档结构覆盖 9 个工作流环节；4）确认 verification-report.md 结论为 accepted；5）确认文档包含验收标记 FORMAL_OUTLINE_ACCEPTED；6）确认所有审核报告位于 durable_workspace。验收结果写入 acceptance-report.md。本步骤为 L3，需 approval_required=true。
+    - generic: 阶段 delivery
+    - generic: 风险 L3
+    - generic: "依赖 #6 Ratchet 最终复审"
+    - generic: 有副作用
+    - generic "mission-c969c75d628a:plan:2:step:7": 幂等 mission-c969c75d628a:plan:…
+    - strong: 工具
+    - generic: 质量检查器
+    - generic: 文档工作台
+    - generic: 测试运行器
+    - strong: 产物
+    - generic: 验收报告 acceptance-report.md
+    - strong: 验收
+    - generic: 主交付物位于 /Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/deliverables/agent-system-software-test-outline.md 且非空
+    - generic: SHA-256 已计算并记录
+    - generic: 文档结构覆盖全部 9 个工作流环节
+    - generic: verification-report.md 结论为 accepted
+    - generic: 文档包含验收标记 FORMAL_OUTLINE_ACCEPTED
+    - generic: 验收报告位于 durable_workspace
+    - strong: 证据
+    - generic: acceptance-report.md 文件绝对路径
+    - generic: SHA-256 哈希值
+    - generic: 结构检查结果
+    - generic: 验收标记确认
+    - generic: verification-report 结论引用
+  - strong: 任务动态
+  - generic: 持久化事件记录
+  - list:
+    - generic: 10/03 21:51
+    - strong: compensation_completed
+    - paragraph: 验证修订状态并补充缺失项：文件已处于 v1.1-revised 状态，R-1/R-2/R-3 退回项及 S-1/S-2 建议项均已正确修订。发现 S-4（测试数据需求）缺失，已补充 2.5 节。无需回退，修订有效。
+    - text: 通天晓
+    - generic: 10/03 21:48
+    - strong: compensation_approved
+    - paragraph: 核对已落盘修订结果并按合同补齐持久化修订说明后重新提交结构化交付。
+    - text: admin
+    - generic: 10/03 21:46
+    - strong: 收到反馈
+    - paragraph: 修订正文已实际写入，但上一次只返回会话摘要，未提交结构化交付，导致步骤被拒绝。请进行第 2 次受控执行：先读取现有主文档和 /tmp/revision-notes.md；将 revision-notes.md 写入 durable_workspace；计算两个文件的 SHA-256 与行数；最后只输出一个 JSON 对象，且必须包含 test_outline_revised、revision_notes 两个 artifacts，三个合同要求的 evidence、逐项 acceptance_results、side_effects（status=applied、idempotency_key=mission-c969c75d628a:plan:2:step:5）及 risk_notes。
+    - text: admin
+    - generic: 10/03 21:28
+    - strong: 任务阻塞
+    - paragraph: One or more mission steps failed
+    - text: 指挥中心
+    - generic: 10/03 21:28
+    - strong: step_effect_rejected
+    - paragraph: 根据审核意见修订大纲
+    - text: 通天晓
+    - generic: 10/03 21:28
+    - strong: compensation_requested
+    - paragraph: 副作用状态为 unknown，等待补偿审批
+    - text: 通天晓
+    - generic: 10/03 21:24
+    - strong: 背景上下文已冻结
+    - paragraph: Bound execution context context-ae4e0fb1d2b8 to plan V2
+    - text: 通天晓
+    - generic: 10/03 21:24
+    - strong: 步骤开始
+    - paragraph: 根据审核意见修订大纲
+    - text: 通天晓
+    - generic: 10/03 21:24
+    - strong: 步骤完成
+    - paragraph: Ratchet 第一轮独立审核
+    - text: 救护车
+    - generic: 10/03 21:21
+    - strong: 背景上下文已冻结
+    - paragraph: Bound execution context context-f7b05a9dcac6 to plan V2
+    - text: 救护车
+    - generic: 10/03 21:21
+    - strong: 步骤开始
+    - paragraph: Ratchet 第一轮独立审核
+    - text: 救护车
+    - generic: 10/03 21:21
+    - strong: 步骤完成
+    - paragraph: 撰写测试大纲初稿
+    - text: 通天晓
+    - generic: 10/03 21:14
+    - strong: 背景上下文已冻结
+    - paragraph: Bound execution context context-8ffa8841de75 to plan V2
+    - text: 通天晓
+    - generic: 10/03 21:14
+    - strong: 步骤开始
+    - paragraph: 撰写测试大纲初稿
+    - text: 通天晓
+    - generic: 10/03 21:14
+    - strong: 步骤完成
+    - paragraph: 测试大纲结构设计
+    - text: 通天晓
+    - generic: 10/03 21:12
+    - strong: 背景上下文已冻结
+    - paragraph: Bound execution context context-ee72ed1213a1 to plan V2
+    - text: 通天晓
+    - generic: 10/03 21:12
+    - strong: 步骤开始
+    - paragraph: 测试大纲结构设计
+    - text: 通天晓
+    - generic: 10/03 21:12
+    - strong: 步骤完成
+    - paragraph: 工作流需求调研与资料收集
+    - text: 通天晓
+    - generic: 10/03 21:09
+    - strong: 背景上下文已冻结
+    - paragraph: Bound execution context context-d9755777ccc4 to plan V2
+    - text: 通天晓
+    - generic: 10/03 21:09
+    - strong: 步骤开始
+    - paragraph: 工作流需求调研与资料收集
+    - text: 通天晓
+    - generic: 10/03 21:09
+    - strong: 状态更新
+    - paragraph: Approved plan entered execution
+    - text: 指挥中心
+    - generic: 10/03 21:09
+    - strong: 计划已批准
+    - paragraph: 最小协议验证计划已核对：限定试点目录、无代码或外部副作用，批准执行。
+    - text: admin
+    - generic: 10/03 15:53
+    - strong: 计划已提交
+    - paragraph: 由 ultra-magnus 编写智能体系统软件测试大纲并写入指定 durable_workspace 路径，经 ratchet 独立审核、修订、复审后，由 optimus 完成最终验收，交付物覆盖完整工作流闭环、异常恢复与证据验收三类测试。
+    - text: 擎天柱
+    - generic: 10/03 15:51
+    - strong: 继续制定计划
+    - paragraph: Optimus is producing an approval-gated plan
+    - text: command-center:api-3021
+    - generic: 10/03 15:50
+    - strong: 继续制定计划
+    - paragraph: Optimus is producing an approval-gated plan
+    - text: command-center:api-3021
+    - generic: 10/03 15:49
+    - strong: 继续制定计划
+    - paragraph: Optimus is producing an approval-gated plan
+    - text: command-center:api-3021
+    - generic: 10/03 15:48
+    - strong: 背景上下文已冻结
+    - paragraph: Bound planning context context-51d06a7a2ac5 to plan V2
+    - text: 擎天柱
+    - generic: 10/03 15:48
+    - strong: 继续制定计划
+    - paragraph: Optimus is producing an approval-gated plan
+    - text: command-center:api-3021
+    - generic: 10/03 15:48
+    - strong: 计划已驳回
+    - paragraph: 请重规划后再执行：1）修订步骤之后必须新增 ratchet 的复审步骤，最终验收只能接受复审为 accepted 的版本；2）所有写入主文档的步骤必须保持明确顺序和同一资源锁，消除并行修改警告；3）每个检查/审核步骤必须把其报告写入 durable_workspace 的独立文件，并精确返回 output_contract.artifact_types 与 evidence_required 指定的类型；4）保留 ultra-magnus 撰写、ratchet 独立审核的职责分离。
+    - text: admin
+    - generic: 10/03 15:46
+    - strong: 计划已提交
+    - paragraph: 为智能体系统编写并独立审核一份软件测试大纲，覆盖项目建项、任务下派、计划审批、执行、依赖流转、证据链、独立审核、交付验收、失败重试与反馈闭环的完整工作流。由 ultra-magnus 撰写，ratchet 独立审核，最终交付物写入指定绝对路径。
+    - text: 擎天柱
+  - complementary:
+    - generic: 擎
+    - strong: 擎天柱
+    - generic: 总项目管理 · 唯一任务入口
+    - strong: 最近会话分流
+    - generic: 30 条
+    - article:
+      - generic: 程序开发
+      - generic: 10/05 16:57
+      - paragraph: 这是独立的 Computer Use 验收任务，只编写文档，不开发代码。请生成一页中文项目简报，主题为“个人工作助理试点”，包含目标、三个里程碑、风险、验收清单、预算章节。总字数不超过600字。先生成计划并等待批准。批准后由一名智能体撰写，另一名独立审核，最后给出真实可打开的文件及验收结果。唯一允许写入目录：/Users/apple/工作桌面/Workspa…
+      - text: 由已认证的项目任务入口显式创建
+    - article:
+      - generic: 程序开发
+      - generic: 10/03 15:45
+      - paragraph: 为智能体系统自身编写并独立审核一份软件测试大纲。最终唯一主交付物必须写入 /Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/deliverables/agent-system-software-test-outline.md。大纲应覆盖：项目中心建项、擎天…
+      - text: 由已认证的项目任务入口显式创建
+    - article:
+      - generic: 程序开发
+      - generic: 10/03 15:35
+      - paragraph: 验证修复后的文档交付协议。只创建一个简短 Markdown 文件 protocol-probe.md，内容包含：标题、任务编号占位、三条验证结论。文件必须保存到指定目录，使用原生 write/edit 工具分段写入，禁止单条 shell heredoc。返回真实绝对路径、SHA-256、文件行数和结构化验收结果。不得修改代码、配置或现有交付物，不发送外部消息…
+      - text: 由已认证的项目任务入口显式创建
+    - article:
+      - generic: 程序开发
+      - generic: 10/03 15:32
+      - paragraph: 验证修复后的文档交付协议。只创建一个简短 Markdown 文件 protocol-probe.md，内容包含：标题、任务编号占位、三条验证结论。文件必须保存到指定目录，使用原生 write/edit 工具分段写入，禁止单条 shell heredoc。返回真实绝对路径、SHA-256、文件行数和结构化验收结果。不得修改代码、配置或现有交付物，不发送外部消息…
+      - text: 由已认证的项目任务入口显式创建
+    - article:
+      - generic: 程序开发
+      - generic: 10/03 15:29
+      - paragraph: 验证修复后的文档交付协议。只创建一个简短 Markdown 文件 protocol-probe.md，内容包含：标题、任务编号占位、三条验证结论。文件必须保存到指定目录，使用原生 write/edit 工具分段写入，禁止单条 shell heredoc。返回真实绝对路径、SHA-256、文件行数和结构化验收结果。不得修改代码、配置或现有交付物，不发送外部消息…
+      - text: 由已认证的项目任务入口显式创建
+    - article:
+      - generic: 程序开发
+      - generic: 10/03 15:24
+      - paragraph: 验证修复后的文档交付协议。只创建一个简短 Markdown 文件 protocol-probe.md，内容包含：标题、任务编号占位、三条验证结论。文件必须保存到指定目录，使用原生 write/edit 工具分段写入，禁止单条 shell heredoc。返回真实绝对路径、SHA-256、文件行数和结构化验收结果。不得修改代码、配置或现有交付物，不发送外部消息…
+      - text: 由已认证的项目任务入口显式创建
+    - article:
+      - generic: 程序开发
+      - generic: 10/03 15:19
+      - paragraph: 验证修复后的文档交付协议。只创建一个简短 Markdown 文件 protocol-probe.md，内容包含：标题、任务编号占位、三条验证结论。文件必须保存到指定目录，使用原生 write/edit 工具分段写入，禁止单条 shell heredoc。返回真实绝对路径、SHA-256、文件行数和结构化验收结果。不得修改代码、配置或现有交付物，不发送外部消息…
+      - text: 由已认证的项目任务入口显式创建
+    - article:
+      - generic: 程序开发
+      - generic: 10/02 21:02
+      - paragraph: 为智能体系统自身编写《智能体系统软件测试大纲》，这是工作流验证试点的首个真实任务。请由擎天柱生成计划并经审批后组织执行，不得直接宣布完成。 范围：需求接收、项目背景获取、计划拆解、计划审批/退回、多智能体依赖执行、独立质量审核、返工、产物保存、版本追溯、证据验收、交付状态同步、失败恢复、重复提交及幂等。 先只编写和审核大纲，不在生产服务注入故障，不修改系统代…
+      - text: 由已认证的项目任务入口显式创建
+    - strong: 任务背景上下文
+    - generic: 已冻结
+    - strong: context-51d06a7a2ac5
+    - generic: V2 · 29 条内容 · 29 条引用
+    - generic: 智能体记忆
+    - generic: graph_memory
+    - generic: 知识库
+    - generic: 用户档案
+    - generic: 关键事实
+    - generic: 项目背景
+    - generic "profile:profile-ed9815cfab9d":
+      - generic: "[C1]"
+      - paragraph: 孙总的工作与业务档案
+    - generic "fact:fact-487dda76406e":
+      - generic: "[C2]"
+      - paragraph: knowledge.authority
+    - generic "project:workflow-pilot-20261002":
+      - generic: "[C3]"
+      - paragraph: 智能体系统工作流验证与优化
+    - generic "fact:fact-94ba6ec420b6":
+      - generic: "[C4]"
+      - paragraph: workflow.memory_review_gate
+    - generic "knowledge:06-项目库-Projects/水面舰艇编队战术兵棋/V2-海空手工兵棋体系/03-规则手册/教学版_V3.2/00_产品清单.md":
+      - generic: "[C5]"
+      - paragraph: 00 产品清单
+    - strong: 长期记忆候选
+    - generic: 待审核 2
+    - paragraph: 擎天柱从已完成任务中提炼。审核发布后，仅影响后续任务的背景检索。
+    - article:
+      - strong: 文件交付验收四步验证模式
+      - generic: 项目知识
+      - paragraph: 文件交付验收采用四步模式：1) 确认目标目录存在且可写（ls -ld + test -w）；2) 使用允许的工具写入文件；3) 采集 SHA-256（shasum -a 256）和行数（wc -l）；4) 结构化验收：核对绝对路径、哈希一致性、行数下限、内容要素（标题/编号/结论）和写入方式合规性。
+      - generic: file-delivery-verification-pattern
+      - generic: 常规
+      - generic: 可信度 85%
+      - generic: step-02d5283244e7 · step-d55c26486774
+      - button "驳回":
+        - generic: 驳回
+      - button "审核发布":
+        - generic: 审核发布
+    - article:
+      - strong: 沙箱内原生 write/edit 工具无法写入宿主机绝对路径
+      - generic: 智能体经验
+      - paragraph: 在沙箱环境中，原生 write/edit 工具的工作目录为容器内 /workspace，无法直接写入宿主机绝对路径（如 /Users/apple/工作桌面/...）。遇到此类任务时，应按合同回退条款使用 exec 多段 printf 写入（禁止单条 shell heredoc），并通过 shasum -a 256 与 wc -l 验证完整性。
+      - generic: sandbox-write-tool-host-path-limitation
+      - generic: 重要
+      - generic: 可信度 90%
+      - generic: step-150ff2398eb9 · step-d55c26486774
+      - button "驳回":
+        - generic: 驳回
+      - button "审核发布":
+        - generic: 审核发布
+    - strong: 需要反馈
+    - paragraph: One or more mission steps failed
+    - textbox "补充范围、约束、凭据或处理意见"
+    - button "提交反馈并继续" [disabled]:
+      - generic: 提交反馈并继续
+    - strong: 启动项目任务
+    - radiogroup "segmented":
+      - radio "程序开发" [checked]
+      - generic: 程序开发
+      - radio "文档撰写"
+      - generic: 文档撰写
+    - combobox
+    - generic: 选择任务所属项目
+    - textbox "任务名称（可选）"
+    - textbox "描述目标、约束、期望结果和完成标准"
+    - button "交给擎天柱" [disabled]:
+      - generic: 交给擎天柱
+    - strong: 关联对话
+    - text: 用户
+    - paragraph: 为智能体系统自身编写并独立审核一份软件测试大纲。最终唯一主交付物必须写入 /Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/deliverables/agent-system-software-test-outline.md。大纲应覆盖：项目中心建项、擎天柱中心任务下派、计划生成与审批、智能体执行、依赖与状态流转、产物与证据链、独立审…
+    - text: 用户
+    - paragraph: 修订正文已实际写入，但上一次只返回会话摘要，未提交结构化交付，导致步骤被拒绝。请进行第 2 次受控执行：先读取现有主文档和 /tmp/revision-notes.md；将 revision-notes.md 写入 durable_workspace；计算两个文件的 SHA-256 与行数；最后只输出一个 JSON 对象，且必须包含 test_outline_revised、revision_notes 两个 artifacts，三个合…
+- textbox
+- button:
+- button:

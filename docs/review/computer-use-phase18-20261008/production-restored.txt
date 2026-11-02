@@ -1,0 +1,185 @@
+Browser tab: 2041021783, Title: "智能体集群系统", URL: "http://127.0.0.1:3021/command-center".
+1 AXWebArea 智能体集群系统, URL: 127.0.0.1:3021/command-center
+	2 container app
+		3 text 🤖 OpenClaw
+		4 menu bar
+			5 text 总览
+			6 仪表盘
+				7 text 仪表盘
+			8 擎天柱指挥中心
+				9 text 擎天柱指挥中心
+			10 text 产品侧
+			11 项目中枢
+				12 text 项目中枢
+			13 程序开发
+				14 text 程序开发
+			15 文档管理
+				16 text 文档管理
+			17 财务管理
+				18 text 财务管理
+			19 产品矩阵
+				20 text 产品矩阵
+			21 text 生产侧
+			22 数据管理
+				23 text 数据管理
+			24 智能体团队
+				25 text 智能体团队
+			26 讨论与研究
+				27 text 讨论与研究
+			28 知识库
+				29 text 知识库
+			30 工具管理
+				31 text 工具管理
+			32 活动社区
+				33 text 活动社区
+			34 情报信息
+				35 text 情报信息
+			36 新闻资讯
+				37 text 新闻资讯
+			38 任务列表
+				39 text 任务列表
+			40 text 系统
+			41 系统监视
+				42 text 系统监视
+			43 数据分析
+				44 text 数据分析
+			45 记忆评测
+				46 text 记忆评测
+			47 用户管理
+				48 text 用户管理
+			49 调度中心
+				50 text 调度中心
+		51 container
+			52 text OpenClaw
+		53 button 🌙
+		54 pop up button (collapsed) 管 管理员, ID: el-id-800-1, Secondary Actions: Expand
+			55 text 管
+			56 text 管理员
+		57 container
+			58 heading 擎天柱指挥中心, Value: 1
+				59 text 擎天柱指挥中心
+			60 text 自动更新
+			61 text 统一任务入口 · 审批后执行 · 异步协作与反馈
+			62 container
+				63 switch (settable, boolean) Value: 1, ID: el-id-800-54
+				64 text 自动刷新
+			65 button (disabled) 刷新
+				66 text 刷新
+			67 button (collapsed) 查看团队统计与运行健康, Secondary Actions: Expand
+				68 text 查看团队统计与运行健康
+			69 tab group
+				70 tab (selected, settable, boolean) 工作坊, Value: 1, ID: tab-workshop
+			71 container
+				72 text 任务工作台 9 个项目 · 0 项任务
+				73 text field (settable) el-id-800-55
+				74 container
+					75 combo box (collapsed, settable) ID: el-id-800-56, Secondary Actions: Expand
+					76 text 状态
+					77 image
+				78 container
+					79 combo box (collapsed, settable) ID: el-id-800-57, Secondary Actions: Expand
+					80 text 类型
+					81 image
+				82 container
+					83 combo box (collapsed, settable) ID: el-id-800-58, Secondary Actions: Expand
+					84 text 项目
+					85 image
+				86 container
+					87 combo box (collapsed, settable) ID: el-id-800-59, Secondary Actions: Expand
+					88 text 智能体
+					89 image
+				90 container
+					91 combo box (collapsed, settable) ID: el-id-800-60, Secondary Actions: Expand
+					92 text 来源
+					93 image
+				94 text 项目范围 全部项目
+			95 container
+				96 text 智能体空间
+				97 text 等待擎天柱接收任务
+				98 text 唯一入口：擎天柱
+				99 text 待规划
+				100 container
+					101 text 全员状态 随自动刷新同步 · 等待同步 0 工作中 0 已分配 0 阻塞 0 待命
+				102 table 智能体工作状态
+					103 row
+						104 cell
+							105 text 智能体
+						106 cell
+							107 text 状态
+						108 cell
+							109 text 当前任务
+						110 cell
+							111 text 项目
+						112 cell
+							113 text 进度
+				114 image
+				115 text 选择一个任务查看执行详情
+			116 container mission-actions
+				117 container
+					118 text 擎 擎天柱 总项目管理 · 唯一任务入口
+				119 container
+					120 image
+					121 text 最近会话分流 30 条
+					142 container
+						143 text 文档撰写 10/05 22:09 CU-P3-20261005-H：审核拒绝与修订闭环验收。纯文档，无需联网、无需研究、不开发代码。第一版计划只安排一个只读审核步骤，由救护车读取 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/draft.md，检… 由已认证的项目任务入口显式创建
+					144 container
+						145 text 文档撰写 10/05 18:20 CU-P2-20261005-G：取消流程验收。只规划一个虚构个人助理文档任务，无需研究、无需联网、不开发代码。若批准执行，只允许在 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/G/brief.md 写入一句“这是… 由已认证的项目任务入口显式创建
+					146 container
+						147 text 文档撰写 10/05 18:19 CU-P2-20261005-F：重复交付与计划退回测试。纯文档任务，无需研究、无需联网、不开发代码。仅两步：一名智能体写虚构的个人助理晚间复盘，另一名独立审核并给出 accepted 或 rejected，只有 accepted 才能完成。brief.md 须有已完成、未完成、明日行动三节，合计120至180个汉字，使用 Unicode 汉字范围实际统计。… 由已认证的项目任务入口显式创建
+					148 container
+						149 text 文档撰写 10/05 18:17 CU-P2-20261005-E：纯文档稳定性验收。请由写作智能体生成一份虚构的个人助理晨间简报，120至180个汉字，包含今日重点、待确认事项、风险提示三个小节；再由另一位独立审核智能体核实内容和实际汉字数，写审核报告并明确通过或不通过。无需研究、无需联网、无需编写或修改软件代码。只允许写入 /Users/apple/工作桌面/Workspace/agen… 由已认证的项目任务入口显式创建
+					150 container
+						151 text 文档撰写 10/05 17:53 CU-20261005-D 修复回归。只写文档，不开发代码，无需联网或额外资料研究。为虚构的个人助理试点写100至200个汉字的简报，包含目标、三个里程碑、两条风险及应对、验收清单，不含预算。仅两步：通天晓写brief.md；救护车独立审查并写review.md，明确accepted或rejected，只有accepted方可交付。目录已存在：/Users/… 由已认证的项目任务入口显式创建
+					152 container
+						153 text 文档撰写 10/05 17:09 CU-20261005-C 正常文档交付。使用本提示的虚构信息撰写个人助理试点简报，含目标、三个里程碑、两条风险及应对、验收清单，不含预算，中文正文≤300字。仅两步：通天晓撰写brief.md，救护车独立只读审查brief.md并写review.md，审核明确accepted才能交付。无需联网或额外资料研究。交付目录已创建且可写：/Users/apple/… 由已认证的项目任务入口显式创建
+					154 container
+						155 text 文档撰写 10/05 17:02 CU-20261005-B 文档交付闭环。为虚构项目“个人工作助理试点”生成一页中文简报，≤400字，包含目标、3个里程碑、2条风险、验收清单，不要预算。先生成计划等待审批。只做文档业务流，2至3个顺序步骤，由通天晓撰写brief.md、救护车独立审核review.md并核验交付；所有必需产物都必须是真实可打开的文件。只允许在 /Users/apple/工作… 由已认证的项目任务入口显式创建
+					156 container
+						157 text 程序开发 10/05 16:57 这是独立的 Computer Use 验收任务，只编写文档，不开发代码。请生成一页中文项目简报，主题为“个人工作助理试点”，包含目标、三个里程碑、风险、验收清单、预算章节。总字数不超过600字。先生成计划并等待批准。批准后由一名智能体撰写，另一名独立审核，最后给出真实可打开的文件及验收结果。唯一允许写入目录：/Users/apple/工作桌面/Workspa… 由已认证的项目任务入口显式创建
+				122 container
+					123 image
+					124 text 长期记忆候选 待审核 12 擎天柱从已完成任务中提炼。审核发布后，仅影响后续任务的背景检索。
+					158 container
+						159 text 文档修订与独立复审的两智能体闭环模式 智能体经验 对高风险或受控文档任务采用两步闭环：第一步由修订智能体读取原稿并新建修订稿（保留原稿不修改），按验收准则逐项补齐；第二步由另一独立复审智能体读取修订稿，逐项核对并引用原文，输出结构化复审报告，仅当结论为 accepted 时步骤完成。该模式保证修订与验证职责分离，原稿可追溯，复审结论有原文证据支撑。 pattern.two-agent-revise-then-independent-review 常规 可信度 78% step-a66097305e14 · step-b8f23a3e846e
+						160 button 驳回
+						161 button 审核发布
+					162 container
+						163 text 写-审分离双人工作流 项目知识 文档交付采用两名独立智能体分工：一名撰写，另一名独立审核并给出 accepted/rejected 结论，只有 accepted 才能完成任务。审核者必须引用实际正文并给出量化统计。 write-then-independent-review-workflow 常规 可信度 90% step-7c1ac6beddcd
+						164 button 驳回
+						165 button 审核发布
+					166 container
+						167 text Unicode 汉字计数方法 项目知识 中文汉字计数使用 python3 UTF-8 解码 + Unicode 范围 \u4e00-\u9fff 正则匹配，不使用 word count 或字符长度。适用于任何需要精确汉字数统计的验收场景。 unicode-hanzi-counting-method 常规 可信度 85% step-8b90cb68551f · step-7c1ac6beddcd
+						168 button 驳回
+						169 button 审核发布
+					170 container
+						171 text 写作-审核双人分离验证模式有效 智能体经验 在纯文档稳定性验收中，采用"写作智能体生成 + 独立审核智能体验证"的双人分离模式，审核智能体实际读取文件、用脚本统计汉字数并逐项核验验收标准，能有效发现字数偏差和内容合规问题。Ratchet 负责生成，Ultra-Magnus 负责审核，分工清晰无冲突。 write-review-separation-pattern 常规 可信度 85% step-8b688b14cdfd · step-e3dc9c372463
+						172 button 驳回
+						173 button 审核发布
+					174 container
+						175 text CU-P2 交付物目录结构 项目知识 CU-20261005 验收项目的交付物路径为 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/{A-Z}/，每个子目录对应一个验收任务（如 E 对应纯文档稳定性验收）。目录已预先创建，智能体只需写入指定文件。 cu-p2-deliverables-path-structure 低 可信度 88% step-8b688b14cdfd · step-e3dc9c372463
+						176 button 驳回
+						177 button 审核发布
+					178 container
+						179 text 中文汉字数统计使用 Unicode CJK 范围 项目知识 验收中文文档字数时，使用 Python 正则表达式 [\u4e00-\u9fff] 匹配 Unicode CJK 统一汉字范围进行统计，不得将字节数或字符总数当作汉字数。该方法已在 CU-P2-20261005-E 任务中由写作智能体和审核智能体双重验证。 cu-p2-chinese-char-count-method 常规 可信度 92% step-e3dc9c372463 · step-8b688b14cdfd
+						180 button 驳回
+						181 button 审核发布
+				125 container new-mission-form
+					126 text 启动项目任务
+					182 text 草稿已恢复，请核对项目和目标后提交。
+					131 Description: segmented, ID: el-id-800-61
+						132 container
+							133 radio button (settable, integer) Description: 程序开发, Value: 1
+							134 text 程序开发
+							135 radio button (settable, integer) Description: 文档撰写, Value: 0
+							136 text 文档撰写
+					137 container
+						183 combo box (collapsed, settable) ID: el-id-800-62, Secondary Actions: Expand
+						138 text 选择任务所属项目
+						139 image
+					184 text field (settable) Value: 第十八阶段草稿验证（不提交）, ID: el-id-800-63
+					185 text entry area (settable) Value: 仅验证当前浏览器草稿刷新恢复，验证后清理，不创建任务。, ID: el-id-800-64
+					140 button (disabled) 交给擎天柱
+						141 text 交给擎天柱
+					186 button 清空草稿
+
+The focused UI element is 1 AXWebArea 智能体集群系统, URL: 127.0.0.1:3021/command-center

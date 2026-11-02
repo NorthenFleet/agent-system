@@ -1,0 +1,23 @@
+{
+  "schema": "openclaw.genoffice-phase-g1-readonly-summary.v1",
+  "manifest_path": "/Users/apple/工作桌面/Workspace/agent-system/specs/active/word-cowriting-phase0-gold-documents.json",
+  "manifest_sha256": "b121d3f1a237efbf498315919dfc1bdee16ea7c23de3745b907deab965dc0ba4",
+  "scope": "docs_read/docs_check/render page 1 only; no source or candidate write",
+  "status": "failed",
+  "documents": [
+    {
+      "id": "course-plan-original-20h",
+      "status": "passed",
+      "report": "genoffice-phase-g1-readonly-course-probe.json"
+    },
+    {
+      "id": "thesis-v25-r4.1-layout-reference",
+      "stage": "render_page_1",
+      "elapsed_ms": 180456,
+      "status": "failed",
+      "reason": "GenOffice 只读调用失败（conversion_failed）",
+      "report": "genoffice-phase-g1-readonly-thesis-probe.json"
+    }
+  ],
+  "acceptance": "G1 may remain a constrained read-only pilot; the two-gold exit gate is not met and G2 writes remain prohibited."
+}

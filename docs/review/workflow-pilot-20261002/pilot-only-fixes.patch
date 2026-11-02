@@ -1,0 +1,375 @@
+--- a/backend/services/command_center_service.py
++++ b/backend/services/command_center_service.py
+@@ -7109,6 +7109,21 @@
+             (item["id"], item["plan_version"]),
+         ).fetchall()
+         bindings = [self._serialize_context_binding(binding) for binding in binding_rows]
++        # Planning freezes the next version before save_plan advances the mission.
++        # Show that snapshot while planning, rather than an absent or rejected one.
++        if item["status"] == "planning":
++            pending_binding = conn.execute(
++                """
++                SELECT * FROM mission_context_bindings
++                WHERE mission_id=? AND plan_version=? AND purpose='planning' AND step_id=''
++                """,
++                (item["id"], int(item["plan_version"]) + 1),
++            ).fetchone()
++            if pending_binding:
++                bindings = [self._serialize_context_binding(pending_binding)] + [
++                    binding for binding in bindings
++                    if binding["purpose"] != "planning" or binding["step_id"]
++                ]
+         item["context_bindings"] = bindings
+         item["planning_context"] = next(
+             (
+--- a/backend/services/command_center_worker.py
++++ b/backend/services/command_center_worker.py
+@@ -175,7 +175,11 @@
+     }
+ 
+ 
+-def fallback_plan(objective: str) -> dict[str, Any]:
++def fallback_plan(objective: str, *, flow_key: str = "") -> dict[str, Any]:
++    if flow_key == "document":
++        return _document_plan(objective)
++    if flow_key == "software":
++        return _software_plan(objective)
+     text = objective.lower()
+     document_markers = ("论文", "文档", "报告", "文章", "撰写", "章节", "专利", "材料")
+     software_markers = ("开发", "代码", "接口", "api", "前端", "后端", "数据库", "系统", "bug")
+@@ -223,9 +227,9 @@
+     return normalized
+ 
+ 
+-def normalize_plan(plan: dict[str, Any] | None, objective: str) -> dict[str, Any]:
++def normalize_plan(plan: dict[str, Any] | None, objective: str, *, flow_key: str = "") -> dict[str, Any]:
+     if not plan or not isinstance(plan.get("steps"), list) or not plan["steps"]:
+-        return fallback_plan(objective)
++        return fallback_plan(objective, flow_key=flow_key)
+     accepted_steps: list[tuple[int, dict[str, Any]]] = []
+     for original_index, raw in enumerate(plan["steps"][:12], start=1):
+         if not isinstance(raw, dict):
+@@ -306,7 +310,7 @@
+             normalized_step["compensation"] = raw["compensation"]
+         normalized_steps.append(normalized_step)
+     if not normalized_steps:
+-        return fallback_plan(objective)
++        return fallback_plan(objective, flow_key=flow_key)
+     return {
+         "schema_version": str(plan.get("schema_version") or "2.0")[:32],
+         "business_type": str(plan.get("business_type") or "")[:80],
+@@ -890,7 +894,7 @@
+         feedback = [
+             str(event.get("detail") or "")
+             for event in mission.get("events", [])
+-            if event.get("event_type") == "feedback_received"
++            if event.get("event_type") in {"feedback_received", "plan_rejected"}
+         ][-5:]
+         user_context = (
+             mission.get("context", {}).get("user_context", {})
+@@ -926,12 +930,18 @@
+         mission: dict[str, Any],
+         step: dict[str, Any],
+     ) -> tuple[dict[str, Any] | None, str]:
++        feedback = [
++            str(event.get("detail") or "")[:1000]
++            for event in mission.get("events", [])
++            if event.get("event_type") == "feedback_received"
++        ][-3:]
+         query = "\n".join(
+             (
+                 mission["objective"],
+                 f"当前步骤：{step['title']}",
+                 f"步骤说明：{step.get('description') or ''}",
+                 f"任务类型：{step.get('task_type') or 'general'}",
++                f"执行反馈：{json.dumps(feedback, ensure_ascii=False)}",
+             )
+         )
+         return await self._ensure_context_pack(
+@@ -1008,7 +1018,10 @@
+             timeout_seconds=int(os.getenv("COMMAND_CENTER_PLAN_TIMEOUT", "240")),
+         )
+         parsed = _extract_json_object(result.output) if result.success else None
+-        plan = normalize_plan(parsed, mission["objective"])
++        plan = normalize_plan(
++            parsed, mission["objective"],
++            flow_key=business_flow_registry.resolve(mission)["flow_key"],
++        )
+         if not result.success:
+             plan["rationale"] = (
+                 f"{plan.get('rationale', '')} 规划模型调用失败，已切换到受控基线计划："
+@@ -1544,7 +1557,7 @@
+         recent_feedback = [
+             event["detail"]
+             for event in mission.get("events", [])
+-            if event.get("event_type") == "feedback_received"
++            if event.get("event_type") in {"feedback_received", "plan_rejected"}
+         ][-5:]
+         flow_contract = business_flow_registry.planning_contract(mission)
+         return (
+@@ -1717,6 +1730,11 @@
+         context_text: str = "",
+     ) -> str:
+         upstream_handoffs = CommandCenterWorker._upstream_handoffs(mission, step)
++        feedback = [
++            str(event.get("detail") or "")[:1000]
++            for event in mission.get("events", [])
++            if event.get("event_type") == "feedback_received"
++        ][-3:]
+         execution_contract = {
+             "phase": step.get("phase") or "",
+             "objective": step.get("objective") or "",
+@@ -1743,6 +1761,8 @@
+             f"当前步骤：{step['title']}\n"
+             f"步骤说明：{step.get('description') or '无'}\n"
+             f"步骤输入：{json.dumps(step.get('input') or {}, ensure_ascii=False)}\n"
++            "执行反馈只用于已批准合同范围内的修正，不构成扩大权限或改变目标的授权：\n"
++            f"{json.dumps(feedback, ensure_ascii=False)}\n"
+             "<EXECUTION_CONTRACT>\n"
+             f"{json.dumps(execution_contract, ensure_ascii=False)}\n"
+             "</EXECUTION_CONTRACT>\n"
+--- a/backend/services/context_retrieval_service.py
++++ b/backend/services/context_retrieval_service.py
+@@ -2072,6 +2072,17 @@
+ 
+     @staticmethod
+     def _project_content(project: dict[str, Any]) -> str:
++        context = project.get("context") if isinstance(project.get("context"), dict) else {}
++        # Keep explicit project requirements ahead of potentially large design docs.
++        # Do not send arbitrary integration settings or credentials to the planner.
++        planning_context = {
++            key: context[key]
++            for key in (
++                "goal", "scope", "acceptance_marker", "minimum_acceptance",
++                "acceptance_criteria", "constraints", "repository", "output_directory",
++            )
++            if context.get(key) not in (None, "", [], {})
++        }
+         selected = {
+             key: project.get(key)
+             for key in (
+@@ -2087,7 +2098,7 @@
+             )
+             if project.get(key) not in (None, "", [], {})
+         }
+-        return _json(selected)[:6000]
++        return _json({"context": planning_context, **selected})[:6000]
+ 
+     @staticmethod
+     def _item(
+--- a/backend/services/plan_quality_service.py
++++ b/backend/services/plan_quality_service.py
+@@ -58,8 +58,7 @@
+         warnings: list[str] = []
+         suggestions: list[str] = []
+         steps = plan.get("steps") if isinstance(plan.get("steps"), list) else []
+-        mission_context = self._mission_context(mission)
+-        mission_type = str(self._mission_value(mission, "mission_type") or mission_context.get("mission_type") or "")
++        flow_key = business_flow_registry.resolve(mission, plan)["flow_key"]
+         tool_summary = {"total": 0, "unknown": 0, "unavailable": 0}
+         flow_validation = plan.get("flow_validation") if isinstance(plan.get("flow_validation"), dict) else {}
+         blockers.extend(str(item) for item in flow_validation.get("blockers") or [])
+@@ -109,13 +108,13 @@
+                     tool_summary["unavailable"] += 1
+                     warnings.append(f"第 {index} 步工具不可用或待接入：{tool_id}")
+ 
+-        if mission_type == "software" or self._looks_like_software(mission):
++        if flow_key == "software":
+             missing = {"architecture", "testing"} - task_types
+             if missing:
+                 warnings.append("软件任务必须包含架构与测试/评估步骤")
+             if not ({"backend", "frontend", "api", "database", "ui"} & task_types):
+                 warnings.append("软件任务建议至少包含后端或前端实现步骤")
+-        if mission_type == "document" or self._looks_like_document(mission):
++        if flow_key == "document":
+             missing = {"research", "writing", "review"} - task_types
+             if missing:
+                 warnings.append("文档任务必须包含资料、撰写和审校步骤")
+--- a/backend/services/execution_evidence_service.py
++++ b/backend/services/execution_evidence_service.py
+@@ -77,6 +77,13 @@
+                 if field not in enriched and field in structured:
+                     enriched[field] = structured[field]
+             enriched["structured_output"] = structured
++
++        if not isinstance(structured, dict):
++            output = str(enriched.get("output") or "")
++            if "<summary>" in output and "</summary>" in output:
++                enriched["protocol_error"] = "执行器返回会话摘要，尚未提交结构化交付结果"
++            elif re.search(r"<parameter(?:=|\s)|</parameter>|<tool_call>|<function=", output):
++                enriched["protocol_error"] = "执行器返回未完成的工具调用文本，尚未提交结构化交付结果"
+ 
+         enriched["summary"] = str(
+             enriched.get("summary")
+@@ -118,6 +125,9 @@
+         tools_used = {str(item).lower() for item in (result.get("tools_used") or [])}
+         business_outcome = str(result.get("outcome") or "failed")
+         hard_blockers: list[str] = []
++
++        if result.get("protocol_error"):
++            hard_blockers.append(str(result["protocol_error"]))
+ 
+         if success and business_outcome != "succeeded":
+             hard_blockers.append(f"步骤业务结果为 {business_outcome}，不得标记为已完成")
+@@ -268,7 +278,7 @@
+ 
+     @staticmethod
+     def _business_outcome(result: dict[str, Any]) -> str:
+-        if result.get("success") is False:
++        if result.get("success") is False or result.get("protocol_error"):
+             return "failed"
+         structured = (
+             result.get("structured_output")
+--- a/backend/tests/test_execution_output_protocol.py
++++ b/backend/tests/test_execution_output_protocol.py
+@@ -0,0 +1,26 @@
++"""A handoff summary or unfinished tool call is not a successful deliverable."""
++import pytest
++from services.execution_evidence_service import ExecutionEvidenceService
++
++
++@pytest.mark.parametrize('output', [
++    '<analysis>files prepared</analysis><summary>Continue by submitting the final result</summary>',
++    '<parameter=command>echo done</parameter>',
++    'echo done\n</parameter>\n<parameter=timeoutSeconds>30</parameter>',
++])
++def test_non_final_protocol_output_blocks_even_without_negative_keywords(output):
++    service = ExecutionEvidenceService()
++    result = service.normalize_result({'success': True, 'output': output})
++    assert result['outcome'] == 'failed'
++    assert result['protocol_error']
++    gate = service.evaluate({}, result, success=True, enforcement={'mode': 'shadow', 'enforced': False})
++    assert not gate['accepted']
++    assert any('结构化交付结果' in issue for issue in gate['hard_blockers'])
++
++
++def test_valid_structured_result_can_discuss_protocol_tags():
++    service = ExecutionEvidenceService()
++    result = service.normalize_result({'success': True, 'output':
++        '{"outcome":"succeeded","summary":"验证<summary>样本完成","artifacts":[],"evidence":[]}'})
++    assert result['outcome'] == 'succeeded'
++    assert not result.get('protocol_error')
+--- a/backend/tests/test_command_center_planning_context_visibility.py
++++ b/backend/tests/test_command_center_planning_context_visibility.py
+@@ -0,0 +1,34 @@
++"""Planning must expose the snapshot being used before the next plan is saved."""
++from services.command_center_service import CommandCenterService
++
++
++def test_planning_context_visible_before_plan_and_after_rejection(tmp_path, monkeypatch):
++    monkeypatch.setattr(CommandCenterService, '_sync_mission_ledger_safe', lambda *args: None)
++    service = CommandCenterService(str(tmp_path / 'planning.db'), project_provider=lambda: [])
++    mission = service.create_mission(objective='编写测试大纲', requested_by='pilot')
++    mission_id = mission['id']
++    service.claim_planning_mission('planner')
++    service.bind_context_pack(mission_id, plan_version=1, purpose='planning', agent_id='optimus',
++                              pack={'id': 'context-v1', 'status': 'ready'})
++    planning = service.get_mission(mission_id)
++    assert planning['plan_version'] == 0
++    assert planning['planning_context']['context_pack_id'] == 'context-v1'
++    assert planning['planning_context']['plan_version'] == 1
++    plan = {'summary': '编写与审核', 'risk_level': 'low', 'steps': [
++        {'order_index': 1, 'title': '编写', 'description': '编写文档', 'task_type': 'writing',
++         'agent_id': 'ultra-magnus', 'depends_on': []},
++        {'order_index': 2, 'title': '审核', 'description': '独立审核', 'task_type': 'review',
++         'agent_id': 'ratchet', 'depends_on': [1]}]}
++    saved = service.save_plan(mission_id, plan)
++    assert saved['planning_context']['context_pack_id'] == 'context-v1'
++    service.reject(mission_id, decided_by='pilot', comment='补齐验收')
++    service.claim_planning_mission('planner')
++    service.bind_context_pack(mission_id, plan_version=2, purpose='planning', agent_id='optimus',
++                              pack={'id': 'context-v2', 'status': 'ready'})
++    replanning = service.get_mission(mission_id)
++    assert replanning['plan_version'] == 1
++    assert replanning['planning_context']['context_pack_id'] == 'context-v2'
++    assert replanning['planning_context']['plan_version'] == 2
++    saved_again = service.save_plan(mission_id, plan)
++    assert saved_again['planning_context']['context_pack_id'] == 'context-v2'
++    assert all(binding['plan_version'] == 2 for binding in saved_again['context_bindings'])
+--- a/backend/tests/test_command_center_rejection_feedback.py
++++ b/backend/tests/test_command_center_rejection_feedback.py
+@@ -0,0 +1,46 @@
++"""Rejected plan comments must reach both retrieval and the replanning model."""
++import asyncio
++from services.command_center_worker import CommandCenterWorker
++
++
++def test_rejection_comment_reaches_planning_prompt_and_context():
++    mission = {'id': 'mission-pilot', 'objective': '编写测试大纲', 'plan_version': 1,
++               'project_id': 'pilot', 'context': {'business_flow_key': 'document'},
++               'events': [{'event_type': 'plan_rejected', 'detail': '修订后由独立审核者再次复核'},
++                          {'event_type': 'feedback_received', 'detail': '测试实际结果必须为未执行'}]}
++    prompt = CommandCenterWorker._planning_prompt(mission)
++    assert '修订后由独立审核者再次复核' in prompt
++    assert '测试实际结果必须为未执行' in prompt
++    captured = {}
++    class ContextProbe:
++        async def _ensure_context_pack(self, mission, **kwargs):
++            captured.update(kwargs)
++            return None, ''
++    asyncio.run(CommandCenterWorker._planning_context(ContextProbe(), mission))
++    assert '修订后由独立审核者再次复核' in captured['query']
++    assert captured['plan_version'] == 2
++
++
++def test_document_fallback_never_adds_software_implementation_steps():
++    from services.command_center_worker import normalize_plan
++    for parsed in (None, {'steps': []}, {'steps': [{'title': '用户审批'}]}):
++        plan = normalize_plan(parsed, '为软件系统代码接口编写测试大纲，禁止改代码', flow_key='document')
++        types = {step['task_type'] for step in plan['steps']}
++        assert 'writing' in types and 'review' in types
++        assert not types.intersection({'frontend', 'backend', 'api', 'database'})
++
++
++def test_recovery_feedback_reaches_step_prompt_and_retrieval():
++    mission = {'id': 'mission-recovery', 'objective': '编写大纲', 'plan_version': 4,
++               'steps': [], 'events': [{'event_type': 'feedback_received', 'detail': '保留已有文件，仅补齐交付证据'}]}
++    step = {'id': 'step-1', 'title': '梳理', 'agent_id': 'michelangelo', 'task_type': 'research'}
++    prompt = CommandCenterWorker._step_prompt(mission, step)
++    assert '保留已有文件，仅补齐交付证据' in prompt
++    assert '不构成扩大权限' in prompt
++    captured = {}
++    class ContextProbe:
++        async def _ensure_context_pack(self, mission, **kwargs):
++            captured.update(kwargs)
++            return None, ''
++    asyncio.run(CommandCenterWorker._execution_context(ContextProbe(), mission, step))
++    assert '保留已有文件，仅补齐交付证据' in captured['query']
+--- a/backend/tests/test_workflow_pilot_contracts.py
++++ b/backend/tests/test_workflow_pilot_contracts.py
+@@ -0,0 +1,35 @@
++"""Regression coverage for project context and mixed project/workflow types."""
++from services.context_retrieval_service import ContextRetrievalService
++from services.plan_quality_service import PlanQualityService
++
++
++def test_explicit_project_requirements_survive_large_design_without_unrelated_settings():
++    rendered = ContextRetrievalService._project_content({
++        'name': '试点', 'design_doc': {'content': 'x' * 10000},
++        'context': {'goal': '验证闭环', 'scope': '只编写文档',
++                    'acceptance_marker': 'WF-PILOT-CONTEXT-20261002',
++                    'minimum_acceptance': ['实际文件可打开'],
++                    'integration_token': 'must-not-be-projected'}})
++    assert 'WF-PILOT-CONTEXT-20261002' in rendered
++    assert '实际文件可打开' in rendered
++    assert 'must-not-be-projected' not in rendered
++    assert len(rendered) <= 6000
++
++
++def test_document_flow_in_software_project_does_not_require_code_implementation():
++    mission = {'mission_type': 'software', 'objective': '为代码接口编写测试文档',
++               'context': {'business_flow_key': 'document'}}
++    steps = [{'order_index': n, 'title': t, 'task_type': t, 'agent_id': a,
++              'depends_on': [] if n == 1 else [n-1]}
++             for n, t, a in [(1, 'research', 'perceptor'), (2, 'writing', 'ultra-magnus'), (3, 'review', 'ratchet')]]
++    quality = PlanQualityService().enrich_plan({'steps': steps}, mission=mission)['plan_quality']
++    assert quality['flow_key'] == 'document'
++    assert not any('软件任务' in warning for warning in quality['warnings'])
++    assert not any('文档任务' in warning for warning in quality['warnings'])
++
++
++def test_software_flow_still_requires_architecture_and_testing():
++    quality = PlanQualityService().enrich_plan({'steps': [
++        {'order_index': 1, 'title': '撰写说明', 'task_type': 'writing', 'agent_id': 'ultra-magnus'}]},
++        mission={'mission_type': 'software', 'objective': '开发功能'})['plan_quality']
++    assert any('软件任务必须' in warning for warning in quality['warnings'])

@@ -1,0 +1,1611 @@
+{
+  "step": {
+    "id": "step-9957ece62dc0",
+    "mission_id": "mission-555decc13fb3",
+    "plan_version": 1,
+    "order_index": 1,
+    "title": "核验修订稿：1000–1800 汉字",
+    "description": "",
+    "task_type": "coordination",
+    "agent_id": "ratchet",
+    "executor": "openclaw",
+    "status": "failed",
+    "work_run_id": null,
+    "lease_owner": null,
+    "lease_token": null,
+    "lease_expires_at": null,
+    "attempt_count": 1,
+    "started_at": "2026-10-05T15:48:58.417806+00:00",
+    "completed_at": "2026-10-05T15:49:34.752059+00:00",
+    "updated_at": "2026-10-05T15:49:34.752069+00:00",
+    "dependencies": [],
+    "input": {},
+    "result": {
+      "success": true,
+      "output": "```json\n{\n  \"outcome\": \"blocked\",\n  \"summary\": \"文件存在且三个必需小节（目标、风险与应对、验收）齐全，SHA-256 已成功计算。但按 [\\\\u4e00-\\\\u9fff] 统计的汉字数为 174，不在合同要求的 1000–1800 范围内，验收项 fail，整体 blocked。\",\n  \"tools_used\": [\"exec:p6-readonly\"],\n  \"artifacts\": [\n    {\n      \"artifact_key\": \"a1\",\n      \"artifact_type\": \"document\",\n      \"title\": \"既有修订稿\",\n      \"uri\": \"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md\",\n      \"content_hash\": \"60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee\"\n    }\n  ],\n  \"evidence\": [\n    {\n      \"requirement_id\": \"ev-c2e90d8a1b011f5c1314\",\n      \"evidence_type\": \"test_output\",\n      \"source_ref\": \"exec:p6-readonly\",\n      \"summary\": \"汉字数=174（不在1000-1800范围）；三节齐全（目标✓、风险与应对✓、验收✓）；SHA-256=60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee\",\n      \"artifact_key\": \"a1\"\n    }\n  ],\n  \"acceptance_results\": [\n    {\n      \"criterion_id\": \"ac-73b9be9c1bb39b3755a5\",\n      \"criterion\": \"三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256\",\n      \"status\": \"fail\",\n      \"evidence_refs\": [\"exec:p6-readonly\"]\n    }\n  ],\n  \"side_effects\": [],\n  \"risk_notes\": [\n    \"汉字数 174 远低于合同下限 1000，差距显著；可能是文件内容为大纲/骨架结构而非正文，需人工确认是否为预期状态或需要补充内容。\"\n  ]\n}\n```",
+      "error": "",
+      "duration_ms": 0,
+      "exit_code": 0,
+      "output_source": "payloads[0]",
+      "output_candidates": [
+        {
+          "source": "payloads[0]",
+          "text": "```json\n{\n  \"outcome\": \"blocked\",\n  \"summary\": \"文件存在且三个必需小节（目标、风险与应对、验收）齐全，SHA-256 已成功计算。但按 [\\\\u4e00-\\\\u9fff] 统计的汉字数为 174，不在合同要求的 1000–1800 范围内，验收项 fail，整体 blocked。\",\n  \"tools_used\": [\"exec:p6-readonly\"],\n  \"artifacts\": [\n    {\n      \"artifact_key\": \"a1\",\n      \"artifact_type\": \"document\",\n      \"title\": \"既有修订稿\",\n      \"uri\": \"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md\",\n      \"content_hash\": \"60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee\"\n    }\n  ],\n  \"evidence\": [\n    {\n      \"requirement_id\": \"ev-c2e90d8a1b011f5c1314\",\n      \"evidence_type\": \"test_output\",\n      \"source_ref\": \"exec:p6-readonly\",\n      \"summary\": \"汉字数=174（不在1000-1800范围）；三节齐全（目标✓、风险与应对✓、验收✓）；SHA-256=60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee\",\n      \"artifact_key\": \"a1\"\n    }\n  ],\n  \"acceptance_results\": [\n    {\n      \"criterion_id\": \"ac-73b9be9c1bb39b3755a5\",\n      \"criterion\": \"三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256\",\n      \"status\": \"fail\",\n      \"evidence_refs\": [\"exec:p6-readonly\"]\n    }\n  ],\n  \"side_effects\": [],\n  \"risk_notes\": [\n    \"汉字数 174 远低于合同下限 1000，差距显著；可能是文件内容为大纲/骨架结构而非正文，需人工确认是否为预期状态或需要补充内容。\"\n  ]\n}\n```"
+        },
+        {
+          "source": "stdout",
+          "text": "{\n  \"runId\": \"45766d14-5741-4115-a62a-c92d22446d23\",\n  \"status\": \"ok\",\n  \"summary\": \"completed\",\n  \"result\": {\n    \"payloads\": [\n      {\n        \"text\": \"```json\\n{\\n  \\\"outcome\\\": \\\"blocked\\\",\\n  \\\"summary\\\": \\\"文件存在且三个必需小节（目标、风险与应对、验收）齐全，SHA-256 已成功计算。但按 [\\\\\\\\u4e00-\\\\\\\\u9fff] 统计的汉字数为 174，不在合同要求的 1000–1800 范围内，验收项 fail，整体 blocked。\\\",\\n  \\\"tools_used\\\": [\\\"exec:p6-readonly\\\"],\\n  \\\"artifacts\\\": [\\n    {\\n      \\\"artifact_key\\\": \\\"a1\\\",\\n      \\\"artifact_type\\\": \\\"document\\\",\\n      \\\"title\\\": \\\"既有修订稿\\\",\\n      \\\"uri\\\": \\\"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md\\\",\\n      \\\"content_hash\\\": \\\"60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee\\\"\\n    }\\n  ],\\n  \\\"evidence\\\": [\\n    {\\n      \\\"requirement_id\\\": \\\"ev-c2e90d8a1b011f5c1314\\\",\\n      \\\"evidence_type\\\": \\\"test_output\\\",\\n      \\\"source_ref\\\": \\\"exec:p6-readonly\\\",\\n      \\\"summary\\\": \\\"汉字数=174（不在1000-1800范围）；三节齐全（目标✓、风险与应对✓、验收✓）；SHA-256=60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee\\\",\\n      \\\"artifact_key\\\": \\\"a1\\\"\\n    }\\n  ],\\n  \\\"acceptance_results\\\": [\\n    {\\n      \\\"criterion_id\\\": \\\"ac-73b9be9c1bb39b3755a5\\\",\\n      \\\"criterion\\\": \\\"三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256\\\",\\n      \\\"status\\\": \\\"fail\\\",\\n      \\\"evidence_refs\\\": [\\\"exec:p6-readonly\\\"]\\n    }\\n  ],\\n  \\\"side_effects\\\": [],\\n  \\\"risk_notes\\\": [\\n    \\\"汉字数 174 远低于合同下限 1000，差距显著；可能是文件内容为大纲/骨架结构而非正文，需人工确认是否为预期状态或需要补充内容。\\\"\\n  ]\\n}\\n```\",\n        \"mediaUrl\": null\n      }\n    ],\n    \"meta\": {\n      \"durationMs\": 34337,\n      \"agentMeta\": {\n        \"sessionId\": \"db2464e6-71de-4e74-bebf-3d053045521d\",\n        \"sessionFile\": \"agent:ratchet:phase6-ui-d924538c1a4f47ab8d5a4d7df73828d5\",\n        \"provider\": \"bailian\",\n        \"model\": \"qwen3.7-plus\",\n        \"contextTokens\": 1000000,\n        \"contextTokensSource\": \"resolved\",\n        \"agentHarnessId\": \"openclaw\",\n        \"credentialSource\": {\n          \"kind\": \"profile\"\n        },\n        \"usage\": {\n          \"input\": 16651,\n          \"output\": 1776,\n          \"cacheRead\": 14976,\n          \"reasoningTokens\": 755,\n          \"total\": 33403,\n          \"cost\": {\n            \"total\": 0\n          }\n        },\n        \"lastCallUsage\": {\n          \"input\": 1136,\n          \"output\": 984,\n          \"cacheRead\": 14976,\n          \"cacheWrite\": 0,\n          \"cost\": {\n            \"total\": 0\n          },\n          \"reasoningTokens\": 368,\n          \"total\": 17096\n        },\n        \"promptTokens\": 16112,\n        \"codeModeEngaged\": false,\n        \"assistantTurns\": 2,\n        \"costUsd\": 0,\n        \"terminalReceipt\": {\n          \"runId\": \"45766d14-5741-4115-a62a-c92d22446d23\",\n          \"sessionId\": \"db2464e6-71de-4e74-bebf-3d053045521d\",\n          \"turnId\": \"45766d14-5741-4115-a62a-c92d22446d23\",\n          \"requested\": {\n            \"provider\": \"bailian\",\n            \"model\": \"qwen3.7-plus\"\n          },\n          \"effective\": {\n            \"provider\": \"bailian\",\n            \"model\": \"qwen3.7-plus\",\n            \"responseModel\": \"qwen3.7-plus\"\n          },\n          \"successfulToolNames\": [\n            \"exec\"\n          ],\n          \"rerouted\": false\n        }\n      },\n      \"aborted\": false,\n      \"systemPromptReport\": {\n        \"source\": \"run\",\n        \"generatedAt\": 1791215340987,\n        \"sessionId\": \"db2464e6-71de-4e74-bebf-3d053045521d\",\n        \"sessionKey\": \"agent:ratchet:phase6-ui-d924538c1a4f47ab8d5a4d7df73828d5\",\n        \"provider\": \"bailian\",\n        \"model\": \"qwen3.7-plus\",\n        \"workspaceDir\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace\",\n        \"bootstrapMaxChars\": 20000,\n        \"bootstrapTotalMaxChars\": 60000,\n        \"bootstrapTruncation\": {\n          \"warningMode\": \"always\",\n          \"warningShown\": false,\n          \"truncatedFiles\": 0,\n          \"nearLimitFiles\": 0,\n          \"totalNearLimit\": false\n        },\n        \"sandbox\": {\n          \"mode\": \"all\",\n          \"sandboxed\": true\n        },\n        \"systemPrompt\": {\n          \"chars\": 21177,\n          \"hash\": \"676cbc5783ebaa7c907f9dcf43bc365feae4f4dcdb7b3f907edb953ddd18fc7a\",\n          \"projectContextChars\": 5878,\n          \"nonProjectContextChars\": 15299\n        },\n        \"injectedWorkspaceFiles\": [\n          {\n            \"name\": \"AGENTS.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/AGENTS.md\",\n            \"missing\": false,\n            \"rawChars\": 2540,\n            \"injectedChars\": 2540,\n            \"truncated\": false\n          },\n          {\n            \"name\": \"SOUL.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/SOUL.md\",\n            \"missing\": false,\n            \"rawChars\": 925,\n            \"injectedChars\": 925,\n            \"truncated\": false\n          },\n          {\n            \"name\": \"IDENTITY.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/IDENTITY.md\",\n            \"missing\": false,\n            \"rawChars\": 620,\n            \"injectedChars\": 620,\n            \"truncated\": false\n          },\n          {\n            \"name\": \"USER.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/USER.md\",\n            \"missing\": false,\n            \"rawChars\": 130,\n            \"injectedChars\": 130,\n            \"truncated\": false\n          },\n          {\n            \"name\": \"MEMORY.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/MEMORY.md\",\n            \"missing\": false,\n            \"rawChars\": 957,\n            \"injectedChars\": 957,\n            \"truncated\": false\n          }\n        ],\n        \"skills\": {\n          \"promptChars\": 6113,\n          \"hash\": \"d0e9d3753ccc057d73133dc751a44978b09f911c06fabca01f300712210d5e23\",\n          \"entries\": [\n            {\n              \"name\": \"alphastar-conservative-offline\",\n              \"blockChars\": 391\n            },\n            {\n              \"name\": \"alphastar-contract-policy\",\n              \"blockChars\": 355\n            },\n            {\n              \"name\": \"alphastar-data-curriculum\",\n              \"blockChars\": 341\n            },\n            {\n              \"name\": \"alphastar-human-prior\",\n              \"blockChars\": 338\n            },\n            {\n              \"name\": \"alphastar-pfsp-curriculum\",\n              \"blockChars\": 341\n            },\n            {\n              \"name\": \"alphastar-robust-evaluation\",\n              \"blockChars\": 362\n            },\n            {\n              \"name\": \"alphastar-role-league\",\n              \"blockChars\": 358\n            },\n            {\n              \"name\": \"alphastar-split-off-policy\",\n              \"blockChars\": 369\n            },\n            {\n              \"name\": \"diagram-maker\",\n              \"blockChars\": 262\n            },\n            {\n              \"name\": \"feishu-doc\",\n              \"blockChars\": 275\n            },\n            {\n              \"name\": \"feishu-drive\",\n              \"blockChars\": 302\n            },\n            {\n              \"name\": \"feishu-perm\",\n              \"blockChars\": 313\n            },\n            {\n              \"name\": \"feishu-wiki\",\n              \"blockChars\": 281\n            },\n            {\n              \"name\": \"github\",\n              \"blockChars\": 256\n            },\n            {\n              \"name\": \"ninja-dispatch\",\n              \"blockChars\": 353\n            },\n            {\n              \"name\": \"session-logs\",\n              \"blockChars\": 249\n            },\n            {\n              \"name\": \"skill-creator\",\n              \"blockChars\": 280\n            },\n            {\n              \"name\": \"tmux\",\n              \"blockChars\": 265\n            }\n          ]\n        },\n        \"tools\": {\n          \"listChars\": 0,\n          \"schemaChars\": 9578,\n          \"entries\": [\n            {\n              \"name\": \"read\",\n              \"summaryChars\": 164,\n              \"summaryHash\": \"d136f5b09e28d671addad4ca800b75b8aa6a36002bc739ead964f618d3e34829\",\n              \"schemaChars\": 481,\n              \"schemaHash\": \"b1b9b637dfe1dfade40f50c37cf840a298f1992b534cb9425b7470233a6b0cbb\",\n              \"propertiesCount\": 5\n            },\n            {\n              \"name\": \"edit\",\n              \"summaryChars\": 130,\n              \"summaryHash\": \"4149500b1f6501ec6450e4c048bdb6844764dd4a888a10846726cbbc7256152e\",\n              \"schemaChars\": 501,\n              \"schemaHash\": \"adf3140833ca927b84c66c989d6833fdcbd9de011dd2ffc59f9a2c4d3c25f127\",\n              \"propertiesCount\": 2\n            },\n            {\n              \"name\": \"write\",\n              \"summaryChars\": 49,\n              \"summaryHash\": \"f9ce3d8ac929a51498c03331b97c59bfaa2bb4d25580a5ddf0102e6a8e173aec\",\n              \"schemaChars\": 191,\n              \"schemaHash\": \"b61d2da23febf5fbda55e391526f36d283e9e9fb7f1a1dbadcf5c618a0632287\",\n              \"propertiesCount\": 2\n            },\n            {\n              \"name\": \"apply_patch\",\n              \"summaryChars\": 71,\n              \"summaryHash\": \"5c1173efe93d080a386a23216bc3e58db2e0033eb3ddea697eb2439938b7cae4\",\n              \"schemaChars\": 153,\n              \"schemaHash\": \"05521268363ff4f191472c90d69ef08a503ba9acf1d2febc50b3ee68db32ab65\",\n              \"propertiesCount\": 1\n            },\n            {\n              \"name\": \"exec\",\n              \"summaryChars\": 366,\n              \"summaryHash\": \"6a41ebbc7cd1fae376a497c1bb1662c40a5faa87e5f811bff3ae37e04fb20973\",\n              \"schemaChars\": 1122,\n              \"schemaHash\": \"29de9f248d3d8c84fbb84b347d4a46e07e766af8d1d6cabdbd8fc05aceea77e8\",\n              \"propertiesCount\": 11\n            },\n            {\n              \"name\": \"process\",\n              \"summaryChars\": 190,\n              \"summaryHash\": \"75fd9c7b8d560599081ab2621e4f897babc118254cf439bd8329a60a905a9ef1\",\n              \"schemaChars\": 1164,\n              \"schemaHash\": \"6cf3281369349e15ea532e644c8ec7f94c96fa6a4e3287272c8cfe90b0960516\",\n              \"propertiesCount\": 12\n            },\n            {\n              \"name\": \"sessions_list\",\n              \"summaryChars\": 244,\n              \"summaryHash\": \"1e39ee0ccc7ce3c6f26fe067c389bcb0da4ba845e5030e5088ab8e4027df963c\",\n              \"schemaChars\": 518,\n              \"schemaHash\": \"e878e741a7122c61cfd46c97828e7281414afb487b2e9f0c718578bdf9bf30e5\",\n              \"propertiesCount\": 10\n            },\n            {\n              \"name\": \"sessions_history\",\n              \"summaryChars\": 343,\n              \"summaryHash\": \"cf78e38bd7308164a1b54994d87e3a0511a9108d8726f223da9862197e72b4d2\",\n              \"schemaChars\": 337,\n              \"schemaHash\": \"37ca1edd9f92288e5569f580721464b9efed5ccc64fdba8709d7f66db3a7a650\",\n              \"propertiesCount\": 7\n            },\n            {\n              \"name\": \"sessions_search\",\n              \"summaryChars\": 177,\n              \"summaryHash\": \"334f96a1cafd9325d695608fe065a4a00888f6b55279d396590575b39e62728a\",\n              \"schemaChars\": 179,\n              \"schemaHash\": \"6545acec45e540d9c7d7d76b79084ce439ba35f4cd626fa4f8ec406230f0913d\",\n              \"propertiesCount\": 3\n            },\n            {\n              \"name\": \"sessions_send\",\n              \"summaryChars\": 691,\n              \"summaryHash\": \"9b4359d4a6b37c240c25c4692cf4c92bcedc5d8628daef3b0d30fd701ec0c29f\",\n              \"schemaChars\": 302,\n              \"schemaHash\": \"204249b04e35552d80609d8e7c40c461cf550564dc4ee6e573d0e00f05af84e2\",\n              \"propertiesCount\": 6\n            },\n            {\n              \"name\": \"sessions_spawn\",\n              \"summaryChars\": 1752,\n              \"summaryHash\": \"52d02cf81130ec020d96937cdd0862b868a00a64a6fed4e9291eaad6b978a922\",\n              \"schemaChars\": 2882,\n              \"schemaHash\": \"0792373d3763efc2d27aa0fabb31b84ac91b51deb3ecc2bf474589e2d679db9d\",\n              \"propertiesCount\": 21\n            },\n            {\n              \"name\": \"sessions_yield\",\n              \"summaryChars\": 149,\n              \"summaryHash\": \"54c3073a05fc6c0d2cfaec6a7aa0d9ed732a932a80f760e06083535584cca63e\",\n              \"schemaChars\": 259,\n              \"schemaHash\": \"affee0fae7ad36a16fa1e339d4fe9"
+        }
+      ],
+      "outcome": "blocked",
+      "summary": "文件存在且三个必需小节（目标、风险与应对、验收）齐全，SHA-256 已成功计算。但按 [\\u4e00-\\u9fff] 统计的汉字数为 174，不在合同要求的 1000–1800 范围内，验收项 fail，整体 blocked。",
+      "artifacts": [
+        {
+          "artifact_key": "a1",
+          "artifact_type": "document",
+          "title": "既有修订稿",
+          "uri": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md",
+          "content_hash": "60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee",
+          "metadata": {}
+        }
+      ],
+      "evidence": [
+        {
+          "evidence_type": "test_output",
+          "requirement_id": "ev-c2e90d8a1b011f5c1314",
+          "source_ref": "exec:p6-readonly",
+          "summary": "汉字数=174（不在1000-1800范围）；三节齐全（目标✓、风险与应对✓、验收✓）；SHA-256=60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee",
+          "artifact_key": "a1",
+          "confidence": 1.0,
+          "metadata": {}
+        }
+      ],
+      "acceptance_results": [
+        {
+          "criterion": "三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256",
+          "criterion_id": "ac-73b9be9c1bb39b3755a5",
+          "status": "fail",
+          "evidence_refs": [
+            "exec:p6-readonly"
+          ],
+          "notes": ""
+        }
+      ],
+      "tools_used": [
+        "exec:p6-readonly"
+      ],
+      "risk_notes": "汉字数 174 远低于合同下限 1000，差距显著；可能是文件内容为大纲/骨架结构而非正文，需人工确认是否为预期状态或需要补充内容。",
+      "structured_output": {
+        "outcome": "blocked",
+        "summary": "文件存在且三个必需小节（目标、风险与应对、验收）齐全，SHA-256 已成功计算。但按 [\\u4e00-\\u9fff] 统计的汉字数为 174，不在合同要求的 1000–1800 范围内，验收项 fail，整体 blocked。",
+        "tools_used": [
+          "exec:p6-readonly"
+        ],
+        "artifacts": [
+          {
+            "artifact_key": "a1",
+            "artifact_type": "document",
+            "title": "既有修订稿",
+            "uri": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md",
+            "content_hash": "60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee"
+          }
+        ],
+        "evidence": [
+          {
+            "requirement_id": "ev-c2e90d8a1b011f5c1314",
+            "evidence_type": "test_output",
+            "source_ref": "exec:p6-readonly",
+            "summary": "汉字数=174（不在1000-1800范围）；三节齐全（目标✓、风险与应对✓、验收✓）；SHA-256=60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee",
+            "artifact_key": "a1"
+          }
+        ],
+        "acceptance_results": [
+          {
+            "criterion_id": "ac-73b9be9c1bb39b3755a5",
+            "criterion": "三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256",
+            "status": "fail",
+            "evidence_refs": [
+              "exec:p6-readonly"
+            ]
+          }
+        ],
+        "side_effects": [],
+        "risk_notes": [
+          "汉字数 174 远低于合同下限 1000，差距显著；可能是文件内容为大纲/骨架结构而非正文，需人工确认是否为预期状态或需要补充内容。"
+        ]
+      },
+      "evidence_refs": [
+        "exec:p6-readonly"
+      ],
+      "receipt_preflight": {
+        "schema_version": "1.0",
+        "strategy": "existing_evidence_only",
+        "input_sha256": "156f30777288487640f4dd23a9bbc6487d997ef5ef4a88902c28c9a9f744c07e",
+        "changes": [],
+        "strict_accepted_before": false,
+        "strict_accepted": false,
+        "blockers": [
+          "步骤业务结果为 blocked，不得标记为已完成",
+          "验收结果明确失败：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256",
+          "验收标准未逐项通过：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256",
+          "未证明使用必需工具：test_runner"
+        ],
+        "execution_repeated": false
+      },
+      "execution_quality": {
+        "status": "blocked",
+        "score": 0,
+        "mode": "strict",
+        "enforced": true,
+        "accepted": false,
+        "executor_success": true,
+        "business_outcome": "blocked",
+        "hard_blockers": [
+          "步骤业务结果为 blocked，不得标记为已完成",
+          "验收结果明确失败：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256"
+        ],
+        "blockers": [
+          "步骤业务结果为 blocked，不得标记为已完成",
+          "验收结果明确失败：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256",
+          "验收标准未逐项通过：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256",
+          "未证明使用必需工具：test_runner"
+        ],
+        "warnings": [],
+        "evidence_refs": [
+          "exec:p6-readonly"
+        ],
+        "required_evidence": [
+          "test_output"
+        ],
+        "required_artifact_types": [
+          "document"
+        ],
+        "required_tools": [
+          "test_runner"
+        ],
+        "acceptance_criteria": [
+          "三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256"
+        ],
+        "checked_rules": [
+          "result-summary",
+          "required-evidence-types",
+          "artifact-contract",
+          "acceptance-results",
+          "tool-use",
+          "required-output-fields"
+        ]
+      },
+      "side_effects": [],
+      "effect_quality": {
+        "status": "not_applicable",
+        "accepted": true,
+        "enforced": false,
+        "blockers": [],
+        "warnings": []
+      },
+      "completion_decision": {
+        "executor_success": true,
+        "accepted": false,
+        "retry_scheduled": false,
+        "attempt": 1,
+        "max_attempts": 1,
+        "receipt_retry_safe": true,
+        "enforcement": {
+          "mode": "strict",
+          "enforced": true,
+          "reason": "strict_mode",
+          "flow_key": "software",
+          "highest_risk": "L2",
+          "runtime": "legacy"
+        },
+        "effect_quality": {
+          "status": "not_applicable",
+          "accepted": true,
+          "enforced": false,
+          "blockers": [],
+          "warnings": []
+        }
+      },
+      "effect_ids": []
+    },
+    "phase": "planning",
+    "objective": "核验修订稿：1000–1800 汉字",
+    "required_tools": [
+      "test_runner"
+    ],
+    "tool_requirements": [
+      {
+        "name": "测试运行器",
+        "category": "verification",
+        "status": "available",
+        "description": "运行后端、单元或集成测试并回传输出。",
+        "evidence_types": [
+          "test_output"
+        ],
+        "id": "test_runner"
+      }
+    ],
+    "deliverables": [
+      "既有修订稿与只读核验结果"
+    ],
+    "output_contract": {
+      "artifact_types": [
+        "document"
+      ],
+      "required_fields": [
+        "summary",
+        "evidence_refs",
+        "risk_notes"
+      ]
+    },
+    "acceptance_criteria": [
+      "三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256"
+    ],
+    "evidence_required": [
+      "test_output"
+    ],
+    "risk_level": "medium",
+    "risk_class": "L2",
+    "approval_required": false,
+    "side_effect": false,
+    "resources": [],
+    "idempotency_key": "mission-555decc13fb3:plan:1:step:1",
+    "timeout_seconds": 1200,
+    "max_attempts": 1,
+    "rollback_plan": "停止后续步骤，记录失败原因并等待擎天柱重新规划。",
+    "compensation": {
+      "type": "manual",
+      "instructions": "停止后续步骤，记录失败原因并等待擎天柱重新规划。"
+    },
+    "capability_match": true,
+    "artifacts": [
+      {
+        "id": "artifact-91bb38c78aad2b1a0b15",
+        "mission_id": "mission-555decc13fb3",
+        "mission_run_id": "mrun-313819cd618547ef",
+        "correlation_id": "mission-8ecdd6f5852045ef",
+        "plan_version": 1,
+        "step_id": "step-9957ece62dc0",
+        "work_run_id": null,
+        "artifact_type": "document",
+        "title": "既有修订稿",
+        "uri": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md",
+        "content_hash": "60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee",
+        "fingerprint": "91bb38c78aad2b1a0b153fb2e84d937c4ea8814d61940ecc75b00ef1871752de",
+        "created_at": "2026-10-05T15:49:34.759528+00:00",
+        "metadata": {}
+      }
+    ],
+    "evidence": [
+      {
+        "id": "evidence-ea645c936c56a4fb71fe",
+        "mission_id": "mission-555decc13fb3",
+        "mission_run_id": "mrun-313819cd618547ef",
+        "correlation_id": "mission-8ecdd6f5852045ef",
+        "plan_version": 1,
+        "step_id": "step-9957ece62dc0",
+        "artifact_id": "artifact-91bb38c78aad2b1a0b15",
+        "evidence_type": "test_output",
+        "source_ref": "exec:p6-readonly",
+        "summary": "汉字数=174（不在1000-1800范围）；三节齐全（目标✓、风险与应对✓、验收✓）；SHA-256=60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee",
+        "collected_by": "ratchet",
+        "collected_at": "2026-10-05T15:49:34.761880+00:00",
+        "confidence": 1.0,
+        "fingerprint": "ea645c936c56a4fb71fe6c67576b5cf905ce5af58a6b2ff1085a01f201990ba4",
+        "metadata": {}
+      }
+    ],
+    "acceptance_gate": {
+      "id": "gate-03dd153ea3d2a9717995",
+      "mission_id": "mission-555decc13fb3",
+      "mission_run_id": "mrun-313819cd618547ef",
+      "correlation_id": "mission-8ecdd6f5852045ef",
+      "plan_version": 1,
+      "step_id": "step-9957ece62dc0",
+      "gate_type": "execution_evidence",
+      "mode": "strict",
+      "enforced": true,
+      "status": "blocked",
+      "accepted": false,
+      "score": 0,
+      "evaluated_by": "ratchet",
+      "evaluated_at": "2026-10-05T15:49:34.767497+00:00",
+      "blockers": [
+        "步骤业务结果为 blocked，不得标记为已完成",
+        "验收结果明确失败：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256",
+        "验收标准未逐项通过：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256",
+        "未证明使用必需工具：test_runner"
+      ],
+      "warnings": [],
+      "details": {
+        "status": "blocked",
+        "score": 0,
+        "mode": "strict",
+        "enforced": true,
+        "accepted": false,
+        "executor_success": true,
+        "business_outcome": "blocked",
+        "hard_blockers": [
+          "步骤业务结果为 blocked，不得标记为已完成",
+          "验收结果明确失败：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256"
+        ],
+        "blockers": [
+          "步骤业务结果为 blocked，不得标记为已完成",
+          "验收结果明确失败：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256",
+          "验收标准未逐项通过：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256",
+          "未证明使用必需工具：test_runner"
+        ],
+        "warnings": [],
+        "evidence_refs": [
+          "exec:p6-readonly"
+        ],
+        "required_evidence": [
+          "test_output"
+        ],
+        "required_artifact_types": [
+          "document"
+        ],
+        "required_tools": [
+          "test_runner"
+        ],
+        "acceptance_criteria": [
+          "三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256"
+        ],
+        "checked_rules": [
+          "result-summary",
+          "required-evidence-types",
+          "artifact-contract",
+          "acceptance-results",
+          "tool-use",
+          "required-output-fields"
+        ]
+      }
+    },
+    "step_approval": null,
+    "effects": [],
+    "compensations": []
+  },
+  "mission": {
+    "id": "mission-555decc13fb3",
+    "conversation_id": "conv-6efa39bcdec7",
+    "source_message_id": "msg-51c40421c904",
+    "title": "P6 隔离界面：严格拒绝与恢复",
+    "objective": "只读核验既有修订稿；先验证不满足字数要求时拒绝，再按界面反馈重规划并审批恢复。",
+    "status": "waiting_feedback",
+    "priority": "normal",
+    "project_id": null,
+    "mission_type": "software",
+    "requested_by": "phase6-lab",
+    "owner_user_id": "phase6-lab",
+    "plan_version": 1,
+    "current_step_id": null,
+    "requires_approval": true,
+    "approval_status": "approved",
+    "last_error": "核验修订稿：1000–1800 汉字：步骤业务结果为 blocked，不得标记为已完成；验收结果明确失败：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256；验收标准未逐项通过：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256；未证明使用必需工具：test_runner",
+    "lease_owner": null,
+    "lease_expires_at": null,
+    "created_at": "2026-10-05T15:47:01.566370+00:00",
+    "updated_at": "2026-10-05T15:49:34.789190+00:00",
+    "completed_at": null,
+    "context": {
+      "source": "dashboard",
+      "profile_user_id": "phase6-lab",
+      "mission_type": "software",
+      "intent_decision": {
+        "type": "software_project",
+        "confidence": 1.0,
+        "reason": "由已认证的项目任务入口显式创建",
+        "execution_requested": true
+      },
+      "user_context": {},
+      "metadata": {
+        "project_id": "",
+        "title": "P6 隔离界面：严格拒绝与恢复",
+        "context": {},
+        "intent_type": "software_project",
+        "execution_requested": true,
+        "profile_user_id": "phase6-lab",
+        "suppress_notification": true,
+        "_direct_mission": true,
+        "_reserve_planning": false,
+        "_planning_owner": ""
+      }
+    },
+    "mission_run": {
+      "id": "mrun-313819cd618547ef",
+      "mission_id": "mission-555decc13fb3",
+      "correlation_id": "mission-8ecdd6f5852045ef",
+      "status": "waiting_feedback",
+      "active_plan_version": 1,
+      "workflow_run_id": "workflow-8d71f85cfac7",
+      "outcome": "",
+      "created_at": "2026-10-05T15:47:01.566370+00:00",
+      "updated_at": "2026-10-05T15:49:34.792965+00:00",
+      "ended_at": null,
+      "metadata": {}
+    },
+    "conversation": {
+      "id": "conv-6efa39bcdec7",
+      "channel": "dashboard",
+      "external_conversation_id": "dashboard:phase6-lab",
+      "user_external_id": "phase6-lab",
+      "owner_user_id": "phase6-lab",
+      "profile_user_id": "phase6-lab",
+      "status": "active",
+      "metadata": {
+        "project_id": "",
+        "title": "P6 隔离界面：严格拒绝与恢复",
+        "context": {},
+        "intent_type": "software_project",
+        "execution_requested": true,
+        "profile_user_id": "phase6-lab",
+        "suppress_notification": true,
+        "_direct_mission": true,
+        "_reserve_planning": false,
+        "_planning_owner": ""
+      },
+      "created_at": "2026-10-05T15:47:01.566370+00:00",
+      "updated_at": "2026-10-05T15:47:01.566370+00:00"
+    },
+    "steps": [
+      {
+        "id": "step-9957ece62dc0",
+        "mission_id": "mission-555decc13fb3",
+        "plan_version": 1,
+        "order_index": 1,
+        "title": "核验修订稿：1000–1800 汉字",
+        "description": "",
+        "task_type": "coordination",
+        "agent_id": "ratchet",
+        "executor": "openclaw",
+        "status": "failed",
+        "work_run_id": null,
+        "lease_owner": null,
+        "lease_token": null,
+        "lease_expires_at": null,
+        "attempt_count": 1,
+        "started_at": "2026-10-05T15:48:58.417806+00:00",
+        "completed_at": "2026-10-05T15:49:34.752059+00:00",
+        "updated_at": "2026-10-05T15:49:34.752069+00:00",
+        "dependencies": [],
+        "input": {},
+        "result": {
+          "success": true,
+          "output": "```json\n{\n  \"outcome\": \"blocked\",\n  \"summary\": \"文件存在且三个必需小节（目标、风险与应对、验收）齐全，SHA-256 已成功计算。但按 [\\\\u4e00-\\\\u9fff] 统计的汉字数为 174，不在合同要求的 1000–1800 范围内，验收项 fail，整体 blocked。\",\n  \"tools_used\": [\"exec:p6-readonly\"],\n  \"artifacts\": [\n    {\n      \"artifact_key\": \"a1\",\n      \"artifact_type\": \"document\",\n      \"title\": \"既有修订稿\",\n      \"uri\": \"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md\",\n      \"content_hash\": \"60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee\"\n    }\n  ],\n  \"evidence\": [\n    {\n      \"requirement_id\": \"ev-c2e90d8a1b011f5c1314\",\n      \"evidence_type\": \"test_output\",\n      \"source_ref\": \"exec:p6-readonly\",\n      \"summary\": \"汉字数=174（不在1000-1800范围）；三节齐全（目标✓、风险与应对✓、验收✓）；SHA-256=60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee\",\n      \"artifact_key\": \"a1\"\n    }\n  ],\n  \"acceptance_results\": [\n    {\n      \"criterion_id\": \"ac-73b9be9c1bb39b3755a5\",\n      \"criterion\": \"三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256\",\n      \"status\": \"fail\",\n      \"evidence_refs\": [\"exec:p6-readonly\"]\n    }\n  ],\n  \"side_effects\": [],\n  \"risk_notes\": [\n    \"汉字数 174 远低于合同下限 1000，差距显著；可能是文件内容为大纲/骨架结构而非正文，需人工确认是否为预期状态或需要补充内容。\"\n  ]\n}\n```",
+          "error": "",
+          "duration_ms": 0,
+          "exit_code": 0,
+          "output_source": "payloads[0]",
+          "output_candidates": [
+            {
+              "source": "payloads[0]",
+              "text": "```json\n{\n  \"outcome\": \"blocked\",\n  \"summary\": \"文件存在且三个必需小节（目标、风险与应对、验收）齐全，SHA-256 已成功计算。但按 [\\\\u4e00-\\\\u9fff] 统计的汉字数为 174，不在合同要求的 1000–1800 范围内，验收项 fail，整体 blocked。\",\n  \"tools_used\": [\"exec:p6-readonly\"],\n  \"artifacts\": [\n    {\n      \"artifact_key\": \"a1\",\n      \"artifact_type\": \"document\",\n      \"title\": \"既有修订稿\",\n      \"uri\": \"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md\",\n      \"content_hash\": \"60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee\"\n    }\n  ],\n  \"evidence\": [\n    {\n      \"requirement_id\": \"ev-c2e90d8a1b011f5c1314\",\n      \"evidence_type\": \"test_output\",\n      \"source_ref\": \"exec:p6-readonly\",\n      \"summary\": \"汉字数=174（不在1000-1800范围）；三节齐全（目标✓、风险与应对✓、验收✓）；SHA-256=60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee\",\n      \"artifact_key\": \"a1\"\n    }\n  ],\n  \"acceptance_results\": [\n    {\n      \"criterion_id\": \"ac-73b9be9c1bb39b3755a5\",\n      \"criterion\": \"三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256\",\n      \"status\": \"fail\",\n      \"evidence_refs\": [\"exec:p6-readonly\"]\n    }\n  ],\n  \"side_effects\": [],\n  \"risk_notes\": [\n    \"汉字数 174 远低于合同下限 1000，差距显著；可能是文件内容为大纲/骨架结构而非正文，需人工确认是否为预期状态或需要补充内容。\"\n  ]\n}\n```"
+            },
+            {
+              "source": "stdout",
+              "text": "{\n  \"runId\": \"45766d14-5741-4115-a62a-c92d22446d23\",\n  \"status\": \"ok\",\n  \"summary\": \"completed\",\n  \"result\": {\n    \"payloads\": [\n      {\n        \"text\": \"```json\\n{\\n  \\\"outcome\\\": \\\"blocked\\\",\\n  \\\"summary\\\": \\\"文件存在且三个必需小节（目标、风险与应对、验收）齐全，SHA-256 已成功计算。但按 [\\\\\\\\u4e00-\\\\\\\\u9fff] 统计的汉字数为 174，不在合同要求的 1000–1800 范围内，验收项 fail，整体 blocked。\\\",\\n  \\\"tools_used\\\": [\\\"exec:p6-readonly\\\"],\\n  \\\"artifacts\\\": [\\n    {\\n      \\\"artifact_key\\\": \\\"a1\\\",\\n      \\\"artifact_type\\\": \\\"document\\\",\\n      \\\"title\\\": \\\"既有修订稿\\\",\\n      \\\"uri\\\": \\\"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md\\\",\\n      \\\"content_hash\\\": \\\"60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee\\\"\\n    }\\n  ],\\n  \\\"evidence\\\": [\\n    {\\n      \\\"requirement_id\\\": \\\"ev-c2e90d8a1b011f5c1314\\\",\\n      \\\"evidence_type\\\": \\\"test_output\\\",\\n      \\\"source_ref\\\": \\\"exec:p6-readonly\\\",\\n      \\\"summary\\\": \\\"汉字数=174（不在1000-1800范围）；三节齐全（目标✓、风险与应对✓、验收✓）；SHA-256=60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee\\\",\\n      \\\"artifact_key\\\": \\\"a1\\\"\\n    }\\n  ],\\n  \\\"acceptance_results\\\": [\\n    {\\n      \\\"criterion_id\\\": \\\"ac-73b9be9c1bb39b3755a5\\\",\\n      \\\"criterion\\\": \\\"三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256\\\",\\n      \\\"status\\\": \\\"fail\\\",\\n      \\\"evidence_refs\\\": [\\\"exec:p6-readonly\\\"]\\n    }\\n  ],\\n  \\\"side_effects\\\": [],\\n  \\\"risk_notes\\\": [\\n    \\\"汉字数 174 远低于合同下限 1000，差距显著；可能是文件内容为大纲/骨架结构而非正文，需人工确认是否为预期状态或需要补充内容。\\\"\\n  ]\\n}\\n```\",\n        \"mediaUrl\": null\n      }\n    ],\n    \"meta\": {\n      \"durationMs\": 34337,\n      \"agentMeta\": {\n        \"sessionId\": \"db2464e6-71de-4e74-bebf-3d053045521d\",\n        \"sessionFile\": \"agent:ratchet:phase6-ui-d924538c1a4f47ab8d5a4d7df73828d5\",\n        \"provider\": \"bailian\",\n        \"model\": \"qwen3.7-plus\",\n        \"contextTokens\": 1000000,\n        \"contextTokensSource\": \"resolved\",\n        \"agentHarnessId\": \"openclaw\",\n        \"credentialSource\": {\n          \"kind\": \"profile\"\n        },\n        \"usage\": {\n          \"input\": 16651,\n          \"output\": 1776,\n          \"cacheRead\": 14976,\n          \"reasoningTokens\": 755,\n          \"total\": 33403,\n          \"cost\": {\n            \"total\": 0\n          }\n        },\n        \"lastCallUsage\": {\n          \"input\": 1136,\n          \"output\": 984,\n          \"cacheRead\": 14976,\n          \"cacheWrite\": 0,\n          \"cost\": {\n            \"total\": 0\n          },\n          \"reasoningTokens\": 368,\n          \"total\": 17096\n        },\n        \"promptTokens\": 16112,\n        \"codeModeEngaged\": false,\n        \"assistantTurns\": 2,\n        \"costUsd\": 0,\n        \"terminalReceipt\": {\n          \"runId\": \"45766d14-5741-4115-a62a-c92d22446d23\",\n          \"sessionId\": \"db2464e6-71de-4e74-bebf-3d053045521d\",\n          \"turnId\": \"45766d14-5741-4115-a62a-c92d22446d23\",\n          \"requested\": {\n            \"provider\": \"bailian\",\n            \"model\": \"qwen3.7-plus\"\n          },\n          \"effective\": {\n            \"provider\": \"bailian\",\n            \"model\": \"qwen3.7-plus\",\n            \"responseModel\": \"qwen3.7-plus\"\n          },\n          \"successfulToolNames\": [\n            \"exec\"\n          ],\n          \"rerouted\": false\n        }\n      },\n      \"aborted\": false,\n      \"systemPromptReport\": {\n        \"source\": \"run\",\n        \"generatedAt\": 1791215340987,\n        \"sessionId\": \"db2464e6-71de-4e74-bebf-3d053045521d\",\n        \"sessionKey\": \"agent:ratchet:phase6-ui-d924538c1a4f47ab8d5a4d7df73828d5\",\n        \"provider\": \"bailian\",\n        \"model\": \"qwen3.7-plus\",\n        \"workspaceDir\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace\",\n        \"bootstrapMaxChars\": 20000,\n        \"bootstrapTotalMaxChars\": 60000,\n        \"bootstrapTruncation\": {\n          \"warningMode\": \"always\",\n          \"warningShown\": false,\n          \"truncatedFiles\": 0,\n          \"nearLimitFiles\": 0,\n          \"totalNearLimit\": false\n        },\n        \"sandbox\": {\n          \"mode\": \"all\",\n          \"sandboxed\": true\n        },\n        \"systemPrompt\": {\n          \"chars\": 21177,\n          \"hash\": \"676cbc5783ebaa7c907f9dcf43bc365feae4f4dcdb7b3f907edb953ddd18fc7a\",\n          \"projectContextChars\": 5878,\n          \"nonProjectContextChars\": 15299\n        },\n        \"injectedWorkspaceFiles\": [\n          {\n            \"name\": \"AGENTS.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/AGENTS.md\",\n            \"missing\": false,\n            \"rawChars\": 2540,\n            \"injectedChars\": 2540,\n            \"truncated\": false\n          },\n          {\n            \"name\": \"SOUL.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/SOUL.md\",\n            \"missing\": false,\n            \"rawChars\": 925,\n            \"injectedChars\": 925,\n            \"truncated\": false\n          },\n          {\n            \"name\": \"IDENTITY.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/IDENTITY.md\",\n            \"missing\": false,\n            \"rawChars\": 620,\n            \"injectedChars\": 620,\n            \"truncated\": false\n          },\n          {\n            \"name\": \"USER.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/USER.md\",\n            \"missing\": false,\n            \"rawChars\": 130,\n            \"injectedChars\": 130,\n            \"truncated\": false\n          },\n          {\n            \"name\": \"MEMORY.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/MEMORY.md\",\n            \"missing\": false,\n            \"rawChars\": 957,\n            \"injectedChars\": 957,\n            \"truncated\": false\n          }\n        ],\n        \"skills\": {\n          \"promptChars\": 6113,\n          \"hash\": \"d0e9d3753ccc057d73133dc751a44978b09f911c06fabca01f300712210d5e23\",\n          \"entries\": [\n            {\n              \"name\": \"alphastar-conservative-offline\",\n              \"blockChars\": 391\n            },\n            {\n              \"name\": \"alphastar-contract-policy\",\n              \"blockChars\": 355\n            },\n            {\n              \"name\": \"alphastar-data-curriculum\",\n              \"blockChars\": 341\n            },\n            {\n              \"name\": \"alphastar-human-prior\",\n              \"blockChars\": 338\n            },\n            {\n              \"name\": \"alphastar-pfsp-curriculum\",\n              \"blockChars\": 341\n            },\n            {\n              \"name\": \"alphastar-robust-evaluation\",\n              \"blockChars\": 362\n            },\n            {\n              \"name\": \"alphastar-role-league\",\n              \"blockChars\": 358\n            },\n            {\n              \"name\": \"alphastar-split-off-policy\",\n              \"blockChars\": 369\n            },\n            {\n              \"name\": \"diagram-maker\",\n              \"blockChars\": 262\n            },\n            {\n              \"name\": \"feishu-doc\",\n              \"blockChars\": 275\n            },\n            {\n              \"name\": \"feishu-drive\",\n              \"blockChars\": 302\n            },\n            {\n              \"name\": \"feishu-perm\",\n              \"blockChars\": 313\n            },\n            {\n              \"name\": \"feishu-wiki\",\n              \"blockChars\": 281\n            },\n            {\n              \"name\": \"github\",\n              \"blockChars\": 256\n            },\n            {\n              \"name\": \"ninja-dispatch\",\n              \"blockChars\": 353\n            },\n            {\n              \"name\": \"session-logs\",\n              \"blockChars\": 249\n            },\n            {\n              \"name\": \"skill-creator\",\n              \"blockChars\": 280\n            },\n            {\n              \"name\": \"tmux\",\n              \"blockChars\": 265\n            }\n          ]\n        },\n        \"tools\": {\n          \"listChars\": 0,\n          \"schemaChars\": 9578,\n          \"entries\": [\n            {\n              \"name\": \"read\",\n              \"summaryChars\": 164,\n              \"summaryHash\": \"d136f5b09e28d671addad4ca800b75b8aa6a36002bc739ead964f618d3e34829\",\n              \"schemaChars\": 481,\n              \"schemaHash\": \"b1b9b637dfe1dfade40f50c37cf840a298f1992b534cb9425b7470233a6b0cbb\",\n              \"propertiesCount\": 5\n            },\n            {\n              \"name\": \"edit\",\n              \"summaryChars\": 130,\n              \"summaryHash\": \"4149500b1f6501ec6450e4c048bdb6844764dd4a888a10846726cbbc7256152e\",\n              \"schemaChars\": 501,\n              \"schemaHash\": \"adf3140833ca927b84c66c989d6833fdcbd9de011dd2ffc59f9a2c4d3c25f127\",\n              \"propertiesCount\": 2\n            },\n            {\n              \"name\": \"write\",\n              \"summaryChars\": 49,\n              \"summaryHash\": \"f9ce3d8ac929a51498c03331b97c59bfaa2bb4d25580a5ddf0102e6a8e173aec\",\n              \"schemaChars\": 191,\n              \"schemaHash\": \"b61d2da23febf5fbda55e391526f36d283e9e9fb7f1a1dbadcf5c618a0632287\",\n              \"propertiesCount\": 2\n            },\n            {\n              \"name\": \"apply_patch\",\n              \"summaryChars\": 71,\n              \"summaryHash\": \"5c1173efe93d080a386a23216bc3e58db2e0033eb3ddea697eb2439938b7cae4\",\n              \"schemaChars\": 153,\n              \"schemaHash\": \"05521268363ff4f191472c90d69ef08a503ba9acf1d2febc50b3ee68db32ab65\",\n              \"propertiesCount\": 1\n            },\n            {\n              \"name\": \"exec\",\n              \"summaryChars\": 366,\n              \"summaryHash\": \"6a41ebbc7cd1fae376a497c1bb1662c40a5faa87e5f811bff3ae37e04fb20973\",\n              \"schemaChars\": 1122,\n              \"schemaHash\": \"29de9f248d3d8c84fbb84b347d4a46e07e766af8d1d6cabdbd8fc05aceea77e8\",\n              \"propertiesCount\": 11\n            },\n            {\n              \"name\": \"process\",\n              \"summaryChars\": 190,\n              \"summaryHash\": \"75fd9c7b8d560599081ab2621e4f897babc118254cf439bd8329a60a905a9ef1\",\n              \"schemaChars\": 1164,\n              \"schemaHash\": \"6cf3281369349e15ea532e644c8ec7f94c96fa6a4e3287272c8cfe90b0960516\",\n              \"propertiesCount\": 12\n            },\n            {\n              \"name\": \"sessions_list\",\n              \"summaryChars\": 244,\n              \"summaryHash\": \"1e39ee0ccc7ce3c6f26fe067c389bcb0da4ba845e5030e5088ab8e4027df963c\",\n              \"schemaChars\": 518,\n              \"schemaHash\": \"e878e741a7122c61cfd46c97828e7281414afb487b2e9f0c718578bdf9bf30e5\",\n              \"propertiesCount\": 10\n            },\n            {\n              \"name\": \"sessions_history\",\n              \"summaryChars\": 343,\n              \"summaryHash\": \"cf78e38bd7308164a1b54994d87e3a0511a9108d8726f223da9862197e72b4d2\",\n              \"schemaChars\": 337,\n              \"schemaHash\": \"37ca1edd9f92288e5569f580721464b9efed5ccc64fdba8709d7f66db3a7a650\",\n              \"propertiesCount\": 7\n            },\n            {\n              \"name\": \"sessions_search\",\n              \"summaryChars\": 177,\n              \"summaryHash\": \"334f96a1cafd9325d695608fe065a4a00888f6b55279d396590575b39e62728a\",\n              \"schemaChars\": 179,\n              \"schemaHash\": \"6545acec45e540d9c7d7d76b79084ce439ba35f4cd626fa4f8ec406230f0913d\",\n              \"propertiesCount\": 3\n            },\n            {\n              \"name\": \"sessions_send\",\n              \"summaryChars\": 691,\n              \"summaryHash\": \"9b4359d4a6b37c240c25c4692cf4c92bcedc5d8628daef3b0d30fd701ec0c29f\",\n              \"schemaChars\": 302,\n              \"schemaHash\": \"204249b04e35552d80609d8e7c40c461cf550564dc4ee6e573d0e00f05af84e2\",\n              \"propertiesCount\": 6\n            },\n            {\n              \"name\": \"sessions_spawn\",\n              \"summaryChars\": 1752,\n              \"summaryHash\": \"52d02cf81130ec020d96937cdd0862b868a00a64a6fed4e9291eaad6b978a922\",\n              \"schemaChars\": 2882,\n              \"schemaHash\": \"0792373d3763efc2d27aa0fabb31b84ac91b51deb3ecc2bf474589e2d679db9d\",\n              \"propertiesCount\": 21\n            },\n            {\n              \"name\": \"sessions_yield\",\n              \"summaryChars\": 149,\n              \"summaryHash\": \"54c3073a05fc6c0d2cfaec6a7aa0d9ed732a932a80f760e06083535584cca63e\",\n              \"schemaChars\": 259,\n              \"schemaHash\": \"affee0fae7ad36a16fa1e339d4fe9"
+            }
+          ],
+          "outcome": "blocked",
+          "summary": "文件存在且三个必需小节（目标、风险与应对、验收）齐全，SHA-256 已成功计算。但按 [\\u4e00-\\u9fff] 统计的汉字数为 174，不在合同要求的 1000–1800 范围内，验收项 fail，整体 blocked。",
+          "artifacts": [
+            {
+              "artifact_key": "a1",
+              "artifact_type": "document",
+              "title": "既有修订稿",
+              "uri": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md",
+              "content_hash": "60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee",
+              "metadata": {}
+            }
+          ],
+          "evidence": [
+            {
+              "evidence_type": "test_output",
+              "requirement_id": "ev-c2e90d8a1b011f5c1314",
+              "source_ref": "exec:p6-readonly",
+              "summary": "汉字数=174（不在1000-1800范围）；三节齐全（目标✓、风险与应对✓、验收✓）；SHA-256=60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee",
+              "artifact_key": "a1",
+              "confidence": 1.0,
+              "metadata": {}
+            }
+          ],
+          "acceptance_results": [
+            {
+              "criterion": "三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256",
+              "criterion_id": "ac-73b9be9c1bb39b3755a5",
+              "status": "fail",
+              "evidence_refs": [
+                "exec:p6-readonly"
+              ],
+              "notes": ""
+            }
+          ],
+          "tools_used": [
+            "exec:p6-readonly"
+          ],
+          "risk_notes": "汉字数 174 远低于合同下限 1000，差距显著；可能是文件内容为大纲/骨架结构而非正文，需人工确认是否为预期状态或需要补充内容。",
+          "structured_output": {
+            "outcome": "blocked",
+            "summary": "文件存在且三个必需小节（目标、风险与应对、验收）齐全，SHA-256 已成功计算。但按 [\\u4e00-\\u9fff] 统计的汉字数为 174，不在合同要求的 1000–1800 范围内，验收项 fail，整体 blocked。",
+            "tools_used": [
+              "exec:p6-readonly"
+            ],
+            "artifacts": [
+              {
+                "artifact_key": "a1",
+                "artifact_type": "document",
+                "title": "既有修订稿",
+                "uri": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md",
+                "content_hash": "60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee"
+              }
+            ],
+            "evidence": [
+              {
+                "requirement_id": "ev-c2e90d8a1b011f5c1314",
+                "evidence_type": "test_output",
+                "source_ref": "exec:p6-readonly",
+                "summary": "汉字数=174（不在1000-1800范围）；三节齐全（目标✓、风险与应对✓、验收✓）；SHA-256=60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee",
+                "artifact_key": "a1"
+              }
+            ],
+            "acceptance_results": [
+              {
+                "criterion_id": "ac-73b9be9c1bb39b3755a5",
+                "criterion": "三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256",
+                "status": "fail",
+                "evidence_refs": [
+                  "exec:p6-readonly"
+                ]
+              }
+            ],
+            "side_effects": [],
+            "risk_notes": [
+              "汉字数 174 远低于合同下限 1000，差距显著；可能是文件内容为大纲/骨架结构而非正文，需人工确认是否为预期状态或需要补充内容。"
+            ]
+          },
+          "evidence_refs": [
+            "exec:p6-readonly"
+          ],
+          "receipt_preflight": {
+            "schema_version": "1.0",
+            "strategy": "existing_evidence_only",
+            "input_sha256": "156f30777288487640f4dd23a9bbc6487d997ef5ef4a88902c28c9a9f744c07e",
+            "changes": [],
+            "strict_accepted_before": false,
+            "strict_accepted": false,
+            "blockers": [
+              "步骤业务结果为 blocked，不得标记为已完成",
+              "验收结果明确失败：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256",
+              "验收标准未逐项通过：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256",
+              "未证明使用必需工具：test_runner"
+            ],
+            "execution_repeated": false
+          },
+          "execution_quality": {
+            "status": "blocked",
+            "score": 0,
+            "mode": "strict",
+            "enforced": true,
+            "accepted": false,
+            "executor_success": true,
+            "business_outcome": "blocked",
+            "hard_blockers": [
+              "步骤业务结果为 blocked，不得标记为已完成",
+              "验收结果明确失败：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256"
+            ],
+            "blockers": [
+              "步骤业务结果为 blocked，不得标记为已完成",
+              "验收结果明确失败：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256",
+              "验收标准未逐项通过：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256",
+              "未证明使用必需工具：test_runner"
+            ],
+            "warnings": [],
+            "evidence_refs": [
+              "exec:p6-readonly"
+            ],
+            "required_evidence": [
+              "test_output"
+            ],
+            "required_artifact_types": [
+              "document"
+            ],
+            "required_tools": [
+              "test_runner"
+            ],
+            "acceptance_criteria": [
+              "三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256"
+            ],
+            "checked_rules": [
+              "result-summary",
+              "required-evidence-types",
+              "artifact-contract",
+              "acceptance-results",
+              "tool-use",
+              "required-output-fields"
+            ]
+          },
+          "side_effects": [],
+          "effect_quality": {
+            "status": "not_applicable",
+            "accepted": true,
+            "enforced": false,
+            "blockers": [],
+            "warnings": []
+          },
+          "completion_decision": {
+            "executor_success": true,
+            "accepted": false,
+            "retry_scheduled": false,
+            "attempt": 1,
+            "max_attempts": 1,
+            "receipt_retry_safe": true,
+            "enforcement": {
+              "mode": "strict",
+              "enforced": true,
+              "reason": "strict_mode",
+              "flow_key": "software",
+              "highest_risk": "L2",
+              "runtime": "legacy"
+            },
+            "effect_quality": {
+              "status": "not_applicable",
+              "accepted": true,
+              "enforced": false,
+              "blockers": [],
+              "warnings": []
+            }
+          },
+          "effect_ids": []
+        },
+        "context_binding": null,
+        "phase": "planning",
+        "objective": "核验修订稿：1000–1800 汉字",
+        "required_tools": [
+          "test_runner"
+        ],
+        "tool_requirements": [
+          {
+            "name": "测试运行器",
+            "category": "verification",
+            "status": "available",
+            "description": "运行后端、单元或集成测试并回传输出。",
+            "evidence_types": [
+              "test_output"
+            ],
+            "id": "test_runner"
+          }
+        ],
+        "deliverables": [
+          "既有修订稿与只读核验结果"
+        ],
+        "output_contract": {
+          "artifact_types": [
+            "document"
+          ],
+          "required_fields": [
+            "summary",
+            "evidence_refs",
+            "risk_notes"
+          ]
+        },
+        "acceptance_criteria": [
+          "三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256"
+        ],
+        "evidence_required": [
+          "test_output"
+        ],
+        "risk_level": "medium",
+        "risk_class": "L2",
+        "approval_required": false,
+        "side_effect": false,
+        "resources": [],
+        "idempotency_key": "mission-555decc13fb3:plan:1:step:1",
+        "timeout_seconds": 1200,
+        "max_attempts": 1,
+        "rollback_plan": "停止后续步骤，记录失败原因并等待擎天柱重新规划。",
+        "compensation": {
+          "type": "manual",
+          "instructions": "停止后续步骤，记录失败原因并等待擎天柱重新规划。"
+        },
+        "capability_match": true,
+        "artifacts": [
+          {
+            "id": "artifact-91bb38c78aad2b1a0b15",
+            "mission_id": "mission-555decc13fb3",
+            "mission_run_id": "mrun-313819cd618547ef",
+            "correlation_id": "mission-8ecdd6f5852045ef",
+            "plan_version": 1,
+            "step_id": "step-9957ece62dc0",
+            "work_run_id": null,
+            "artifact_type": "document",
+            "title": "既有修订稿",
+            "uri": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md",
+            "content_hash": "60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee",
+            "fingerprint": "91bb38c78aad2b1a0b153fb2e84d937c4ea8814d61940ecc75b00ef1871752de",
+            "created_at": "2026-10-05T15:49:34.759528+00:00",
+            "metadata": {}
+          }
+        ],
+        "evidence": [
+          {
+            "id": "evidence-ea645c936c56a4fb71fe",
+            "mission_id": "mission-555decc13fb3",
+            "mission_run_id": "mrun-313819cd618547ef",
+            "correlation_id": "mission-8ecdd6f5852045ef",
+            "plan_version": 1,
+            "step_id": "step-9957ece62dc0",
+            "artifact_id": "artifact-91bb38c78aad2b1a0b15",
+            "evidence_type": "test_output",
+            "source_ref": "exec:p6-readonly",
+            "summary": "汉字数=174（不在1000-1800范围）；三节齐全（目标✓、风险与应对✓、验收✓）；SHA-256=60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee",
+            "collected_by": "ratchet",
+            "collected_at": "2026-10-05T15:49:34.761880+00:00",
+            "confidence": 1.0,
+            "fingerprint": "ea645c936c56a4fb71fe6c67576b5cf905ce5af58a6b2ff1085a01f201990ba4",
+            "metadata": {}
+          }
+        ],
+        "acceptance_gate": {
+          "id": "gate-03dd153ea3d2a9717995",
+          "mission_id": "mission-555decc13fb3",
+          "mission_run_id": "mrun-313819cd618547ef",
+          "correlation_id": "mission-8ecdd6f5852045ef",
+          "plan_version": 1,
+          "step_id": "step-9957ece62dc0",
+          "gate_type": "execution_evidence",
+          "mode": "strict",
+          "enforced": true,
+          "status": "blocked",
+          "accepted": false,
+          "score": 0,
+          "evaluated_by": "ratchet",
+          "evaluated_at": "2026-10-05T15:49:34.767497+00:00",
+          "blockers": [
+            "步骤业务结果为 blocked，不得标记为已完成",
+            "验收结果明确失败：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256",
+            "验收标准未逐项通过：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256",
+            "未证明使用必需工具：test_runner"
+          ],
+          "warnings": [],
+          "details": {
+            "status": "blocked",
+            "score": 0,
+            "mode": "strict",
+            "enforced": true,
+            "accepted": false,
+            "executor_success": true,
+            "business_outcome": "blocked",
+            "hard_blockers": [
+              "步骤业务结果为 blocked，不得标记为已完成",
+              "验收结果明确失败：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256"
+            ],
+            "blockers": [
+              "步骤业务结果为 blocked，不得标记为已完成",
+              "验收结果明确失败：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256",
+              "验收标准未逐项通过：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256",
+              "未证明使用必需工具：test_runner"
+            ],
+            "warnings": [],
+            "evidence_refs": [
+              "exec:p6-readonly"
+            ],
+            "required_evidence": [
+              "test_output"
+            ],
+            "required_artifact_types": [
+              "document"
+            ],
+            "required_tools": [
+              "test_runner"
+            ],
+            "acceptance_criteria": [
+              "三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256"
+            ],
+            "checked_rules": [
+              "result-summary",
+              "required-evidence-types",
+              "artifact-contract",
+              "acceptance-results",
+              "tool-use",
+              "required-output-fields"
+            ]
+          }
+        },
+        "step_approval": null,
+        "effects": [],
+        "compensations": []
+      }
+    ],
+    "context_bindings": [],
+    "planning_context": null,
+    "plan": {
+      "id": "plan-50be8f2b4b7d",
+      "mission_id": "mission-555decc13fb3",
+      "version": 1,
+      "summary": "隔离预置计划：只读核验字数 1000–1800，不修改文件、不外发",
+      "rationale": "",
+      "risk_level": "medium",
+      "raw_plan": {
+        "summary": "隔离预置计划：只读核验字数 1000–1800，不修改文件、不外发",
+        "steps": [
+          {
+            "order_index": 1,
+            "title": "核验修订稿：1000–1800 汉字",
+            "agent_id": "ratchet",
+            "task_type": "coordination",
+            "side_effect": false,
+            "max_attempts": 1,
+            "depends_on": [],
+            "required_tools": [
+              "test_runner"
+            ],
+            "deliverables": [
+              "既有修订稿与只读核验结果"
+            ],
+            "evidence_required": [
+              "test_output"
+            ],
+            "acceptance_criteria": [
+              "三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256"
+            ],
+            "output_contract": {
+              "artifact_types": [
+                "document"
+              ],
+              "required_fields": [
+                "summary",
+                "evidence_refs",
+                "risk_notes"
+              ]
+            },
+            "tool_requirements": [
+              {
+                "name": "测试运行器",
+                "category": "verification",
+                "status": "available",
+                "description": "运行后端、单元或集成测试并回传输出。",
+                "evidence_types": [
+                  "test_output"
+                ],
+                "id": "test_runner"
+              }
+            ],
+            "capability_match": true,
+            "risk_level": "medium",
+            "rollback_plan": "停止后续步骤，记录失败原因并等待擎天柱重新规划。",
+            "phase": "planning",
+            "objective": "核验修订稿：1000–1800 汉字",
+            "timeout_seconds": 1200,
+            "risk_class": "L2",
+            "approval_required": false,
+            "resources": [],
+            "idempotency_key": "mission-555decc13fb3:plan:1:step:1",
+            "idempotency_key_generated": true,
+            "compensation": {
+              "type": "manual",
+              "instructions": "停止后续步骤，记录失败原因并等待擎天柱重新规划。"
+            }
+          }
+        ],
+        "schema_version": "2.0",
+        "business_type": "software",
+        "flow_spec": {
+          "flow_key": "software",
+          "version": "1.0.0",
+          "name": "软件开发交付流",
+          "business_type": "software",
+          "phases": [
+            "intake",
+            "planning",
+            "implementation",
+            "verification",
+            "delivery"
+          ],
+          "required_gates": [
+            "plan_quality",
+            "plan_approval",
+            "test_gate",
+            "evidence_gate"
+          ],
+          "budgets": {
+            "max_steps": 12,
+            "max_parallel_steps": 4,
+            "max_replans": 2,
+            "default_timeout_seconds": 1200
+          },
+          "approval_policy": {
+            "plan_approval": true,
+            "delivery_approval": false,
+            "l3_step_approval": true
+          }
+        },
+        "risk_assessment": {
+          "highest_risk": "L2",
+          "by_level": {
+            "L0": 0,
+            "L1": 0,
+            "L2": 1,
+            "L3": 0
+          },
+          "step_approvals": [],
+          "plan_approval_required": true,
+          "delivery_approval_required": false
+        },
+        "approval_policy": {
+          "plan_approval": true,
+          "delivery_approval": false,
+          "l3_step_approval": true,
+          "highest_risk": "L2",
+          "step_approvals": []
+        },
+        "execution_policy": {
+          "runtime": "command-center",
+          "state_machine": "mission-v1",
+          "require_context_snapshot": true,
+          "require_evidence": true,
+          "idempotency_required_for_side_effects": true
+        },
+        "flow_validation": {
+          "status": "warning",
+          "flow_key": "software",
+          "flow_version": "1.0.0",
+          "blockers": [],
+          "warnings": [
+            "领域流程缺少必要环节：架构设计、实现、测试验证"
+          ],
+          "checked_rules": [
+            "flow-budget",
+            "domain-coverage",
+            "risk-class",
+            "approval-policy",
+            "idempotency",
+            "compensation",
+            "resource-conflict"
+          ]
+        },
+        "capability_registry": {
+          "version": "p1-local",
+          "agent_count": 15,
+          "tool_count": 9
+        },
+        "plan_quality": {
+          "status": "warning",
+          "score": 76,
+          "blockers": [],
+          "warnings": [
+            "领域流程缺少必要环节：架构设计、实现、测试验证",
+            "软件任务必须包含架构与测试/评估步骤",
+            "软件任务建议至少包含后端或前端实现步骤"
+          ],
+          "suggestions": [
+            "补齐每一步的工具、产物、验收标准和证据字段后再审批"
+          ],
+          "tool_summary": {
+            "total": 1,
+            "unknown": 0,
+            "unavailable": 0
+          },
+          "flow_key": "software",
+          "flow_version": "1.0.0",
+          "risk_assessment": {
+            "highest_risk": "L2",
+            "by_level": {
+              "L0": 0,
+              "L1": 0,
+              "L2": 1,
+              "L3": 0
+            },
+            "step_approvals": [],
+            "plan_approval_required": true,
+            "delivery_approval_required": false
+          },
+          "checked_rules": [
+            "schema",
+            "business-flow",
+            "risk-policy",
+            "idempotency",
+            "compensation",
+            "agent-capability",
+            "tool-registry",
+            "dependency-dag",
+            "deliverables",
+            "acceptance",
+            "evidence",
+            "domain-coverage"
+          ]
+        }
+      },
+      "status": "approved",
+      "created_by_agent_id": "optimus",
+      "created_at": "2026-10-05T15:47:01.626410+00:00",
+      "plan_quality": {
+        "status": "warning",
+        "score": 76,
+        "blockers": [],
+        "warnings": [
+          "领域流程缺少必要环节：架构设计、实现、测试验证",
+          "软件任务必须包含架构与测试/评估步骤",
+          "软件任务建议至少包含后端或前端实现步骤"
+        ],
+        "suggestions": [
+          "补齐每一步的工具、产物、验收标准和证据字段后再审批"
+        ],
+        "tool_summary": {
+          "total": 1,
+          "unknown": 0,
+          "unavailable": 0
+        },
+        "flow_key": "software",
+        "flow_version": "1.0.0",
+        "risk_assessment": {
+          "highest_risk": "L2",
+          "by_level": {
+            "L0": 0,
+            "L1": 0,
+            "L2": 1,
+            "L3": 0
+          },
+          "step_approvals": [],
+          "plan_approval_required": true,
+          "delivery_approval_required": false
+        },
+        "checked_rules": [
+          "schema",
+          "business-flow",
+          "risk-policy",
+          "idempotency",
+          "compensation",
+          "agent-capability",
+          "tool-registry",
+          "dependency-dag",
+          "deliverables",
+          "acceptance",
+          "evidence",
+          "domain-coverage"
+        ]
+      }
+    },
+    "workflow_run": {
+      "id": "workflow-8d71f85cfac7",
+      "mission_id": "mission-555decc13fb3",
+      "mission_run_id": "mrun-313819cd618547ef",
+      "correlation_id": "mission-8ecdd6f5852045ef",
+      "plan_version": 1,
+      "runtime": "legacy",
+      "flow_key": "software",
+      "highest_risk": "L2",
+      "selection_reason": "feature_disabled",
+      "thread_id": "workflow-8d71f85cfac7",
+      "checkpoint_namespace": "pilot",
+      "status": "ready",
+      "attempts": 0,
+      "next_attempt_at": "2026-10-05T15:48:58.130787+00:00",
+      "lease_owner": null,
+      "lease_token": null,
+      "lease_expires_at": null,
+      "last_error": null,
+      "created_at": "2026-10-05T15:47:01.630519+00:00",
+      "updated_at": "2026-10-05T15:48:58.130791+00:00",
+      "completed_at": "2026-10-05T15:47:01.630519+00:00",
+      "input": {
+        "workflow_run_id": "workflow-8d71f85cfac7",
+        "mission_run_id": "mrun-313819cd618547ef",
+        "correlation_id": "mission-8ecdd6f5852045ef",
+        "mission_id": "mission-555decc13fb3",
+        "plan_version": 1,
+        "flow_key": "software",
+        "highest_risk": "L2",
+        "context_pack_id": "",
+        "status": "ready",
+        "evidence_refs": []
+      },
+      "state": {
+        "workflow_run_id": "workflow-8d71f85cfac7",
+        "mission_run_id": "mrun-313819cd618547ef",
+        "correlation_id": "mission-8ecdd6f5852045ef",
+        "mission_id": "mission-555decc13fb3",
+        "plan_version": 1,
+        "flow_key": "software",
+        "highest_risk": "L2",
+        "context_pack_id": "",
+        "status": "ready",
+        "evidence_refs": []
+      },
+      "checkpoint": {}
+    },
+    "artifacts": [
+      {
+        "id": "artifact-91bb38c78aad2b1a0b15",
+        "mission_id": "mission-555decc13fb3",
+        "mission_run_id": "mrun-313819cd618547ef",
+        "correlation_id": "mission-8ecdd6f5852045ef",
+        "plan_version": 1,
+        "step_id": "step-9957ece62dc0",
+        "work_run_id": null,
+        "artifact_type": "document",
+        "title": "既有修订稿",
+        "uri": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md",
+        "content_hash": "60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee",
+        "fingerprint": "91bb38c78aad2b1a0b153fb2e84d937c4ea8814d61940ecc75b00ef1871752de",
+        "created_at": "2026-10-05T15:49:34.759528+00:00",
+        "metadata": {}
+      }
+    ],
+    "evidence": [
+      {
+        "id": "evidence-ea645c936c56a4fb71fe",
+        "mission_id": "mission-555decc13fb3",
+        "mission_run_id": "mrun-313819cd618547ef",
+        "correlation_id": "mission-8ecdd6f5852045ef",
+        "plan_version": 1,
+        "step_id": "step-9957ece62dc0",
+        "artifact_id": "artifact-91bb38c78aad2b1a0b15",
+        "evidence_type": "test_output",
+        "source_ref": "exec:p6-readonly",
+        "summary": "汉字数=174（不在1000-1800范围）；三节齐全（目标✓、风险与应对✓、验收✓）；SHA-256=60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee",
+        "collected_by": "ratchet",
+        "collected_at": "2026-10-05T15:49:34.761880+00:00",
+        "confidence": 1.0,
+        "fingerprint": "ea645c936c56a4fb71fe6c67576b5cf905ce5af58a6b2ff1085a01f201990ba4",
+        "metadata": {}
+      }
+    ],
+    "acceptance_gates": [
+      {
+        "id": "gate-03dd153ea3d2a9717995",
+        "mission_id": "mission-555decc13fb3",
+        "mission_run_id": "mrun-313819cd618547ef",
+        "correlation_id": "mission-8ecdd6f5852045ef",
+        "plan_version": 1,
+        "step_id": "step-9957ece62dc0",
+        "gate_type": "execution_evidence",
+        "mode": "strict",
+        "enforced": true,
+        "status": "blocked",
+        "accepted": false,
+        "score": 0,
+        "evaluated_by": "ratchet",
+        "evaluated_at": "2026-10-05T15:49:34.767497+00:00",
+        "blockers": [
+          "步骤业务结果为 blocked，不得标记为已完成",
+          "验收结果明确失败：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256",
+          "验收标准未逐项通过：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256",
+          "未证明使用必需工具：test_runner"
+        ],
+        "warnings": [],
+        "details": {
+          "status": "blocked",
+          "score": 0,
+          "mode": "strict",
+          "enforced": true,
+          "accepted": false,
+          "executor_success": true,
+          "business_outcome": "blocked",
+          "hard_blockers": [
+            "步骤业务结果为 blocked，不得标记为已完成",
+            "验收结果明确失败：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256"
+          ],
+          "blockers": [
+            "步骤业务结果为 blocked，不得标记为已完成",
+            "验收结果明确失败：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256",
+            "验收标准未逐项通过：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256",
+            "未证明使用必需工具：test_runner"
+          ],
+          "warnings": [],
+          "evidence_refs": [
+            "exec:p6-readonly"
+          ],
+          "required_evidence": [
+            "test_output"
+          ],
+          "required_artifact_types": [
+            "document"
+          ],
+          "required_tools": [
+            "test_runner"
+          ],
+          "acceptance_criteria": [
+            "三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256"
+          ],
+          "checked_rules": [
+            "result-summary",
+            "required-evidence-types",
+            "artifact-contract",
+            "acceptance-results",
+            "tool-use",
+            "required-output-fields"
+          ]
+        }
+      }
+    ],
+    "step_approvals": [],
+    "effects": [],
+    "compensations": [],
+    "delivery_gate": null,
+    "approval": {
+      "id": "approval-267d2e1eb758",
+      "mission_id": "mission-555decc13fb3",
+      "plan_version": 1,
+      "decision": "approved",
+      "requested_at": "2026-10-05T15:47:01.628199+00:00",
+      "decided_at": "2026-10-05T15:48:58.117006+00:00",
+      "decided_by": "phase6-browser",
+      "comment": "批准隔离反例：只读既有修订稿；实际174字不满足1000–1800时必须拒绝，不修改文件、不外发。",
+      "external_message_id": null
+    },
+    "events": [
+      {
+        "id": "event-d6771c58d9c0",
+        "mission_id": "mission-555decc13fb3",
+        "mission_run_id": "mrun-313819cd618547ef",
+        "correlation_id": "mission-8ecdd6f5852045ef",
+        "run_sequence": 1,
+        "event_type": "mission_received",
+        "from_status": null,
+        "to_status": "received",
+        "actor": "phase6-lab",
+        "detail": "只读核验既有修订稿；先验证不满足字数要求时拒绝，再按界面反馈重规划并审批恢复。",
+        "event_key": null,
+        "metadata": {
+          "message_id": "msg-51c40421c904",
+          "channel": "dashboard",
+          "preplanned": false,
+          "mission_type": "software",
+          "project_id": "",
+          "intent_confidence": 1.0
+        },
+        "created_at": "2026-10-05T15:47:01.580231+00:00"
+      },
+      {
+        "id": "event-ca3780451f6e",
+        "mission_id": "mission-555decc13fb3",
+        "mission_run_id": "mrun-313819cd618547ef",
+        "correlation_id": "mission-8ecdd6f5852045ef",
+        "run_sequence": 2,
+        "event_type": "planning_started",
+        "from_status": "received",
+        "to_status": "planning",
+        "actor": "phase6-plan-fixture",
+        "detail": "Optimus is producing an approval-gated plan",
+        "event_key": null,
+        "metadata": {},
+        "created_at": "2026-10-05T15:47:01.621928+00:00"
+      },
+      {
+        "id": "event-64fc7f9fef76",
+        "mission_id": "mission-555decc13fb3",
+        "mission_run_id": "mrun-313819cd618547ef",
+        "correlation_id": "mission-8ecdd6f5852045ef",
+        "run_sequence": 3,
+        "event_type": "plan_proposed",
+        "from_status": "planning",
+        "to_status": "awaiting_approval",
+        "actor": "optimus",
+        "detail": "隔离预置计划：只读核验字数 1000–1800，不修改文件、不外发",
+        "event_key": null,
+        "metadata": {
+          "version": 1,
+          "step_count": 1,
+          "flow_key": "software",
+          "flow_version": "1.0.0",
+          "highest_risk": "L2",
+          "quality_score": 76,
+          "workflow_runtime": "legacy",
+          "workflow_runtime_reason": "feature_disabled"
+        },
+        "created_at": "2026-10-05T15:47:01.632177+00:00"
+      },
+      {
+        "id": "event-63525f7942ef",
+        "mission_id": "mission-555decc13fb3",
+        "mission_run_id": "mrun-313819cd618547ef",
+        "correlation_id": "mission-8ecdd6f5852045ef",
+        "run_sequence": 4,
+        "event_type": "plan_approved",
+        "from_status": "awaiting_approval",
+        "to_status": "dispatching",
+        "actor": "phase6-browser",
+        "detail": "批准隔离反例：只读既有修订稿；实际174字不满足1000–1800时必须拒绝，不修改文件、不外发。",
+        "event_key": null,
+        "metadata": {
+          "version": 1
+        },
+        "created_at": "2026-10-05T15:48:58.134347+00:00"
+      },
+      {
+        "id": "event-426f04c6559a",
+        "mission_id": "mission-555decc13fb3",
+        "mission_run_id": "mrun-313819cd618547ef",
+        "correlation_id": "mission-8ecdd6f5852045ef",
+        "run_sequence": 5,
+        "event_type": "state_changed",
+        "from_status": "dispatching",
+        "to_status": "running",
+        "actor": "command-center",
+        "detail": "Approved plan entered execution",
+        "event_key": null,
+        "metadata": {},
+        "created_at": "2026-10-05T15:48:58.384793+00:00"
+      },
+      {
+        "id": "event-6bdff8b6e04a",
+        "mission_id": "mission-555decc13fb3",
+        "mission_run_id": "mrun-313819cd618547ef",
+        "correlation_id": "mission-8ecdd6f5852045ef",
+        "run_sequence": 6,
+        "event_type": "step_started",
+        "from_status": "running",
+        "to_status": "running",
+        "actor": "ratchet",
+        "detail": "核验修订稿：1000–1800 汉字",
+        "event_key": null,
+        "metadata": {
+          "step_id": "step-9957ece62dc0",
+          "step_approval_id": null
+        },
+        "created_at": "2026-10-05T15:48:58.422088+00:00"
+      },
+      {
+        "id": "event-4106a786a731",
+        "mission_id": "mission-555decc13fb3",
+        "mission_run_id": "mrun-313819cd618547ef",
+        "correlation_id": "mission-8ecdd6f5852045ef",
+        "run_sequence": 7,
+        "event_type": "step_evidence_rejected",
+        "from_status": "running",
+        "to_status": "running",
+        "actor": "ratchet",
+        "detail": "核验修订稿：1000–1800 汉字",
+        "event_key": null,
+        "metadata": {
+          "step_id": "step-9957ece62dc0",
+          "result": {
+            "success": true,
+            "output": "```json\n{\n  \"outcome\": \"blocked\",\n  \"summary\": \"文件存在且三个必需小节（目标、风险与应对、验收）齐全，SHA-256 已成功计算。但按 [\\\\u4e00-\\\\u9fff] 统计的汉字数为 174，不在合同要求的 1000–1800 范围内，验收项 fail，整体 blocked。\",\n  \"tools_used\": [\"exec:p6-readonly\"],\n  \"artifacts\": [\n    {\n      \"artifact_key\": \"a1\",\n      \"artifact_type\": \"document\",\n      \"title\": \"既有修订稿\",\n      \"uri\": \"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md\",\n      \"content_hash\": \"60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee\"\n    }\n  ],\n  \"evidence\": [\n    {\n      \"requirement_id\": \"ev-c2e90d8a1b011f5c1314\",\n      \"evidence_type\": \"test_output\",\n      \"source_ref\": \"exec:p6-readonly\",\n      \"summary\": \"汉字数=174（不在1000-1800范围）；三节齐全（目标✓、风险与应对✓、验收✓）；SHA-256=60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee\",\n      \"artifact_key\": \"a1\"\n    }\n  ],\n  \"acceptance_results\": [\n    {\n      \"criterion_id\": \"ac-73b9be9c1bb39b3755a5\",\n      \"criterion\": \"三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256\",\n      \"status\": \"fail\",\n      \"evidence_refs\": [\"exec:p6-readonly\"]\n    }\n  ],\n  \"side_effects\": [],\n  \"risk_notes\": [\n    \"汉字数 174 远低于合同下限 1000，差距显著；可能是文件内容为大纲/骨架结构而非正文，需人工确认是否为预期状态或需要补充内容。\"\n  ]\n}\n```",
+            "error": "",
+            "duration_ms": 0,
+            "exit_code": 0,
+            "output_source": "payloads[0]",
+            "output_candidates": [
+              {
+                "source": "payloads[0]",
+                "text": "```json\n{\n  \"outcome\": \"blocked\",\n  \"summary\": \"文件存在且三个必需小节（目标、风险与应对、验收）齐全，SHA-256 已成功计算。但按 [\\\\u4e00-\\\\u9fff] 统计的汉字数为 174，不在合同要求的 1000–1800 范围内，验收项 fail，整体 blocked。\",\n  \"tools_used\": [\"exec:p6-readonly\"],\n  \"artifacts\": [\n    {\n      \"artifact_key\": \"a1\",\n      \"artifact_type\": \"document\",\n      \"title\": \"既有修订稿\",\n      \"uri\": \"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md\",\n      \"content_hash\": \"60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee\"\n    }\n  ],\n  \"evidence\": [\n    {\n      \"requirement_id\": \"ev-c2e90d8a1b011f5c1314\",\n      \"evidence_type\": \"test_output\",\n      \"source_ref\": \"exec:p6-readonly\",\n      \"summary\": \"汉字数=174（不在1000-1800范围）；三节齐全（目标✓、风险与应对✓、验收✓）；SHA-256=60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee\",\n      \"artifact_key\": \"a1\"\n    }\n  ],\n  \"acceptance_results\": [\n    {\n      \"criterion_id\": \"ac-73b9be9c1bb39b3755a5\",\n      \"criterion\": \"三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256\",\n      \"status\": \"fail\",\n      \"evidence_refs\": [\"exec:p6-readonly\"]\n    }\n  ],\n  \"side_effects\": [],\n  \"risk_notes\": [\n    \"汉字数 174 远低于合同下限 1000，差距显著；可能是文件内容为大纲/骨架结构而非正文，需人工确认是否为预期状态或需要补充内容。\"\n  ]\n}\n```"
+              },
+              {
+                "source": "stdout",
+                "text": "{\n  \"runId\": \"45766d14-5741-4115-a62a-c92d22446d23\",\n  \"status\": \"ok\",\n  \"summary\": \"completed\",\n  \"result\": {\n    \"payloads\": [\n      {\n        \"text\": \"```json\\n{\\n  \\\"outcome\\\": \\\"blocked\\\",\\n  \\\"summary\\\": \\\"文件存在且三个必需小节（目标、风险与应对、验收）齐全，SHA-256 已成功计算。但按 [\\\\\\\\u4e00-\\\\\\\\u9fff] 统计的汉字数为 174，不在合同要求的 1000–1800 范围内，验收项 fail，整体 blocked。\\\",\\n  \\\"tools_used\\\": [\\\"exec:p6-readonly\\\"],\\n  \\\"artifacts\\\": [\\n    {\\n      \\\"artifact_key\\\": \\\"a1\\\",\\n      \\\"artifact_type\\\": \\\"document\\\",\\n      \\\"title\\\": \\\"既有修订稿\\\",\\n      \\\"uri\\\": \\\"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md\\\",\\n      \\\"content_hash\\\": \\\"60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee\\\"\\n    }\\n  ],\\n  \\\"evidence\\\": [\\n    {\\n      \\\"requirement_id\\\": \\\"ev-c2e90d8a1b011f5c1314\\\",\\n      \\\"evidence_type\\\": \\\"test_output\\\",\\n      \\\"source_ref\\\": \\\"exec:p6-readonly\\\",\\n      \\\"summary\\\": \\\"汉字数=174（不在1000-1800范围）；三节齐全（目标✓、风险与应对✓、验收✓）；SHA-256=60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee\\\",\\n      \\\"artifact_key\\\": \\\"a1\\\"\\n    }\\n  ],\\n  \\\"acceptance_results\\\": [\\n    {\\n      \\\"criterion_id\\\": \\\"ac-73b9be9c1bb39b3755a5\\\",\\n      \\\"criterion\\\": \\\"三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256\\\",\\n      \\\"status\\\": \\\"fail\\\",\\n      \\\"evidence_refs\\\": [\\\"exec:p6-readonly\\\"]\\n    }\\n  ],\\n  \\\"side_effects\\\": [],\\n  \\\"risk_notes\\\": [\\n    \\\"汉字数 174 远低于合同下限 1000，差距显著；可能是文件内容为大纲/骨架结构而非正文，需人工确认是否为预期状态或需要补充内容。\\\"\\n  ]\\n}\\n```\",\n        \"mediaUrl\": null\n      }\n    ],\n    \"meta\": {\n      \"durationMs\": 34337,\n      \"agentMeta\": {\n        \"sessionId\": \"db2464e6-71de-4e74-bebf-3d053045521d\",\n        \"sessionFile\": \"agent:ratchet:phase6-ui-d924538c1a4f47ab8d5a4d7df73828d5\",\n        \"provider\": \"bailian\",\n        \"model\": \"qwen3.7-plus\",\n        \"contextTokens\": 1000000,\n        \"contextTokensSource\": \"resolved\",\n        \"agentHarnessId\": \"openclaw\",\n        \"credentialSource\": {\n          \"kind\": \"profile\"\n        },\n        \"usage\": {\n          \"input\": 16651,\n          \"output\": 1776,\n          \"cacheRead\": 14976,\n          \"reasoningTokens\": 755,\n          \"total\": 33403,\n          \"cost\": {\n            \"total\": 0\n          }\n        },\n        \"lastCallUsage\": {\n          \"input\": 1136,\n          \"output\": 984,\n          \"cacheRead\": 14976,\n          \"cacheWrite\": 0,\n          \"cost\": {\n            \"total\": 0\n          },\n          \"reasoningTokens\": 368,\n          \"total\": 17096\n        },\n        \"promptTokens\": 16112,\n        \"codeModeEngaged\": false,\n        \"assistantTurns\": 2,\n        \"costUsd\": 0,\n        \"terminalReceipt\": {\n          \"runId\": \"45766d14-5741-4115-a62a-c92d22446d23\",\n          \"sessionId\": \"db2464e6-71de-4e74-bebf-3d053045521d\",\n          \"turnId\": \"45766d14-5741-4115-a62a-c92d22446d23\",\n          \"requested\": {\n            \"provider\": \"bailian\",\n            \"model\": \"qwen3.7-plus\"\n          },\n          \"effective\": {\n            \"provider\": \"bailian\",\n            \"model\": \"qwen3.7-plus\",\n            \"responseModel\": \"qwen3.7-plus\"\n          },\n          \"successfulToolNames\": [\n            \"exec\"\n          ],\n          \"rerouted\": false\n        }\n      },\n      \"aborted\": false,\n      \"systemPromptReport\": {\n        \"source\": \"run\",\n        \"generatedAt\": 1791215340987,\n        \"sessionId\": \"db2464e6-71de-4e74-bebf-3d053045521d\",\n        \"sessionKey\": \"agent:ratchet:phase6-ui-d924538c1a4f47ab8d5a4d7df73828d5\",\n        \"provider\": \"bailian\",\n        \"model\": \"qwen3.7-plus\",\n        \"workspaceDir\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace\",\n        \"bootstrapMaxChars\": 20000,\n        \"bootstrapTotalMaxChars\": 60000,\n        \"bootstrapTruncation\": {\n          \"warningMode\": \"always\",\n          \"warningShown\": false,\n          \"truncatedFiles\": 0,\n          \"nearLimitFiles\": 0,\n          \"totalNearLimit\": false\n        },\n        \"sandbox\": {\n          \"mode\": \"all\",\n          \"sandboxed\": true\n        },\n        \"systemPrompt\": {\n          \"chars\": 21177,\n          \"hash\": \"676cbc5783ebaa7c907f9dcf43bc365feae4f4dcdb7b3f907edb953ddd18fc7a\",\n          \"projectContextChars\": 5878,\n          \"nonProjectContextChars\": 15299\n        },\n        \"injectedWorkspaceFiles\": [\n          {\n            \"name\": \"AGENTS.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/AGENTS.md\",\n            \"missing\": false,\n            \"rawChars\": 2540,\n            \"injectedChars\": 2540,\n            \"truncated\": false\n          },\n          {\n            \"name\": \"SOUL.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/SOUL.md\",\n            \"missing\": false,\n            \"rawChars\": 925,\n            \"injectedChars\": 925,\n            \"truncated\": false\n          },\n          {\n            \"name\": \"IDENTITY.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/IDENTITY.md\",\n            \"missing\": false,\n            \"rawChars\": 620,\n            \"injectedChars\": 620,\n            \"truncated\": false\n          },\n          {\n            \"name\": \"USER.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/USER.md\",\n            \"missing\": false,\n            \"rawChars\": 130,\n            \"injectedChars\": 130,\n            \"truncated\": false\n          },\n          {\n            \"name\": \"MEMORY.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/MEMORY.md\",\n            \"missing\": false,\n            \"rawChars\": 957,\n            \"injectedChars\": 957,\n            \"truncated\": false\n          }\n        ],\n        \"skills\": {\n          \"promptChars\": 6113,\n          \"hash\": \"d0e9d3753ccc057d73133dc751a44978b09f911c06fabca01f300712210d5e23\",\n          \"entries\": [\n            {\n              \"name\": \"alphastar-conservative-offline\",\n              \"blockChars\": 391\n            },\n            {\n              \"name\": \"alphastar-contract-policy\",\n              \"blockChars\": 355\n            },\n            {\n              \"name\": \"alphastar-data-curriculum\",\n              \"blockChars\": 341\n            },\n            {\n              \"name\": \"alphastar-human-prior\",\n              \"blockChars\": 338\n            },\n            {\n              \"name\": \"alphastar-pfsp-curriculum\",\n              \"blockChars\": 341\n            },\n            {\n              \"name\": \"alphastar-robust-evaluation\",\n              \"blockChars\": 362\n            },\n            {\n              \"name\": \"alphastar-role-league\",\n              \"blockChars\": 358\n            },\n            {\n              \"name\": \"alphastar-split-off-policy\",\n              \"blockChars\": 369\n            },\n            {\n              \"name\": \"diagram-maker\",\n              \"blockChars\": 262\n            },\n            {\n              \"name\": \"feishu-doc\",\n              \"blockChars\": 275\n            },\n            {\n              \"name\": \"feishu-drive\",\n              \"blockChars\": 302\n            },\n            {\n              \"name\": \"feishu-perm\",\n              \"blockChars\": 313\n            },\n            {\n              \"name\": \"feishu-wiki\",\n              \"blockChars\": 281\n            },\n            {\n              \"name\": \"github\",\n              \"blockChars\": 256\n            },\n            {\n              \"name\": \"ninja-dispatch\",\n              \"blockChars\": 353\n            },\n            {\n              \"name\": \"session-logs\",\n              \"blockChars\": 249\n            },\n            {\n              \"name\": \"skill-creator\",\n              \"blockChars\": 280\n            },\n            {\n              \"name\": \"tmux\",\n              \"blockChars\": 265\n            }\n          ]\n        },\n        \"tools\": {\n          \"listChars\": 0,\n          \"schemaChars\": 9578,\n          \"entries\": [\n            {\n              \"name\": \"read\",\n              \"summaryChars\": 164,\n              \"summaryHash\": \"d136f5b09e28d671addad4ca800b75b8aa6a36002bc739ead964f618d3e34829\",\n              \"schemaChars\": 481,\n              \"schemaHash\": \"b1b9b637dfe1dfade40f50c37cf840a298f1992b534cb9425b7470233a6b0cbb\",\n              \"propertiesCount\": 5\n            },\n            {\n              \"name\": \"edit\",\n              \"summaryChars\": 130,\n              \"summaryHash\": \"4149500b1f6501ec6450e4c048bdb6844764dd4a888a10846726cbbc7256152e\",\n              \"schemaChars\": 501,\n              \"schemaHash\": \"adf3140833ca927b84c66c989d6833fdcbd9de011dd2ffc59f9a2c4d3c25f127\",\n              \"propertiesCount\": 2\n            },\n            {\n              \"name\": \"write\",\n              \"summaryChars\": 49,\n              \"summaryHash\": \"f9ce3d8ac929a51498c03331b97c59bfaa2bb4d25580a5ddf0102e6a8e173aec\",\n              \"schemaChars\": 191,\n              \"schemaHash\": \"b61d2da23febf5fbda55e391526f36d283e9e9fb7f1a1dbadcf5c618a0632287\",\n              \"propertiesCount\": 2\n            },\n            {\n              \"name\": \"apply_patch\",\n              \"summaryChars\": 71,\n              \"summaryHash\": \"5c1173efe93d080a386a23216bc3e58db2e0033eb3ddea697eb2439938b7cae4\",\n              \"schemaChars\": 153,\n              \"schemaHash\": \"05521268363ff4f191472c90d69ef08a503ba9acf1d2febc50b3ee68db32ab65\",\n              \"propertiesCount\": 1\n            },\n            {\n              \"name\": \"exec\",\n              \"summaryChars\": 366,\n              \"summaryHash\": \"6a41ebbc7cd1fae376a497c1bb1662c40a5faa87e5f811bff3ae37e04fb20973\",\n              \"schemaChars\": 1122,\n              \"schemaHash\": \"29de9f248d3d8c84fbb84b347d4a46e07e766af8d1d6cabdbd8fc05aceea77e8\",\n              \"propertiesCount\": 11\n            },\n            {\n              \"name\": \"process\",\n              \"summaryChars\": 190,\n              \"summaryHash\": \"75fd9c7b8d560599081ab2621e4f897babc118254cf439bd8329a60a905a9ef1\",\n              \"schemaChars\": 1164,\n              \"schemaHash\": \"6cf3281369349e15ea532e644c8ec7f94c96fa6a4e3287272c8cfe90b0960516\",\n              \"propertiesCount\": 12\n            },\n            {\n              \"name\": \"sessions_list\",\n              \"summaryChars\": 244,\n              \"summaryHash\": \"1e39ee0ccc7ce3c6f26fe067c389bcb0da4ba845e5030e5088ab8e4027df963c\",\n              \"schemaChars\": 518,\n              \"schemaHash\": \"e878e741a7122c61cfd46c97828e7281414afb487b2e9f0c718578bdf9bf30e5\",\n              \"propertiesCount\": 10\n            },\n            {\n              \"name\": \"sessions_history\",\n              \"summaryChars\": 343,\n              \"summaryHash\": \"cf78e38bd7308164a1b54994d87e3a0511a9108d8726f223da9862197e72b4d2\",\n              \"schemaChars\": 337,\n              \"schemaHash\": \"37ca1edd9f92288e5569f580721464b9efed5ccc64fdba8709d7f66db3a7a650\",\n              \"propertiesCount\": 7\n            },\n            {\n              \"name\": \"sessions_search\",\n              \"summaryChars\": 177,\n              \"summaryHash\": \"334f96a1cafd9325d695608fe065a4a00888f6b55279d396590575b39e62728a\",\n              \"schemaChars\": 179,\n              \"schemaHash\": \"6545acec45e540d9c7d7d76b79084ce439ba35f4cd626fa4f8ec406230f0913d\",\n              \"propertiesCount\": 3\n            },\n            {\n              \"name\": \"sessions_send\",\n              \"summaryChars\": 691,\n              \"summaryHash\": \"9b4359d4a6b37c240c25c4692cf4c92bcedc5d8628daef3b0d30fd701ec0c29f\",\n              \"schemaChars\": 302,\n              \"schemaHash\": \"204249b04e35552d80609d8e7c40c461cf550564dc4ee6e573d0e00f05af84e2\",\n              \"propertiesCount\": 6\n            },\n            {\n              \"name\": \"sessions_spawn\",\n              \"summaryChars\": 1752,\n              \"summaryHash\": \"52d02cf81130ec020d96937cdd0862b868a00a64a6fed4e9291eaad6b978a922\",\n              \"schemaChars\": 2882,\n              \"schemaHash\": \"0792373d3763efc2d27aa0fabb31b84ac91b51deb3ecc2bf474589e2d679db9d\",\n              \"propertiesCount\": 21\n            },\n            {\n              \"name\": \"sessions_yield\",\n              \"summaryChars\": 149,\n              \"summaryHash\": \"54c3073a05fc6c0d2cfaec6a7aa0d9ed732a932a80f760e06083535584cca63e\",\n              \"schemaChars\": 259,\n              \"schemaHash\": \"affee0fae7ad36a16fa1e339d4fe9"
+              }
+            ],
+            "outcome": "blocked",
+            "summary": "文件存在且三个必需小节（目标、风险与应对、验收）齐全，SHA-256 已成功计算。但按 [\\u4e00-\\u9fff] 统计的汉字数为 174，不在合同要求的 1000–1800 范围内，验收项 fail，整体 blocked。",
+            "artifacts": [
+              {
+                "artifact_key": "a1",
+                "artifact_type": "document",
+                "title": "既有修订稿",
+                "uri": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md",
+                "content_hash": "60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee",
+                "metadata": {}
+              }
+            ],
+            "evidence": [
+              {
+                "evidence_type": "test_output",
+                "requirement_id": "ev-c2e90d8a1b011f5c1314",
+                "source_ref": "exec:p6-readonly",
+                "summary": "汉字数=174（不在1000-1800范围）；三节齐全（目标✓、风险与应对✓、验收✓）；SHA-256=60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee",
+                "artifact_key": "a1",
+                "confidence": 1.0,
+                "metadata": {}
+              }
+            ],
+            "acceptance_results": [
+              {
+                "criterion": "三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256",
+                "criterion_id": "ac-73b9be9c1bb39b3755a5",
+                "status": "fail",
+                "evidence_refs": [
+                  "exec:p6-readonly"
+                ],
+                "notes": ""
+              }
+            ],
+            "tools_used": [
+              "exec:p6-readonly"
+            ],
+            "risk_notes": "汉字数 174 远低于合同下限 1000，差距显著；可能是文件内容为大纲/骨架结构而非正文，需人工确认是否为预期状态或需要补充内容。",
+            "structured_output": {
+              "outcome": "blocked",
+              "summary": "文件存在且三个必需小节（目标、风险与应对、验收）齐全，SHA-256 已成功计算。但按 [\\u4e00-\\u9fff] 统计的汉字数为 174，不在合同要求的 1000–1800 范围内，验收项 fail，整体 blocked。",
+              "tools_used": [
+                "exec:p6-readonly"
+              ],
+              "artifacts": [
+                {
+                  "artifact_key": "a1",
+                  "artifact_type": "document",
+                  "title": "既有修订稿",
+                  "uri": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md",
+                  "content_hash": "60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee"
+                }
+              ],
+              "evidence": [
+                {
+                  "requirement_id": "ev-c2e90d8a1b011f5c1314",
+                  "evidence_type": "test_output",
+                  "source_ref": "exec:p6-readonly",
+                  "summary": "汉字数=174（不在1000-1800范围）；三节齐全（目标✓、风险与应对✓、验收✓）；SHA-256=60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee",
+                  "artifact_key": "a1"
+                }
+              ],
+              "acceptance_results": [
+                {
+                  "criterion_id": "ac-73b9be9c1bb39b3755a5",
+                  "criterion": "三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256",
+                  "status": "fail",
+                  "evidence_refs": [
+                    "exec:p6-readonly"
+                  ]
+                }
+              ],
+              "side_effects": [],
+              "risk_notes": [
+                "汉字数 174 远低于合同下限 1000，差距显著；可能是文件内容为大纲/骨架结构而非正文，需人工确认是否为预期状态或需要补充内容。"
+              ]
+            },
+            "evidence_refs": [
+              "exec:p6-readonly"
+            ],
+            "receipt_preflight": {
+              "schema_version": "1.0",
+              "strategy": "existing_evidence_only",
+              "input_sha256": "156f30777288487640f4dd23a9bbc6487d997ef5ef4a88902c28c9a9f744c07e",
+              "changes": [],
+              "strict_accepted_before": false,
+              "strict_accepted": false,
+              "blockers": [
+                "步骤业务结果为 blocked，不得标记为已完成",
+                "验收结果明确失败：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256",
+                "验收标准未逐项通过：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256",
+                "未证明使用必需工具：test_runner"
+              ],
+              "execution_repeated": false
+            },
+            "execution_quality": {
+              "status": "blocked",
+              "score": 0,
+              "mode": "strict",
+              "enforced": true,
+              "accepted": false,
+              "executor_success": true,
+              "business_outcome": "blocked",
+              "hard_blockers": [
+                "步骤业务结果为 blocked，不得标记为已完成",
+                "验收结果明确失败：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256"
+              ],
+              "blockers": [
+                "步骤业务结果为 blocked，不得标记为已完成",
+                "验收结果明确失败：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256",
+                "验收标准未逐项通过：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256",
+                "未证明使用必需工具：test_runner"
+              ],
+              "warnings": [],
+              "evidence_refs": [
+                "exec:p6-readonly"
+              ],
+              "required_evidence": [
+                "test_output"
+              ],
+              "required_artifact_types": [
+                "document"
+              ],
+              "required_tools": [
+                "test_runner"
+              ],
+              "acceptance_criteria": [
+                "三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256"
+              ],
+              "checked_rules": [
+                "result-summary",
+                "required-evidence-types",
+                "artifact-contract",
+                "acceptance-results",
+                "tool-use",
+                "required-output-fields"
+              ]
+            },
+            "side_effects": [],
+            "effect_quality": {
+              "status": "not_applicable",
+              "accepted": true,
+              "enforced": false,
+              "blockers": [],
+              "warnings": []
+            },
+            "completion_decision": {
+              "executor_success": true,
+              "accepted": false,
+              "retry_scheduled": false,
+              "attempt": 1,
+              "max_attempts": 1,
+              "receipt_retry_safe": true,
+              "enforcement": {
+                "mode": "strict",
+                "enforced": true,
+                "reason": "strict_mode",
+                "flow_key": "software",
+                "highest_risk": "L2",
+                "runtime": "legacy"
+              },
+              "effect_quality": {
+                "status": "not_applicable",
+                "accepted": true,
+                "enforced": false,
+                "blockers": [],
+                "warnings": []
+              }
+            },
+            "effect_ids": []
+          },
+          "next_step_status": "failed"
+        },
+        "created_at": "2026-10-05T15:49:34.773272+00:00"
+      },
+      {
+        "id": "event-d7a9d6357fa9",
+        "mission_id": "mission-555decc13fb3",
+        "mission_run_id": "mrun-313819cd618547ef",
+        "correlation_id": "mission-8ecdd6f5852045ef",
+        "run_sequence": 8,
+        "event_type": "mission_blocked",
+        "from_status": "running",
+        "to_status": "waiting_feedback",
+        "actor": "command-center",
+        "detail": "核验修订稿：1000–1800 汉字：步骤业务结果为 blocked，不得标记为已完成；验收结果明确失败：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256；验收标准未逐项通过：三个小节齐全，汉字数在1000至1800之间，且返回实际SHA-256；未证明使用必需工具：test_runner",
+        "event_key": null,
+        "metadata": {
+          "counts": {
+            "failed": 1
+          }
+        },
+        "created_at": "2026-10-05T15:49:34.791099+00:00"
+      }
+    ],
+    "messages": [
+      {
+        "id": "msg-51c40421c904",
+        "conversation_id": "conv-6efa39bcdec7",
+        "mission_id": "mission-555decc13fb3",
+        "direction": "inbound",
+        "external_message_id": "ui-6e9a85d84b164c77a9e0209c96017c6d",
+        "reply_to_external_message_id": null,
+        "sender_id": "phase6-lab",
+        "content": "只读核验既有修订稿；先验证不满足字数要求时拒绝，再按界面反馈重规划并审批恢复。",
+        "message_type": "text",
+        "intent_type": "software_project",
+        "intent_confidence": 1.0,
+        "intent_reason": "由已认证的项目任务入口显式创建",
+        "execution_requested": 1,
+        "routing_status": "mission_created",
+        "target_agent_id": "optimus",
+        "resolved_project_id": null,
+        "reply_to_command_message_id": null,
+        "metadata": {
+          "project_id": "",
+          "title": "P6 隔离界面：严格拒绝与恢复",
+          "context": {},
+          "intent_type": "software_project",
+          "execution_requested": true,
+          "profile_user_id": "phase6-lab",
+          "suppress_notification": true,
+          "_direct_mission": true,
+          "_reserve_planning": false,
+          "_planning_owner": ""
+        },
+        "created_at": "2026-10-05T15:47:01.566370+00:00"
+      }
+    ]
+  },
+  "before_sha256": "60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee",
+  "after_sha256": "60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee"
+}

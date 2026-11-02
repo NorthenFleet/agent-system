@@ -1,0 +1,1480 @@
+{
+  "step": {
+    "id": "step-1f60b7e92296",
+    "mission_id": "mission-2e60aa980e2e",
+    "plan_version": 1,
+    "order_index": 1,
+    "title": "只读哈希核验",
+    "description": "",
+    "task_type": "coordination",
+    "agent_id": "ratchet",
+    "executor": "openclaw",
+    "status": "completed",
+    "work_run_id": null,
+    "lease_owner": null,
+    "lease_token": null,
+    "lease_expires_at": null,
+    "attempt_count": 2,
+    "started_at": "2026-10-05T15:54:30.618519+00:00",
+    "completed_at": "2026-10-05T15:55:31.088775+00:00",
+    "updated_at": "2026-10-05T15:55:31.088785+00:00",
+    "dependencies": [],
+    "input": {},
+    "result": {
+      "outcome": "succeeded",
+      "summary": "接管进程实际只读计算文件SHA-256",
+      "tools_used": [
+        "exec"
+      ],
+      "artifacts": [
+        {
+          "artifact_key": "a1",
+          "artifact_type": "document",
+          "title": "既有修订稿",
+          "uri": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md",
+          "content_hash": "60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee",
+          "metadata": {}
+        }
+      ],
+      "evidence": [
+        {
+          "evidence_type": "test_output",
+          "requirement_id": "ev-f56177b22d6c8be80db0",
+          "source_ref": "process-b:sha256",
+          "summary": "60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee",
+          "artifact_key": "a1",
+          "confidence": 1.0,
+          "metadata": {}
+        }
+      ],
+      "acceptance_results": [
+        {
+          "criterion": "返回实际文件SHA-256",
+          "criterion_id": "ac-6b508bf4d2f837ca8516",
+          "status": "pass",
+          "evidence_refs": [
+            "process-b:sha256"
+          ],
+          "notes": ""
+        }
+      ],
+      "side_effects": [],
+      "risk_notes": "隔离测试，读取已有文件，无写入副作用",
+      "evidence_refs": [
+        "process-b:sha256"
+      ],
+      "receipt_preflight": {
+        "schema_version": "1.0",
+        "strategy": "existing_evidence_only",
+        "input_sha256": "49ecd7cdc695b5ead63a5a20f0020527e5fa8443ac39b24ffe1383995f1eb119",
+        "changes": [],
+        "strict_accepted_before": true,
+        "strict_accepted": true,
+        "blockers": [],
+        "execution_repeated": false
+      },
+      "execution_quality": {
+        "status": "pass",
+        "score": 100,
+        "mode": "strict",
+        "enforced": true,
+        "accepted": true,
+        "executor_success": true,
+        "business_outcome": "succeeded",
+        "hard_blockers": [],
+        "blockers": [],
+        "warnings": [],
+        "evidence_refs": [
+          "process-b:sha256"
+        ],
+        "required_evidence": [
+          "test_output"
+        ],
+        "required_artifact_types": [
+          "document"
+        ],
+        "required_tools": [
+          "test_runner"
+        ],
+        "acceptance_criteria": [
+          "返回实际文件SHA-256"
+        ],
+        "checked_rules": [
+          "result-summary",
+          "required-evidence-types",
+          "artifact-contract",
+          "acceptance-results",
+          "tool-use",
+          "required-output-fields"
+        ]
+      },
+      "effect_quality": {
+        "status": "not_applicable",
+        "accepted": true,
+        "enforced": false,
+        "blockers": [],
+        "warnings": []
+      },
+      "completion_decision": {
+        "executor_success": true,
+        "accepted": true,
+        "retry_scheduled": false,
+        "attempt": 2,
+        "max_attempts": 2,
+        "receipt_retry_safe": true,
+        "enforcement": {
+          "mode": "strict",
+          "enforced": true,
+          "reason": "strict_mode",
+          "flow_key": "general",
+          "highest_risk": "L2",
+          "runtime": "legacy"
+        },
+        "effect_quality": {
+          "status": "not_applicable",
+          "accepted": true,
+          "enforced": false,
+          "blockers": [],
+          "warnings": []
+        }
+      },
+      "effect_ids": []
+    },
+    "phase": "planning",
+    "objective": "只读哈希核验",
+    "required_tools": [
+      "test_runner"
+    ],
+    "tool_requirements": [
+      {
+        "name": "测试运行器",
+        "category": "verification",
+        "status": "available",
+        "description": "运行后端、单元或集成测试并回传输出。",
+        "evidence_types": [
+          "test_output"
+        ],
+        "id": "test_runner"
+      }
+    ],
+    "deliverables": [
+      "既有文件和哈希"
+    ],
+    "output_contract": {
+      "artifact_types": [
+        "document"
+      ],
+      "required_fields": [
+        "summary",
+        "evidence_refs",
+        "risk_notes"
+      ]
+    },
+    "acceptance_criteria": [
+      "返回实际文件SHA-256"
+    ],
+    "evidence_required": [
+      "test_output"
+    ],
+    "risk_level": "medium",
+    "risk_class": "L2",
+    "approval_required": false,
+    "side_effect": false,
+    "resources": [],
+    "idempotency_key": "mission-2e60aa980e2e:plan:1:step:1",
+    "timeout_seconds": 900,
+    "max_attempts": 2,
+    "rollback_plan": "停止后续步骤，记录失败原因并等待擎天柱重新规划。",
+    "compensation": {
+      "type": "manual",
+      "instructions": "停止后续步骤，记录失败原因并等待擎天柱重新规划。"
+    },
+    "capability_match": true,
+    "artifacts": [
+      {
+        "id": "artifact-314bf8e3d2ed74e5534d",
+        "mission_id": "mission-2e60aa980e2e",
+        "mission_run_id": "mrun-11b47009df3f42a3",
+        "correlation_id": "mission-4221fa334f78410c",
+        "plan_version": 1,
+        "step_id": "step-1f60b7e92296",
+        "work_run_id": null,
+        "artifact_type": "document",
+        "title": "既有修订稿",
+        "uri": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md",
+        "content_hash": "60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee",
+        "fingerprint": "314bf8e3d2ed74e5534d41d40ae250b6ad996d326939fc39cd57f5f6443ef3c8",
+        "created_at": "2026-10-05T15:55:31.091257+00:00",
+        "metadata": {}
+      }
+    ],
+    "evidence": [
+      {
+        "id": "evidence-a49a22866c31ee865d5f",
+        "mission_id": "mission-2e60aa980e2e",
+        "mission_run_id": "mrun-11b47009df3f42a3",
+        "correlation_id": "mission-4221fa334f78410c",
+        "plan_version": 1,
+        "step_id": "step-1f60b7e92296",
+        "artifact_id": "artifact-314bf8e3d2ed74e5534d",
+        "evidence_type": "test_output",
+        "source_ref": "process-b:sha256",
+        "summary": "60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee",
+        "collected_by": "phase6-process-b",
+        "collected_at": "2026-10-05T15:55:31.091857+00:00",
+        "confidence": 1.0,
+        "fingerprint": "a49a22866c31ee865d5f63bd8c5c9aa1deb62886ecfd18298918f25c068f2dbc",
+        "metadata": {}
+      }
+    ],
+    "acceptance_gate": {
+      "id": "gate-c730c1ecaa6a812bdc26",
+      "mission_id": "mission-2e60aa980e2e",
+      "mission_run_id": "mrun-11b47009df3f42a3",
+      "correlation_id": "mission-4221fa334f78410c",
+      "plan_version": 1,
+      "step_id": "step-1f60b7e92296",
+      "gate_type": "execution_evidence",
+      "mode": "strict",
+      "enforced": true,
+      "status": "pass",
+      "accepted": true,
+      "score": 100,
+      "evaluated_by": "phase6-process-b",
+      "evaluated_at": "2026-10-05T15:55:31.094319+00:00",
+      "blockers": [],
+      "warnings": [],
+      "details": {
+        "status": "pass",
+        "score": 100,
+        "mode": "strict",
+        "enforced": true,
+        "accepted": true,
+        "executor_success": true,
+        "business_outcome": "succeeded",
+        "hard_blockers": [],
+        "blockers": [],
+        "warnings": [],
+        "evidence_refs": [
+          "process-b:sha256"
+        ],
+        "required_evidence": [
+          "test_output"
+        ],
+        "required_artifact_types": [
+          "document"
+        ],
+        "required_tools": [
+          "test_runner"
+        ],
+        "acceptance_criteria": [
+          "返回实际文件SHA-256"
+        ],
+        "checked_rules": [
+          "result-summary",
+          "required-evidence-types",
+          "artifact-contract",
+          "acceptance-results",
+          "tool-use",
+          "required-output-fields"
+        ]
+      }
+    },
+    "step_approval": null,
+    "effects": [],
+    "compensations": []
+  },
+  "mission": {
+    "id": "mission-2e60aa980e2e",
+    "conversation_id": "conv-083580da90b7",
+    "source_message_id": "msg-79738ce28eaf",
+    "title": "P6 PostgreSQL隔离进程接管",
+    "objective": "只读计算文件哈希",
+    "status": "completed",
+    "priority": "normal",
+    "project_id": null,
+    "mission_type": "software",
+    "requested_by": "phase6-process-test",
+    "owner_user_id": "phase6-process-test",
+    "plan_version": 1,
+    "current_step_id": null,
+    "requires_approval": true,
+    "approval_status": "approved",
+    "last_error": null,
+    "lease_owner": null,
+    "lease_expires_at": null,
+    "created_at": "2026-10-05T15:54:30.261811+00:00",
+    "updated_at": "2026-10-05T15:55:31.178857+00:00",
+    "completed_at": "2026-10-05T15:55:31.178855+00:00",
+    "context": {
+      "source": "dashboard",
+      "profile_user_id": "phase6-process-test",
+      "mission_type": "software",
+      "intent_decision": {
+        "type": "software_project",
+        "confidence": 1.0,
+        "reason": "由已认证的项目任务入口显式创建",
+        "execution_requested": true
+      },
+      "user_context": {
+        "business_flow_key": "general"
+      },
+      "metadata": {
+        "project_id": "",
+        "title": "P6 PostgreSQL隔离进程接管",
+        "context": {
+          "business_flow_key": "general"
+        },
+        "intent_type": "software_project",
+        "execution_requested": true,
+        "profile_user_id": "phase6-process-test",
+        "suppress_notification": true,
+        "_direct_mission": true,
+        "_reserve_planning": false,
+        "_planning_owner": ""
+      }
+    },
+    "mission_run": {
+      "id": "mrun-11b47009df3f42a3",
+      "mission_id": "mission-2e60aa980e2e",
+      "correlation_id": "mission-4221fa334f78410c",
+      "status": "completed",
+      "active_plan_version": 1,
+      "workflow_run_id": "workflow-324662132ff7",
+      "outcome": "completed",
+      "created_at": "2026-10-05T15:54:30.261811+00:00",
+      "updated_at": "2026-10-05T15:55:31.187564+00:00",
+      "ended_at": "2026-10-05T15:55:31.178855+00:00",
+      "metadata": {}
+    },
+    "conversation": {
+      "id": "conv-083580da90b7",
+      "channel": "dashboard",
+      "external_conversation_id": "dashboard:phase6-process-test",
+      "user_external_id": "phase6-process-test",
+      "owner_user_id": "phase6-process-test",
+      "profile_user_id": "phase6-process-test",
+      "status": "active",
+      "metadata": {
+        "project_id": "",
+        "title": "P6 PostgreSQL隔离进程接管",
+        "context": {
+          "business_flow_key": "general"
+        },
+        "intent_type": "software_project",
+        "execution_requested": true,
+        "profile_user_id": "phase6-process-test",
+        "suppress_notification": true,
+        "_direct_mission": true,
+        "_reserve_planning": false,
+        "_planning_owner": ""
+      },
+      "created_at": "2026-10-05T15:54:30.261811+00:00",
+      "updated_at": "2026-10-05T15:54:30.261811+00:00"
+    },
+    "steps": [
+      {
+        "id": "step-1f60b7e92296",
+        "mission_id": "mission-2e60aa980e2e",
+        "plan_version": 1,
+        "order_index": 1,
+        "title": "只读哈希核验",
+        "description": "",
+        "task_type": "coordination",
+        "agent_id": "ratchet",
+        "executor": "openclaw",
+        "status": "completed",
+        "work_run_id": null,
+        "lease_owner": null,
+        "lease_token": null,
+        "lease_expires_at": null,
+        "attempt_count": 2,
+        "started_at": "2026-10-05T15:54:30.618519+00:00",
+        "completed_at": "2026-10-05T15:55:31.088775+00:00",
+        "updated_at": "2026-10-05T15:55:31.088785+00:00",
+        "dependencies": [],
+        "input": {},
+        "result": {
+          "outcome": "succeeded",
+          "summary": "接管进程实际只读计算文件SHA-256",
+          "tools_used": [
+            "exec"
+          ],
+          "artifacts": [
+            {
+              "artifact_key": "a1",
+              "artifact_type": "document",
+              "title": "既有修订稿",
+              "uri": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md",
+              "content_hash": "60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee",
+              "metadata": {}
+            }
+          ],
+          "evidence": [
+            {
+              "evidence_type": "test_output",
+              "requirement_id": "ev-f56177b22d6c8be80db0",
+              "source_ref": "process-b:sha256",
+              "summary": "60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee",
+              "artifact_key": "a1",
+              "confidence": 1.0,
+              "metadata": {}
+            }
+          ],
+          "acceptance_results": [
+            {
+              "criterion": "返回实际文件SHA-256",
+              "criterion_id": "ac-6b508bf4d2f837ca8516",
+              "status": "pass",
+              "evidence_refs": [
+                "process-b:sha256"
+              ],
+              "notes": ""
+            }
+          ],
+          "side_effects": [],
+          "risk_notes": "隔离测试，读取已有文件，无写入副作用",
+          "evidence_refs": [
+            "process-b:sha256"
+          ],
+          "receipt_preflight": {
+            "schema_version": "1.0",
+            "strategy": "existing_evidence_only",
+            "input_sha256": "49ecd7cdc695b5ead63a5a20f0020527e5fa8443ac39b24ffe1383995f1eb119",
+            "changes": [],
+            "strict_accepted_before": true,
+            "strict_accepted": true,
+            "blockers": [],
+            "execution_repeated": false
+          },
+          "execution_quality": {
+            "status": "pass",
+            "score": 100,
+            "mode": "strict",
+            "enforced": true,
+            "accepted": true,
+            "executor_success": true,
+            "business_outcome": "succeeded",
+            "hard_blockers": [],
+            "blockers": [],
+            "warnings": [],
+            "evidence_refs": [
+              "process-b:sha256"
+            ],
+            "required_evidence": [
+              "test_output"
+            ],
+            "required_artifact_types": [
+              "document"
+            ],
+            "required_tools": [
+              "test_runner"
+            ],
+            "acceptance_criteria": [
+              "返回实际文件SHA-256"
+            ],
+            "checked_rules": [
+              "result-summary",
+              "required-evidence-types",
+              "artifact-contract",
+              "acceptance-results",
+              "tool-use",
+              "required-output-fields"
+            ]
+          },
+          "effect_quality": {
+            "status": "not_applicable",
+            "accepted": true,
+            "enforced": false,
+            "blockers": [],
+            "warnings": []
+          },
+          "completion_decision": {
+            "executor_success": true,
+            "accepted": true,
+            "retry_scheduled": false,
+            "attempt": 2,
+            "max_attempts": 2,
+            "receipt_retry_safe": true,
+            "enforcement": {
+              "mode": "strict",
+              "enforced": true,
+              "reason": "strict_mode",
+              "flow_key": "general",
+              "highest_risk": "L2",
+              "runtime": "legacy"
+            },
+            "effect_quality": {
+              "status": "not_applicable",
+              "accepted": true,
+              "enforced": false,
+              "blockers": [],
+              "warnings": []
+            }
+          },
+          "effect_ids": []
+        },
+        "context_binding": null,
+        "phase": "planning",
+        "objective": "只读哈希核验",
+        "required_tools": [
+          "test_runner"
+        ],
+        "tool_requirements": [
+          {
+            "name": "测试运行器",
+            "category": "verification",
+            "status": "available",
+            "description": "运行后端、单元或集成测试并回传输出。",
+            "evidence_types": [
+              "test_output"
+            ],
+            "id": "test_runner"
+          }
+        ],
+        "deliverables": [
+          "既有文件和哈希"
+        ],
+        "output_contract": {
+          "artifact_types": [
+            "document"
+          ],
+          "required_fields": [
+            "summary",
+            "evidence_refs",
+            "risk_notes"
+          ]
+        },
+        "acceptance_criteria": [
+          "返回实际文件SHA-256"
+        ],
+        "evidence_required": [
+          "test_output"
+        ],
+        "risk_level": "medium",
+        "risk_class": "L2",
+        "approval_required": false,
+        "side_effect": false,
+        "resources": [],
+        "idempotency_key": "mission-2e60aa980e2e:plan:1:step:1",
+        "timeout_seconds": 900,
+        "max_attempts": 2,
+        "rollback_plan": "停止后续步骤，记录失败原因并等待擎天柱重新规划。",
+        "compensation": {
+          "type": "manual",
+          "instructions": "停止后续步骤，记录失败原因并等待擎天柱重新规划。"
+        },
+        "capability_match": true,
+        "artifacts": [
+          {
+            "id": "artifact-314bf8e3d2ed74e5534d",
+            "mission_id": "mission-2e60aa980e2e",
+            "mission_run_id": "mrun-11b47009df3f42a3",
+            "correlation_id": "mission-4221fa334f78410c",
+            "plan_version": 1,
+            "step_id": "step-1f60b7e92296",
+            "work_run_id": null,
+            "artifact_type": "document",
+            "title": "既有修订稿",
+            "uri": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md",
+            "content_hash": "60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee",
+            "fingerprint": "314bf8e3d2ed74e5534d41d40ae250b6ad996d326939fc39cd57f5f6443ef3c8",
+            "created_at": "2026-10-05T15:55:31.091257+00:00",
+            "metadata": {}
+          }
+        ],
+        "evidence": [
+          {
+            "id": "evidence-a49a22866c31ee865d5f",
+            "mission_id": "mission-2e60aa980e2e",
+            "mission_run_id": "mrun-11b47009df3f42a3",
+            "correlation_id": "mission-4221fa334f78410c",
+            "plan_version": 1,
+            "step_id": "step-1f60b7e92296",
+            "artifact_id": "artifact-314bf8e3d2ed74e5534d",
+            "evidence_type": "test_output",
+            "source_ref": "process-b:sha256",
+            "summary": "60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee",
+            "collected_by": "phase6-process-b",
+            "collected_at": "2026-10-05T15:55:31.091857+00:00",
+            "confidence": 1.0,
+            "fingerprint": "a49a22866c31ee865d5f63bd8c5c9aa1deb62886ecfd18298918f25c068f2dbc",
+            "metadata": {}
+          }
+        ],
+        "acceptance_gate": {
+          "id": "gate-c730c1ecaa6a812bdc26",
+          "mission_id": "mission-2e60aa980e2e",
+          "mission_run_id": "mrun-11b47009df3f42a3",
+          "correlation_id": "mission-4221fa334f78410c",
+          "plan_version": 1,
+          "step_id": "step-1f60b7e92296",
+          "gate_type": "execution_evidence",
+          "mode": "strict",
+          "enforced": true,
+          "status": "pass",
+          "accepted": true,
+          "score": 100,
+          "evaluated_by": "phase6-process-b",
+          "evaluated_at": "2026-10-05T15:55:31.094319+00:00",
+          "blockers": [],
+          "warnings": [],
+          "details": {
+            "status": "pass",
+            "score": 100,
+            "mode": "strict",
+            "enforced": true,
+            "accepted": true,
+            "executor_success": true,
+            "business_outcome": "succeeded",
+            "hard_blockers": [],
+            "blockers": [],
+            "warnings": [],
+            "evidence_refs": [
+              "process-b:sha256"
+            ],
+            "required_evidence": [
+              "test_output"
+            ],
+            "required_artifact_types": [
+              "document"
+            ],
+            "required_tools": [
+              "test_runner"
+            ],
+            "acceptance_criteria": [
+              "返回实际文件SHA-256"
+            ],
+            "checked_rules": [
+              "result-summary",
+              "required-evidence-types",
+              "artifact-contract",
+              "acceptance-results",
+              "tool-use",
+              "required-output-fields"
+            ]
+          }
+        },
+        "step_approval": null,
+        "effects": [],
+        "compensations": []
+      }
+    ],
+    "context_bindings": [],
+    "planning_context": null,
+    "plan": {
+      "id": "plan-d6a296cd087e",
+      "mission_id": "mission-2e60aa980e2e",
+      "version": 1,
+      "summary": "只读租约接管测试",
+      "rationale": "",
+      "risk_level": "medium",
+      "raw_plan": {
+        "summary": "只读租约接管测试",
+        "steps": [
+          {
+            "order_index": 1,
+            "title": "只读哈希核验",
+            "agent_id": "ratchet",
+            "task_type": "coordination",
+            "side_effect": false,
+            "max_attempts": 2,
+            "depends_on": [],
+            "required_tools": [
+              "test_runner"
+            ],
+            "evidence_required": [
+              "test_output"
+            ],
+            "acceptance_criteria": [
+              "返回实际文件SHA-256"
+            ],
+            "deliverables": [
+              "既有文件和哈希"
+            ],
+            "output_contract": {
+              "artifact_types": [
+                "document"
+              ],
+              "required_fields": [
+                "summary",
+                "evidence_refs",
+                "risk_notes"
+              ]
+            },
+            "tool_requirements": [
+              {
+                "name": "测试运行器",
+                "category": "verification",
+                "status": "available",
+                "description": "运行后端、单元或集成测试并回传输出。",
+                "evidence_types": [
+                  "test_output"
+                ],
+                "id": "test_runner"
+              }
+            ],
+            "capability_match": true,
+            "risk_level": "medium",
+            "rollback_plan": "停止后续步骤，记录失败原因并等待擎天柱重新规划。",
+            "phase": "planning",
+            "objective": "只读哈希核验",
+            "timeout_seconds": 900,
+            "risk_class": "L2",
+            "approval_required": false,
+            "resources": [],
+            "idempotency_key": "mission-2e60aa980e2e:plan:1:step:1",
+            "idempotency_key_generated": true,
+            "compensation": {
+              "type": "manual",
+              "instructions": "停止后续步骤，记录失败原因并等待擎天柱重新规划。"
+            }
+          }
+        ],
+        "schema_version": "2.0",
+        "business_type": "general",
+        "flow_spec": {
+          "flow_key": "general",
+          "version": "1.0.0",
+          "name": "通用业务执行流",
+          "business_type": "general",
+          "phases": [
+            "intake",
+            "planning",
+            "execution",
+            "verification",
+            "delivery"
+          ],
+          "required_gates": [
+            "plan_quality",
+            "plan_approval",
+            "evidence_gate"
+          ],
+          "budgets": {
+            "max_steps": 12,
+            "max_parallel_steps": 4,
+            "max_replans": 2,
+            "default_timeout_seconds": 900
+          },
+          "approval_policy": {
+            "plan_approval": true,
+            "delivery_approval": false,
+            "l3_step_approval": true
+          }
+        },
+        "risk_assessment": {
+          "highest_risk": "L2",
+          "by_level": {
+            "L0": 0,
+            "L1": 0,
+            "L2": 1,
+            "L3": 0
+          },
+          "step_approvals": [],
+          "plan_approval_required": true,
+          "delivery_approval_required": false
+        },
+        "approval_policy": {
+          "plan_approval": true,
+          "delivery_approval": false,
+          "l3_step_approval": true,
+          "highest_risk": "L2",
+          "step_approvals": []
+        },
+        "execution_policy": {
+          "runtime": "command-center",
+          "state_machine": "mission-v1",
+          "require_context_snapshot": true,
+          "require_evidence": true,
+          "idempotency_required_for_side_effects": true
+        },
+        "flow_validation": {
+          "status": "pass",
+          "flow_key": "general",
+          "flow_version": "1.0.0",
+          "blockers": [],
+          "warnings": [],
+          "checked_rules": [
+            "flow-budget",
+            "domain-coverage",
+            "risk-class",
+            "approval-policy",
+            "idempotency",
+            "compensation",
+            "resource-conflict"
+          ]
+        },
+        "capability_registry": {
+          "version": "p1-local",
+          "agent_count": 15,
+          "tool_count": 9
+        },
+        "plan_quality": {
+          "status": "pass",
+          "score": 100,
+          "blockers": [],
+          "warnings": [],
+          "suggestions": [],
+          "tool_summary": {
+            "total": 1,
+            "unknown": 0,
+            "unavailable": 0
+          },
+          "flow_key": "general",
+          "flow_version": "1.0.0",
+          "risk_assessment": {
+            "highest_risk": "L2",
+            "by_level": {
+              "L0": 0,
+              "L1": 0,
+              "L2": 1,
+              "L3": 0
+            },
+            "step_approvals": [],
+            "plan_approval_required": true,
+            "delivery_approval_required": false
+          },
+          "checked_rules": [
+            "schema",
+            "business-flow",
+            "risk-policy",
+            "idempotency",
+            "compensation",
+            "agent-capability",
+            "tool-registry",
+            "dependency-dag",
+            "deliverables",
+            "acceptance",
+            "evidence",
+            "domain-coverage"
+          ]
+        }
+      },
+      "status": "approved",
+      "created_by_agent_id": "optimus",
+      "created_at": "2026-10-05T15:54:30.301720+00:00",
+      "plan_quality": {
+        "status": "pass",
+        "score": 100,
+        "blockers": [],
+        "warnings": [],
+        "suggestions": [],
+        "tool_summary": {
+          "total": 1,
+          "unknown": 0,
+          "unavailable": 0
+        },
+        "flow_key": "general",
+        "flow_version": "1.0.0",
+        "risk_assessment": {
+          "highest_risk": "L2",
+          "by_level": {
+            "L0": 0,
+            "L1": 0,
+            "L2": 1,
+            "L3": 0
+          },
+          "step_approvals": [],
+          "plan_approval_required": true,
+          "delivery_approval_required": false
+        },
+        "checked_rules": [
+          "schema",
+          "business-flow",
+          "risk-policy",
+          "idempotency",
+          "compensation",
+          "agent-capability",
+          "tool-registry",
+          "dependency-dag",
+          "deliverables",
+          "acceptance",
+          "evidence",
+          "domain-coverage"
+        ]
+      }
+    },
+    "workflow_run": {
+      "id": "workflow-324662132ff7",
+      "mission_id": "mission-2e60aa980e2e",
+      "mission_run_id": "mrun-11b47009df3f42a3",
+      "correlation_id": "mission-4221fa334f78410c",
+      "plan_version": 1,
+      "runtime": "legacy",
+      "flow_key": "general",
+      "highest_risk": "L2",
+      "selection_reason": "feature_disabled",
+      "thread_id": "workflow-324662132ff7",
+      "checkpoint_namespace": "pilot",
+      "status": "ready",
+      "attempts": 0,
+      "next_attempt_at": "2026-10-05T15:54:30.315519+00:00",
+      "lease_owner": null,
+      "lease_token": null,
+      "lease_expires_at": null,
+      "last_error": null,
+      "created_at": "2026-10-05T15:54:30.304476+00:00",
+      "updated_at": "2026-10-05T15:54:30.315520+00:00",
+      "completed_at": "2026-10-05T15:54:30.304476+00:00",
+      "input": {
+        "workflow_run_id": "workflow-324662132ff7",
+        "mission_run_id": "mrun-11b47009df3f42a3",
+        "correlation_id": "mission-4221fa334f78410c",
+        "mission_id": "mission-2e60aa980e2e",
+        "plan_version": 1,
+        "flow_key": "general",
+        "highest_risk": "L2",
+        "context_pack_id": "",
+        "status": "ready",
+        "evidence_refs": []
+      },
+      "state": {
+        "workflow_run_id": "workflow-324662132ff7",
+        "mission_run_id": "mrun-11b47009df3f42a3",
+        "correlation_id": "mission-4221fa334f78410c",
+        "mission_id": "mission-2e60aa980e2e",
+        "plan_version": 1,
+        "flow_key": "general",
+        "highest_risk": "L2",
+        "context_pack_id": "",
+        "status": "ready",
+        "evidence_refs": []
+      },
+      "checkpoint": {}
+    },
+    "artifacts": [
+      {
+        "id": "artifact-314bf8e3d2ed74e5534d",
+        "mission_id": "mission-2e60aa980e2e",
+        "mission_run_id": "mrun-11b47009df3f42a3",
+        "correlation_id": "mission-4221fa334f78410c",
+        "plan_version": 1,
+        "step_id": "step-1f60b7e92296",
+        "work_run_id": null,
+        "artifact_type": "document",
+        "title": "既有修订稿",
+        "uri": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md",
+        "content_hash": "60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee",
+        "fingerprint": "314bf8e3d2ed74e5534d41d40ae250b6ad996d326939fc39cd57f5f6443ef3c8",
+        "created_at": "2026-10-05T15:55:31.091257+00:00",
+        "metadata": {}
+      }
+    ],
+    "evidence": [
+      {
+        "id": "evidence-a49a22866c31ee865d5f",
+        "mission_id": "mission-2e60aa980e2e",
+        "mission_run_id": "mrun-11b47009df3f42a3",
+        "correlation_id": "mission-4221fa334f78410c",
+        "plan_version": 1,
+        "step_id": "step-1f60b7e92296",
+        "artifact_id": "artifact-314bf8e3d2ed74e5534d",
+        "evidence_type": "test_output",
+        "source_ref": "process-b:sha256",
+        "summary": "60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee",
+        "collected_by": "phase6-process-b",
+        "collected_at": "2026-10-05T15:55:31.091857+00:00",
+        "confidence": 1.0,
+        "fingerprint": "a49a22866c31ee865d5f63bd8c5c9aa1deb62886ecfd18298918f25c068f2dbc",
+        "metadata": {}
+      }
+    ],
+    "acceptance_gates": [
+      {
+        "id": "gate-dc54feb1148f4d0716f5",
+        "mission_id": "mission-2e60aa980e2e",
+        "mission_run_id": "mrun-11b47009df3f42a3",
+        "correlation_id": "mission-4221fa334f78410c",
+        "plan_version": 1,
+        "step_id": "",
+        "gate_type": "delivery_evidence",
+        "mode": "strict",
+        "enforced": true,
+        "status": "pass",
+        "accepted": true,
+        "score": 100,
+        "evaluated_by": "optimus",
+        "evaluated_at": "2026-10-05T15:55:31.178625+00:00",
+        "blockers": [],
+        "warnings": [],
+        "details": {
+          "status": "pass",
+          "score": 100,
+          "mode": "strict",
+          "enforced": true,
+          "accepted": true,
+          "blockers": [],
+          "warnings": [],
+          "artifact_count": 1,
+          "evidence_count": 1,
+          "step_gate_count": 1,
+          "step_count": 1,
+          "unresolved_compensations": 0,
+          "checked_rules": [
+            "all-step-gates",
+            "mission-artifacts",
+            "mission-evidence",
+            "side-effect-compensation"
+          ]
+        }
+      },
+      {
+        "id": "gate-c730c1ecaa6a812bdc26",
+        "mission_id": "mission-2e60aa980e2e",
+        "mission_run_id": "mrun-11b47009df3f42a3",
+        "correlation_id": "mission-4221fa334f78410c",
+        "plan_version": 1,
+        "step_id": "step-1f60b7e92296",
+        "gate_type": "execution_evidence",
+        "mode": "strict",
+        "enforced": true,
+        "status": "pass",
+        "accepted": true,
+        "score": 100,
+        "evaluated_by": "phase6-process-b",
+        "evaluated_at": "2026-10-05T15:55:31.094319+00:00",
+        "blockers": [],
+        "warnings": [],
+        "details": {
+          "status": "pass",
+          "score": 100,
+          "mode": "strict",
+          "enforced": true,
+          "accepted": true,
+          "executor_success": true,
+          "business_outcome": "succeeded",
+          "hard_blockers": [],
+          "blockers": [],
+          "warnings": [],
+          "evidence_refs": [
+            "process-b:sha256"
+          ],
+          "required_evidence": [
+            "test_output"
+          ],
+          "required_artifact_types": [
+            "document"
+          ],
+          "required_tools": [
+            "test_runner"
+          ],
+          "acceptance_criteria": [
+            "返回实际文件SHA-256"
+          ],
+          "checked_rules": [
+            "result-summary",
+            "required-evidence-types",
+            "artifact-contract",
+            "acceptance-results",
+            "tool-use",
+            "required-output-fields"
+          ]
+        }
+      }
+    ],
+    "step_approvals": [],
+    "effects": [],
+    "compensations": [],
+    "delivery_gate": {
+      "id": "gate-dc54feb1148f4d0716f5",
+      "mission_id": "mission-2e60aa980e2e",
+      "mission_run_id": "mrun-11b47009df3f42a3",
+      "correlation_id": "mission-4221fa334f78410c",
+      "plan_version": 1,
+      "step_id": "",
+      "gate_type": "delivery_evidence",
+      "mode": "strict",
+      "enforced": true,
+      "status": "pass",
+      "accepted": true,
+      "score": 100,
+      "evaluated_by": "optimus",
+      "evaluated_at": "2026-10-05T15:55:31.178625+00:00",
+      "blockers": [],
+      "warnings": [],
+      "details": {
+        "status": "pass",
+        "score": 100,
+        "mode": "strict",
+        "enforced": true,
+        "accepted": true,
+        "blockers": [],
+        "warnings": [],
+        "artifact_count": 1,
+        "evidence_count": 1,
+        "step_gate_count": 1,
+        "step_count": 1,
+        "unresolved_compensations": 0,
+        "checked_rules": [
+          "all-step-gates",
+          "mission-artifacts",
+          "mission-evidence",
+          "side-effect-compensation"
+        ]
+      }
+    },
+    "approval": {
+      "id": "approval-301174d5afb6",
+      "mission_id": "mission-2e60aa980e2e",
+      "plan_version": 1,
+      "decision": "approved",
+      "requested_at": "2026-10-05T15:54:30.302518+00:00",
+      "decided_at": "2026-10-05T15:54:30.315330+00:00",
+      "decided_by": "phase6-fixture",
+      "comment": "",
+      "external_message_id": null
+    },
+    "events": [
+      {
+        "id": "event-7e28eab9a056",
+        "mission_id": "mission-2e60aa980e2e",
+        "mission_run_id": "mrun-11b47009df3f42a3",
+        "correlation_id": "mission-4221fa334f78410c",
+        "run_sequence": 1,
+        "event_type": "mission_received",
+        "from_status": null,
+        "to_status": "received",
+        "actor": "phase6-process-test",
+        "detail": "只读计算文件哈希",
+        "event_key": null,
+        "metadata": {
+          "message_id": "msg-79738ce28eaf",
+          "channel": "dashboard",
+          "preplanned": false,
+          "mission_type": "software",
+          "project_id": "",
+          "intent_confidence": 1.0
+        },
+        "created_at": "2026-10-05T15:54:30.265484+00:00"
+      },
+      {
+        "id": "event-c5ae1fd7a25e",
+        "mission_id": "mission-2e60aa980e2e",
+        "mission_run_id": "mrun-11b47009df3f42a3",
+        "correlation_id": "mission-4221fa334f78410c",
+        "run_sequence": 2,
+        "event_type": "planning_started",
+        "from_status": "received",
+        "to_status": "planning",
+        "actor": "phase6-fixture",
+        "detail": "Optimus is producing an approval-gated plan",
+        "event_key": null,
+        "metadata": {},
+        "created_at": "2026-10-05T15:54:30.297381+00:00"
+      },
+      {
+        "id": "event-94904a039255",
+        "mission_id": "mission-2e60aa980e2e",
+        "mission_run_id": "mrun-11b47009df3f42a3",
+        "correlation_id": "mission-4221fa334f78410c",
+        "run_sequence": 3,
+        "event_type": "plan_proposed",
+        "from_status": "planning",
+        "to_status": "awaiting_approval",
+        "actor": "optimus",
+        "detail": "只读租约接管测试",
+        "event_key": null,
+        "metadata": {
+          "version": 1,
+          "step_count": 1,
+          "flow_key": "general",
+          "flow_version": "1.0.0",
+          "highest_risk": "L2",
+          "quality_score": 100,
+          "workflow_runtime": "legacy",
+          "workflow_runtime_reason": "feature_disabled"
+        },
+        "created_at": "2026-10-05T15:54:30.305986+00:00"
+      },
+      {
+        "id": "event-2173cddea8ad",
+        "mission_id": "mission-2e60aa980e2e",
+        "mission_run_id": "mrun-11b47009df3f42a3",
+        "correlation_id": "mission-4221fa334f78410c",
+        "run_sequence": 4,
+        "event_type": "plan_approved",
+        "from_status": "awaiting_approval",
+        "to_status": "dispatching",
+        "actor": "phase6-fixture",
+        "detail": "approved",
+        "event_key": null,
+        "metadata": {
+          "version": 1
+        },
+        "created_at": "2026-10-05T15:54:30.316685+00:00"
+      },
+      {
+        "id": "event-3e62829175b7",
+        "mission_id": "mission-2e60aa980e2e",
+        "mission_run_id": "mrun-11b47009df3f42a3",
+        "correlation_id": "mission-4221fa334f78410c",
+        "run_sequence": 5,
+        "event_type": "state_changed",
+        "from_status": "dispatching",
+        "to_status": "running",
+        "actor": "command-center",
+        "detail": "Approved plan entered execution",
+        "event_key": null,
+        "metadata": {},
+        "created_at": "2026-10-05T15:54:30.326318+00:00"
+      },
+      {
+        "id": "event-958ac99a6160",
+        "mission_id": "mission-2e60aa980e2e",
+        "mission_run_id": "mrun-11b47009df3f42a3",
+        "correlation_id": "mission-4221fa334f78410c",
+        "run_sequence": 6,
+        "event_type": "step_started",
+        "from_status": "running",
+        "to_status": "running",
+        "actor": "ratchet",
+        "detail": "只读哈希核验",
+        "event_key": null,
+        "metadata": {
+          "step_id": "step-1f60b7e92296",
+          "step_approval_id": null
+        },
+        "created_at": "2026-10-05T15:54:30.621311+00:00"
+      },
+      {
+        "id": "event-12292a60acbd",
+        "mission_id": "mission-2e60aa980e2e",
+        "mission_run_id": "mrun-11b47009df3f42a3",
+        "correlation_id": "mission-4221fa334f78410c",
+        "run_sequence": 7,
+        "event_type": "step_requeued",
+        "from_status": "running",
+        "to_status": "running",
+        "actor": "command-center",
+        "detail": "Recovered stale step 只读哈希核验",
+        "event_key": null,
+        "metadata": {
+          "step_id": "step-1f60b7e92296"
+        },
+        "created_at": "2026-10-05T15:55:30.841173+00:00"
+      },
+      {
+        "id": "event-3e49f624e22e",
+        "mission_id": "mission-2e60aa980e2e",
+        "mission_run_id": "mrun-11b47009df3f42a3",
+        "correlation_id": "mission-4221fa334f78410c",
+        "run_sequence": 8,
+        "event_type": "step_started",
+        "from_status": "running",
+        "to_status": "running",
+        "actor": "ratchet",
+        "detail": "只读哈希核验",
+        "event_key": null,
+        "metadata": {
+          "step_id": "step-1f60b7e92296",
+          "step_approval_id": null
+        },
+        "created_at": "2026-10-05T15:55:30.879036+00:00"
+      },
+      {
+        "id": "event-5d77802b02ac",
+        "mission_id": "mission-2e60aa980e2e",
+        "mission_run_id": "mrun-11b47009df3f42a3",
+        "correlation_id": "mission-4221fa334f78410c",
+        "run_sequence": 9,
+        "event_type": "step_completed",
+        "from_status": "running",
+        "to_status": "running",
+        "actor": "phase6-process-b",
+        "detail": "只读哈希核验",
+        "event_key": null,
+        "metadata": {
+          "step_id": "step-1f60b7e92296",
+          "result": {
+            "outcome": "succeeded",
+            "summary": "接管进程实际只读计算文件SHA-256",
+            "tools_used": [
+              "exec"
+            ],
+            "artifacts": [
+              {
+                "artifact_key": "a1",
+                "artifact_type": "document",
+                "title": "既有修订稿",
+                "uri": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md",
+                "content_hash": "60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee",
+                "metadata": {}
+              }
+            ],
+            "evidence": [
+              {
+                "evidence_type": "test_output",
+                "requirement_id": "ev-f56177b22d6c8be80db0",
+                "source_ref": "process-b:sha256",
+                "summary": "60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee",
+                "artifact_key": "a1",
+                "confidence": 1.0,
+                "metadata": {}
+              }
+            ],
+            "acceptance_results": [
+              {
+                "criterion": "返回实际文件SHA-256",
+                "criterion_id": "ac-6b508bf4d2f837ca8516",
+                "status": "pass",
+                "evidence_refs": [
+                  "process-b:sha256"
+                ],
+                "notes": ""
+              }
+            ],
+            "side_effects": [],
+            "risk_notes": "隔离测试，读取已有文件，无写入副作用",
+            "evidence_refs": [
+              "process-b:sha256"
+            ],
+            "receipt_preflight": {
+              "schema_version": "1.0",
+              "strategy": "existing_evidence_only",
+              "input_sha256": "49ecd7cdc695b5ead63a5a20f0020527e5fa8443ac39b24ffe1383995f1eb119",
+              "changes": [],
+              "strict_accepted_before": true,
+              "strict_accepted": true,
+              "blockers": [],
+              "execution_repeated": false
+            },
+            "execution_quality": {
+              "status": "pass",
+              "score": 100,
+              "mode": "strict",
+              "enforced": true,
+              "accepted": true,
+              "executor_success": true,
+              "business_outcome": "succeeded",
+              "hard_blockers": [],
+              "blockers": [],
+              "warnings": [],
+              "evidence_refs": [
+                "process-b:sha256"
+              ],
+              "required_evidence": [
+                "test_output"
+              ],
+              "required_artifact_types": [
+                "document"
+              ],
+              "required_tools": [
+                "test_runner"
+              ],
+              "acceptance_criteria": [
+                "返回实际文件SHA-256"
+              ],
+              "checked_rules": [
+                "result-summary",
+                "required-evidence-types",
+                "artifact-contract",
+                "acceptance-results",
+                "tool-use",
+                "required-output-fields"
+              ]
+            },
+            "effect_quality": {
+              "status": "not_applicable",
+              "accepted": true,
+              "enforced": false,
+              "blockers": [],
+              "warnings": []
+            },
+            "completion_decision": {
+              "executor_success": true,
+              "accepted": true,
+              "retry_scheduled": false,
+              "attempt": 2,
+              "max_attempts": 2,
+              "receipt_retry_safe": true,
+              "enforcement": {
+                "mode": "strict",
+                "enforced": true,
+                "reason": "strict_mode",
+                "flow_key": "general",
+                "highest_risk": "L2",
+                "runtime": "legacy"
+              },
+              "effect_quality": {
+                "status": "not_applicable",
+                "accepted": true,
+                "enforced": false,
+                "blockers": [],
+                "warnings": []
+              }
+            },
+            "effect_ids": []
+          },
+          "next_step_status": "completed"
+        },
+        "created_at": "2026-10-05T15:55:31.100414+00:00"
+      },
+      {
+        "id": "event-0d6c38ab10c1",
+        "mission_id": "mission-2e60aa980e2e",
+        "mission_run_id": "mrun-11b47009df3f42a3",
+        "correlation_id": "mission-4221fa334f78410c",
+        "run_sequence": 10,
+        "event_type": "evaluation_started",
+        "from_status": "running",
+        "to_status": "evaluating",
+        "actor": "phase6-process-b",
+        "detail": "All steps completed; Optimus is evaluating the outcome",
+        "event_key": null,
+        "metadata": {},
+        "created_at": "2026-10-05T15:55:31.171989+00:00"
+      },
+      {
+        "id": "event-3868a0867bae",
+        "mission_id": "mission-2e60aa980e2e",
+        "mission_run_id": "mrun-11b47009df3f42a3",
+        "correlation_id": "mission-4221fa334f78410c",
+        "run_sequence": 11,
+        "event_type": "mission_completed",
+        "from_status": "evaluating",
+        "to_status": "completed",
+        "actor": "optimus",
+        "detail": "PostgreSQL实际租约接管通过",
+        "event_key": null,
+        "metadata": {},
+        "created_at": "2026-10-05T15:55:31.180374+00:00"
+      }
+    ],
+    "messages": [
+      {
+        "id": "msg-79738ce28eaf",
+        "conversation_id": "conv-083580da90b7",
+        "mission_id": "mission-2e60aa980e2e",
+        "direction": "inbound",
+        "external_message_id": "ui-e12000d6d7184a24b3d0cb3b2fdcdd8f",
+        "reply_to_external_message_id": null,
+        "sender_id": "phase6-process-test",
+        "content": "只读计算文件哈希",
+        "message_type": "text",
+        "intent_type": "software_project",
+        "intent_confidence": 1.0,
+        "intent_reason": "由已认证的项目任务入口显式创建",
+        "execution_requested": 1,
+        "routing_status": "mission_created",
+        "target_agent_id": "optimus",
+        "resolved_project_id": null,
+        "reply_to_command_message_id": null,
+        "metadata": {
+          "project_id": "",
+          "title": "P6 PostgreSQL隔离进程接管",
+          "context": {
+            "business_flow_key": "general"
+          },
+          "intent_type": "software_project",
+          "execution_requested": true,
+          "profile_user_id": "phase6-process-test",
+          "suppress_notification": true,
+          "_direct_mission": true,
+          "_reserve_planning": false,
+          "_planning_owner": ""
+        },
+        "created_at": "2026-10-05T15:54:30.261811+00:00"
+      }
+    ]
+  }
+}

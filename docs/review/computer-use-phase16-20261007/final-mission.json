@@ -1,0 +1,1427 @@
+{
+  "id": "mission-c872ccc3b49e",
+  "conversation_id": "conv-173efd61bb1b",
+  "source_message_id": "msg-b41509ebea90",
+  "title": "重新交付：阶段十六交付样本",
+  "objective": "重新交付任务 phase16-delivery 的产物 phase16-artifact。\n原路径：/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/delivery.txt\n原登记 SHA256：9159d1d0d56c6a1ae42b9ba0d878d0a8cf18b02406377d330c8d35d8170f3892\n下载失败原因：文件已变化，与该任务登记的版本不一致\n保留原文件与原证据；先只读核实原因，再提出新版本交付计划，审批后执行。新文件使用独立路径，登记实际内容哈希并重新验收。",
+  "status": "completed",
+  "priority": "normal",
+  "project_id": "phase16-project",
+  "mission_type": "document",
+  "requested_by": "phase16-browser",
+  "owner_user_id": "phase16",
+  "plan_version": 1,
+  "current_step_id": null,
+  "requires_approval": true,
+  "approval_status": "approved",
+  "last_error": null,
+  "lease_owner": null,
+  "lease_expires_at": null,
+  "created_at": "2026-10-07T02:33:20.659696+00:00",
+  "updated_at": "2026-10-07T02:34:47.627203+00:00",
+  "completed_at": "2026-10-07T02:34:47.627201+00:00",
+  "context": {
+    "source": "dashboard",
+    "profile_user_id": "phase16",
+    "mission_type": "document",
+    "intent_decision": {
+      "type": "document_project",
+      "confidence": 1.0,
+      "reason": "由已认证的项目任务入口显式创建",
+      "execution_requested": true
+    },
+    "user_context": {
+      "business_flow_key": "general"
+    },
+    "metadata": {
+      "project_id": "phase16-project",
+      "title": "重新交付：阶段十六交付样本",
+      "context": {
+        "business_flow_key": "general"
+      },
+      "intent_type": "document_project",
+      "execution_requested": true,
+      "profile_user_id": "phase16",
+      "suppress_notification": true,
+      "_direct_mission": true,
+      "_reserve_planning": false,
+      "_planning_owner": ""
+    }
+  },
+  "mission_run": {
+    "id": "mrun-354eb0d84c6d4e15",
+    "mission_id": "mission-c872ccc3b49e",
+    "correlation_id": "mission-100f9a2bb8214a01",
+    "status": "completed",
+    "active_plan_version": 1,
+    "workflow_run_id": "workflow-41eb207e7e93",
+    "outcome": "completed",
+    "created_at": "2026-10-07T02:33:20.659696+00:00",
+    "updated_at": "2026-10-07T02:35:32.851219+00:00",
+    "ended_at": "2026-10-07T02:34:47.627201+00:00",
+    "metadata": {}
+  },
+  "conversation": {
+    "id": "conv-173efd61bb1b",
+    "channel": "dashboard",
+    "external_conversation_id": "dashboard:phase16-browser",
+    "user_external_id": "phase16-browser",
+    "owner_user_id": "phase16",
+    "profile_user_id": "phase16",
+    "status": "active",
+    "metadata": {
+      "project_id": "phase16-project",
+      "title": "重新交付：阶段十六交付样本",
+      "context": {
+        "business_flow_key": "general"
+      },
+      "intent_type": "document_project",
+      "execution_requested": true,
+      "profile_user_id": "phase16",
+      "suppress_notification": true,
+      "_direct_mission": true,
+      "_reserve_planning": false,
+      "_planning_owner": ""
+    },
+    "created_at": "2026-10-07T02:33:20.659696+00:00",
+    "updated_at": "2026-10-07T02:33:20.659696+00:00"
+  },
+  "steps": [
+    {
+      "id": "step-db794894479f",
+      "mission_id": "mission-c872ccc3b49e",
+      "plan_version": 1,
+      "order_index": 1,
+      "title": "创建并核验独立交付版本",
+      "description": "仅允许使用 exec/Python：读取旧文件 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/delivery.txt 并验证其 SHA256 为 da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505；使用独占创建模式 x 创建新文件 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/redelivery-v2.txt，内容严格为 Phase 16 redelivery verified 加一个换行。若新路径已存在则只读核对，不覆盖。创建后回读并计算实际 SHA256，确认旧文件哈希未变。返回新文件为 document artifact，并为写入返回 side_effects applied、当前合同幂等键以及真实工具回执。只允许写入该新路径，不修改旧文件或任何其他文件，不外发、不联网。",
+      "task_type": "coordination",
+      "agent_id": "ratchet",
+      "executor": "openclaw",
+      "status": "completed",
+      "work_run_id": "wrun-d8ef46ad7694484d",
+      "lease_owner": null,
+      "lease_token": null,
+      "lease_expires_at": null,
+      "attempt_count": 1,
+      "started_at": "2026-10-07T02:33:32.459642+00:00",
+      "completed_at": "2026-10-07T02:34:16.764893+00:00",
+      "updated_at": "2026-10-07T02:34:16.764899+00:00",
+      "dependencies": [],
+      "input": {},
+      "result": {
+        "success": true,
+        "output": "```json\n{\n  \"outcome\": \"succeeded\",\n  \"summary\": \"旧文件哈希验证通过（da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505），新文件以独占创建模式写入 redelivery-v2.txt，内容为 'Phase 16 redelivery verified\\\\n'，实际 SHA256 为 81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008，旧文件哈希操作前后一致。\",\n  \"tools_used\": [\"exec\"],\n  \"artifacts\": [\n    {\n      \"artifact_key\": \"a1\",\n      \"artifact_type\": \"document\",\n      \"title\": \"Phase 16 redelivery-v2\",\n      \"uri\": \"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/redelivery-v2.txt\",\n      \"content_hash\": \"81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008\"\n    }\n  ],\n  \"evidence\": [\n    {\n      \"requirement_id\": \"ev-7cca7dcf2684dc308a2c\",\n      \"evidence_type\": \"test_output\",\n      \"source_ref\": \"exec:python3-heredoc-phase16-redelivery\",\n      \"summary\": \"Python 脚本通过 hashlib.sha256 计算旧文件哈希为 da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505（与预期一致），以独占模式 x 创建新文件后回读哈希为 81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008，旧文件操作后哈希不变。\",\n      \"artifact_key\": \"a1\",\n      \"confidence\": 1.0\n    }\n  ],\n  \"acceptance_results\": [\n    {\n      \"criterion_id\": \"ac-922b453c5994cb3c936b\",\n      \"criterion\": \"新文件内容严格为 Phase 16 redelivery verified 加换行，旧文件哈希保持不变，返回实际内容哈希及工具证据\",\n      \"status\": \"pass\",\n      \"evidence_refs\": [\"ev-7cca7dcf2684dc308a2c\"],\n      \"notes\": \"新文件内容 b'Phase 16 redelivery verified\\\\n' 符合预期；旧文件哈希 da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505 操作前后一致；新文件 SHA256 81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008 已返回。\"\n    }\n  ],\n  \"side_effects\": [\n    {\n      \"effect_key\": \"create-redelivery-v2-file\",\n      \"resource\": \"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/redelivery-v2.txt\",\n      \"action\": \"exclusive-create (mode x)\",\n      \"status\": \"applied\",\n      \"idempotency_key\": \"mission-c872ccc3b49e:plan:1:step:1\",\n      \"receipt_ref\": \"exec:python3-heredoc-phase16-redelivery:NEW_EXISTS=False->CREATED\",\n      \"evidence_refs\": [\"ev-7cca7dcf2684dc308a2c\"]\n    }\n  ],\n  \"risk_notes\": \"本次仅验证单步创建与哈希一致性；未对旧文件做任何修改，未联网或外发。剩余风险：若后续步骤依赖新文件内容被下游消费，需下游自行校验内容语义是否符合业务预期。\"\n}\n```",
+        "error": "",
+        "duration_ms": 0,
+        "exit_code": 0,
+        "output_source": "payloads[0]",
+        "output_candidates": [
+          {
+            "source": "payloads[0]",
+            "text": "```json\n{\n  \"outcome\": \"succeeded\",\n  \"summary\": \"旧文件哈希验证通过（da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505），新文件以独占创建模式写入 redelivery-v2.txt，内容为 'Phase 16 redelivery verified\\\\n'，实际 SHA256 为 81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008，旧文件哈希操作前后一致。\",\n  \"tools_used\": [\"exec\"],\n  \"artifacts\": [\n    {\n      \"artifact_key\": \"a1\",\n      \"artifact_type\": \"document\",\n      \"title\": \"Phase 16 redelivery-v2\",\n      \"uri\": \"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/redelivery-v2.txt\",\n      \"content_hash\": \"81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008\"\n    }\n  ],\n  \"evidence\": [\n    {\n      \"requirement_id\": \"ev-7cca7dcf2684dc308a2c\",\n      \"evidence_type\": \"test_output\",\n      \"source_ref\": \"exec:python3-heredoc-phase16-redelivery\",\n      \"summary\": \"Python 脚本通过 hashlib.sha256 计算旧文件哈希为 da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505（与预期一致），以独占模式 x 创建新文件后回读哈希为 81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008，旧文件操作后哈希不变。\",\n      \"artifact_key\": \"a1\",\n      \"confidence\": 1.0\n    }\n  ],\n  \"acceptance_results\": [\n    {\n      \"criterion_id\": \"ac-922b453c5994cb3c936b\",\n      \"criterion\": \"新文件内容严格为 Phase 16 redelivery verified 加换行，旧文件哈希保持不变，返回实际内容哈希及工具证据\",\n      \"status\": \"pass\",\n      \"evidence_refs\": [\"ev-7cca7dcf2684dc308a2c\"],\n      \"notes\": \"新文件内容 b'Phase 16 redelivery verified\\\\n' 符合预期；旧文件哈希 da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505 操作前后一致；新文件 SHA256 81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008 已返回。\"\n    }\n  ],\n  \"side_effects\": [\n    {\n      \"effect_key\": \"create-redelivery-v2-file\",\n      \"resource\": \"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/redelivery-v2.txt\",\n      \"action\": \"exclusive-create (mode x)\",\n      \"status\": \"applied\",\n      \"idempotency_key\": \"mission-c872ccc3b49e:plan:1:step:1\",\n      \"receipt_ref\": \"exec:python3-heredoc-phase16-redelivery:NEW_EXISTS=False->CREATED\",\n      \"evidence_refs\": [\"ev-7cca7dcf2684dc308a2c\"]\n    }\n  ],\n  \"risk_notes\": \"本次仅验证单步创建与哈希一致性；未对旧文件做任何修改，未联网或外发。剩余风险：若后续步骤依赖新文件内容被下游消费，需下游自行校验内容语义是否符合业务预期。\"\n}\n```"
+          },
+          {
+            "source": "stdout",
+            "text": "{\n  \"runId\": \"a76e92d5-3ab2-4c13-9bc2-63b337a127e7\",\n  \"status\": \"ok\",\n  \"summary\": \"completed\",\n  \"result\": {\n    \"payloads\": [\n      {\n        \"text\": \"```json\\n{\\n  \\\"outcome\\\": \\\"succeeded\\\",\\n  \\\"summary\\\": \\\"旧文件哈希验证通过（da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505），新文件以独占创建模式写入 redelivery-v2.txt，内容为 'Phase 16 redelivery verified\\\\\\\\n'，实际 SHA256 为 81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008，旧文件哈希操作前后一致。\\\",\\n  \\\"tools_used\\\": [\\\"exec\\\"],\\n  \\\"artifacts\\\": [\\n    {\\n      \\\"artifact_key\\\": \\\"a1\\\",\\n      \\\"artifact_type\\\": \\\"document\\\",\\n      \\\"title\\\": \\\"Phase 16 redelivery-v2\\\",\\n      \\\"uri\\\": \\\"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/redelivery-v2.txt\\\",\\n      \\\"content_hash\\\": \\\"81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008\\\"\\n    }\\n  ],\\n  \\\"evidence\\\": [\\n    {\\n      \\\"requirement_id\\\": \\\"ev-7cca7dcf2684dc308a2c\\\",\\n      \\\"evidence_type\\\": \\\"test_output\\\",\\n      \\\"source_ref\\\": \\\"exec:python3-heredoc-phase16-redelivery\\\",\\n      \\\"summary\\\": \\\"Python 脚本通过 hashlib.sha256 计算旧文件哈希为 da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505（与预期一致），以独占模式 x 创建新文件后回读哈希为 81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008，旧文件操作后哈希不变。\\\",\\n      \\\"artifact_key\\\": \\\"a1\\\",\\n      \\\"confidence\\\": 1.0\\n    }\\n  ],\\n  \\\"acceptance_results\\\": [\\n    {\\n      \\\"criterion_id\\\": \\\"ac-922b453c5994cb3c936b\\\",\\n      \\\"criterion\\\": \\\"新文件内容严格为 Phase 16 redelivery verified 加换行，旧文件哈希保持不变，返回实际内容哈希及工具证据\\\",\\n      \\\"status\\\": \\\"pass\\\",\\n      \\\"evidence_refs\\\": [\\\"ev-7cca7dcf2684dc308a2c\\\"],\\n      \\\"notes\\\": \\\"新文件内容 b'Phase 16 redelivery verified\\\\\\\\n' 符合预期；旧文件哈希 da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505 操作前后一致；新文件 SHA256 81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008 已返回。\\\"\\n    }\\n  ],\\n  \\\"side_effects\\\": [\\n    {\\n      \\\"effect_key\\\": \\\"create-redelivery-v2-file\\\",\\n      \\\"resource\\\": \\\"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/redelivery-v2.txt\\\",\\n      \\\"action\\\": \\\"exclusive-create (mode x)\\\",\\n      \\\"status\\\": \\\"applied\\\",\\n      \\\"idempotency_key\\\": \\\"mission-c872ccc3b49e:plan:1:step:1\\\",\\n      \\\"receipt_ref\\\": \\\"exec:python3-heredoc-phase16-redelivery:NEW_EXISTS=False->CREATED\\\",\\n      \\\"evidence_refs\\\": [\\\"ev-7cca7dcf2684dc308a2c\\\"]\\n    }\\n  ],\\n  \\\"risk_notes\\\": \\\"本次仅验证单步创建与哈希一致性；未对旧文件做任何修改，未联网或外发。剩余风险：若后续步骤依赖新文件内容被下游消费，需下游自行校验内容语义是否符合业务预期。\\\"\\n}\\n```\",\n        \"mediaUrl\": null\n      }\n    ],\n    \"meta\": {\n      \"durationMs\": 41798,\n      \"agentMeta\": {\n        \"sessionId\": \"4a788712-66bc-4cd2-b2fd-225a1fbdcc61\",\n        \"sessionFile\": \"agent:ratchet:command-center-mission-c872ccc3b49e-v1-step-step-db794894479f-a1\",\n        \"provider\": \"bailian\",\n        \"model\": \"qwen3.7-plus\",\n        \"contextTokens\": 1000000,\n        \"contextTokensSource\": \"resolved\",\n        \"agentHarnessId\": \"openclaw\",\n        \"credentialSource\": {\n          \"kind\": \"profile\"\n        },\n        \"usage\": {\n          \"input\": 18849,\n          \"output\": 2235,\n          \"cacheRead\": 17792,\n          \"reasoningTokens\": 631,\n          \"total\": 38876,\n          \"cost\": {\n            \"total\": 0\n          }\n        },\n        \"lastCallUsage\": {\n          \"input\": 883,\n          \"output\": 1531,\n          \"cacheRead\": 17792,\n          \"cacheWrite\": 0,\n          \"cost\": {\n            \"total\": 0\n          },\n          \"reasoningTokens\": 402,\n          \"total\": 20206\n        },\n        \"promptTokens\": 18675,\n        \"codeModeEngaged\": false,\n        \"assistantTurns\": 2,\n        \"costUsd\": 0,\n        \"terminalReceipt\": {\n          \"runId\": \"a76e92d5-3ab2-4c13-9bc2-63b337a127e7\",\n          \"sessionId\": \"4a788712-66bc-4cd2-b2fd-225a1fbdcc61\",\n          \"turnId\": \"a76e92d5-3ab2-4c13-9bc2-63b337a127e7\",\n          \"requested\": {\n            \"provider\": \"bailian\",\n            \"model\": \"qwen3.7-plus\"\n          },\n          \"effective\": {\n            \"provider\": \"bailian\",\n            \"model\": \"qwen3.7-plus\",\n            \"responseModel\": \"qwen3.7-plus\"\n          },\n          \"successfulToolNames\": [\n            \"exec\"\n          ],\n          \"rerouted\": false\n        }\n      },\n      \"aborted\": false,\n      \"systemPromptReport\": {\n        \"source\": \"run\",\n        \"generatedAt\": 1791340414816,\n        \"sessionId\": \"4a788712-66bc-4cd2-b2fd-225a1fbdcc61\",\n        \"sessionKey\": \"agent:ratchet:command-center-mission-c872ccc3b49e-v1-step-step-db794894479f-a1\",\n        \"provider\": \"bailian\",\n        \"model\": \"qwen3.7-plus\",\n        \"workspaceDir\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace\",\n        \"bootstrapMaxChars\": 20000,\n        \"bootstrapTotalMaxChars\": 60000,\n        \"bootstrapTruncation\": {\n          \"warningMode\": \"always\",\n          \"warningShown\": false,\n          \"truncatedFiles\": 0,\n          \"nearLimitFiles\": 0,\n          \"totalNearLimit\": false\n        },\n        \"sandbox\": {\n          \"mode\": \"all\",\n          \"sandboxed\": true\n        },\n        \"systemPrompt\": {\n          \"chars\": 21199,\n          \"hash\": \"916a73cd4db7d651845ff1f9e40bdd907ddc8334ebaca9be908b2346926ed747\",\n          \"projectContextChars\": 5878,\n          \"nonProjectContextChars\": 15321\n        },\n        \"injectedWorkspaceFiles\": [\n          {\n            \"name\": \"AGENTS.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/AGENTS.md\",\n            \"missing\": false,\n            \"rawChars\": 2540,\n            \"injectedChars\": 2540,\n            \"truncated\": false\n          },\n          {\n            \"name\": \"SOUL.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/SOUL.md\",\n            \"missing\": false,\n            \"rawChars\": 925,\n            \"injectedChars\": 925,\n            \"truncated\": false\n          },\n          {\n            \"name\": \"IDENTITY.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/IDENTITY.md\",\n            \"missing\": false,\n            \"rawChars\": 620,\n            \"injectedChars\": 620,\n            \"truncated\": false\n          },\n          {\n            \"name\": \"USER.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/USER.md\",\n            \"missing\": false,\n            \"rawChars\": 130,\n            \"injectedChars\": 130,\n            \"truncated\": false\n          },\n          {\n            \"name\": \"MEMORY.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/MEMORY.md\",\n            \"missing\": false,\n            \"rawChars\": 957,\n            \"injectedChars\": 957,\n            \"truncated\": false\n          }\n        ],\n        \"skills\": {\n          \"promptChars\": 6113,\n          \"hash\": \"d0e9d3753ccc057d73133dc751a44978b09f911c06fabca01f300712210d5e23\",\n          \"entries\": [\n            {\n              \"name\": \"alphastar-conservative-offline\",\n              \"blockChars\": 391\n            },\n            {\n              \"name\": \"alphastar-contract-policy\",\n              \"blockChars\": 355\n            },\n            {\n              \"name\": \"alphastar-data-curriculum\",\n              \"blockChars\": 341\n            },\n            {\n              \"name\": \"alphastar-human-prior\",\n              \"blockChars\": 338\n            },\n            {\n              \"name\": \"alphastar-pfsp-curriculum\",\n              \"blockChars\": 341\n            },\n            {\n              \"name\": \"alphastar-robust-evaluation\",\n              \"blockChars\": 362\n            },\n            {\n              \"name\": \"alphastar-role-league\",\n              \"blockChars\": 358\n            },\n            {\n              \"name\": \"alphastar-split-off-policy\",\n              \"blockChars\": 369\n            },\n            {\n              \"name\": \"diagram-maker\",\n              \"blockChars\": 262\n            },\n            {\n              \"name\": \"feishu-doc\",\n              \"blockChars\": 275\n            },\n            {\n              \"name\": \"feishu-drive\",\n              \"blockChars\": 302\n            },\n            {\n              \"name\": \"feishu-perm\",\n              \"blockChars\": 313\n            },\n            {\n              \"name\": \"feishu-wiki\",\n              \"blockChars\": 281\n            },\n            {\n              \"name\": \"github\",\n              \"blockChars\": 256\n            },\n            {\n              \"name\": \"ninja-dispatch\",\n              \"blockChars\": 353\n            },\n            {\n              \"name\": \"session-logs\",\n              \"blockChars\": 249\n            },\n            {\n              \"name\": \"skill-creator\",\n              \"blockChars\": 280\n            },\n            {\n              \"name\": \"tmux\",\n              \"blockChars\": 265\n            }\n          ]\n        },\n        \"tools\": {\n          \"listChars\": 0,\n          \"schemaChars\": 9578,\n          \"entries\": [\n            {\n              \"name\": \"read\",\n              \"summaryChars\": 164,\n              \"summaryHash\": \"d136f5b09e28d671addad4ca800b75b8aa6a36002bc739ead964f618d3e34829\",\n              \"schemaChars\": 481,\n              \"schemaHash\": \"b1b9b637dfe1dfade40f50c37cf840a298f1992b534cb9425b7470233a6b0cbb\",\n              \"propertiesCount\": 5\n            },\n            {\n              \"name\": \"edit\",\n              \"summaryChars\": 130,\n              \"summaryHash\": \"4149500b1f6501ec6450e4c048bdb6844764dd4a888a10846726cbbc7256152e\",\n              \"schemaChars\": 501,\n              \"schemaHash\": \"adf3140833ca927b84c66c989d6833fdcbd9de011dd2ffc59f9a2c4d3c25f127\",\n              \"propertiesCount\": 2\n            },\n            {\n              \"name\": \"write\",\n              \"summaryChars\": 49,\n              \"summaryHash\": \"f9ce3d8ac929a51498c03331b97c59bfaa2bb4d25580a5ddf0102e6a8e173aec\",\n              \"schemaChars\": 191,\n              \"schemaHash\": \"b61d2da23febf5fbda55e391526f36d283e9e9fb7f1a1dbadcf5c618a0632287\",\n              \"propertiesCount\": 2\n            },\n            {\n              \"name\": \"apply_patch\",\n              \"summaryChars\": 71,\n              \"summaryHash\": \"5c1173efe93d080a386a23216bc3e58db2e0033eb3ddea697eb2439938b7cae4\",\n              \"schemaChars\": 153,\n              \"schemaHash\": \"05521268363ff4f191472c90d69ef08a503ba9acf1d2febc50b3ee68db32ab65\",\n              \"propertiesCount\": 1\n            },\n            {\n              \"name\": \"exec\",\n              \"summaryChars\": 366,\n              \"summaryHash\": \"6a41ebbc7cd1fae376a497c1bb1662c40a5faa87e5f811bff3ae37e04fb20973\",\n              \"schemaChars\": 1122,\n              \"schemaHash\": \"29de9f248d3d8c84fbb84b347d4a46e07e766af8d1d6cabdbd8fc05aceea77e8\",\n              \"propertiesCount\": 11\n            },\n            {\n              \"name\": \"process\",\n              \"summaryChars\": 190,\n              \"summaryHash\": \"75fd9c7b8d560599081ab2621e4f897babc118254cf439bd8329a60a905a9ef1\",\n              \"schemaChars\": 1164,\n              \"schemaHash\": \"6cf3281369349e15ea532e644c8ec7f94c96fa6a4e3287272c8cfe90b0960516\",\n              \"propertiesCount\": 12\n            },\n            {\n              \"name\": \"sessions_list\",\n              \"summaryChars\": 244,\n              \"summaryHash\": \"1e39ee0ccc7ce3c6f26fe067c389bcb0da4ba845e5030e5088ab8e4027df963c\",\n              \"schemaChars\": 518,\n              \"schemaHash\": \"e878e741a7122c61cfd46c97828e7281414afb487b2e9f0c718578bdf9bf30e5\",\n              \"propertiesCount\": 10\n            },\n            {\n              \"name\": \"sessions_history\",\n              \"summaryChars\": 343,\n              \"summaryHash\": \"cf78e38bd7308164a1b54994d87e3a0511a9108d8726f223da9862197e72b4d2\",\n              \"schemaChars\": 337,\n              \"schemaHash\": \"37ca1edd9f92288e5569f580721464b9efed5ccc64fdba8709d7f66db3a7a650\",\n              \"propertiesCount\": 7\n            },\n            {\n              \"name\": \"sessions_search\",\n              \"summaryChars\": 177,\n              \"summaryHash\": \"334f96a1cafd9325d695608fe065a4a00888f6b55279d396590575b39e62728a\",\n              \"schemaChars\": 179,\n              \"schemaHash\": \"6545acec45e540d9c7d7d76b79084ce439ba35f4cd626fa4f8ec406230f0913d"
+          }
+        ],
+        "context": {
+          "status": "disabled"
+        },
+        "outcome": "succeeded",
+        "summary": "旧文件哈希验证通过（da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505），新文件以独占创建模式写入 redelivery-v2.txt，内容为 'Phase 16 redelivery verified\\n'，实际 SHA256 为 81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008，旧文件哈希操作前后一致。",
+        "artifacts": [
+          {
+            "artifact_key": "a1",
+            "artifact_type": "document",
+            "title": "Phase 16 redelivery-v2",
+            "uri": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/redelivery-v2.txt",
+            "content_hash": "81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008",
+            "metadata": {}
+          }
+        ],
+        "evidence": [
+          {
+            "evidence_type": "test_output",
+            "requirement_id": "ev-7cca7dcf2684dc308a2c",
+            "source_ref": "exec:python3-heredoc-phase16-redelivery",
+            "summary": "Python 脚本通过 hashlib.sha256 计算旧文件哈希为 da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505（与预期一致），以独占模式 x 创建新文件后回读哈希为 81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008，旧文件操作后哈希不变。",
+            "artifact_key": "a1",
+            "confidence": 1.0,
+            "metadata": {}
+          }
+        ],
+        "acceptance_results": [
+          {
+            "criterion": "新文件内容严格为 Phase 16 redelivery verified 加换行，旧文件哈希保持不变，返回实际内容哈希及工具证据",
+            "criterion_id": "ac-922b453c5994cb3c936b",
+            "status": "pass",
+            "evidence_refs": [
+              "exec:python3-heredoc-phase16-redelivery"
+            ],
+            "notes": "新文件内容 b'Phase 16 redelivery verified\\n' 符合预期；旧文件哈希 da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505 操作前后一致；新文件 SHA256 81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008 已返回。"
+          }
+        ],
+        "tools_used": [
+          "exec"
+        ],
+        "risk_notes": "本次仅验证单步创建与哈希一致性；未对旧文件做任何修改，未联网或外发。剩余风险：若后续步骤依赖新文件内容被下游消费，需下游自行校验内容语义是否符合业务预期。",
+        "structured_output": {
+          "outcome": "succeeded",
+          "summary": "旧文件哈希验证通过（da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505），新文件以独占创建模式写入 redelivery-v2.txt，内容为 'Phase 16 redelivery verified\\n'，实际 SHA256 为 81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008，旧文件哈希操作前后一致。",
+          "tools_used": [
+            "exec"
+          ],
+          "artifacts": [
+            {
+              "artifact_key": "a1",
+              "artifact_type": "document",
+              "title": "Phase 16 redelivery-v2",
+              "uri": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/redelivery-v2.txt",
+              "content_hash": "81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008"
+            }
+          ],
+          "evidence": [
+            {
+              "requirement_id": "ev-7cca7dcf2684dc308a2c",
+              "evidence_type": "test_output",
+              "source_ref": "exec:python3-heredoc-phase16-redelivery",
+              "summary": "Python 脚本通过 hashlib.sha256 计算旧文件哈希为 da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505（与预期一致），以独占模式 x 创建新文件后回读哈希为 81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008，旧文件操作后哈希不变。",
+              "artifact_key": "a1",
+              "confidence": 1.0
+            }
+          ],
+          "acceptance_results": [
+            {
+              "criterion_id": "ac-922b453c5994cb3c936b",
+              "criterion": "新文件内容严格为 Phase 16 redelivery verified 加换行，旧文件哈希保持不变，返回实际内容哈希及工具证据",
+              "status": "pass",
+              "evidence_refs": [
+                "ev-7cca7dcf2684dc308a2c"
+              ],
+              "notes": "新文件内容 b'Phase 16 redelivery verified\\n' 符合预期；旧文件哈希 da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505 操作前后一致；新文件 SHA256 81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008 已返回。"
+            }
+          ],
+          "side_effects": [
+            {
+              "effect_key": "create-redelivery-v2-file",
+              "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/redelivery-v2.txt",
+              "action": "exclusive-create (mode x)",
+              "status": "applied",
+              "idempotency_key": "mission-c872ccc3b49e:plan:1:step:1",
+              "receipt_ref": "exec:python3-heredoc-phase16-redelivery:NEW_EXISTS=False->CREATED",
+              "evidence_refs": [
+                "ev-7cca7dcf2684dc308a2c"
+              ]
+            }
+          ],
+          "risk_notes": "本次仅验证单步创建与哈希一致性；未对旧文件做任何修改，未联网或外发。剩余风险：若后续步骤依赖新文件内容被下游消费，需下游自行校验内容语义是否符合业务预期。"
+        },
+        "evidence_refs": [
+          "exec:python3-heredoc-phase16-redelivery"
+        ],
+        "receipt_preflight": {
+          "schema_version": "1.0",
+          "strategy": "existing_evidence_only",
+          "input_sha256": "7373229b313507243f880d2755089225eb0692ccb708a9ef957aaea71999a5ce",
+          "changes": [
+            {
+              "acceptance_index": 0,
+              "from": "ev-7cca7dcf2684dc308a2c",
+              "to": "exec:python3-heredoc-phase16-redelivery"
+            }
+          ],
+          "strict_accepted_before": true,
+          "strict_accepted": true,
+          "blockers": [],
+          "execution_repeated": false
+        },
+        "execution_quality": {
+          "status": "pass",
+          "score": 100,
+          "mode": "strict",
+          "enforced": true,
+          "accepted": true,
+          "executor_success": true,
+          "business_outcome": "succeeded",
+          "hard_blockers": [],
+          "blockers": [],
+          "warnings": [],
+          "evidence_refs": [
+            "exec:python3-heredoc-phase16-redelivery"
+          ],
+          "required_evidence": [
+            "test_output"
+          ],
+          "required_artifact_types": [
+            "document"
+          ],
+          "required_tools": [
+            "test_runner"
+          ],
+          "acceptance_criteria": [
+            "新文件内容严格为 Phase 16 redelivery verified 加换行，旧文件哈希保持不变，返回实际内容哈希及工具证据"
+          ],
+          "checked_rules": [
+            "result-summary",
+            "required-evidence-types",
+            "artifact-contract",
+            "acceptance-results",
+            "tool-use",
+            "required-output-fields"
+          ]
+        },
+        "side_effects": [
+          {
+            "effect_key": "create-redelivery-v2-file",
+            "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/redelivery-v2.txt",
+            "action": "exclusive-create (mode x)",
+            "status": "applied",
+            "idempotency_key": "mission-c872ccc3b49e:plan:1:step:1",
+            "receipt_ref": "exec:python3-heredoc-phase16-redelivery:NEW_EXISTS=False->CREATED",
+            "evidence_refs": [
+              "ev-7cca7dcf2684dc308a2c"
+            ],
+            "metadata": {}
+          }
+        ],
+        "effect_quality": {
+          "status": "pass",
+          "accepted": true,
+          "enforced": true,
+          "blockers": [],
+          "warnings": [],
+          "effect_count": 1,
+          "applied_count": 1,
+          "unknown_count": 0,
+          "checked_rules": [
+            "effect-journal-present",
+            "effect-status-known",
+            "stable-idempotency-key",
+            "applied-effect-receipt"
+          ]
+        },
+        "completion_decision": {
+          "executor_success": true,
+          "accepted": true,
+          "retry_scheduled": false,
+          "attempt": 1,
+          "max_attempts": 2,
+          "receipt_retry_safe": false,
+          "enforcement": {
+            "mode": "strict",
+            "enforced": true,
+            "reason": "strict_mode",
+            "flow_key": "general",
+            "highest_risk": "L1",
+            "runtime": "legacy"
+          },
+          "effect_quality": {
+            "status": "pass",
+            "accepted": true,
+            "enforced": true,
+            "blockers": [],
+            "warnings": [],
+            "effect_count": 1,
+            "applied_count": 1,
+            "unknown_count": 0,
+            "checked_rules": [
+              "effect-journal-present",
+              "effect-status-known",
+              "stable-idempotency-key",
+              "applied-effect-receipt"
+            ]
+          }
+        },
+        "effect_ids": [
+          "effect-b06a31abd85d1662c28b"
+        ]
+      },
+      "context_binding": null,
+      "phase": "planning",
+      "objective": "仅允许使用 exec/Python：读取旧文件 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/delivery.txt 并验证其 SHA256 为 da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505；使用独占创建模式 x 创建新文件 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/redelivery-v2.txt，内容严格为 Phase 16 redelivery verified 加一个换行。若新路径已存在则只读核对，不覆盖。创建后回读并计算实际 SHA256，确认旧文件哈希未变。返回新文件为 document artifact，并为写入返回 side_effects applied、当前合同幂等键以及真实工具回执。只允许写入该新路径，不修改旧文件或任何其他文件，不外发、不联网。",
+      "required_tools": [
+        "test_runner"
+      ],
+      "tool_requirements": [
+        {
+          "name": "测试运行器",
+          "category": "verification",
+          "status": "available",
+          "description": "运行后端、单元或集成测试并回传输出。",
+          "evidence_types": [
+            "test_output"
+          ],
+          "id": "test_runner"
+        }
+      ],
+      "deliverables": [
+        "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/redelivery-v2.txt"
+      ],
+      "output_contract": {
+        "artifact_types": [
+          "document"
+        ],
+        "required_fields": [
+          "summary",
+          "evidence_refs",
+          "risk_notes"
+        ]
+      },
+      "acceptance_criteria": [
+        "新文件内容严格为 Phase 16 redelivery verified 加换行，旧文件哈希保持不变，返回实际内容哈希及工具证据"
+      ],
+      "evidence_required": [
+        "test_output"
+      ],
+      "risk_level": "low",
+      "risk_class": "L1",
+      "approval_required": false,
+      "side_effect": true,
+      "resources": [
+        "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/redelivery-v2.txt"
+      ],
+      "idempotency_key": "mission-c872ccc3b49e:plan:1:step:1",
+      "timeout_seconds": 900,
+      "max_attempts": 2,
+      "rollback_plan": "不删除或覆盖文件；出现异常时仅只读核实并报告，人工决定后续处理。",
+      "compensation": {
+        "type": "manual",
+        "instructions": "不删除或覆盖文件；出现异常时仅只读核实并报告，人工决定后续处理。"
+      },
+      "capability_match": true,
+      "artifacts": [
+        {
+          "id": "artifact-7ea01fd0c47b2ff98606",
+          "mission_id": "mission-c872ccc3b49e",
+          "mission_run_id": "mrun-354eb0d84c6d4e15",
+          "correlation_id": "mission-100f9a2bb8214a01",
+          "plan_version": 1,
+          "step_id": "step-db794894479f",
+          "work_run_id": "wrun-d8ef46ad7694484d",
+          "artifact_type": "document",
+          "title": "Phase 16 redelivery-v2",
+          "uri": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/redelivery-v2.txt",
+          "content_hash": "81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008",
+          "fingerprint": "7ea01fd0c47b2ff9860609b44c458b870995e69d070b639813d57f672b2b22f9",
+          "created_at": "2026-10-07T02:34:16.771348+00:00",
+          "metadata": {}
+        }
+      ],
+      "evidence": [
+        {
+          "id": "evidence-360034174bd4d08b0ca6",
+          "mission_id": "mission-c872ccc3b49e",
+          "mission_run_id": "mrun-354eb0d84c6d4e15",
+          "correlation_id": "mission-100f9a2bb8214a01",
+          "plan_version": 1,
+          "step_id": "step-db794894479f",
+          "artifact_id": "artifact-7ea01fd0c47b2ff98606",
+          "evidence_type": "test_output",
+          "source_ref": "exec:python3-heredoc-phase16-redelivery",
+          "summary": "Python 脚本通过 hashlib.sha256 计算旧文件哈希为 da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505（与预期一致），以独占模式 x 创建新文件后回读哈希为 81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008，旧文件操作后哈希不变。",
+          "collected_by": "ratchet",
+          "collected_at": "2026-10-07T02:34:16.774262+00:00",
+          "confidence": 1.0,
+          "fingerprint": "360034174bd4d08b0ca66547671001fbbe37b973503b1b6f08a35801f0a6a42c",
+          "metadata": {}
+        }
+      ],
+      "acceptance_gate": {
+        "id": "gate-43d609a1361954f2e607",
+        "mission_id": "mission-c872ccc3b49e",
+        "mission_run_id": "mrun-354eb0d84c6d4e15",
+        "correlation_id": "mission-100f9a2bb8214a01",
+        "plan_version": 1,
+        "step_id": "step-db794894479f",
+        "gate_type": "execution_evidence",
+        "mode": "strict",
+        "enforced": true,
+        "status": "pass",
+        "accepted": true,
+        "score": 100,
+        "evaluated_by": "ratchet",
+        "evaluated_at": "2026-10-07T02:34:16.777496+00:00",
+        "blockers": [],
+        "warnings": [],
+        "details": {
+          "status": "pass",
+          "score": 100,
+          "mode": "strict",
+          "enforced": true,
+          "accepted": true,
+          "executor_success": true,
+          "business_outcome": "succeeded",
+          "hard_blockers": [],
+          "blockers": [],
+          "warnings": [],
+          "evidence_refs": [
+            "exec:python3-heredoc-phase16-redelivery"
+          ],
+          "required_evidence": [
+            "test_output"
+          ],
+          "required_artifact_types": [
+            "document"
+          ],
+          "required_tools": [
+            "test_runner"
+          ],
+          "acceptance_criteria": [
+            "新文件内容严格为 Phase 16 redelivery verified 加换行，旧文件哈希保持不变，返回实际内容哈希及工具证据"
+          ],
+          "checked_rules": [
+            "result-summary",
+            "required-evidence-types",
+            "artifact-contract",
+            "acceptance-results",
+            "tool-use",
+            "required-output-fields"
+          ]
+        }
+      },
+      "step_approval": null,
+      "effects": [
+        {
+          "id": "effect-b06a31abd85d1662c28b",
+          "mission_id": "mission-c872ccc3b49e",
+          "mission_run_id": "mrun-354eb0d84c6d4e15",
+          "correlation_id": "mission-100f9a2bb8214a01",
+          "plan_version": 1,
+          "step_id": "step-db794894479f",
+          "work_run_id": "wrun-d8ef46ad7694484d",
+          "effect_key": "create-redelivery-v2-file",
+          "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/redelivery-v2.txt",
+          "action": "exclusive-create (mode x)",
+          "status": "applied",
+          "idempotency_key": "mission-c872ccc3b49e:plan:1:step:1",
+          "receipt_ref": "exec:python3-heredoc-phase16-redelivery:NEW_EXISTS=False->CREATED",
+          "fingerprint": "b06a31abd85d1662c28bc162e81fbcf1223433a31b78fa1e6e592874f02de45f",
+          "reported_at": "2026-10-07T02:34:16.781505+00:00",
+          "updated_at": "2026-10-07T02:34:16.781507+00:00",
+          "evidence_refs": [
+            "ev-7cca7dcf2684dc308a2c"
+          ],
+          "metadata": {}
+        }
+      ],
+      "compensations": []
+    }
+  ],
+  "context_bindings": [],
+  "planning_context": null,
+  "plan": {
+    "id": "plan-132c2eed4798",
+    "mission_id": "mission-c872ccc3b49e",
+    "version": 1,
+    "summary": "受控重新交付：保留原证据，在独立路径创建并核验新文件。",
+    "rationale": "",
+    "risk_level": "medium",
+    "raw_plan": {
+      "summary": "受控重新交付：保留原证据，在独立路径创建并核验新文件。",
+      "steps": [
+        {
+          "title": "创建并核验独立交付版本",
+          "description": "仅允许使用 exec/Python：读取旧文件 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/delivery.txt 并验证其 SHA256 为 da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505；使用独占创建模式 x 创建新文件 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/redelivery-v2.txt，内容严格为 Phase 16 redelivery verified 加一个换行。若新路径已存在则只读核对，不覆盖。创建后回读并计算实际 SHA256，确认旧文件哈希未变。返回新文件为 document artifact，并为写入返回 side_effects applied、当前合同幂等键以及真实工具回执。只允许写入该新路径，不修改旧文件或任何其他文件，不外发、不联网。",
+          "agent_id": "ratchet",
+          "task_type": "coordination",
+          "side_effect": true,
+          "risk_class": "L1",
+          "approval_required": false,
+          "resources": [
+            "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/redelivery-v2.txt"
+          ],
+          "rollback_plan": "不删除或覆盖文件；出现异常时仅只读核实并报告，人工决定后续处理。",
+          "depends_on": [],
+          "required_tools": [
+            "test_runner"
+          ],
+          "deliverables": [
+            "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/redelivery-v2.txt"
+          ],
+          "evidence_required": [
+            "test_output"
+          ],
+          "acceptance_criteria": [
+            "新文件内容严格为 Phase 16 redelivery verified 加换行，旧文件哈希保持不变，返回实际内容哈希及工具证据"
+          ],
+          "output_contract": {
+            "artifact_types": [
+              "document"
+            ],
+            "required_fields": [
+              "summary",
+              "evidence_refs",
+              "risk_notes"
+            ]
+          },
+          "order_index": 1,
+          "tool_requirements": [
+            {
+              "name": "测试运行器",
+              "category": "verification",
+              "status": "available",
+              "description": "运行后端、单元或集成测试并回传输出。",
+              "evidence_types": [
+                "test_output"
+              ],
+              "id": "test_runner"
+            }
+          ],
+          "capability_match": true,
+          "risk_level": "low",
+          "phase": "planning",
+          "objective": "仅允许使用 exec/Python：读取旧文件 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/delivery.txt 并验证其 SHA256 为 da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505；使用独占创建模式 x 创建新文件 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/redelivery-v2.txt，内容严格为 Phase 16 redelivery verified 加一个换行。若新路径已存在则只读核对，不覆盖。创建后回读并计算实际 SHA256，确认旧文件哈希未变。返回新文件为 document artifact，并为写入返回 side_effects applied、当前合同幂等键以及真实工具回执。只允许写入该新路径，不修改旧文件或任何其他文件，不外发、不联网。",
+          "timeout_seconds": 900,
+          "max_attempts": 2,
+          "idempotency_key": "mission-c872ccc3b49e:plan:1:step:1",
+          "idempotency_key_generated": true,
+          "compensation": {
+            "type": "manual",
+            "instructions": "不删除或覆盖文件；出现异常时仅只读核实并报告，人工决定后续处理。"
+          }
+        }
+      ],
+      "schema_version": "2.0",
+      "business_type": "general",
+      "flow_spec": {
+        "flow_key": "general",
+        "version": "1.0.0",
+        "name": "通用业务执行流",
+        "business_type": "general",
+        "phases": [
+          "intake",
+          "planning",
+          "execution",
+          "verification",
+          "delivery"
+        ],
+        "required_gates": [
+          "plan_quality",
+          "plan_approval",
+          "evidence_gate"
+        ],
+        "budgets": {
+          "max_steps": 12,
+          "max_parallel_steps": 4,
+          "max_replans": 2,
+          "default_timeout_seconds": 900
+        },
+        "approval_policy": {
+          "plan_approval": true,
+          "delivery_approval": false,
+          "l3_step_approval": true
+        }
+      },
+      "risk_assessment": {
+        "highest_risk": "L1",
+        "by_level": {
+          "L0": 0,
+          "L1": 1,
+          "L2": 0,
+          "L3": 0
+        },
+        "step_approvals": [],
+        "plan_approval_required": true,
+        "delivery_approval_required": false
+      },
+      "approval_policy": {
+        "plan_approval": true,
+        "delivery_approval": false,
+        "l3_step_approval": true,
+        "highest_risk": "L1",
+        "step_approvals": []
+      },
+      "execution_policy": {
+        "runtime": "command-center",
+        "state_machine": "mission-v1",
+        "require_context_snapshot": true,
+        "require_evidence": true,
+        "idempotency_required_for_side_effects": true
+      },
+      "flow_validation": {
+        "status": "pass",
+        "flow_key": "general",
+        "flow_version": "1.0.0",
+        "blockers": [],
+        "warnings": [],
+        "checked_rules": [
+          "flow-budget",
+          "domain-coverage",
+          "risk-class",
+          "approval-policy",
+          "idempotency",
+          "compensation",
+          "resource-conflict"
+        ]
+      },
+      "capability_registry": {
+        "version": "p1-local",
+        "agent_count": 15,
+        "tool_count": 10
+      },
+      "plan_quality": {
+        "status": "pass",
+        "score": 100,
+        "blockers": [],
+        "warnings": [],
+        "suggestions": [],
+        "tool_summary": {
+          "total": 1,
+          "unknown": 0,
+          "unavailable": 0
+        },
+        "flow_key": "general",
+        "flow_version": "1.0.0",
+        "risk_assessment": {
+          "highest_risk": "L1",
+          "by_level": {
+            "L0": 0,
+            "L1": 1,
+            "L2": 0,
+            "L3": 0
+          },
+          "step_approvals": [],
+          "plan_approval_required": true,
+          "delivery_approval_required": false
+        },
+        "checked_rules": [
+          "schema",
+          "business-flow",
+          "risk-policy",
+          "idempotency",
+          "compensation",
+          "agent-capability",
+          "tool-registry",
+          "dependency-dag",
+          "deliverables",
+          "acceptance",
+          "evidence",
+          "domain-coverage"
+        ]
+      }
+    },
+    "status": "approved",
+    "created_by_agent_id": "optimus",
+    "created_at": "2026-10-07T02:33:20.726804+00:00",
+    "plan_quality": {
+      "status": "pass",
+      "score": 100,
+      "blockers": [],
+      "warnings": [],
+      "suggestions": [],
+      "tool_summary": {
+        "total": 1,
+        "unknown": 0,
+        "unavailable": 0
+      },
+      "flow_key": "general",
+      "flow_version": "1.0.0",
+      "risk_assessment": {
+        "highest_risk": "L1",
+        "by_level": {
+          "L0": 0,
+          "L1": 1,
+          "L2": 0,
+          "L3": 0
+        },
+        "step_approvals": [],
+        "plan_approval_required": true,
+        "delivery_approval_required": false
+      },
+      "checked_rules": [
+        "schema",
+        "business-flow",
+        "risk-policy",
+        "idempotency",
+        "compensation",
+        "agent-capability",
+        "tool-registry",
+        "dependency-dag",
+        "deliverables",
+        "acceptance",
+        "evidence",
+        "domain-coverage"
+      ]
+    }
+  },
+  "workflow_run": {
+    "id": "workflow-41eb207e7e93",
+    "mission_id": "mission-c872ccc3b49e",
+    "mission_run_id": "mrun-354eb0d84c6d4e15",
+    "correlation_id": "mission-100f9a2bb8214a01",
+    "plan_version": 1,
+    "runtime": "legacy",
+    "flow_key": "general",
+    "highest_risk": "L1",
+    "selection_reason": "isolated_redelivery",
+    "thread_id": "workflow-41eb207e7e93",
+    "checkpoint_namespace": "pilot",
+    "status": "ready",
+    "attempts": 0,
+    "next_attempt_at": "2026-10-07T02:33:32.412994+00:00",
+    "lease_owner": null,
+    "lease_token": null,
+    "lease_expires_at": null,
+    "last_error": null,
+    "created_at": "2026-10-07T02:33:20.732934+00:00",
+    "updated_at": "2026-10-07T02:33:32.412996+00:00",
+    "completed_at": "2026-10-07T02:33:20.732934+00:00",
+    "input": {
+      "workflow_run_id": "workflow-41eb207e7e93",
+      "mission_run_id": "mrun-354eb0d84c6d4e15",
+      "correlation_id": "mission-100f9a2bb8214a01",
+      "mission_id": "mission-c872ccc3b49e",
+      "plan_version": 1,
+      "flow_key": "general",
+      "highest_risk": "L1",
+      "context_pack_id": "",
+      "status": "ready",
+      "evidence_refs": []
+    },
+    "state": {
+      "workflow_run_id": "workflow-41eb207e7e93",
+      "mission_run_id": "mrun-354eb0d84c6d4e15",
+      "correlation_id": "mission-100f9a2bb8214a01",
+      "mission_id": "mission-c872ccc3b49e",
+      "plan_version": 1,
+      "flow_key": "general",
+      "highest_risk": "L1",
+      "context_pack_id": "",
+      "status": "ready",
+      "evidence_refs": []
+    },
+    "checkpoint": {}
+  },
+  "artifacts": [
+    {
+      "id": "artifact-7ea01fd0c47b2ff98606",
+      "mission_id": "mission-c872ccc3b49e",
+      "mission_run_id": "mrun-354eb0d84c6d4e15",
+      "correlation_id": "mission-100f9a2bb8214a01",
+      "plan_version": 1,
+      "step_id": "step-db794894479f",
+      "work_run_id": "wrun-d8ef46ad7694484d",
+      "artifact_type": "document",
+      "title": "Phase 16 redelivery-v2",
+      "uri": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/redelivery-v2.txt",
+      "content_hash": "81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008",
+      "fingerprint": "7ea01fd0c47b2ff9860609b44c458b870995e69d070b639813d57f672b2b22f9",
+      "created_at": "2026-10-07T02:34:16.771348+00:00",
+      "metadata": {}
+    }
+  ],
+  "evidence": [
+    {
+      "id": "evidence-360034174bd4d08b0ca6",
+      "mission_id": "mission-c872ccc3b49e",
+      "mission_run_id": "mrun-354eb0d84c6d4e15",
+      "correlation_id": "mission-100f9a2bb8214a01",
+      "plan_version": 1,
+      "step_id": "step-db794894479f",
+      "artifact_id": "artifact-7ea01fd0c47b2ff98606",
+      "evidence_type": "test_output",
+      "source_ref": "exec:python3-heredoc-phase16-redelivery",
+      "summary": "Python 脚本通过 hashlib.sha256 计算旧文件哈希为 da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505（与预期一致），以独占模式 x 创建新文件后回读哈希为 81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008，旧文件操作后哈希不变。",
+      "collected_by": "ratchet",
+      "collected_at": "2026-10-07T02:34:16.774262+00:00",
+      "confidence": 1.0,
+      "fingerprint": "360034174bd4d08b0ca66547671001fbbe37b973503b1b6f08a35801f0a6a42c",
+      "metadata": {}
+    }
+  ],
+  "acceptance_gates": [
+    {
+      "id": "gate-e09311179583793daa54",
+      "mission_id": "mission-c872ccc3b49e",
+      "mission_run_id": "mrun-354eb0d84c6d4e15",
+      "correlation_id": "mission-100f9a2bb8214a01",
+      "plan_version": 1,
+      "step_id": "",
+      "gate_type": "delivery_evidence",
+      "mode": "strict",
+      "enforced": true,
+      "status": "pass",
+      "accepted": true,
+      "score": 100,
+      "evaluated_by": "optimus",
+      "evaluated_at": "2026-10-07T02:34:47.626784+00:00",
+      "blockers": [],
+      "warnings": [],
+      "details": {
+        "status": "pass",
+        "score": 100,
+        "mode": "strict",
+        "enforced": true,
+        "accepted": true,
+        "blockers": [],
+        "warnings": [],
+        "artifact_count": 1,
+        "evidence_count": 1,
+        "step_gate_count": 1,
+        "step_count": 1,
+        "unresolved_compensations": 0,
+        "checked_rules": [
+          "all-step-gates",
+          "mission-artifacts",
+          "mission-evidence",
+          "side-effect-compensation"
+        ]
+      }
+    },
+    {
+      "id": "gate-43d609a1361954f2e607",
+      "mission_id": "mission-c872ccc3b49e",
+      "mission_run_id": "mrun-354eb0d84c6d4e15",
+      "correlation_id": "mission-100f9a2bb8214a01",
+      "plan_version": 1,
+      "step_id": "step-db794894479f",
+      "gate_type": "execution_evidence",
+      "mode": "strict",
+      "enforced": true,
+      "status": "pass",
+      "accepted": true,
+      "score": 100,
+      "evaluated_by": "ratchet",
+      "evaluated_at": "2026-10-07T02:34:16.777496+00:00",
+      "blockers": [],
+      "warnings": [],
+      "details": {
+        "status": "pass",
+        "score": 100,
+        "mode": "strict",
+        "enforced": true,
+        "accepted": true,
+        "executor_success": true,
+        "business_outcome": "succeeded",
+        "hard_blockers": [],
+        "blockers": [],
+        "warnings": [],
+        "evidence_refs": [
+          "exec:python3-heredoc-phase16-redelivery"
+        ],
+        "required_evidence": [
+          "test_output"
+        ],
+        "required_artifact_types": [
+          "document"
+        ],
+        "required_tools": [
+          "test_runner"
+        ],
+        "acceptance_criteria": [
+          "新文件内容严格为 Phase 16 redelivery verified 加换行，旧文件哈希保持不变，返回实际内容哈希及工具证据"
+        ],
+        "checked_rules": [
+          "result-summary",
+          "required-evidence-types",
+          "artifact-contract",
+          "acceptance-results",
+          "tool-use",
+          "required-output-fields"
+        ]
+      }
+    }
+  ],
+  "step_approvals": [],
+  "effects": [
+    {
+      "id": "effect-b06a31abd85d1662c28b",
+      "mission_id": "mission-c872ccc3b49e",
+      "mission_run_id": "mrun-354eb0d84c6d4e15",
+      "correlation_id": "mission-100f9a2bb8214a01",
+      "plan_version": 1,
+      "step_id": "step-db794894479f",
+      "work_run_id": "wrun-d8ef46ad7694484d",
+      "effect_key": "create-redelivery-v2-file",
+      "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/redelivery-v2.txt",
+      "action": "exclusive-create (mode x)",
+      "status": "applied",
+      "idempotency_key": "mission-c872ccc3b49e:plan:1:step:1",
+      "receipt_ref": "exec:python3-heredoc-phase16-redelivery:NEW_EXISTS=False->CREATED",
+      "fingerprint": "b06a31abd85d1662c28bc162e81fbcf1223433a31b78fa1e6e592874f02de45f",
+      "reported_at": "2026-10-07T02:34:16.781505+00:00",
+      "updated_at": "2026-10-07T02:34:16.781507+00:00",
+      "evidence_refs": [
+        "ev-7cca7dcf2684dc308a2c"
+      ],
+      "metadata": {}
+    }
+  ],
+  "compensations": [],
+  "delivery_gate": {
+    "id": "gate-e09311179583793daa54",
+    "mission_id": "mission-c872ccc3b49e",
+    "mission_run_id": "mrun-354eb0d84c6d4e15",
+    "correlation_id": "mission-100f9a2bb8214a01",
+    "plan_version": 1,
+    "step_id": "",
+    "gate_type": "delivery_evidence",
+    "mode": "strict",
+    "enforced": true,
+    "status": "pass",
+    "accepted": true,
+    "score": 100,
+    "evaluated_by": "optimus",
+    "evaluated_at": "2026-10-07T02:34:47.626784+00:00",
+    "blockers": [],
+    "warnings": [],
+    "details": {
+      "status": "pass",
+      "score": 100,
+      "mode": "strict",
+      "enforced": true,
+      "accepted": true,
+      "blockers": [],
+      "warnings": [],
+      "artifact_count": 1,
+      "evidence_count": 1,
+      "step_gate_count": 1,
+      "step_count": 1,
+      "unresolved_compensations": 0,
+      "checked_rules": [
+        "all-step-gates",
+        "mission-artifacts",
+        "mission-evidence",
+        "side-effect-compensation"
+      ]
+    }
+  },
+  "approval": {
+    "id": "approval-555b423af920",
+    "mission_id": "mission-c872ccc3b49e",
+    "plan_version": 1,
+    "decision": "approved",
+    "requested_at": "2026-10-07T02:33:20.730022+00:00",
+    "decided_at": "2026-10-07T02:33:32.412640+00:00",
+    "decided_by": "phase16-browser",
+    "comment": "",
+    "external_message_id": null
+  },
+  "events": [
+    {
+      "id": "event-5631907a3d5c",
+      "mission_id": "mission-c872ccc3b49e",
+      "mission_run_id": "mrun-354eb0d84c6d4e15",
+      "correlation_id": "mission-100f9a2bb8214a01",
+      "run_sequence": 1,
+      "event_type": "mission_received",
+      "from_status": null,
+      "to_status": "received",
+      "actor": "phase16-browser",
+      "detail": "重新交付任务 phase16-delivery 的产物 phase16-artifact。\n原路径：/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/delivery.txt\n原登记 SHA256：9159d1d0d56c6a1ae42b9ba0d878d0a8cf18b02406377d330c8d35d8170f3892\n下载失败原因：文件已变化，与该任务登记的版本不一致\n保留原文件与原证据；先只读核实原因，再提出新版本交付计划，审批后执行。新文件使用独立路径，登记实际内容哈希并重新验收。",
+      "event_key": null,
+      "metadata": {
+        "message_id": "msg-b41509ebea90",
+        "channel": "dashboard",
+        "preplanned": false,
+        "mission_type": "document",
+        "project_id": "phase16-project",
+        "intent_confidence": 1.0
+      },
+      "created_at": "2026-10-07T02:33:20.684166+00:00"
+    },
+    {
+      "id": "event-6aa31eb5c47d",
+      "mission_id": "mission-c872ccc3b49e",
+      "mission_run_id": "mrun-354eb0d84c6d4e15",
+      "correlation_id": "mission-100f9a2bb8214a01",
+      "run_sequence": 2,
+      "event_type": "planning_started",
+      "from_status": "received",
+      "to_status": "planning",
+      "actor": "phase16-plan-fixture",
+      "detail": "Optimus is producing an approval-gated plan",
+      "event_key": null,
+      "metadata": {},
+      "created_at": "2026-10-07T02:33:20.719067+00:00"
+    },
+    {
+      "id": "event-67a48b98d50b",
+      "mission_id": "mission-c872ccc3b49e",
+      "mission_run_id": "mrun-354eb0d84c6d4e15",
+      "correlation_id": "mission-100f9a2bb8214a01",
+      "run_sequence": 3,
+      "event_type": "plan_proposed",
+      "from_status": "planning",
+      "to_status": "awaiting_approval",
+      "actor": "optimus",
+      "detail": "受控重新交付：保留原证据，在独立路径创建并核验新文件。",
+      "event_key": null,
+      "metadata": {
+        "version": 1,
+        "step_count": 1,
+        "flow_key": "general",
+        "flow_version": "1.0.0",
+        "highest_risk": "L1",
+        "quality_score": 100,
+        "workflow_runtime": "legacy",
+        "workflow_runtime_reason": "isolated_redelivery"
+      },
+      "created_at": "2026-10-07T02:33:20.736151+00:00"
+    },
+    {
+      "id": "event-2d36e7ee2756",
+      "mission_id": "mission-c872ccc3b49e",
+      "mission_run_id": "mrun-354eb0d84c6d4e15",
+      "correlation_id": "mission-100f9a2bb8214a01",
+      "run_sequence": 4,
+      "event_type": "plan_approved",
+      "from_status": "awaiting_approval",
+      "to_status": "dispatching",
+      "actor": "phase16-browser",
+      "detail": "approved",
+      "event_key": null,
+      "metadata": {
+        "version": 1
+      },
+      "created_at": "2026-10-07T02:33:32.414751+00:00"
+    },
+    {
+      "id": "event-d03ac77ca7f6",
+      "mission_id": "mission-c872ccc3b49e",
+      "mission_run_id": "mrun-354eb0d84c6d4e15",
+      "correlation_id": "mission-100f9a2bb8214a01",
+      "run_sequence": 5,
+      "event_type": "state_changed",
+      "from_status": "dispatching",
+      "to_status": "running",
+      "actor": "command-center",
+      "detail": "Approved plan entered execution",
+      "event_key": null,
+      "metadata": {},
+      "created_at": "2026-10-07T02:33:32.450570+00:00"
+    },
+    {
+      "id": "event-25576028a4ec",
+      "mission_id": "mission-c872ccc3b49e",
+      "mission_run_id": "mrun-354eb0d84c6d4e15",
+      "correlation_id": "mission-100f9a2bb8214a01",
+      "run_sequence": 6,
+      "event_type": "step_started",
+      "from_status": "running",
+      "to_status": "running",
+      "actor": "ratchet",
+      "detail": "创建并核验独立交付版本",
+      "event_key": null,
+      "metadata": {
+        "step_id": "step-db794894479f",
+        "step_approval_id": null
+      },
+      "created_at": "2026-10-07T02:33:32.462297+00:00"
+    },
+    {
+      "id": "event-3185dcf6cdf1",
+      "mission_id": "mission-c872ccc3b49e",
+      "mission_run_id": "mrun-354eb0d84c6d4e15",
+      "correlation_id": "mission-100f9a2bb8214a01",
+      "run_sequence": 7,
+      "event_type": "step_completed",
+      "from_status": "running",
+      "to_status": "running",
+      "actor": "ratchet",
+      "detail": "创建并核验独立交付版本",
+      "event_key": null,
+      "metadata": {
+        "step_id": "step-db794894479f",
+        "result": {
+          "success": true,
+          "output": "```json\n{\n  \"outcome\": \"succeeded\",\n  \"summary\": \"旧文件哈希验证通过（da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505），新文件以独占创建模式写入 redelivery-v2.txt，内容为 'Phase 16 redelivery verified\\\\n'，实际 SHA256 为 81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008，旧文件哈希操作前后一致。\",\n  \"tools_used\": [\"exec\"],\n  \"artifacts\": [\n    {\n      \"artifact_key\": \"a1\",\n      \"artifact_type\": \"document\",\n      \"title\": \"Phase 16 redelivery-v2\",\n      \"uri\": \"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/redelivery-v2.txt\",\n      \"content_hash\": \"81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008\"\n    }\n  ],\n  \"evidence\": [\n    {\n      \"requirement_id\": \"ev-7cca7dcf2684dc308a2c\",\n      \"evidence_type\": \"test_output\",\n      \"source_ref\": \"exec:python3-heredoc-phase16-redelivery\",\n      \"summary\": \"Python 脚本通过 hashlib.sha256 计算旧文件哈希为 da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505（与预期一致），以独占模式 x 创建新文件后回读哈希为 81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008，旧文件操作后哈希不变。\",\n      \"artifact_key\": \"a1\",\n      \"confidence\": 1.0\n    }\n  ],\n  \"acceptance_results\": [\n    {\n      \"criterion_id\": \"ac-922b453c5994cb3c936b\",\n      \"criterion\": \"新文件内容严格为 Phase 16 redelivery verified 加换行，旧文件哈希保持不变，返回实际内容哈希及工具证据\",\n      \"status\": \"pass\",\n      \"evidence_refs\": [\"ev-7cca7dcf2684dc308a2c\"],\n      \"notes\": \"新文件内容 b'Phase 16 redelivery verified\\\\n' 符合预期；旧文件哈希 da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505 操作前后一致；新文件 SHA256 81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008 已返回。\"\n    }\n  ],\n  \"side_effects\": [\n    {\n      \"effect_key\": \"create-redelivery-v2-file\",\n      \"resource\": \"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/redelivery-v2.txt\",\n      \"action\": \"exclusive-create (mode x)\",\n      \"status\": \"applied\",\n      \"idempotency_key\": \"mission-c872ccc3b49e:plan:1:step:1\",\n      \"receipt_ref\": \"exec:python3-heredoc-phase16-redelivery:NEW_EXISTS=False->CREATED\",\n      \"evidence_refs\": [\"ev-7cca7dcf2684dc308a2c\"]\n    }\n  ],\n  \"risk_notes\": \"本次仅验证单步创建与哈希一致性；未对旧文件做任何修改，未联网或外发。剩余风险：若后续步骤依赖新文件内容被下游消费，需下游自行校验内容语义是否符合业务预期。\"\n}\n```",
+          "error": "",
+          "duration_ms": 0,
+          "exit_code": 0,
+          "output_source": "payloads[0]",
+          "output_candidates": [
+            {
+              "source": "payloads[0]",
+              "text": "```json\n{\n  \"outcome\": \"succeeded\",\n  \"summary\": \"旧文件哈希验证通过（da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505），新文件以独占创建模式写入 redelivery-v2.txt，内容为 'Phase 16 redelivery verified\\\\n'，实际 SHA256 为 81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008，旧文件哈希操作前后一致。\",\n  \"tools_used\": [\"exec\"],\n  \"artifacts\": [\n    {\n      \"artifact_key\": \"a1\",\n      \"artifact_type\": \"document\",\n      \"title\": \"Phase 16 redelivery-v2\",\n      \"uri\": \"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/redelivery-v2.txt\",\n      \"content_hash\": \"81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008\"\n    }\n  ],\n  \"evidence\": [\n    {\n      \"requirement_id\": \"ev-7cca7dcf2684dc308a2c\",\n      \"evidence_type\": \"test_output\",\n      \"source_ref\": \"exec:python3-heredoc-phase16-redelivery\",\n      \"summary\": \"Python 脚本通过 hashlib.sha256 计算旧文件哈希为 da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505（与预期一致），以独占模式 x 创建新文件后回读哈希为 81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008，旧文件操作后哈希不变。\",\n      \"artifact_key\": \"a1\",\n      \"confidence\": 1.0\n    }\n  ],\n  \"acceptance_results\": [\n    {\n      \"criterion_id\": \"ac-922b453c5994cb3c936b\",\n      \"criterion\": \"新文件内容严格为 Phase 16 redelivery verified 加换行，旧文件哈希保持不变，返回实际内容哈希及工具证据\",\n      \"status\": \"pass\",\n      \"evidence_refs\": [\"ev-7cca7dcf2684dc308a2c\"],\n      \"notes\": \"新文件内容 b'Phase 16 redelivery verified\\\\n' 符合预期；旧文件哈希 da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505 操作前后一致；新文件 SHA256 81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008 已返回。\"\n    }\n  ],\n  \"side_effects\": [\n    {\n      \"effect_key\": \"create-redelivery-v2-file\",\n      \"resource\": \"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/redelivery-v2.txt\",\n      \"action\": \"exclusive-create (mode x)\",\n      \"status\": \"applied\",\n      \"idempotency_key\": \"mission-c872ccc3b49e:plan:1:step:1\",\n      \"receipt_ref\": \"exec:python3-heredoc-phase16-redelivery:NEW_EXISTS=False->CREATED\",\n      \"evidence_refs\": [\"ev-7cca7dcf2684dc308a2c\"]\n    }\n  ],\n  \"risk_notes\": \"本次仅验证单步创建与哈希一致性；未对旧文件做任何修改，未联网或外发。剩余风险：若后续步骤依赖新文件内容被下游消费，需下游自行校验内容语义是否符合业务预期。\"\n}\n```"
+            },
+            {
+              "source": "stdout",
+              "text": "{\n  \"runId\": \"a76e92d5-3ab2-4c13-9bc2-63b337a127e7\",\n  \"status\": \"ok\",\n  \"summary\": \"completed\",\n  \"result\": {\n    \"payloads\": [\n      {\n        \"text\": \"```json\\n{\\n  \\\"outcome\\\": \\\"succeeded\\\",\\n  \\\"summary\\\": \\\"旧文件哈希验证通过（da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505），新文件以独占创建模式写入 redelivery-v2.txt，内容为 'Phase 16 redelivery verified\\\\\\\\n'，实际 SHA256 为 81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008，旧文件哈希操作前后一致。\\\",\\n  \\\"tools_used\\\": [\\\"exec\\\"],\\n  \\\"artifacts\\\": [\\n    {\\n      \\\"artifact_key\\\": \\\"a1\\\",\\n      \\\"artifact_type\\\": \\\"document\\\",\\n      \\\"title\\\": \\\"Phase 16 redelivery-v2\\\",\\n      \\\"uri\\\": \\\"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/redelivery-v2.txt\\\",\\n      \\\"content_hash\\\": \\\"81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008\\\"\\n    }\\n  ],\\n  \\\"evidence\\\": [\\n    {\\n      \\\"requirement_id\\\": \\\"ev-7cca7dcf2684dc308a2c\\\",\\n      \\\"evidence_type\\\": \\\"test_output\\\",\\n      \\\"source_ref\\\": \\\"exec:python3-heredoc-phase16-redelivery\\\",\\n      \\\"summary\\\": \\\"Python 脚本通过 hashlib.sha256 计算旧文件哈希为 da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505（与预期一致），以独占模式 x 创建新文件后回读哈希为 81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008，旧文件操作后哈希不变。\\\",\\n      \\\"artifact_key\\\": \\\"a1\\\",\\n      \\\"confidence\\\": 1.0\\n    }\\n  ],\\n  \\\"acceptance_results\\\": [\\n    {\\n      \\\"criterion_id\\\": \\\"ac-922b453c5994cb3c936b\\\",\\n      \\\"criterion\\\": \\\"新文件内容严格为 Phase 16 redelivery verified 加换行，旧文件哈希保持不变，返回实际内容哈希及工具证据\\\",\\n      \\\"status\\\": \\\"pass\\\",\\n      \\\"evidence_refs\\\": [\\\"ev-7cca7dcf2684dc308a2c\\\"],\\n      \\\"notes\\\": \\\"新文件内容 b'Phase 16 redelivery verified\\\\\\\\n' 符合预期；旧文件哈希 da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505 操作前后一致；新文件 SHA256 81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008 已返回。\\\"\\n    }\\n  ],\\n  \\\"side_effects\\\": [\\n    {\\n      \\\"effect_key\\\": \\\"create-redelivery-v2-file\\\",\\n      \\\"resource\\\": \\\"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/redelivery-v2.txt\\\",\\n      \\\"action\\\": \\\"exclusive-create (mode x)\\\",\\n      \\\"status\\\": \\\"applied\\\",\\n      \\\"idempotency_key\\\": \\\"mission-c872ccc3b49e:plan:1:step:1\\\",\\n      \\\"receipt_ref\\\": \\\"exec:python3-heredoc-phase16-redelivery:NEW_EXISTS=False->CREATED\\\",\\n      \\\"evidence_refs\\\": [\\\"ev-7cca7dcf2684dc308a2c\\\"]\\n    }\\n  ],\\n  \\\"risk_notes\\\": \\\"本次仅验证单步创建与哈希一致性；未对旧文件做任何修改，未联网或外发。剩余风险：若后续步骤依赖新文件内容被下游消费，需下游自行校验内容语义是否符合业务预期。\\\"\\n}\\n```\",\n        \"mediaUrl\": null\n      }\n    ],\n    \"meta\": {\n      \"durationMs\": 41798,\n      \"agentMeta\": {\n        \"sessionId\": \"4a788712-66bc-4cd2-b2fd-225a1fbdcc61\",\n        \"sessionFile\": \"agent:ratchet:command-center-mission-c872ccc3b49e-v1-step-step-db794894479f-a1\",\n        \"provider\": \"bailian\",\n        \"model\": \"qwen3.7-plus\",\n        \"contextTokens\": 1000000,\n        \"contextTokensSource\": \"resolved\",\n        \"agentHarnessId\": \"openclaw\",\n        \"credentialSource\": {\n          \"kind\": \"profile\"\n        },\n        \"usage\": {\n          \"input\": 18849,\n          \"output\": 2235,\n          \"cacheRead\": 17792,\n          \"reasoningTokens\": 631,\n          \"total\": 38876,\n          \"cost\": {\n            \"total\": 0\n          }\n        },\n        \"lastCallUsage\": {\n          \"input\": 883,\n          \"output\": 1531,\n          \"cacheRead\": 17792,\n          \"cacheWrite\": 0,\n          \"cost\": {\n            \"total\": 0\n          },\n          \"reasoningTokens\": 402,\n          \"total\": 20206\n        },\n        \"promptTokens\": 18675,\n        \"codeModeEngaged\": false,\n        \"assistantTurns\": 2,\n        \"costUsd\": 0,\n        \"terminalReceipt\": {\n          \"runId\": \"a76e92d5-3ab2-4c13-9bc2-63b337a127e7\",\n          \"sessionId\": \"4a788712-66bc-4cd2-b2fd-225a1fbdcc61\",\n          \"turnId\": \"a76e92d5-3ab2-4c13-9bc2-63b337a127e7\",\n          \"requested\": {\n            \"provider\": \"bailian\",\n            \"model\": \"qwen3.7-plus\"\n          },\n          \"effective\": {\n            \"provider\": \"bailian\",\n            \"model\": \"qwen3.7-plus\",\n            \"responseModel\": \"qwen3.7-plus\"\n          },\n          \"successfulToolNames\": [\n            \"exec\"\n          ],\n          \"rerouted\": false\n        }\n      },\n      \"aborted\": false,\n      \"systemPromptReport\": {\n        \"source\": \"run\",\n        \"generatedAt\": 1791340414816,\n        \"sessionId\": \"4a788712-66bc-4cd2-b2fd-225a1fbdcc61\",\n        \"sessionKey\": \"agent:ratchet:command-center-mission-c872ccc3b49e-v1-step-step-db794894479f-a1\",\n        \"provider\": \"bailian\",\n        \"model\": \"qwen3.7-plus\",\n        \"workspaceDir\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace\",\n        \"bootstrapMaxChars\": 20000,\n        \"bootstrapTotalMaxChars\": 60000,\n        \"bootstrapTruncation\": {\n          \"warningMode\": \"always\",\n          \"warningShown\": false,\n          \"truncatedFiles\": 0,\n          \"nearLimitFiles\": 0,\n          \"totalNearLimit\": false\n        },\n        \"sandbox\": {\n          \"mode\": \"all\",\n          \"sandboxed\": true\n        },\n        \"systemPrompt\": {\n          \"chars\": 21199,\n          \"hash\": \"916a73cd4db7d651845ff1f9e40bdd907ddc8334ebaca9be908b2346926ed747\",\n          \"projectContextChars\": 5878,\n          \"nonProjectContextChars\": 15321\n        },\n        \"injectedWorkspaceFiles\": [\n          {\n            \"name\": \"AGENTS.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/AGENTS.md\",\n            \"missing\": false,\n            \"rawChars\": 2540,\n            \"injectedChars\": 2540,\n            \"truncated\": false\n          },\n          {\n            \"name\": \"SOUL.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/SOUL.md\",\n            \"missing\": false,\n            \"rawChars\": 925,\n            \"injectedChars\": 925,\n            \"truncated\": false\n          },\n          {\n            \"name\": \"IDENTITY.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/IDENTITY.md\",\n            \"missing\": false,\n            \"rawChars\": 620,\n            \"injectedChars\": 620,\n            \"truncated\": false\n          },\n          {\n            \"name\": \"USER.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/USER.md\",\n            \"missing\": false,\n            \"rawChars\": 130,\n            \"injectedChars\": 130,\n            \"truncated\": false\n          },\n          {\n            \"name\": \"MEMORY.md\",\n            \"path\": \"/Users/apple/.openclaw/workspace/agents/ratchet/workspace/MEMORY.md\",\n            \"missing\": false,\n            \"rawChars\": 957,\n            \"injectedChars\": 957,\n            \"truncated\": false\n          }\n        ],\n        \"skills\": {\n          \"promptChars\": 6113,\n          \"hash\": \"d0e9d3753ccc057d73133dc751a44978b09f911c06fabca01f300712210d5e23\",\n          \"entries\": [\n            {\n              \"name\": \"alphastar-conservative-offline\",\n              \"blockChars\": 391\n            },\n            {\n              \"name\": \"alphastar-contract-policy\",\n              \"blockChars\": 355\n            },\n            {\n              \"name\": \"alphastar-data-curriculum\",\n              \"blockChars\": 341\n            },\n            {\n              \"name\": \"alphastar-human-prior\",\n              \"blockChars\": 338\n            },\n            {\n              \"name\": \"alphastar-pfsp-curriculum\",\n              \"blockChars\": 341\n            },\n            {\n              \"name\": \"alphastar-robust-evaluation\",\n              \"blockChars\": 362\n            },\n            {\n              \"name\": \"alphastar-role-league\",\n              \"blockChars\": 358\n            },\n            {\n              \"name\": \"alphastar-split-off-policy\",\n              \"blockChars\": 369\n            },\n            {\n              \"name\": \"diagram-maker\",\n              \"blockChars\": 262\n            },\n            {\n              \"name\": \"feishu-doc\",\n              \"blockChars\": 275\n            },\n            {\n              \"name\": \"feishu-drive\",\n              \"blockChars\": 302\n            },\n            {\n              \"name\": \"feishu-perm\",\n              \"blockChars\": 313\n            },\n            {\n              \"name\": \"feishu-wiki\",\n              \"blockChars\": 281\n            },\n            {\n              \"name\": \"github\",\n              \"blockChars\": 256\n            },\n            {\n              \"name\": \"ninja-dispatch\",\n              \"blockChars\": 353\n            },\n            {\n              \"name\": \"session-logs\",\n              \"blockChars\": 249\n            },\n            {\n              \"name\": \"skill-creator\",\n              \"blockChars\": 280\n            },\n            {\n              \"name\": \"tmux\",\n              \"blockChars\": 265\n            }\n          ]\n        },\n        \"tools\": {\n          \"listChars\": 0,\n          \"schemaChars\": 9578,\n          \"entries\": [\n            {\n              \"name\": \"read\",\n              \"summaryChars\": 164,\n              \"summaryHash\": \"d136f5b09e28d671addad4ca800b75b8aa6a36002bc739ead964f618d3e34829\",\n              \"schemaChars\": 481,\n              \"schemaHash\": \"b1b9b637dfe1dfade40f50c37cf840a298f1992b534cb9425b7470233a6b0cbb\",\n              \"propertiesCount\": 5\n            },\n            {\n              \"name\": \"edit\",\n              \"summaryChars\": 130,\n              \"summaryHash\": \"4149500b1f6501ec6450e4c048bdb6844764dd4a888a10846726cbbc7256152e\",\n              \"schemaChars\": 501,\n              \"schemaHash\": \"adf3140833ca927b84c66c989d6833fdcbd9de011dd2ffc59f9a2c4d3c25f127\",\n              \"propertiesCount\": 2\n            },\n            {\n              \"name\": \"write\",\n              \"summaryChars\": 49,\n              \"summaryHash\": \"f9ce3d8ac929a51498c03331b97c59bfaa2bb4d25580a5ddf0102e6a8e173aec\",\n              \"schemaChars\": 191,\n              \"schemaHash\": \"b61d2da23febf5fbda55e391526f36d283e9e9fb7f1a1dbadcf5c618a0632287\",\n              \"propertiesCount\": 2\n            },\n            {\n              \"name\": \"apply_patch\",\n              \"summaryChars\": 71,\n              \"summaryHash\": \"5c1173efe93d080a386a23216bc3e58db2e0033eb3ddea697eb2439938b7cae4\",\n              \"schemaChars\": 153,\n              \"schemaHash\": \"05521268363ff4f191472c90d69ef08a503ba9acf1d2febc50b3ee68db32ab65\",\n              \"propertiesCount\": 1\n            },\n            {\n              \"name\": \"exec\",\n              \"summaryChars\": 366,\n              \"summaryHash\": \"6a41ebbc7cd1fae376a497c1bb1662c40a5faa87e5f811bff3ae37e04fb20973\",\n              \"schemaChars\": 1122,\n              \"schemaHash\": \"29de9f248d3d8c84fbb84b347d4a46e07e766af8d1d6cabdbd8fc05aceea77e8\",\n              \"propertiesCount\": 11\n            },\n            {\n              \"name\": \"process\",\n              \"summaryChars\": 190,\n              \"summaryHash\": \"75fd9c7b8d560599081ab2621e4f897babc118254cf439bd8329a60a905a9ef1\",\n              \"schemaChars\": 1164,\n              \"schemaHash\": \"6cf3281369349e15ea532e644c8ec7f94c96fa6a4e3287272c8cfe90b0960516\",\n              \"propertiesCount\": 12\n            },\n            {\n              \"name\": \"sessions_list\",\n              \"summaryChars\": 244,\n              \"summaryHash\": \"1e39ee0ccc7ce3c6f26fe067c389bcb0da4ba845e5030e5088ab8e4027df963c\",\n              \"schemaChars\": 518,\n              \"schemaHash\": \"e878e741a7122c61cfd46c97828e7281414afb487b2e9f0c718578bdf9bf30e5\",\n              \"propertiesCount\": 10\n            },\n            {\n              \"name\": \"sessions_history\",\n              \"summaryChars\": 343,\n              \"summaryHash\": \"cf78e38bd7308164a1b54994d87e3a0511a9108d8726f223da9862197e72b4d2\",\n              \"schemaChars\": 337,\n              \"schemaHash\": \"37ca1edd9f92288e5569f580721464b9efed5ccc64fdba8709d7f66db3a7a650\",\n              \"propertiesCount\": 7\n            },\n            {\n              \"name\": \"sessions_search\",\n              \"summaryChars\": 177,\n              \"summaryHash\": \"334f96a1cafd9325d695608fe065a4a00888f6b55279d396590575b39e62728a\",\n              \"schemaChars\": 179,\n              \"schemaHash\": \"6545acec45e540d9c7d7d76b79084ce439ba35f4cd626fa4f8ec406230f0913d"
+            }
+          ],
+          "context": {
+            "status": "disabled"
+          },
+          "outcome": "succeeded",
+          "summary": "旧文件哈希验证通过（da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505），新文件以独占创建模式写入 redelivery-v2.txt，内容为 'Phase 16 redelivery verified\\n'，实际 SHA256 为 81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008，旧文件哈希操作前后一致。",
+          "artifacts": [
+            {
+              "artifact_key": "a1",
+              "artifact_type": "document",
+              "title": "Phase 16 redelivery-v2",
+              "uri": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/redelivery-v2.txt",
+              "content_hash": "81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008",
+              "metadata": {}
+            }
+          ],
+          "evidence": [
+            {
+              "evidence_type": "test_output",
+              "requirement_id": "ev-7cca7dcf2684dc308a2c",
+              "source_ref": "exec:python3-heredoc-phase16-redelivery",
+              "summary": "Python 脚本通过 hashlib.sha256 计算旧文件哈希为 da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505（与预期一致），以独占模式 x 创建新文件后回读哈希为 81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008，旧文件操作后哈希不变。",
+              "artifact_key": "a1",
+              "confidence": 1.0,
+              "metadata": {}
+            }
+          ],
+          "acceptance_results": [
+            {
+              "criterion": "新文件内容严格为 Phase 16 redelivery verified 加换行，旧文件哈希保持不变，返回实际内容哈希及工具证据",
+              "criterion_id": "ac-922b453c5994cb3c936b",
+              "status": "pass",
+              "evidence_refs": [
+                "exec:python3-heredoc-phase16-redelivery"
+              ],
+              "notes": "新文件内容 b'Phase 16 redelivery verified\\n' 符合预期；旧文件哈希 da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505 操作前后一致；新文件 SHA256 81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008 已返回。"
+            }
+          ],
+          "tools_used": [
+            "exec"
+          ],
+          "risk_notes": "本次仅验证单步创建与哈希一致性；未对旧文件做任何修改，未联网或外发。剩余风险：若后续步骤依赖新文件内容被下游消费，需下游自行校验内容语义是否符合业务预期。",
+          "structured_output": {
+            "outcome": "succeeded",
+            "summary": "旧文件哈希验证通过（da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505），新文件以独占创建模式写入 redelivery-v2.txt，内容为 'Phase 16 redelivery verified\\n'，实际 SHA256 为 81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008，旧文件哈希操作前后一致。",
+            "tools_used": [
+              "exec"
+            ],
+            "artifacts": [
+              {
+                "artifact_key": "a1",
+                "artifact_type": "document",
+                "title": "Phase 16 redelivery-v2",
+                "uri": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/redelivery-v2.txt",
+                "content_hash": "81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008"
+              }
+            ],
+            "evidence": [
+              {
+                "requirement_id": "ev-7cca7dcf2684dc308a2c",
+                "evidence_type": "test_output",
+                "source_ref": "exec:python3-heredoc-phase16-redelivery",
+                "summary": "Python 脚本通过 hashlib.sha256 计算旧文件哈希为 da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505（与预期一致），以独占模式 x 创建新文件后回读哈希为 81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008，旧文件操作后哈希不变。",
+                "artifact_key": "a1",
+                "confidence": 1.0
+              }
+            ],
+            "acceptance_results": [
+              {
+                "criterion_id": "ac-922b453c5994cb3c936b",
+                "criterion": "新文件内容严格为 Phase 16 redelivery verified 加换行，旧文件哈希保持不变，返回实际内容哈希及工具证据",
+                "status": "pass",
+                "evidence_refs": [
+                  "ev-7cca7dcf2684dc308a2c"
+                ],
+                "notes": "新文件内容 b'Phase 16 redelivery verified\\n' 符合预期；旧文件哈希 da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505 操作前后一致；新文件 SHA256 81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008 已返回。"
+              }
+            ],
+            "side_effects": [
+              {
+                "effect_key": "create-redelivery-v2-file",
+                "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/redelivery-v2.txt",
+                "action": "exclusive-create (mode x)",
+                "status": "applied",
+                "idempotency_key": "mission-c872ccc3b49e:plan:1:step:1",
+                "receipt_ref": "exec:python3-heredoc-phase16-redelivery:NEW_EXISTS=False->CREATED",
+                "evidence_refs": [
+                  "ev-7cca7dcf2684dc308a2c"
+                ]
+              }
+            ],
+            "risk_notes": "本次仅验证单步创建与哈希一致性；未对旧文件做任何修改，未联网或外发。剩余风险：若后续步骤依赖新文件内容被下游消费，需下游自行校验内容语义是否符合业务预期。"
+          },
+          "evidence_refs": [
+            "exec:python3-heredoc-phase16-redelivery"
+          ],
+          "receipt_preflight": {
+            "schema_version": "1.0",
+            "strategy": "existing_evidence_only",
+            "input_sha256": "7373229b313507243f880d2755089225eb0692ccb708a9ef957aaea71999a5ce",
+            "changes": [
+              {
+                "acceptance_index": 0,
+                "from": "ev-7cca7dcf2684dc308a2c",
+                "to": "exec:python3-heredoc-phase16-redelivery"
+              }
+            ],
+            "strict_accepted_before": true,
+            "strict_accepted": true,
+            "blockers": [],
+            "execution_repeated": false
+          },
+          "execution_quality": {
+            "status": "pass",
+            "score": 100,
+            "mode": "strict",
+            "enforced": true,
+            "accepted": true,
+            "executor_success": true,
+            "business_outcome": "succeeded",
+            "hard_blockers": [],
+            "blockers": [],
+            "warnings": [],
+            "evidence_refs": [
+              "exec:python3-heredoc-phase16-redelivery"
+            ],
+            "required_evidence": [
+              "test_output"
+            ],
+            "required_artifact_types": [
+              "document"
+            ],
+            "required_tools": [
+              "test_runner"
+            ],
+            "acceptance_criteria": [
+              "新文件内容严格为 Phase 16 redelivery verified 加换行，旧文件哈希保持不变，返回实际内容哈希及工具证据"
+            ],
+            "checked_rules": [
+              "result-summary",
+              "required-evidence-types",
+              "artifact-contract",
+              "acceptance-results",
+              "tool-use",
+              "required-output-fields"
+            ]
+          },
+          "side_effects": [
+            {
+              "effect_key": "create-redelivery-v2-file",
+              "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/redelivery-v2.txt",
+              "action": "exclusive-create (mode x)",
+              "status": "applied",
+              "idempotency_key": "mission-c872ccc3b49e:plan:1:step:1",
+              "receipt_ref": "exec:python3-heredoc-phase16-redelivery:NEW_EXISTS=False->CREATED",
+              "evidence_refs": [
+                "ev-7cca7dcf2684dc308a2c"
+              ],
+              "metadata": {}
+            }
+          ],
+          "effect_quality": {
+            "status": "pass",
+            "accepted": true,
+            "enforced": true,
+            "blockers": [],
+            "warnings": [],
+            "effect_count": 1,
+            "applied_count": 1,
+            "unknown_count": 0,
+            "checked_rules": [
+              "effect-journal-present",
+              "effect-status-known",
+              "stable-idempotency-key",
+              "applied-effect-receipt"
+            ]
+          },
+          "completion_decision": {
+            "executor_success": true,
+            "accepted": true,
+            "retry_scheduled": false,
+            "attempt": 1,
+            "max_attempts": 2,
+            "receipt_retry_safe": false,
+            "enforcement": {
+              "mode": "strict",
+              "enforced": true,
+              "reason": "strict_mode",
+              "flow_key": "general",
+              "highest_risk": "L1",
+              "runtime": "legacy"
+            },
+            "effect_quality": {
+              "status": "pass",
+              "accepted": true,
+              "enforced": true,
+              "blockers": [],
+              "warnings": [],
+              "effect_count": 1,
+              "applied_count": 1,
+              "unknown_count": 0,
+              "checked_rules": [
+                "effect-journal-present",
+                "effect-status-known",
+                "stable-idempotency-key",
+                "applied-effect-receipt"
+              ]
+            }
+          },
+          "effect_ids": [
+            "effect-b06a31abd85d1662c28b"
+          ]
+        },
+        "next_step_status": "completed"
+      },
+      "created_at": "2026-10-07T02:34:16.786781+00:00"
+    },
+    {
+      "id": "event-0ff30534883a",
+      "mission_id": "mission-c872ccc3b49e",
+      "mission_run_id": "mrun-354eb0d84c6d4e15",
+      "correlation_id": "mission-100f9a2bb8214a01",
+      "run_sequence": 8,
+      "event_type": "evaluation_started",
+      "from_status": "running",
+      "to_status": "evaluating",
+      "actor": "phase16-redelivery-worker",
+      "detail": "All steps completed; Optimus is evaluating the outcome",
+      "event_key": null,
+      "metadata": {},
+      "created_at": "2026-10-07T02:34:16.915487+00:00"
+    },
+    {
+      "id": "event-9a065143d842",
+      "mission_id": "mission-c872ccc3b49e",
+      "mission_run_id": "mrun-354eb0d84c6d4e15",
+      "correlation_id": "mission-100f9a2bb8214a01",
+      "run_sequence": 9,
+      "event_type": "mission_completed",
+      "from_status": "evaluating",
+      "to_status": "completed",
+      "actor": "optimus",
+      "detail": "Phase16 重新交付完成。只读核实旧文件实际哈希(da2fbfdef680979e7efd2b1c92350ed87d4f441854905b9bc6a8a64e0c17b505)与原登记哈希(9159d1d0...)不一致，确认文件已变化导致下载失败；新文件以独占模式写入独立路径 redelivery-v2.txt，内容为 'Phase 16 redelivery verified\\n'，实际 SHA256 为 81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008，旧文件哈希操作前后一致。验收标准全部通过。风险：原登记哈希与旧文件实际哈希仍不一致，需确认是否更新原任务登记或保留双版本证据链。",
+      "event_key": null,
+      "metadata": {},
+      "created_at": "2026-10-07T02:34:47.629333+00:00"
+    }
+  ],
+  "messages": [
+    {
+      "id": "msg-b41509ebea90",
+      "conversation_id": "conv-173efd61bb1b",
+      "mission_id": "mission-c872ccc3b49e",
+      "direction": "inbound",
+      "external_message_id": "ui-dbe46e2115334c56a48680d7d4cce706",
+      "reply_to_external_message_id": null,
+      "sender_id": "phase16-browser",
+      "content": "重新交付任务 phase16-delivery 的产物 phase16-artifact。\n原路径：/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/delivery.txt\n原登记 SHA256：9159d1d0d56c6a1ae42b9ba0d878d0a8cf18b02406377d330c8d35d8170f3892\n下载失败原因：文件已变化，与该任务登记的版本不一致\n保留原文件与原证据；先只读核实原因，再提出新版本交付计划，审批后执行。新文件使用独立路径，登记实际内容哈希并重新验收。",
+      "message_type": "text",
+      "intent_type": "document_project",
+      "intent_confidence": 1.0,
+      "intent_reason": "由已认证的项目任务入口显式创建",
+      "execution_requested": 1,
+      "routing_status": "mission_created",
+      "target_agent_id": "optimus",
+      "resolved_project_id": "phase16-project",
+      "reply_to_command_message_id": null,
+      "metadata": {
+        "project_id": "phase16-project",
+        "title": "重新交付：阶段十六交付样本",
+        "context": {
+          "business_flow_key": "general"
+        },
+        "intent_type": "document_project",
+        "execution_requested": true,
+        "profile_user_id": "phase16",
+        "suppress_notification": true,
+        "_direct_mission": true,
+        "_reserve_planning": false,
+        "_planning_owner": ""
+      },
+      "created_at": "2026-10-07T02:33:20.659696+00:00"
+    }
+  ]
+}

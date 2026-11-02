@@ -1,0 +1,32 @@
+[
+  {
+    "id": "compensation-5976242a7f3d",
+    "mission_id": "mission-a458581a0d71",
+    "mission_run_id": "mrun-bbedb35b9e654bfa",
+    "correlation_id": "mission-ef2e0cfd091d46ef",
+    "plan_version": 1,
+    "step_id": "step-7200245e3a92",
+    "effect_id": "effect-d3224f8f8d3236dbecb2",
+    "compensation_type": "manual_recovery",
+    "instructions": "仅恢复本目录 applied-sample.txt：先确认 sample 为 changed-by-test 换行，backup 为 before-change 换行，guard 为 must-stay-unchanged 换行。保留 before-recovery.txt 后，从 backup 恢复样本，创建 recovery-receipt.json 并记录合同指纹、幂等键、前后哈希。若同键回执已存在且五份文件核实一致，只读复用回执，不再次写入。任一状态不符即停止；不删除、不外发。",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase12-20261006/applied-sample.txt",
+    "contract_hash": "77c9ffe8da4ac0f6c33feba94b1cb1478b11980861b74587f0607a7c6479d780",
+    "idempotency_key": "recovery:compensation-5976242a7f3d:77c9ffe8da4ac0f6c33f",
+    "status": "completed",
+    "attempts": 3,
+    "max_attempts": 1,
+    "requested_at": "2026-10-05T18:12:25.786897+00:00",
+    "approved_at": "2026-10-05T18:16:00.836396+00:00",
+    "approved_by": "phase12-browser",
+    "approval_comment": "已确认当前补偿合同快照",
+    "authorization_expires_at": "2026-10-05T18:46:00.836333+00:00",
+    "lease_owner": null,
+    "lease_token": null,
+    "lease_expires_at": null,
+    "result_json": "{\"success\": true, \"output\": \"{\\\"status\\\": \\\"reverted\\\", \\\"summary\\\": \\\"只读核实恢复已落地，复用相同幂等键的真实文件回执；没有再次写入。\\\", \\\"receipt_ref\\\": \\\"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase12-20261006/recovery-receipt.json\\\", \\\"evidence_refs\\\": [\\\"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase12-20261006/recovery-receipt.json\\\", \\\"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase12-20261006/before-recovery.txt\\\"], \\\"risk_notes\\\": \\\"隔离固定文件适配器的崩溃恢复测试，不代表通用工具 exactly-once。\\\"}\", \"error\": \"\", \"duration_ms\": 0, \"exit_code\": null, \"output_source\": \"\", \"output_candidates\": [], \"summary\": \"只读核实恢复已落地，复用相同幂等键的真实文件回执；没有再次写入。\", \"status\": \"reverted\", \"receipt_ref\": \"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase12-20261006/recovery-receipt.json\", \"evidence_refs\": [\"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase12-20261006/recovery-receipt.json\", \"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase12-20261006/before-recovery.txt\"], \"risk_notes\": \"隔离固定文件适配器的崩溃恢复测试，不代表通用工具 exactly-once。\", \"structured_output\": {\"status\": \"reverted\", \"summary\": \"只读核实恢复已落地，复用相同幂等键的真实文件回执；没有再次写入。\", \"receipt_ref\": \"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase12-20261006/recovery-receipt.json\", \"evidence_refs\": [\"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase12-20261006/recovery-receipt.json\", \"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase12-20261006/before-recovery.txt\"], \"risk_notes\": \"隔离固定文件适配器的崩溃恢复测试，不代表通用工具 exactly-once。\"}, \"accepted\": true}",
+    "last_error": null,
+    "started_at": "2026-10-05T18:14:15.473802+00:00",
+    "completed_at": "2026-10-05T18:16:01.367290+00:00",
+    "updated_at": "2026-10-05T18:16:01.367291+00:00"
+  }
+]

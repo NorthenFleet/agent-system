@@ -1,0 +1,16 @@
+{
+  "format": "kb-readiness-preparation-v1",
+  "candidate_count": 30,
+  "authorized_source_count": 0,
+  "ingested_source_count": 0,
+  "annotation_slots": 50,
+  "development_slots": 20,
+  "validation_slots": 30,
+  "human_reviewed_query_count": 0,
+  "independent_validation_confirmed": false,
+  "retention_policy_approved": false,
+  "automatic_deletion": false,
+  "private_preparation_relative_path": "backend/data/second-brain/readiness-20261007",
+  "pilot_started": false,
+  "rollout_enabled": false
+}

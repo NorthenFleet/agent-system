@@ -1,0 +1,25 @@
+{
+  "cases": {
+    "missing": {
+      "mission_id": "mission-6f67978cafd2",
+      "status": "completed"
+    },
+    "corrupt": {
+      "mission_id": "mission-9ca4afe49103",
+      "status": "waiting_feedback"
+    },
+    "mismatch": {
+      "mission_id": "mission-b0a1fde1f8ae",
+      "status": "waiting_feedback"
+    }
+  },
+  "negative_receipts_rejected": 3,
+  "valid_receipt_accepted": true,
+  "backend_tests": 82,
+  "files_unchanged_during_reapproval_and_acceptance": true,
+  "missing_receipt_not_fabricated": true,
+  "no_automatic_replay": true,
+  "sent_notifications": 0,
+  "download": "/Users/apple/Downloads/missing-receipt-valid.json",
+  "download_matches": true
+}

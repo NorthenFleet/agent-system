@@ -1,0 +1,16 @@
+{
+  "ui_requests": 2,
+  "ui_responses": [
+    504,
+    200
+  ],
+  "ui_mission_id": "mission-59d00529cac2",
+  "ui_mission_count": 1,
+  "concurrent_requests": 8,
+  "concurrent_unique_missions": 1,
+  "concurrent_mission_id": "mission-690bbf4f88f7",
+  "owner_mission_count": 1,
+  "conflicting_payload": "rejected",
+  "different_owner_mission_id": "mission-f23b91ae01b3",
+  "workers_started": 0
+}

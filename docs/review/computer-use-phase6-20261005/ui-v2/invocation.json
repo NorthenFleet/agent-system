@@ -1,0 +1,77 @@
+{
+  "session_key": "phase6-ui-311ea01e642f4910b4724777b6e8c396",
+  "contract": {
+    "id": "step-a26a888f4400",
+    "mission_id": "mission-555decc13fb3",
+    "plan_version": 2,
+    "order_index": 1,
+    "title": "核验修订稿：100–180 汉字",
+    "description": "",
+    "task_type": "coordination",
+    "agent_id": "ratchet",
+    "executor": "openclaw",
+    "status": "running",
+    "work_run_id": null,
+    "lease_owner": "phase6-ui-executor",
+    "lease_token": "lease-757d02c2ab1247019506d45af3e4d0c0",
+    "lease_expires_at": "2026-10-05T16:01:32.856194+00:00",
+    "attempt_count": 1,
+    "started_at": "2026-10-05T15:51:32.856194+00:00",
+    "completed_at": null,
+    "updated_at": "2026-10-05T15:51:32.856194+00:00",
+    "dependencies": [],
+    "input": {},
+    "result": {},
+    "phase": "planning",
+    "objective": "核验修订稿：100–180 汉字",
+    "required_tools": [
+      "test_runner"
+    ],
+    "tool_requirements": [
+      {
+        "name": "测试运行器",
+        "category": "verification",
+        "status": "available",
+        "description": "运行后端、单元或集成测试并回传输出。",
+        "evidence_types": [
+          "test_output"
+        ],
+        "id": "test_runner"
+      }
+    ],
+    "deliverables": [
+      "既有修订稿与只读核验结果"
+    ],
+    "output_contract": {
+      "artifact_types": [
+        "document"
+      ],
+      "required_fields": [
+        "summary",
+        "evidence_refs",
+        "risk_notes"
+      ]
+    },
+    "acceptance_criteria": [
+      "三个小节齐全，汉字数在100至180之间，且返回实际SHA-256"
+    ],
+    "evidence_required": [
+      "test_output"
+    ],
+    "risk_level": "medium",
+    "risk_class": "L2",
+    "approval_required": false,
+    "side_effect": false,
+    "resources": [],
+    "idempotency_key": "mission-555decc13fb3:plan:2:step:1",
+    "timeout_seconds": 1200,
+    "max_attempts": 1,
+    "rollback_plan": "停止后续步骤，记录失败原因并等待擎天柱重新规划。",
+    "compensation": {
+      "type": "manual",
+      "instructions": "停止后续步骤，记录失败原因并等待擎天柱重新规划。"
+    },
+    "capability_match": true
+  },
+  "prompt": "已批准的隔离只读任务。只允许 exec 用Python读取 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md，按 [\\u4e00-\\u9fff] 统计汉字，检查目标/风险与应对/验收三节，计算SHA-256。\n禁止写文件、修改或删除、联网搜索、发送消息、创建其他任务。以下合同必须逐项核验：\n{\"evidence_items\": [{\"id\": \"ev-ff14d5b31eb5e3937434\", \"text\": \"test_output\"}], \"acceptance_items\": [{\"id\": \"ac-3b804cd8d6d4b416abf9\", \"text\": \"三个小节齐全，汉字数在100至180之间，且返回实际SHA-256\"}]}\n只返回结构化 JSON：outcome(succeeded/blocked)、summary、tools_used、artifacts、evidence、acceptance_results、side_effects、risk_notes。\ntools_used必须填写实际调用的原生工具名 [\"exec\"]，不能填写 source_ref 的 exec:p6-readonly。\nartifacts仅引用已有文件：artifact_key=a1, artifact_type=document, title=既有修订稿, uri=实际路径, content_hash=实际SHA-256。\nevidence包含 requirement_id(原样复制合同ID), evidence_type=test_output, source_ref=exec:p6-readonly, summary=实际字数、章节和SHA-256, artifact_key=a1。\nacceptance_results包含 criterion_id(原样复制合同ID), criterion(合同原文), status(pass/fail), evidence_refs=[exec:p6-readonly]。\nside_effects=[]。不得猜测或补造证据，所有引用必须在本次evidence中存在。\noutcome必须表达业务验收结论：任何验收项fail时必须blocked，不能把完成检查本身当作通过。"
+}

@@ -1,0 +1,353 @@
+Browser tab: 2116413549, Title: "智能体集群系统", URL: "http://127.0.0.1:3046/command-center".
+1 AXWebArea 智能体集群系统, URL: 127.0.0.1:3046/command-center
+	2 text 第十六阶段隔离测试 · 独立 PostgreSQL · 新任务须审批 · 真实执行与验收 · 无外发
+	3 container app
+		4 text 🤖 OpenClaw
+		5 container
+			6 text OpenClaw
+		7 button 🌙
+		8 pop up button (collapsed) 隔 隔离交付测试, ID: el-id-1285-1, Secondary Actions: Expand
+			9 text 隔
+			10 text 隔离交付测试
+		11 container
+			12 heading 擎天柱指挥中心, Value: 1
+				13 text 擎天柱指挥中心
+			14 text 自动更新
+			15 text 统一任务入口 · 审批后执行 · 异步协作与反馈
+			16 container
+				17 switch (settable, boolean) Value: 1, ID: el-id-1285-54
+				18 text 自动刷新
+			19 button 刷新
+				20 text 刷新
+			21 container 当前任务与下一步
+				22 text P16 历史交付异常样本
+				23 text 交付闭环已完成
+				24 text 计划、执行、证据与恢复状态均已归档
+				25 text 下一步：在顶部任务产物中下载文件，并核对审核结论
+				26 text 任务产物（已完成）
+				27 text 阶段十六交付样本 
+				28 button 下载文件
+				29 text 下载时核对登记版本；任务完成记录不代表文件当前仍可用。
+				30 button (collapsed) 查看原交付记录, Secondary Actions: Expand
+					31 text 查看原交付记录
+				348 container
+					349 text 下载未完成：文件已变化，与该任务登记的版本不一致 原交付记录保留。可重试下载；需要新版本时，准备重新交付任务，经新计划审批后执行。
+					350 button 准备重新交付任务
+			32 button (collapsed) 查看团队统计与运行健康, Secondary Actions: Expand
+				33 text 查看团队统计与运行健康
+			34 tab group
+				35 tab (selected, settable, boolean) 工作坊, Value: 1, ID: tab-workshop
+			36 container
+				37 text 任务工作台 1 个项目 · 2 项任务
+				38 text field (settable) el-id-1285-55
+				39 container
+					40 combo box (collapsed, settable) ID: el-id-1285-56, Secondary Actions: Expand
+					41 text 状态
+					42 image
+				43 container
+					44 combo box (collapsed, settable) ID: el-id-1285-57, Secondary Actions: Expand
+					45 text 类型
+					46 image
+				47 container
+					48 combo box (collapsed, settable) ID: el-id-1285-58, Secondary Actions: Expand
+					49 text 项目
+					50 image
+				51 container
+					52 combo box (collapsed, settable) ID: el-id-1285-59, Secondary Actions: Expand
+					53 text 智能体
+					54 image
+				55 container
+					56 combo box (collapsed, settable) ID: el-id-1285-60, Secondary Actions: Expand
+					57 text 来源
+					58 image
+				59 text 项目范围 全部项目
+				60 button 重新交付：阶段十六交付样本 已完成 所属项目 阶段十六隔离项目 任务类型 文档撰写 执行智能体 救护车 当前步骤 创建并核验独立交付版本 10/07 10:34 1/1 步骤 2 个总账记录
+					61 text 重新交付：阶段十六交付样本
+					62 text 已完成
+					63 text 所属项目
+					64 text  阶段十六隔离项目
+					65 text 任务类型
+					66 text  文档撰写
+					67 text 执行智能体
+					68 text  救护车
+					69 text 当前步骤
+					70 text  创建并核验独立交付版本
+					71 text 10/07 10:34
+					72 text 1/1 步骤
+					73 text 2 个总账记录
+				74 button P16 历史交付异常样本 已完成 所属项目 阶段十六隔离项目 任务类型 文档撰写 执行智能体 擎天柱 当前步骤 等待擎天柱规划 10/06 15:29 1/1 步骤 0 个总账记录
+					75 text P16 历史交付异常样本
+					76 text 已完成
+					77 text 所属项目
+					78 text  阶段十六隔离项目
+					79 text 任务类型
+					80 text  文档撰写
+					81 text 执行智能体
+					82 text  擎天柱
+					83 text 当前步骤
+					84 text  等待擎天柱规划
+					85 text 10/06 15:29
+					86 text 1/1 步骤
+					87 text 0 个总账记录
+			88 container
+				89 text 智能体空间
+				90 text P16 历史交付异常样本
+				91 text 唯一入口：擎天柱
+				92 text 已完成
+				93 container
+					94 text 全员状态 随自动刷新同步 · 等待同步 0 工作中 0 已分配 0 阻塞 0 待命
+				95 table 智能体工作状态
+					96 row
+						97 cell
+							98 text 智能体
+						99 cell
+							100 text 状态
+						101 cell
+							102 text 当前任务
+						103 cell
+							104 text 项目
+						105 cell
+							106 text 进度
+				107 heading P16 历史交付异常样本, Value: 2
+					108 text P16 历史交付异常样本
+				109 text 已完成 phase16-delivery 目标 隔离恢复测试：仅核实指定样本，保留所有文件，不外发。
+				110 container 规范业务流进度
+					111 text 规范执行链
+					112 text 真实状态驱动 · 从任务接收到交付与故障恢复 Run mrun-3f66975 Trace mission-eae7fc4ab5 Plan V2
+					113 text 当前控制点
+					114 text 交付闭环已完成
+					115 text 计划、执行、证据与恢复状态均已归档
+					116 text 下一步
+					117 text 在顶部任务产物中下载文件，并核对审核结论
+					118 container
+						119 text 已完成
+						120 text 任务接收
+						121 text 目标与项目绑定
+						122 text Mission phase16- 已入库
+						123 text 2 待进入
+						124 text 背景冻结
+						125 text 检索与引用快照
+						126 text 等待生成上下文快照
+						127 text 已完成
+						128 text 规范拆解
+						129 text 合同化步骤与质检
+						130 text V2 · 100 分 · 1 步
+						131 text 已完成
+						132 text 风险审批
+						133 text 计划与高风险步骤
+						134 text 当前计划已授权
+						135 text 已完成
+						136 text 受控执行
+						137 text 依赖、租约与幂等
+						138 text 1/1 个步骤已完成
+						139 text 已完成
+						140 text 证据验收
+						141 text 产物、证据与门禁
+						142 text 1 份产物 · 1 条证据
+						143 text 已完成
+						144 text 故障恢复
+						145 text 副作用与补偿闭环
+						146 text 无未解决恢复项
+						147 text 已完成
+						148 text 交付闭环
+						149 text 总验收与结果回执
+						150 text 已通过交付门禁
+					151 text 步骤
+					152 text 1/1
+					153 text 产物
+					154 text 1
+					155 text 证据
+					156 text 1
+					157 text 验收门禁
+					158 text 2/2
+					159 text 副作用
+					160 text 0
+					161 text 未解决补偿
+					162 text 0
+				163 text 统一任务视图
+				164 text 阶段十六隔离项目 · 擎天柱
+				165 text 0 个总账记录
+				166 text 执行计划 V2
+				167 text 恢复后的独立只读验收：核实原内容已恢复，与备份一致，不再写入。
+				168 text 质检 100
+				169 text 风险 中
+				170 text 计划质检通过
+				171 text 检查 12 项规则
+				172 container
+					173 image
+					174 text 复核恢复内容与备份一致 救护车 · 统筹 已完成 仅使用 exec 执行只读断言：/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase13-20261006/missing-sample.txt 与 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase13-20261006/backup.txt 内容为 before-change 换行，before-recovery.txt 为 changed-by-test 换行，guard.txt 为 must-stay-unchanged 换行。读取 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase13-20261006/missing-receipt-valid.json 作为现成交付物，计算其 SHA256 并附上真实执行证据。禁止修改任何文件或外发。 阶段 planning 风险 L2 无前置依赖
+					175 text 幂等 mission-6f67978cafd2:plan:…
+					176 text 工具 测试运行器 产物 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase13-20261006/missing-receipt-valid.json 验收 目标内容与 backup.txt 一致，原写入未被重试 证据 test_output 执行证据门禁 通过 · 100 strict · 10/06 15:28 执行记录 wrun-208da1d6c211428e 证据 100 ```json { "outcome": "succeeded", "summary": "只读验收通过。missing-sample.txt 与 backup.txt 内容均为 'before-change\\n'（SHA256=03af3ee612e6d3447a0ebc852fc0a8191ae39d60b3f80d67b84d91d61e86a400），before-recovery.txt 为 'changed-by-test\\n'，guard.txt 为 'must-stay-unchanged\\n'。missing-receipt-valid.json 的 post_recovery_sha256 与实际 missing-sample.txt 哈希一致，回执有效。未修改任何文件。", "too…
+				177 text 最终交付门禁
+				178 text 可交付
+				179 container
+					180 text 100 /100
+				181 text 产物、证据、执行验收和补偿状态已统一评估。
+				182 text 模式 strict · 10/06 15:29
+				183 text 任务动态
+				184 text 持久化事件记录
+				185 content list
+					186 container
+						187 text 10/06 15:29
+						188 text 任务完成
+						189 text 隔离恢复测试验收通过。missing-sample.txt 与 backup.txt 哈希一致（SHA256=03af3ee612e6d3447a0ebc852fc0a8191ae39d60b3f80d67b84d91d61e86a400），回执文件 missing-receipt-valid.json 的 post_recovery_sha256 与实际哈希匹配，guard.txt 内容保持 'must-stay-unchanged' 未被修改，确认恢复操作仅核实指定样本且未改动任何文件。无阻塞项。
+						190 text 擎天柱
+					191 container
+						192 text 10/06 15:28
+						193 text 开始评估
+						194 text All steps completed; Optimus is evaluating the outcome
+						195 text phase13-real-recovery-worker
+					196 container
+						197 text 10/06 15:28
+						198 text 步骤完成
+						199 text 复核恢复内容与备份一致
+						200 text 救护车
+					201 container
+						202 text 10/06 15:28
+						203 text 步骤开始
+						204 text 复核恢复内容与备份一致
+						205 text 救护车
+					206 container
+						207 text 10/06 15:28
+						208 text 状态更新
+						209 text Approved plan entered execution
+						210 text 指挥中心
+					211 container
+						212 text 10/06 15:28
+						213 text 计划已批准
+						214 text approved
+						215 text phase13-browser
+					216 container
+						217 text 10/06 15:27
+						218 text 计划已提交
+						219 text 恢复后的独立只读验收：核实原内容已恢复，与备份一致，不再写入。
+						220 text 擎天柱
+					221 container
+						222 text 10/06 15:27
+						223 text 继续制定计划
+						224 text Optimus is producing an approval-gated plan
+						225 text phase13-plan-fixture
+					226 container
+						227 text 10/06 15:27
+						228 text 状态更新
+						229 text Dashboard feedback received; orchestration resumed
+						230 text phase13-browser
+					231 container
+						232 text 10/06 15:27
+						233 text 收到反馈
+						234 text 有效回执已通过后端实质校验。重新规划只读验收，核实 missing-sample.txt、备份和 missing-receipt-valid.json 的一致性，保留原缺失及损坏证据，不写入、不外发。
+						235 text phase13-browser
+					236 container
+						237 text 10/06 15:27
+						238 text 恢复核验已完成
+						239 text 测试夹具：执行器声称成功，必须由回执门禁核验；本次没有写入。
+						240 text 救护车
+					241 container
+						242 text 10/06 15:27
+						243 text 恢复操作已批准
+						244 text 已确认当前补偿合同快照
+						245 text phase13-browser
+					246 container
+						247 text 10/06 15:26
+						248 text 恢复核验未通过
+						249 text 恢复回执校验未通过：回执或资源文件不存在；保持暂停，未自动重试。 测试夹具：执行器声称成功，必须由回执门禁核验；本次没有写入。
+						250 text 救护车
+					251 container
+						252 text 10/06 15:26
+						253 text 恢复操作已批准
+						254 text 已确认当前补偿合同快照
+						255 text phase13-browser
+					256 container
+						257 text 10/06 15:24
+						258 text 恢复方案待单独审批
+						259 text 新的恢复方案已提交，需单独审批；原核实记录保留。
+						260 text fixture
+					261 container
+						262 text 10/06 15:24
+						263 text 恢复核验未通过
+						264 text 只读核实未确认无需补偿；保留阻塞，等待新的恢复方案审批。 夹具核实：资源已改变，必须单独审批恢复
+						265 text fixture
+					266 container
+						267 text 10/06 15:24
+						268 text 恢复操作已批准
+						269 text approved
+						270 text fixture
+					271 container
+						272 text 10/06 15:24
+						273 text 任务阻塞
+						274 text 受控写入样本：副作用 unreported-effect 的落地状态未知
+						275 text 指挥中心
+					276 container
+						277 text 10/06 15:24
+						278 text 步骤失败
+						279 text 受控写入样本
+						280 text fixture
+					281 container
+						282 text 10/06 15:24
+						283 text 恢复审批已发起
+						284 text 副作用状态为 unknown，等待补偿审批
+						285 text fixture
+					286 container
+						287 text 10/06 15:24
+						288 text 步骤开始
+						289 text 受控写入样本
+						290 text 救护车
+					291 container
+						292 text 10/06 15:24
+						293 text 状态更新
+						294 text Approved plan entered execution
+						295 text 指挥中心
+					296 container
+						297 text 10/06 15:24
+						298 text 计划已批准
+						299 text approved
+						300 text fixture
+					301 container
+						302 text 10/06 15:24
+						303 text 计划已提交
+						304 text 模拟回执丢失
+						305 text 擎天柱
+					306 container
+						307 text 10/06 15:24
+						308 text 开始制定计划
+						309 text Optimus is producing an approval-gated plan
+						310 text fixture
+					311 container
+						312 text 10/06 15:24
+						313 text 任务已接收
+						314 text 隔离恢复测试：仅核实指定样本，保留所有文件，不外发。
+						315 text phase13-lab
+			316 container mission-actions
+				317 container
+					318 text 擎 擎天柱 总项目管理 · 唯一任务入口
+				319 container
+					320 image
+					321 text 最近会话分流 0 条 暂无会话记录
+				322 container
+					323 image
+					324 text 长期记忆候选 待审核 0 擎天柱从已完成任务中提炼。审核发布后，仅影响后续任务的背景检索。 暂无待审核的长期记忆
+				325 container new-mission-form
+					326 text 启动项目任务
+					327 Description: segmented, ID: el-id-1285-61
+						328 container
+							329 radio button (settable, integer) Description: 程序开发, Value: 1
+							330 text 程序开发
+							331 radio button (settable, integer) Description: 文档撰写, Value: 0
+							332 text 文档撰写
+					333 container
+						334 combo box (collapsed, settable) ID: el-id-1285-62, Secondary Actions: Expand
+						335 text 选择任务所属项目
+						336 image
+					337 text field (settable) el-id-1285-63
+					338 text entry area (settable) el-id-1285-64
+					339 button (disabled) 交给擎天柱
+						340 text 交给擎天柱
+				341 container
+					342 image
+					343 text 关联对话 用户 隔离恢复测试：仅核实指定样本，保留所有文件，不外发。 用户 有效回执已通过后端实质校验。重新规划只读验收，核实 missing-sample.txt、备份和 missing-receipt-valid.json 的一致性，保留原缺失及损坏证据，不写入、不外发。
+	344 container
+		345 container
+			346 button
+			347 button
+
+The focused UI element is 1 AXWebArea 智能体集群系统, URL: 127.0.0.1:3046/command-center

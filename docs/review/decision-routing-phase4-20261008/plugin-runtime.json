@@ -1,0 +1,12 @@
+{
+  "id": "mission-tool-control",
+  "status": "loaded",
+  "toolNames": [
+    "dr4_read",
+    "dr4_list",
+    "dr4_write",
+    "dr4_edit"
+  ],
+  "compat": [],
+  "diagnostics": []
+}

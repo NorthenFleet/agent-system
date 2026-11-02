@@ -1,0 +1,123 @@
+{
+  "id": "workflow-pilot-20261002",
+  "name": "智能体系统工作流验证与优化",
+  "description": "通过系统自行编写软件测试大纲验证工作流，再开展场景测试、缺陷修复和回归。",
+  "project_type": "software",
+  "type": "software",
+  "status": "active",
+  "priority": "high",
+  "owner_agent": "optimus",
+  "project_manager_agent": "optimus",
+  "progress": 0.0,
+  "current_phase": "workflow-validation-blocked",
+  "context": {
+    "goal": "验证完整工作流闭环与产物可验收性",
+    "pilot_id": "workflow-pilot-20261002",
+    "repository": "/Users/apple/工作桌面/Workspace/agent-system",
+    "acceptance_marker": "WF-PILOT-CONTEXT-20261002：覆盖矩阵必须包含产物实际可打开的检查。",
+    "scope": "首任务编写大纲；后续测试和修复分任务执行",
+    "minimum_acceptance": [
+      "无产物不得完成",
+      "未执行不得判通过",
+      "编写与独立审核分离",
+      "保留返工证据",
+      "完整关联项目任务及产物"
+    ],
+    "baseline_runtime": "legacy; langgraph disabled; agents health empty",
+    "project_type": "software",
+    "enabled_modules": [
+      "development",
+      "writing",
+      "knowledge",
+      "products"
+    ],
+    "product_bindings": [],
+    "project_relations": [],
+    "pilot_validation": {
+      "verdict": "首轮完整闭环不通过",
+      "mission_id": "mission-f165257f1043",
+      "plan_version": 4,
+      "blocked_at": "首步结构化交付结果提交",
+      "attempts": 2,
+      "drafts": [
+        "requirements-matrix.md",
+        "test-outline-draft.md"
+      ],
+      "independent_review": "未执行",
+      "regression_tests_passed": 86,
+      "source_fixes_deployed": false,
+      "report_path": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/execution-report.txt",
+      "defects_path": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/defects.json"
+    }
+  },
+  "enabled_modules": [
+    "development",
+    "writing",
+    "knowledge",
+    "products"
+  ],
+  "product_bindings": [],
+  "design_doc": {
+    "id": "design-243879d2a9",
+    "project_id": "workflow-pilot-20261002",
+    "version": 1,
+    "status": "draft",
+    "summary": "",
+    "usage_requirements": [],
+    "data_structure": {
+      "entities": [],
+      "relationships": [],
+      "storage": [],
+      "status_enums": []
+    },
+    "system_architecture": {
+      "components": [],
+      "data_flow": [],
+      "agent_roles": [],
+      "security_boundaries": []
+    },
+    "system_functions": [],
+    "api_interfaces": [],
+    "frontend_design": {},
+    "test_plan": [],
+    "deployment_plan": [],
+    "task_breakdown_guidance": [],
+    "parallel_tasks": [],
+    "risks": [],
+    "changelog": [],
+    "author_agent": "project-manager",
+    "approved_by": "",
+    "approved_at": null,
+    "created_at": "2026-10-02T13:02:17.640882+00:00",
+    "updated_at": "2026-10-02T13:02:17.640882+00:00"
+  },
+  "document_spec": {
+    "document_type": "软件测试大纲",
+    "writing_goal": "智能体系统自身的工作流与产物验收测试",
+    "target_audience": "",
+    "course_profile": {},
+    "edition": "",
+    "current_edition_label": "",
+    "obsidian_edition_label": "",
+    "publication_edition_label": "",
+    "version_role_note": "",
+    "expected_chapters": 0,
+    "outline": [],
+    "chapters": [],
+    "target_structure": {},
+    "assets": [],
+    "references": [],
+    "source_word": {},
+    "working_markdown": {},
+    "section_links": [],
+    "sync_status": {},
+    "output_format": "Markdown",
+    "created_at": "2026-10-02T13:02:17.640882+00:00",
+    "updated_at": "2026-10-02T13:02:17.640882+00:00"
+  },
+  "tasks": [],
+  "created_at": "2026-10-02T13:02:17.640882+00:00",
+  "updated_at": "2026-10-02T13:33:31.569338+00:00",
+  "source_id": "unified-sqlite",
+  "project_relations": []
+}

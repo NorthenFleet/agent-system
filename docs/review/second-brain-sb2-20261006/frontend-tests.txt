@@ -1,0 +1,13 @@
+
+> frontend-v2@0.0.0 test:run
+> vitest run src/test/KnowledgeIntakePanel.spec.ts src/test/KnowledgeMaintenancePanel.spec.ts
+
+
+ RUN  v4.1.10 /Users/apple/工作桌面/Workspace/agent-system/frontend-v2
+
+
+ Test Files  2 passed (2)
+      Tests  13 passed (13)
+   Start at  15:36:51
+   Duration  1.40s (transform 305ms, setup 46ms, import 1.53s, tests 135ms, environment 939ms)
+

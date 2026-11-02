@@ -1,0 +1,24 @@
+{
+  "mission_id": "mission-486e3133dee3",
+  "executor_success": true,
+  "step_status": "failed",
+  "mission_status": "waiting_feedback",
+  "preflight": {
+    "schema_version": "1.0",
+    "strategy": "existing_evidence_only",
+    "input_sha256": "20f79a7e1791347dcf072210eeaa6e20639078458310e622953c23c8b87a1723",
+    "changes": [],
+    "strict_accepted_before": false,
+    "strict_accepted": false,
+    "blockers": [
+      "验收结果明确失败：三个小节齐全，汉字数在1000至1800之间，且返回实际文件SHA-256",
+      "验收标准未逐项通过：三个小节齐全，汉字数在1000至1800之间，且返回实际文件SHA-256"
+    ],
+    "execution_repeated": false
+  },
+  "source_sha256_before": "60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee",
+  "source_sha256_after": "60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee",
+  "source_unchanged": true,
+  "database": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase5-20261005/run-660e7388/isolated.sqlite3",
+  "notification_sender_started": false
+}

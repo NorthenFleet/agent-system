@@ -1,0 +1,28 @@
+{
+  "format": "kb-actual-baseline-recovery-v1",
+  "captured_at": "2026-10-07T11:53:05.105816+00:00",
+  "checks": {
+    "archive_verified": true,
+    "restored_counts_match": true,
+    "scope_restored": true,
+    "access_epoch_advanced": true,
+    "live_knowledge_unchanged": true,
+    "isolated_schema_removed": true
+  },
+  "backup_bytes": 770,
+  "backup_seconds": 0.052,
+  "recovery_seconds": 0.07,
+  "space_count": 1,
+  "source_count": 0,
+  "schema_revision": "20261006_knowledge_operations",
+  "archive_relative_path": "backend/data/second-brain/baseline-20261007T115304Z/archive",
+  "revocations_relative_path": "backend/data/second-brain/baseline-20261007T115304Z/revocations.json",
+  "archive_manifest_sha256": "fd79e0aca745cbd38eb747252e378356e72c222d85c59f57c12eb7eefb32b0db",
+  "production_knowledge_modified": false,
+  "isolated_schema_created": true,
+  "service_restarted": false,
+  "pilot_started": false,
+  "g_sb4_passed": false,
+  "scope_note": "Actual empty-space baseline only; no source-blob/later-withdrawal recovery or production RPO/RTO certification.",
+  "passed": true
+}

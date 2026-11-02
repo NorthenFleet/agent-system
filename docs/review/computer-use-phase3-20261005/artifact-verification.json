@@ -1,0 +1,27 @@
+[
+  {
+    "path": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/draft.md",
+    "bytes": 236,
+    "hanzi": 68,
+    "sha256": "ced3de668b7eb21897dee3baada53485533f02819f5b7a5413fee5c4ca82780a",
+    "matching_downloads": []
+  },
+  {
+    "path": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/review.md",
+    "bytes": 1644,
+    "hanzi": 311,
+    "sha256": "7a4f1307eb09c6aba7718af40ab6141828983bf8679cc31c9012f8c1185c22e0",
+    "matching_downloads": [
+      "/Users/apple/Downloads/review (2).md"
+    ]
+  },
+  {
+    "path": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md",
+    "bytes": 602,
+    "hanzi": 174,
+    "sha256": "60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee",
+    "matching_downloads": [
+      "/Users/apple/Downloads/revised.md"
+    ]
+  }
+]

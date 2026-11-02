@@ -1,0 +1,17 @@
+{
+  "sent_notifications": 0,
+  "running_steps": 0,
+  "compensations": 0,
+  "mission_id": "mission-c872ccc3b49e",
+  "mission_status": "completed",
+  "step_attempts": 1,
+  "original_files_and_snapshots_unchanged": true,
+  "download_matches": true,
+  "new_sha256": "81958895056ace0081d81ec842a60ef17e69c3501e9a2039637b1e77e139d008",
+  "download": "/Users/apple/Downloads/redelivery-v2.txt",
+  "work_runs_count": 1,
+  "passed": true,
+  "execution_gate_score": 100,
+  "delivery_gate_score": 100,
+  "delivery_gate_mode": "strict"
+}

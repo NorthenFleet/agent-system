@@ -1,0 +1,50 @@
+{
+  "schema": "openclaw.genoffice-phase-g1.1-upstream-compatibility.v1",
+  "assessed_at": "2026-09-25",
+  "scope": "official GitHub read-only verification; no download, installation, Sidecar restart, source patch, or vendor contact",
+  "installed": {
+    "release_version": "0.10.1038",
+    "mcp_version": "0.10.0",
+    "channel": "stable"
+  },
+  "upstream": {
+    "latest_stable_release": "0.10.1038",
+    "latest_stable_release_date": "2026-09-22",
+    "new_upgrade_candidate": false,
+    "main_commits_ahead_of_tag": 52,
+    "headless_render_path": {
+      "tag": "v0.10.1038",
+      "main": "main",
+      "critical_files_have_matching_blobs": true,
+      "internal_headless_export_budget_ms": 180000,
+      "files": [
+        "packages/cli/src/formats/app-export.ts",
+        "apps/docs/src/renderer/headless-export.ts",
+        "packages/electron-utils/src/headless-export.ts"
+      ]
+    },
+    "large_document_issue": {
+      "number": 526,
+      "status": "open",
+      "last_observed_update": "2026-09-20",
+      "same_root_cause_proven": false
+    }
+  },
+  "decision": {
+    "g1_pilot_gate": "limited",
+    "g2_writes": "blocked",
+    "install_or_replace_app": "not_authorized_or_performed",
+    "main_snapshot": "not_a_production_or_test_upgrade_candidate",
+    "direct_cli_diagnostic": "not_accepted_as_a_substitute_for_the_mcp_gold_gate"
+  },
+  "next_trigger": "A newer official stable release whose official release notes or upstream issue evidence explicitly covers headless rendering, large-document performance, or render timeout behavior; installation and isolated validation still require separate approval.",
+  "sources": [
+    "https://github.com/genspark-ai/genoffice/releases/tag/v0.10.1038",
+    "https://github.com/genspark-ai/genoffice/compare/v0.10.1038...main",
+    "https://github.com/genspark-ai/genoffice/blob/main/packages/cli/src/formats/app-export.ts#L30-L75",
+    "https://github.com/genspark-ai/genoffice/blob/main/apps/docs/src/renderer/headless-export.ts#L42-L66",
+    "https://github.com/genspark-ai/genoffice/blob/main/packages/electron-utils/src/headless-export.ts#L205-L227",
+    "https://github.com/genspark-ai/genoffice/issues/526",
+    "https://github.com/genspark-ai/genoffice/issues/526#issuecomment-5747457124"
+  ]
+}

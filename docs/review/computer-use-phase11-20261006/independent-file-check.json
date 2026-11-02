@@ -1,0 +1,10 @@
+{
+  "passed": true,
+  "hashes": {
+    "applied-sample.txt": "03af3ee612e6d3447a0ebc852fc0a8191ae39d60b3f80d67b84d91d61e86a400",
+    "backup.txt": "03af3ee612e6d3447a0ebc852fc0a8191ae39d60b3f80d67b84d91d61e86a400",
+    "guard.txt": "3f8bfab2840c71e4e5a556468fc374638b8c1aef9f1afde5350f80a35e6eae62",
+    "before-recovery.txt": "c2e1f9b32dd5fdb8e6e4f825edb4105fce42e716206fb09c94996c782fd6d2eb",
+    "recovery-receipt.json": "7171346c904345c21d2911dca2cc75e2bb3653f338992d1b39b3f2c5eb0c5637"
+  }
+}

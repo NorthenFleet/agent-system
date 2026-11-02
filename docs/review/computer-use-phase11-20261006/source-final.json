@@ -1,0 +1,7 @@
+{
+  "backend/services/command_center_worker.py": "6fa29b67be428ef7d67dbc928966424bb88be3a5cfc9c402c3fb2260c107893a",
+  "frontend-v2/src/views/CommandCenter.vue": "908e13782a87af054a91277042187d11e32c20ac79a3e520e204cdc91fb481ff",
+  "frontend-v2/src/test/CommandCenterGovernance.spec.ts": "8cedeebea263a0121be30693d548f1215a893bc48239dcb09625216f7dcc10a2",
+  "backend/tests/test_phase11_compensation_sessions.py": "5568e8284100b548e71967d26537134a3fb25c94329a32d278227b3d25dbc151",
+  "backend/scripts/run_phase11_real_recovery_lab.py": "00ec3370ed7734a4d9d86dc029b2125535317f3f7a6c0ff54ae6e103abbfa849"
+}

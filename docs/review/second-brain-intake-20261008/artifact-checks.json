@@ -1,0 +1,8 @@
+{
+  "30_fixed_source_hashes_match": true,
+  "30_unique_work_runs": true,
+  "review_exports_unapproved": true,
+  "private_modes_and_git_ignore_verified": true,
+  "service_flags_remain_disabled": true,
+  "document_links_valid": true
+}

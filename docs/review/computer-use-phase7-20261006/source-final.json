@@ -1,0 +1,4 @@
+{
+  "backend/services/command_center_worker.py": "cb8cd6b29a8b26bf77ad13c7c8ce0cb627676eb26efcfc21c08c90d449e840ec",
+  "backend/scripts/run_phase7_full_worker_recovery.py": "7b672eb5980c5aeaa8136202d2b07b6ad50dfe3b18e06182f3f3957968c8848f"
+}

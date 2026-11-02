@@ -1,0 +1,38 @@
+[
+  {
+    "path": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/E/brief.md",
+    "bytes": 569,
+    "hanzi": 166,
+    "sha256": "a45ca4c1417d508045e694fbce629e66007dadaf728c615da3ae89704a4cb934",
+    "matching_downloads": [
+      "/Users/apple/Downloads/brief (1).md"
+    ]
+  },
+  {
+    "path": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/E/review.md",
+    "bytes": 3074,
+    "hanzi": 690,
+    "sha256": "bb8c6e4ec4d7a6a8cc4874c188fe2e5f8cb4efa1a1337bb80f6e6943aebbd033",
+    "matching_downloads": [
+      "/Users/apple/Downloads/review.md"
+    ]
+  },
+  {
+    "path": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/F/brief.md",
+    "bytes": 603,
+    "hanzi": 178,
+    "sha256": "b4857c36812b8f6e1ce03b0278f6ef534a6a97c7b512bded7be78d91cf12d274",
+    "matching_downloads": [
+      "/Users/apple/Downloads/brief.md"
+    ]
+  },
+  {
+    "path": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/F/review.md",
+    "bytes": 1665,
+    "hanzi": 375,
+    "sha256": "d1ed4d120aad3f404ff3a6c5911bca97ce81a2bd778ed1d7f73f9b5e98f64570",
+    "matching_downloads": [
+      "/Users/apple/Downloads/review (1).md"
+    ]
+  }
+]

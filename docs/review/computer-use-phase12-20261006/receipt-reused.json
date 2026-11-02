@@ -1,0 +1,6 @@
+{
+  "read_only": true,
+  "pid": 81190,
+  "contract_hash": "77c9ffe8da4ac0f6c33feba94b1cb1478b11980861b74587f0607a7c6479d780",
+  "idempotency_key": "recovery:compensation-5976242a7f3d:77c9ffe8da4ac0f6c33f"
+}

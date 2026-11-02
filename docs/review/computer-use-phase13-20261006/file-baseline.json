@@ -1,0 +1,46 @@
+{
+  "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase13-20261006/mismatch-sample.txt": {
+    "sha256": "03af3ee612e6d3447a0ebc852fc0a8191ae39d60b3f80d67b84d91d61e86a400",
+    "mtime_ns": 1791271476149526341
+  },
+  "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase13-20261006/corrupt-sample.txt": {
+    "sha256": "03af3ee612e6d3447a0ebc852fc0a8191ae39d60b3f80d67b84d91d61e86a400",
+    "mtime_ns": 1791271476097620897
+  },
+  "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase13-20261006/missing-sample.txt": {
+    "sha256": "03af3ee612e6d3447a0ebc852fc0a8191ae39d60b3f80d67b84d91d61e86a400",
+    "mtime_ns": 1791271476036296176
+  },
+  "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase13-20261006/missing-receipt-valid.json": {
+    "sha256": "bffa50091ca52609afe87e1aac6337f011df9ae81c22acf30da917d60c582974",
+    "mtime_ns": 1791271476036476424
+  },
+  "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase13-20261006/corrupt-receipt-invalid.json": {
+    "sha256": "00a6fd7aa1484990400866867d5c4a36dec1ac868ec8437ef52c23d74b824993",
+    "mtime_ns": 1791271476097856396
+  },
+  "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase13-20261006/mismatch-receipt-invalid.json": {
+    "sha256": "ae16be8370587b9e87a5d176a1c47777d708ad991fba3f7d7eb15c39beb9386d",
+    "mtime_ns": 1791271476149761298
+  },
+  "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase13-20261006/corrupt-receipt-valid.json": {
+    "sha256": "ef654403e17f8a6b48ceb183aa9cdd7395fa4f3c6e673d1e08c008cf02c129bf",
+    "mtime_ns": 1791271476097798063
+  },
+  "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase13-20261006/mismatch-receipt-valid.json": {
+    "sha256": "e703fb741093004c8ac4f39041f63fe9f3d5d33a839523bf47870a8ad20a16c3",
+    "mtime_ns": 1791271476149700674
+  },
+  "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase13-20261006/backup.txt": {
+    "sha256": "03af3ee612e6d3447a0ebc852fc0a8191ae39d60b3f80d67b84d91d61e86a400",
+    "mtime_ns": 1791271476097900646
+  },
+  "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase13-20261006/guard.txt": {
+    "sha256": "3f8bfab2840c71e4e5a556468fc374638b8c1aef9f1afde5350f80a35e6eae62",
+    "mtime_ns": 1791271476097951937
+  },
+  "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase13-20261006/before-recovery.txt": {
+    "sha256": "c2e1f9b32dd5fdb8e6e4f825edb4105fce42e716206fb09c94996c782fd6d2eb",
+    "mtime_ns": 1791271476149597424
+  }
+}

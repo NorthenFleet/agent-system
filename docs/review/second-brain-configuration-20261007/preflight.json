@@ -1,0 +1,19 @@
+{
+  "checks": {
+    "postgresql_configured": true,
+    "pdf_parser_available": true,
+    "private_source_root": true,
+    "knowledge_schema": true,
+    "workrun_schema": true
+  },
+  "ready": true,
+  "database_config_key": "SECOND_BRAIN_DATABASE_URL",
+  "feature_enabled": "false",
+  "format": "kb-pilot-preflight-v1",
+  "captured_at": "2026-10-07T02:26:43.934940+00:00",
+  "production_modified": false,
+  "pilot_owner_configured": true,
+  "context_db_configured": true,
+  "not_checked": [],
+  "scope": "explicit environment configuration; not live-process attestation"
+}

@@ -1,0 +1,13 @@
+{
+  "task_id": "",
+  "evidence_hash": "",
+  "reviewer": "",
+  "real_research_task": null,
+  "baseline_lookup_seconds": null,
+  "pilot_lookup_seconds": null,
+  "citations_checked": null,
+  "citations_supported": null,
+  "citations_adopted": null,
+  "corrections": null,
+  "major_factual_error": null
+}

@@ -1,0 +1,168 @@
+.................................F......................F............... [ 80%]
+..................                                                       [100%]
+=================================== FAILURES ===================================
+___________ test_inflight_recovery_reuses_work_run_and_delivers_once ___________
+
+tmp_path = PosixPath('/private/var/folders/kq/dz44fm994nz94zw2dfqnz_g00000gn/T/pytest-of-apple/pytest-342/test_inflight_recovery_reuses_0')
+
+    def test_inflight_recovery_reuses_work_run_and_delivers_once(tmp_path):
+        db_path = str(tmp_path / "inflight-idempotency.db")
+        service = CommandCenterService(db_path, project_provider=_test_projects)
+        work_runs = WorkRunService(db_path)
+        _bind_external(service, "reliability-drill")
+        mission = service.process_inbound(
+            channel="feishu",
+            external_conversation_id="oc_reliability_drill",
+            user_external_id="reliability-drill",
+            content="验证在途任务故障恢复与幂等续跑",
+            external_message_id="om_inflight_recovery",
+            metadata={
+                "target": "oc_reliability_drill",
+                "intent_type": "software_project",
+                "intent_confidence": 0.99,
+                "intent_reason": "明确的任务可靠性演练",
+                "execution_requested": True,
+                "project_id": "project-software",
+            },
+        )["mission"]
+        service.claim_planning_mission("planner")
+        service.save_plan(
+            mission["id"],
+            {
+                "summary": "单步骤故障恢复演练",
+                "rationale": "验证租约接管、执行幂等和单次交付",
+                "risk_level": "low",
+                "steps": [
+                    {
+                        "order_index": 1,
+                        "title": "写入受控演练回执",
+                        "description": "使用固定幂等键生成一次受控回执",
+                        "task_type": "coordination",
+                        "agent_id": "optimus",
+                        "depends_on": [],
+                        "side_effect": True,
+                        "resources": ["drill://inflight-receipt"],
+                        "idempotency_key": f"inflight:{mission['id']}:step-1",
+                    }
+                ],
+            },
+        )
+        service.approve(mission["id"], decided_by="reliability-drill")
+        service.activate_approved_missions()
+        first_claim = service.claim_ready_steps("worker-a", limit=1)[0]
+        idempotency_key = first_claim["idempotency_key"]
+        mission_run_id = service.get_mission_run_ledger(mission["id"])["run"]["id"]
+        first_run = work_runs.claim(
+            dispatch_id=first_claim["id"],
+            agent_id="worker-a",
+            executor="controlled-drill",
+            mission_id=mission["id"],
+            mission_run_id=mission_run_id,
+            idempotency_key=idempotency_key,
+            lease_seconds=60,
+        )
+        work_runs.transition(first_run["id"], "running", actor="worker-a", lease_seconds=60)
+        service.attach_work_run(
+            first_claim["id"],
+            first_run["id"],
+            lease_token=first_claim["lease_token"],
+        )
+    
+        # Fault injection: worker-a disappeared after applying its effect and both
+        # durable leases subsequently expired.
+        with service.connect(immediate=True) as conn:
+            conn.execute(
+                "UPDATE mission_steps SET lease_expires_at='2000-01-01T00:00:00+00:00' WHERE id=?",
+                (first_claim["id"],),
+            )
+            conn.execute(
+                "UPDATE work_runs SET lease_expires_at='2000-01-01T00:00:00+00:00' WHERE id=?",
+                (first_run["id"],),
+            )
+    
+        restarted = CommandCenterService(db_path)
+        resumed_runs = WorkRunService(db_path)
+        assert restarted.requeue_stale_steps() == 1
+>       second_claim = restarted.claim_ready_steps("worker-b", limit=1)[0]
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       IndexError: list index out of range
+
+backend/tests/test_command_center_service.py:911: IndexError
+____________ test_stale_or_consumed_approval_cannot_authorize_retry ____________
+
+tmp_path = PosixPath('/private/var/folders/kq/dz44fm994nz94zw2dfqnz_g00000gn/T/pytest-of-apple/pytest-342/test_stale_or_consumed_approva0')
+
+    def test_stale_or_consumed_approval_cannot_authorize_retry(tmp_path):
+        service = CommandCenterService(str(tmp_path / "step-approval-retry.db"))
+        mission, step, approval = _awaiting_step_approval(service)
+        service.decide_step_approval(
+            mission["id"],
+            step["id"],
+            approval_id=approval["id"],
+            contract_hash=approval["contract_hash"],
+            decision="approved",
+            decided_by="admin",
+        )
+        claimed = service.claim_ready_steps("runner", limit=1)[0]
+        with service.connect(immediate=True) as conn:
+            conn.execute(
+                "UPDATE mission_steps SET lease_expires_at=? WHERE id=?",
+                (
+                    (datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat(),
+                    claimed["id"],
+                ),
+            )
+    
+        assert service.requeue_stale_steps() == 1
+        assert service.claim_ready_steps("runner-2", limit=1) == []
+        refreshed = service.get_mission(mission["id"])
+        latest = refreshed["steps"][0]["step_approval"]
+>       assert refreshed["steps"][0]["status"] == "awaiting_approval"
+E       AssertionError: assert 'failed' == 'awaiting_approval'
+E         
+E         - awaiting_approval
+E         + failed
+
+backend/tests/test_step_approval_service.py:103: AssertionError
+=============================== warnings summary ===============================
+backend/database.py:80
+  /Users/apple/工作桌面/Workspace/agent-system/backend/database.py:80: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+backend/routers/automation_router.py:55
+  /Users/apple/工作桌面/Workspace/agent-system/backend/routers/automation_router.py:55: PydanticDeprecatedSince20: `min_items` is deprecated and will be removed, use `min_length` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    actions: List[ActionItem] = Field(..., min_items=1, description="动作列表")
+
+backend/main_slim_v2.py:201
+  /Users/apple/工作桌面/Workspace/agent-system/backend/main_slim_v2.py:201: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+backend/venv/lib/python3.14/site-packages/fastapi/applications.py:4599
+backend/venv/lib/python3.14/site-packages/fastapi/applications.py:4599
+  /Users/apple/工作桌面/Workspace/agent-system/backend/venv/lib/python3.14/site-packages/fastapi/applications.py:4599: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)
+
+backend/main_slim_v2.py:251
+  /Users/apple/工作桌面/Workspace/agent-system/backend/main_slim_v2.py:251: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("shutdown")
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED backend/tests/test_command_center_service.py::test_inflight_recovery_reuses_work_run_and_delivers_once
+FAILED backend/tests/test_step_approval_service.py::test_stale_or_consumed_approval_cannot_authorize_retry
+2 failed, 88 passed, 6 warnings in 63.21s (0:01:03)

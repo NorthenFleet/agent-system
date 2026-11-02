@@ -1,0 +1,12 @@
+{
+  "database": "postgresql+psycopg2:///agent_system_cu_phase6_20261005",
+  "mission_id": "mission-2e60aa980e2e",
+  "two_processes_started": true,
+  "killed_process_exit": -9,
+  "early_requeue_count": 0,
+  "elapsed_until_recovery_seconds": 60.13,
+  "same_step": true,
+  "new_token": true,
+  "stale_write_rejected": true,
+  "final_status": "completed"
+}

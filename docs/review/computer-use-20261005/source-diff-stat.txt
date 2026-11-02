@@ -1,0 +1,25 @@
+ DESIGN.md                                          |  21 +-
+ backend/.env.example                               |  24 ++
+ backend/ai.openclaw.agent-system-3021.plist        |   2 +-
+ backend/alembic/env.py                             |   1 +
+ backend/api_registry.py                            |   2 +
+ backend/models/__init__.py                         |   1 +
+ backend/routers/command_center_router.py           |   5 +-
+ backend/routers/monitoring_router.py               |   2 +-
+ backend/routers/projects_v3.py                     |  22 +-
+ backend/routers/writing_workspace.py               |  56 ++++-
+ backend/services/business_flow_service.py          |  18 +-
+ backend/services/command_center_service.py         | 132 +++++++++--
+ backend/services/command_center_worker.py          | 126 +++++++++-
+ backend/services/context_retrieval_service.py      |  13 +-
+ backend/services/execution_evidence_service.py     |  71 +++++-
+ backend/services/openclaw_task_executor.py         |  65 ++++-
+ backend/services/plan_quality_service.py           |   7 +-
+ backend/services/work_run_service.py               | 264 ++++++++++++++++++++-
+ backend/tests/test_command_center_service.py       |  61 ++++-
+ backend/tests/test_execution_evidence_service.py   |  72 ++++++
+ frontend-v2/src/api/writing.ts                     |  87 +++++++
+ .../components/writing/WritingWorkspacePane.vue    | 239 ++++++++++++++++++-
+ .../src/test/WritingWorkspacePaneFidelity.spec.ts  | 127 +++++++++-
+ frontend-v2/src/views/Monitoring.vue               | 115 ++++-----
+ 24 files changed, 1393 insertions(+), 140 deletions(-)

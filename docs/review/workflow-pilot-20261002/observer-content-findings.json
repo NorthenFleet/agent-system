@@ -1,0 +1,36 @@
+{
+  "stage": "first-draft",
+  "provided_to_system_reviewer": false,
+  "findings": [
+    {
+      "id": "CONTENT-01",
+      "severity": "major",
+      "description": "WF-002/003/004以旧AutoPlanManager/PlanManager文件流程测试当前指挥中心计划，未覆盖真实create_mission/save_plan/approve/reject。",
+      "source": "backend/plan_manager.py:49与backend/routers/command_center_router.py:949",
+      "expected_revision": "以当前指挥中心API及mission状态为主，旧流程另列且明确非当前生产链路"
+    },
+    {
+      "id": "CONTENT-02",
+      "severity": "major",
+      "description": "WF-004声称PlanManager.review_plan触发plan_rejected，实际方法只更新JSON文件，不产生该事件。",
+      "source": "backend/plan_manager.py:49"
+    },
+    {
+      "id": "CONTENT-03",
+      "severity": "major",
+      "description": "WF-010未区分shadow/pilot/strict的验收结果，不应无条件预期证据缺失即blocked。",
+      "source": "backend/services/execution_evidence_service.py:105"
+    },
+    {
+      "id": "CONTENT-04",
+      "severity": "major",
+      "description": "WF-011手工更新completed不能验证真实交付门禁与最终汇总。",
+      "expected_revision": "由执行与评估推进状态，另测缺产物不能完成"
+    },
+    {
+      "id": "CONTENT-05",
+      "severity": "moderate",
+      "description": "矩阵将上下文人工补传误释为人工确认文件能打开；必须区分补传需求与产物验收两个动作。"
+    }
+  ]
+}

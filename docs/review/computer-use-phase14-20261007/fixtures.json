@@ -1,0 +1,542 @@
+{
+  "compensation-3addde987c30": {
+    "index": 0,
+    "mission_id": "mission-d0540324c45f",
+    "contract_hash": "8bea307abfcf3b1bc25729bd706337a4813e3facc02b26d69ad96b91e19a73a2",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-0.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-0.txt",
+    "hash": "2409e4bdf419f3273a8107eb8eb9e2820b0f61464ae82d683b26e2aa5c2f04be",
+    "kind": "valid"
+  },
+  "compensation-0a521fba2094": {
+    "index": 1,
+    "mission_id": "mission-09c5d34905be",
+    "contract_hash": "02015ee49feecdf09f6cbda0f5d2ffca2bdd0771e84d92522189bc9c0829c16b",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-1.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-1.txt",
+    "hash": "be813af91d1b4aa6ecd5d3556997c722d7f32e2bd44036df936c53d6c396dc64",
+    "kind": "valid"
+  },
+  "compensation-86488d22e3bc": {
+    "index": 2,
+    "mission_id": "mission-e997f82e3c3a",
+    "contract_hash": "1fc8b79399cc584df06b460429e45d5e9f4d12c05ffa4a1999b3ad52a95cc83b",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-2.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-2.txt",
+    "hash": "a526ffd4ce7be04e84b019ddbd7b9cc5263692006a0a4ed11f4cfc11d1e7b403",
+    "kind": "valid"
+  },
+  "compensation-f9e43b7c4f47": {
+    "index": 3,
+    "mission_id": "mission-47886f7e3eda",
+    "contract_hash": "018f06f61265902bc062df4d41d2120f0cc9ed6a11cce6ed6cc27dddd8ca753b",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-3.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-3.txt",
+    "hash": "c1f25de29a0ce8aa43155b3b8420b50e72f6dc11fa5c2eabb17e2a6960a398bb",
+    "kind": "valid"
+  },
+  "compensation-c2d69b0fb662": {
+    "index": 4,
+    "mission_id": "mission-48b904caee65",
+    "contract_hash": "851361a0ebba4facdc7f669b1162ed15befdddac646ad6877fca73682d9b4379",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-4.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-4.txt",
+    "hash": "1d81d2a6a373ea4fe87505808cab5d70c7562e06c8b3de0f1c5236621e99a6cc",
+    "kind": "changed_receipt"
+  },
+  "compensation-dc440672133c": {
+    "index": 5,
+    "mission_id": "mission-6b03cb13db4f",
+    "contract_hash": "199842ea7262b49a95dfdea0271a6a769563394bb5706c2d3044f5e1355229b3",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-5.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-5.txt",
+    "hash": "ac9e0466716566b1272d7a9d9bc397df1622df2ae9d05ed89d954f81a7db43cd",
+    "kind": "changed_receipt"
+  },
+  "compensation-f01b1a2bc319": {
+    "index": 6,
+    "mission_id": "mission-638f2c0d789d",
+    "contract_hash": "8290cec1c733446e31913790729bfc36409bf422df2048e5aa8c90ec6a9d35ff",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-6.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-6.txt",
+    "hash": "807cfe69fde34cb7f0c8822f02ed021f1f98adf35d036fde15ad7b0249f3f18d",
+    "kind": "changed_resource"
+  },
+  "compensation-6eed628e2b36": {
+    "index": 7,
+    "mission_id": "mission-080fe5cfbfdf",
+    "contract_hash": "66027b585e683142913c84f090cb2d3fc5c6902159189e79479d768aaec99b73",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-7.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-7.txt",
+    "hash": "64a09913cd30df9e874da2311f59d3d322f171138bbf74d46260cda630e40d60",
+    "kind": "changed_resource"
+  },
+  "compensation-890eb3398990": {
+    "index": 8,
+    "mission_id": "mission-3689ce512f35",
+    "contract_hash": "4518e8ed195ece5dad7486e435ed089b99deecb12b7c78e791ec25e550d45691",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-8.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-8.txt",
+    "hash": "b7f9ae82bfa3ee59c18153f1327ee5e889505e76e4eb6150d448bf2c2003569a",
+    "kind": "unapproved"
+  },
+  "compensation-a0e07068d2b5": {
+    "index": 9,
+    "mission_id": "mission-bbda7c64f45d",
+    "contract_hash": "a5dededaa3aba81319a72f567e464c4d52c566b3f31e0c387186a19307781c5d",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-9.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-9.txt",
+    "hash": "418df469ea9d41ff300d08e0f7d444d7fc12227a43426b08b03cce511628fd7c",
+    "kind": "unapproved"
+  },
+  "compensation-0791f78b46d9": {
+    "index": 10,
+    "mission_id": "mission-ff0a22555250",
+    "contract_hash": "d5c5102b38c8e96d1ea05ba10cef781671a20561855b1e75de72b85cd85e7212",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-10.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-10.txt",
+    "hash": "40e80da34a22a3ff795700a5c22729c6169241ad199fd5bf4eeb3f80bb96598a",
+    "kind": "valid"
+  },
+  "compensation-e495931665f0": {
+    "index": 11,
+    "mission_id": "mission-8e59e74c3b03",
+    "contract_hash": "617d78bffabcff2b28a81ab14b654a2c5c5e4037afd41c4f09195ff8006cd39e",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-11.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-11.txt",
+    "hash": "29a9ecdc5282e72c0f92f2d1b60470183c9c50a4540f252ded456c635d2b9043",
+    "kind": "valid"
+  },
+  "compensation-e8115aff9bf0": {
+    "index": 12,
+    "mission_id": "mission-ba1899507549",
+    "contract_hash": "0efb11a685563620681597a6b036f5c8cdb88534fc868486fb7125d7421dea07",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-12.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-12.txt",
+    "hash": "c18a7eef2672ee09c710bae230905f9b63c62c23cdce059db6edc79442e88542",
+    "kind": "valid"
+  },
+  "compensation-4226665e3f00": {
+    "index": 13,
+    "mission_id": "mission-5078df6aa1f2",
+    "contract_hash": "8230ca2313a5fe632794e6de171b84a713ce3fb057fb39200fc97e3466893f80",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-13.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-13.txt",
+    "hash": "d0fd6f585199f23c8d6d75d8af48439cbc432d6d5fb85cca8809a1e19df40af4",
+    "kind": "valid"
+  },
+  "compensation-3257ec8c53f4": {
+    "index": 14,
+    "mission_id": "mission-856fb5248df5",
+    "contract_hash": "ab08c3125c223e3a4c106cd7f1fc86977da7acc724f105e522645b255c195c65",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-14.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-14.txt",
+    "hash": "8674b1f5c7583ed87aab71004cb73903716c3078046030dd603506e0fa5c717d",
+    "kind": "changed_receipt"
+  },
+  "compensation-e9cb83c96ddd": {
+    "index": 15,
+    "mission_id": "mission-0fb95b13c99d",
+    "contract_hash": "3ffad6c8b038cd18efa5ac0a6feef962a434d5dbdc8f0b09b70cd0b0f75441a6",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-15.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-15.txt",
+    "hash": "23e172d467112906f42a1e8d1f4cf8a0f17f2184ab70d3fee0fc9b8bf8ba18a6",
+    "kind": "changed_receipt"
+  },
+  "compensation-becc46adf2bf": {
+    "index": 16,
+    "mission_id": "mission-e1f928317671",
+    "contract_hash": "a1df0198400a5bd8d56c8177beea42c8d64614ddaed61a4819d011c6bd425851",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-16.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-16.txt",
+    "hash": "280d6d31a78269c32bbecb22f93b9eabe14e88879574d6e2b7b82de36b4e1825",
+    "kind": "changed_resource"
+  },
+  "compensation-969d76ae625c": {
+    "index": 17,
+    "mission_id": "mission-9c74761c62d5",
+    "contract_hash": "0af8d691dbca1d439190303138a63c2b68cecf2298966eb8fa049b74d38f2f5c",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-17.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-17.txt",
+    "hash": "28e051ec9a134cc5c64981d579a2a75384ae9a4c413cd8368520e10a0e5c8355",
+    "kind": "changed_resource"
+  },
+  "compensation-ac5e36ca9105": {
+    "index": 18,
+    "mission_id": "mission-dc7792586052",
+    "contract_hash": "a87a52756aad78bcc9c129d21ac15336896d4f27f0cd0217aa94d019908cd8f2",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-18.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-18.txt",
+    "hash": "e6c164e3676808f8b9bc24b41361d36ba3e7bd5327658ac6ecec5d26b451e415",
+    "kind": "unapproved"
+  },
+  "compensation-ede9e233f759": {
+    "index": 19,
+    "mission_id": "mission-cc59938097d0",
+    "contract_hash": "a07f49ec86c0197aa0b05a972495f7a263ff5aa9b9e11ed99ff48fff12cc8f1e",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-19.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-19.txt",
+    "hash": "1d22c00db5e5c2243ee35c5a156556f3b0b8a07402acf69c952d249420182f82",
+    "kind": "unapproved"
+  },
+  "compensation-accd186d16ff": {
+    "index": 20,
+    "mission_id": "mission-f65be6fb6db4",
+    "contract_hash": "7e7b130a4efaba443647fd817a7ca28aa6db224e6c4bb3daa90049397c3526b6",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-20.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-20.txt",
+    "hash": "8db9a8e56d1d29b5406c9696f25fa4e17a8d632b554a2325d19fb09cd7ab4412",
+    "kind": "valid"
+  },
+  "compensation-3c8e9f898237": {
+    "index": 21,
+    "mission_id": "mission-efa25b848617",
+    "contract_hash": "d538ca32589d895ceac74d8c145bfbf78d742aa6d89cfa98445afa08fde41e0a",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-21.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-21.txt",
+    "hash": "5f8c8a115a9517fca4485d32ae9557d5ca8aeb1586b41f0692e4d5591ccc9e80",
+    "kind": "valid"
+  },
+  "compensation-015d1b1cf4da": {
+    "index": 22,
+    "mission_id": "mission-f03fe546de0a",
+    "contract_hash": "961af305340faa830e0de106a7eece3a257b05d68d6cdec5e61887dfb759bfd0",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-22.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-22.txt",
+    "hash": "09d3cc302f828d78134d281af2e5b79518fa53b5a278b65d89a4911aa92e0d78",
+    "kind": "valid"
+  },
+  "compensation-e9a6e26889d8": {
+    "index": 23,
+    "mission_id": "mission-5deefc28330c",
+    "contract_hash": "8f03d71163de3e00562a82e5fe8d282a21f3f87622c2a2038941251045415b30",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-23.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-23.txt",
+    "hash": "81a582be2836cbb0182cd363042559ff886fc7747777bc8585b15698d5350f87",
+    "kind": "valid"
+  },
+  "compensation-d07d4739405d": {
+    "index": 24,
+    "mission_id": "mission-dc0cf59217a3",
+    "contract_hash": "d9f2b8273f618255e00916b91c518a3eb84b38525d7dbb72cd46e4650ca3e9f5",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-24.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-24.txt",
+    "hash": "142e3139a2dbbeab91b1b2011a4e296ac10f2b5c8aa97141aa566c52b438395b",
+    "kind": "changed_receipt"
+  },
+  "compensation-479c3fad5755": {
+    "index": 25,
+    "mission_id": "mission-af999aef3a0b",
+    "contract_hash": "fe18e8e49dc594d608eb0ed050fb398c5e4122dbc7ce63ad246d7ca0e9afd246",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-25.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-25.txt",
+    "hash": "66d67b5ec5e262e495061ffcd514794d0f55531b2ab4a514f81fbb8468ad96e4",
+    "kind": "changed_receipt"
+  },
+  "compensation-c26f3ae55292": {
+    "index": 26,
+    "mission_id": "mission-6dd0d36b06e6",
+    "contract_hash": "48598a0ef2c9e40564f6508a4aa1ad88c34881bc786fa427b3bf5e05872ce79b",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-26.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-26.txt",
+    "hash": "bf11cb9286e52025ef8b16760c593d556fdcf7db119ce04f734af87dda5f08ef",
+    "kind": "changed_resource"
+  },
+  "compensation-f6055b8264c6": {
+    "index": 27,
+    "mission_id": "mission-7cebae071937",
+    "contract_hash": "2feb702690af9654a0940e97a3b9c2417a952af2196bf9c2b90074ad8a056e75",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-27.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-27.txt",
+    "hash": "7f7a754cff7260fecbd3b178a6c34fb2b469da3a7c52c6fd212c2bad9bd5b526",
+    "kind": "changed_resource"
+  },
+  "compensation-935c6a3d9822": {
+    "index": 28,
+    "mission_id": "mission-fdd5af5ad3ae",
+    "contract_hash": "00b80afc6794533a4f2bd427fb1972f13ac3c6427e2bb4a2d7782ce49d39bf76",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-28.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-28.txt",
+    "hash": "a72cd57a366f6c47a4f220e65bb655d78e8c7c398e2665703ff8539f15f91ac0",
+    "kind": "unapproved"
+  },
+  "compensation-96a6e3567b97": {
+    "index": 29,
+    "mission_id": "mission-76a1239efde3",
+    "contract_hash": "d99c20e6db7692fd9fa882bd205528bac61db19cd42c3d83de1b3f8896f5e92b",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-29.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-29.txt",
+    "hash": "e3bd9b0244d8001b8b76229f1629c658ac3473b9aa47c6a44af71d853071266b",
+    "kind": "unapproved"
+  },
+  "compensation-fee2e0fde6f9": {
+    "index": 30,
+    "mission_id": "mission-82d7fdd45a74",
+    "contract_hash": "ba7612f128b6d114a1da9609dee2cea5a3a637642762ffce32f4b5e98d528048",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-30.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-30.txt",
+    "hash": "4c39c94ba75be34ef58bc7ac5ed4a916e33cebb25cd1d1a967fd25207c4eca8c",
+    "kind": "valid"
+  },
+  "compensation-20cd19aa1457": {
+    "index": 31,
+    "mission_id": "mission-014d27b05cb1",
+    "contract_hash": "e0a9f30bf1efb96dc45a6791a0d853249a39f6478c746b08dab16e350f1b24cb",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-31.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-31.txt",
+    "hash": "c0e7fd839278defd4d942671f473a6acd7fa10b9ca62a25d6a0e7ad0f5b66bd2",
+    "kind": "valid"
+  },
+  "compensation-e91b6edb3e42": {
+    "index": 32,
+    "mission_id": "mission-7ffb240ed8b1",
+    "contract_hash": "2cf3a795b577a27364f76fd77afabdf7859054de9f64146a8f747f80d89a065c",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-32.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-32.txt",
+    "hash": "677a91374c1791a3c8a5647ff533ab3b104252c6447e4f16021e763198f53337",
+    "kind": "valid"
+  },
+  "compensation-2844d58f2e03": {
+    "index": 33,
+    "mission_id": "mission-5f8a30610f2e",
+    "contract_hash": "5a1cc9a5b5120cf7040ab2d2cfb2bf04b937d96c33e042e4ec5eefa9e59379f7",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-33.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-33.txt",
+    "hash": "f635dc48964515087688608705bc89dd4bffbcb895ab592e69c6bc6dbe286557",
+    "kind": "valid"
+  },
+  "compensation-62e318b5cd31": {
+    "index": 34,
+    "mission_id": "mission-e2037634fb4d",
+    "contract_hash": "f82b28a2c2dc2f0fb694b8e477439bbc0646cb33eec8a6e06422494a74147a99",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-34.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-34.txt",
+    "hash": "18c49417ccd7a290bb809f436a238ef9a62ac985f0cf08509f6b917a7b77a7cf",
+    "kind": "changed_receipt"
+  },
+  "compensation-16bc64316b50": {
+    "index": 35,
+    "mission_id": "mission-a9bb8858fc03",
+    "contract_hash": "4f01d1be14a66a606419bdb1185f7ec6cbd2f466ab4641c1548189a6819cb5f3",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-35.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-35.txt",
+    "hash": "42ed7173753a68d5e6cb866d0247b05199c8b64d45764201874f09c0f9c010f3",
+    "kind": "changed_receipt"
+  },
+  "compensation-35465b212c90": {
+    "index": 36,
+    "mission_id": "mission-bc5e12f8f42f",
+    "contract_hash": "789f451db155d695d837646fd36053175f03dd7585381c736ba41e29a3d84b1b",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-36.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-36.txt",
+    "hash": "9b0b96e97ee41f7a83707b0e31023b062f0789287fe8d0eb8228a65967ec8748",
+    "kind": "changed_resource"
+  },
+  "compensation-f3e716ddbb94": {
+    "index": 37,
+    "mission_id": "mission-e844c245dd79",
+    "contract_hash": "791e6dc593d736ea2dcb4c9c95e58aa82b39ee365428f661407e61d1576370a1",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-37.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-37.txt",
+    "hash": "f54317da87ceb68814a32b546b86cba1222ab0e3835c877241bc032f12914883",
+    "kind": "changed_resource"
+  },
+  "compensation-e0d127111bd8": {
+    "index": 38,
+    "mission_id": "mission-63ed44325be5",
+    "contract_hash": "63093689369b9b780d201e7495ac2f20fa95122dfa3d4845607bb64d556e9654",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-38.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-38.txt",
+    "hash": "c7eeba276891605577508fe1beeabf8f180abe3071d278a218867e64785d550a",
+    "kind": "unapproved"
+  },
+  "compensation-4bbec4dff7aa": {
+    "index": 39,
+    "mission_id": "mission-540adabd0f05",
+    "contract_hash": "773822118f7ffb33abe0ab9a2a0b50ee20fd56a52b703b304511a18776b5ddff",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-39.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-39.txt",
+    "hash": "dc1a876e252ee610107cc08462812dbf55f6e1994be4e214d554fb2d2afa5ba7",
+    "kind": "unapproved"
+  },
+  "compensation-9d2ad43eab1a": {
+    "index": 40,
+    "mission_id": "mission-c5b661f634da",
+    "contract_hash": "a6567662f5f1658b16248e38381a7b24c57b4fc310bd51608d799f97b691cc65",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-40.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-40.txt",
+    "hash": "eaad5da32557f19dad27da0bd44a3282ae442bad8ea1d238971e3ce1893f10e6",
+    "kind": "valid"
+  },
+  "compensation-bcf7437b17c8": {
+    "index": 41,
+    "mission_id": "mission-ff584a731797",
+    "contract_hash": "b277aa79b43dc463f1845a59f1f148f5bf4b3640cbf4ab7d0518621ad953920f",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-41.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-41.txt",
+    "hash": "d91068a397d8e3122bdaad8546d1abb1a10d4825d7712b7f3289e18970f69336",
+    "kind": "valid"
+  },
+  "compensation-14f0be6f0555": {
+    "index": 42,
+    "mission_id": "mission-ac27a7825e70",
+    "contract_hash": "f8d23fce3dd69de7b2297debed9135bbf16e8a13a55621e69be7a4c18875e7de",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-42.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-42.txt",
+    "hash": "25657563334d758f2675a7f79e6352b170dbca3909082f75a6a865e40ccfea86",
+    "kind": "valid"
+  },
+  "compensation-e67f1f1881b0": {
+    "index": 43,
+    "mission_id": "mission-ee72f29c888d",
+    "contract_hash": "84a5be2821577a53b622d32d45e6a808e9cfa8652ac88cd692629fa60de531b3",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-43.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-43.txt",
+    "hash": "f1afec45d2764a6a728fa5bb823ccb5edf1e860da9673d6d549ec7a372374622",
+    "kind": "valid"
+  },
+  "compensation-1d337e627a46": {
+    "index": 44,
+    "mission_id": "mission-675816a363de",
+    "contract_hash": "3d59f37eed04b7bb4059e6563399b04a168d450b5c4457ff8f9d7156c3cde40d",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-44.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-44.txt",
+    "hash": "19718b59c5ef6e44c0510f3a4a320e60b7e1396bb3677bcadcd498ad39f1cb4e",
+    "kind": "changed_receipt"
+  },
+  "compensation-9b8be47d0ae0": {
+    "index": 45,
+    "mission_id": "mission-4e543d20c23a",
+    "contract_hash": "b590cf15d8edbec1c572418262313e71ba13bcba167e19041a7faeee34a0ad03",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-45.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-45.txt",
+    "hash": "762b24100cf3b545f0501097f816d226961f547596fd38fe4259ca857b72f1c2",
+    "kind": "changed_receipt"
+  },
+  "compensation-3d1a5581e0d4": {
+    "index": 46,
+    "mission_id": "mission-427d5726f7e2",
+    "contract_hash": "1948daecb4eef8e5093289c56dc6d5360970d917253008eeb56489356c9719c5",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-46.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-46.txt",
+    "hash": "56f8d64cb9e983c13d87322a8fca8f0bd010ddc3bc05c9f8afa4a58af401d659",
+    "kind": "changed_resource"
+  },
+  "compensation-671967b1b357": {
+    "index": 47,
+    "mission_id": "mission-8eb7ffc0959e",
+    "contract_hash": "77b471e65f702f3da3f210b6a1b888eb2b152089490f7af288785583c9d8e2c5",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-47.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-47.txt",
+    "hash": "b93d2f3f1e303f510f38e62f624756fcec57f06ca3fa86528f9b105f0df16872",
+    "kind": "changed_resource"
+  },
+  "compensation-838d0fea1712": {
+    "index": 48,
+    "mission_id": "mission-b8633eaea313",
+    "contract_hash": "8698569622e5a1cbebe6e81ef5f0cc9844d206d5e1b336f0db2ce57351f3a93a",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-48.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-48.txt",
+    "hash": "0d0e693dd1e97bee643d09536fcb2478c1898ad5d545b370207b65cf5e9f8b5e",
+    "kind": "unapproved"
+  },
+  "compensation-32279207c401": {
+    "index": 49,
+    "mission_id": "mission-433a09e5ed0b",
+    "contract_hash": "4da791353eb77e13ed13210b50b7c6b0b97239e2e566f93822db480fe02c4a80",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-49.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-49.txt",
+    "hash": "ea6363b1d9f3dc1028604b4b8ef0d4b0534a92255b850860fc5d3d97ff050f5b",
+    "kind": "unapproved"
+  },
+  "compensation-89f7fe12d917": {
+    "index": 50,
+    "mission_id": "mission-b6715ecfbe3b",
+    "contract_hash": "1ce2c2c6553bdc715e4a498cf3080e7ba2ab4fd20290024e4ad027c5be2b01a0",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-50.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-50.txt",
+    "hash": "3eb196caa9d75711c256311692ce4c3d9462d0a8bf262d8fcbfd021d66f7f03f",
+    "kind": "valid"
+  },
+  "compensation-997abc6734d4": {
+    "index": 51,
+    "mission_id": "mission-d45a446a9382",
+    "contract_hash": "a23cfb6f5f1784dfff8c5ec0b2c1dab895a1c8a3ceb0631d101df91d1eae582a",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-51.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-51.txt",
+    "hash": "13319049c416e9d4862fdc351bc7f12a44df72e06dab4622f826ce76590b55e6",
+    "kind": "valid"
+  },
+  "compensation-24ba74d202ee": {
+    "index": 52,
+    "mission_id": "mission-8a5e2605d2b0",
+    "contract_hash": "a417c34f6c4fc0f9061be1ac4dd897d6261c9cb70075a24e6eb04a41f38db24b",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-52.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-52.txt",
+    "hash": "80251c91a3ddadb81def43e8c719f04bf2b3407965d704d2b55de31de56bb4b6",
+    "kind": "valid"
+  },
+  "compensation-3db12722c0da": {
+    "index": 53,
+    "mission_id": "mission-8b6eb02c8e0b",
+    "contract_hash": "a3691f419b5029955c64a8c996a223d2489cc820d86ef22165adac757be9748c",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-53.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-53.txt",
+    "hash": "3b81824ff89bde461a2f138d402a0e5922aafe5f016e5db3a1bf525902798a5b",
+    "kind": "valid"
+  },
+  "compensation-a4ef6bacaa54": {
+    "index": 54,
+    "mission_id": "mission-b44eda81c789",
+    "contract_hash": "31ffe85a4f50135160cdbd6ef0d35f108dbd928c13c708cef2a049c1d67ac6a5",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-54.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-54.txt",
+    "hash": "621f4c708f32f30119d57d72ddd243d01a290cd709b46bec6c5dafdea2624ab5",
+    "kind": "changed_receipt"
+  },
+  "compensation-f94f9b2d2450": {
+    "index": 55,
+    "mission_id": "mission-4ac3543fb6d4",
+    "contract_hash": "7ad430afa9b5b685cb15d908e74d4ea9ee8f8bb1759a0f68f2611c775b03cfab",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-55.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-55.txt",
+    "hash": "c24aed72b750a0f0fa1a0d8d043db0a0034799018748d367322e033254e15bd7",
+    "kind": "changed_receipt"
+  },
+  "compensation-ecd919af1865": {
+    "index": 56,
+    "mission_id": "mission-d9a98494a37a",
+    "contract_hash": "1bac944a2f11f6b74092022091c74d5e3aeff8c3a6321375b9f11e4daebe9171",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-56.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-56.txt",
+    "hash": "5c35cb48e5bd9dba741513c978cdc5cf799d4b6ed8b317cdce0736a0fb8d231f",
+    "kind": "changed_resource"
+  },
+  "compensation-d243c04bd284": {
+    "index": 57,
+    "mission_id": "mission-20dec4eaffdd",
+    "contract_hash": "99f6c674d4b1248ea347258d81aef26ba5320112b51400a3333d60c4a0f11b7a",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-57.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-57.txt",
+    "hash": "75cf1e82f034f4a56e3c9a24ae0783d36ff4c3adeb710ce3fc79fec2665edc36",
+    "kind": "changed_resource"
+  },
+  "compensation-cd2bf48f2aec": {
+    "index": 58,
+    "mission_id": "mission-860e1255bed7",
+    "contract_hash": "ece7828d8228631efac798e33017a0624c6141e4c381ec4e65099cd678c5346d",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-58.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-58.txt",
+    "hash": "0f8d4d054d20d60155e6b173f19b0ed8f101887130642ac7fe541f1695474a56",
+    "kind": "unapproved"
+  },
+  "compensation-7265c3af4554": {
+    "index": 59,
+    "mission_id": "mission-84a9f9bdc7ca",
+    "contract_hash": "c01501d426d945bf351ddc5e25243436b4cbd22a75b44acb3ce5a87ba66dee65",
+    "receipt": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/receipt-59.json",
+    "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase14-20261007/sample-59.txt",
+    "hash": "943a014c6a7bc50989ba33401c2afaf39d41fd65d1a9d689bed87df25ec54d5b",
+    "kind": "unapproved"
+  }
+}

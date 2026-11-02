@@ -1,0 +1,31 @@
+{
+  "configured": true,
+  "database": "team_dashboard",
+  "schema": "second_brain",
+  "scope": {
+    "id": "ks-089499632d9fb01a8414035daed61f8f",
+    "owner_user_id": "1",
+    "project_id": "workflow-pilot-20261002"
+  },
+  "source_root": "/Users/apple/工作桌面/Workspace/agent-system/backend/data/second-brain/sources",
+  "source_permissions": "0o700",
+  "context_database": "/Users/apple/工作桌面/Workspace/agent-system/backend/data/unified_dashboard.db",
+  "context_packs_readable": true,
+  "context_pack_count": 121,
+  "schema_revisions": [
+    "20261006_knowledge_context",
+    "20261006_knowledge_domain",
+    "20261006_knowledge_operations",
+    "20261006_knowledge_projection"
+  ],
+  "knowledge_counts": {
+    "kb_sources": 0,
+    "kb_pages": 0,
+    "kb_releases": 0
+  },
+  "legacy_DATABASE_URL_unchanged": true,
+  "service_restarted": false,
+  "pilot_started": false,
+  "feature_enabled": false,
+  "scope_choice": "recommended_existing_workflow_project"
+}

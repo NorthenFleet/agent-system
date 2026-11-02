@@ -1,0 +1,16 @@
+{
+  "mission_id": "mission-2593e77a4486",
+  "final_status": "completed",
+  "same_step_new_token": true,
+  "stale_write_rejected": true,
+  "recovery_seconds": 201.27,
+  "lease_config": {
+    "pid": 23640,
+    "lease_seconds": 240,
+    "heartbeat_seconds": 60,
+    "worker_id": "phase7-full-worker-a"
+  },
+  "source_unchanged": true,
+  "sent_notifications": 0,
+  "attempt_count": 2
+}

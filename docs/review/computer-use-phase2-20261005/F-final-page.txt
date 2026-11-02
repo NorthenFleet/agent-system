@@ -1,0 +1,1074 @@
+- generic: 🤖
+- generic: OpenClaw
+- menubar:
+  - generic: 总览
+  - menuitem "仪表盘":
+    - generic: 仪表盘
+  - menuitem "擎天柱指挥中心":
+    - generic: 擎天柱指挥中心
+  - generic: 产品侧
+  - menuitem "项目中枢":
+    - generic: 项目中枢
+  - menuitem "程序开发":
+    - generic: 程序开发
+  - menuitem "文档管理":
+    - generic: 文档管理
+  - menuitem "财务管理":
+    - generic: 财务管理
+  - menuitem "产品矩阵":
+    - generic: 产品矩阵
+  - generic: 生产侧
+  - menuitem "数据管理":
+    - generic: 数据管理
+  - menuitem "智能体团队":
+    - generic: 智能体团队
+  - menuitem "讨论与研究":
+    - generic: 讨论与研究
+  - menuitem "知识库":
+    - generic: 知识库
+  - menuitem "工具管理":
+    - generic: 工具管理
+  - menuitem "活动社区":
+    - generic: 活动社区
+  - menuitem "情报信息":
+    - generic: 情报信息
+  - menuitem "新闻资讯":
+    - generic: 新闻资讯
+  - menuitem "任务列表":
+    - generic: 任务列表
+  - generic: 系统
+  - menuitem "系统监视":
+    - generic: 系统监视
+  - menuitem "数据分析":
+    - generic: 数据分析
+  - menuitem "记忆评测":
+    - generic: 记忆评测
+  - menuitem "用户管理":
+    - generic: 用户管理
+  - menuitem "调度中心":
+    - generic: 调度中心
+- generic: OpenClaw
+- button "🌙":
+  - generic: 🌙
+- button "管 管理员":
+  - generic: 管
+  - generic: 管理员
+- banner:
+  - heading "擎天柱指挥中心" [level=1]
+  - generic: 自动更新
+  - paragraph: 统一任务入口 · 审批后执行 · 异步协作与反馈
+  - switch [checked]
+  - generic: 自动刷新
+  - button "刷新":
+    - generic: 刷新
+- region "当前任务与下一步":
+  - paragraph: CU-P2-20261005-F：重复交付与计划退回测试。纯文档任务，无需研究、无需联网、不开发代码。仅两步：一名智能体写虚构的个人助理晚间复盘，另一名独立审核
+  - strong: 交付闭环已完成
+  - paragraph: 计划、执行、证据与恢复状态均已归档
+  - paragraph: 下一步：在顶部任务产物中下载文件，并核对审核结论
+  - strong: 任务产物（已完成）
+  - paragraph:
+    - text: 虚构晚间复盘 brief.md
+    - button "下载文件":
+      - generic: 下载文件
+  - paragraph:
+    - text: brief.md 独立审核报告
+    - button "下载文件":
+      - generic: 下载文件
+- generic "查看团队统计与运行健康"
+- tablist:
+  - tab "工作坊" [selected]
+- main:
+  - complementary:
+    - strong: 任务工作台
+    - generic: 9 个项目 · 26 项任务
+    - textbox "搜索任务/项目/智能体"
+    - combobox
+    - generic: 状态
+    - combobox
+    - generic: 类型
+    - combobox
+    - generic: 项目
+    - combobox
+    - generic: 智能体
+    - combobox
+    - generic: 来源
+    - generic: 项目范围
+    - strong: 全部项目
+    - button "CU-P2-20261005-G：取消流程验收。只规划一个虚构个人助理文档任务，无需研究、无需联网、不开发代码。若批准执行，只允许在 /Users/apple/ 已取消 所属项目 CU-20261005 个人助理验收 任务类型 文档撰写 执行智能体 擎天柱 当前步骤 等待擎天柱规划 10/05 18:21 0/0 步骤 1 个总账记录":
+      - strong: CU-P2-20261005-G：取消流程验收。只规划一个虚构个人助理文档任务，无需研究、无需联网、不开发代码。若批准执行，只允许在 /Users/apple/
+      - generic: 已取消
+      - generic: 所属项目 CU-20261005 个人助理验收
+      - generic: 任务类型 文档撰写
+      - generic: 执行智能体 擎天柱
+      - generic: 当前步骤 等待擎天柱规划
+      - generic: 10/05 18:21
+      - generic: 0/0 步骤
+      - generic: 1 个总账记录
+    - button "CU-P2-20261005-F：重复交付与计划退回测试。纯文档任务，无需研究、无需联网、不开发代码。仅两步：一名智能体写虚构的个人助理晚间复盘，另一名独立审核 已完成 所属项目 CU-20261005 个人助理验收 任务类型 文档撰写 执行智能体 爵士 当前步骤 独立审核 brief.md 并输出 review.md 10/05 18:29 2/2 步骤 3 个总账记录":
+      - strong: CU-P2-20261005-F：重复交付与计划退回测试。纯文档任务，无需研究、无需联网、不开发代码。仅两步：一名智能体写虚构的个人助理晚间复盘，另一名独立审核
+      - generic: 已完成
+      - generic: 所属项目 CU-20261005 个人助理验收
+      - generic: 任务类型 文档撰写
+      - generic: 执行智能体 爵士
+      - generic: 当前步骤 独立审核 brief.md 并输出 review.md
+      - generic: 10/05 18:29
+      - generic: 2/2 步骤
+      - generic: 3 个总账记录
+    - button "CU-P2-20261005-E：纯文档稳定性验收。请由写作智能体生成一份虚构的个人助理晨间简报，120至180个汉字，包含今日重点、待确认事项、风险提示三个小 已完成 所属项目 CU-20261005 个人助理验收 任务类型 文档撰写 执行智能体 通天晓 当前步骤 独立审核简报内容与汉字数 10/05 18:26 2/2 步骤 3 个总账记录":
+      - strong: CU-P2-20261005-E：纯文档稳定性验收。请由写作智能体生成一份虚构的个人助理晨间简报，120至180个汉字，包含今日重点、待确认事项、风险提示三个小
+      - generic: 已完成
+      - generic: 所属项目 CU-20261005 个人助理验收
+      - generic: 任务类型 文档撰写
+      - generic: 执行智能体 通天晓
+      - generic: 当前步骤 独立审核简报内容与汉字数
+      - generic: 10/05 18:26
+      - generic: 2/2 步骤
+      - generic: 3 个总账记录
+    - button "CU-20261005-D 修复回归。只写文档，不开发代码，无需联网或额外资料研究。为虚构的个人助理试点写100至200个汉字的简报，包含目标、三个里程碑、两条 已完成 所属项目 CU-20261005 个人助理验收 任务类型 文档撰写 执行智能体 救护车 当前步骤 救护车独立审查 brief.md 并写入 review.md 10/05 18:08 2/2 步骤 3 个总账记录":
+      - strong: CU-20261005-D 修复回归。只写文档，不开发代码，无需联网或额外资料研究。为虚构的个人助理试点写100至200个汉字的简报，包含目标、三个里程碑、两条
+      - generic: 已完成
+      - generic: 所属项目 CU-20261005 个人助理验收
+      - generic: 任务类型 文档撰写
+      - generic: 执行智能体 救护车
+      - generic: 当前步骤 救护车独立审查 brief.md 并写入 review.md
+      - generic: 10/05 18:08
+      - generic: 2/2 步骤
+      - generic: 3 个总账记录
+    - button "CU-20261005-C 正常文档交付。使用本提示的虚构信息撰写个人助理试点简报，含目标、三个里程碑、两条风险及应对、验收清单，不含预算，中文正文≤300字。 等待反馈 所属项目 CU-20261005 个人助理验收 任务类型 文档撰写 执行智能体 通天晓 当前步骤 通天晓撰写个人助理试点简报 brief.md 10/05 17:11 One or more mission steps failed 0/2 步骤 3 个总账记录":
+      - strong: CU-20261005-C 正常文档交付。使用本提示的虚构信息撰写个人助理试点简报，含目标、三个里程碑、两条风险及应对、验收清单，不含预算，中文正文≤300字。
+      - generic: 等待反馈
+      - generic: 所属项目 CU-20261005 个人助理验收
+      - generic: 任务类型 文档撰写
+      - generic: 执行智能体 通天晓
+      - generic: 当前步骤 通天晓撰写个人助理试点简报 brief.md
+      - generic: 10/05 17:11
+      - generic: One or more mission steps failed
+      - generic: 0/2 步骤
+      - generic: 3 个总账记录
+    - button "CU-20261005-B 文档交付闭环。为虚构项目“个人工作助理试点”生成一页中文简报，≤400字，包含目标、3个里程碑、2条风险、验收清单，不要预算。先生成 等待反馈 所属项目 CU-20261005 个人助理验收 任务类型 文档撰写 执行智能体 通天晓 当前步骤 撰写个人工作助理试点简报 10/05 17:05 One or more mission steps failed 0/3 步骤 4 个总账记录":
+      - strong: CU-20261005-B 文档交付闭环。为虚构项目“个人工作助理试点”生成一页中文简报，≤400字，包含目标、3个里程碑、2条风险、验收清单，不要预算。先生成
+      - generic: 等待反馈
+      - generic: 所属项目 CU-20261005 个人助理验收
+      - generic: 任务类型 文档撰写
+      - generic: 执行智能体 通天晓
+      - generic: 当前步骤 撰写个人工作助理试点简报
+      - generic: 10/05 17:05
+      - generic: One or more mission steps failed
+      - generic: 0/3 步骤
+      - generic: 4 个总账记录
+    - button "CU-20261005-A 委托与计划退回验收 已取消 所属项目 智能体系统工作流验证与优化 任务类型 程序开发 执行智能体 米开朗基罗 当前步骤 测试、审查与验收 10/05 17:01 0/4 步骤 5 个总账记录":
+      - strong: CU-20261005-A 委托与计划退回验收
+      - generic: 已取消
+      - generic: 所属项目 智能体系统工作流验证与优化
+      - generic: 任务类型 程序开发
+      - generic: 执行智能体 米开朗基罗
+      - generic: 当前步骤 测试、审查与验收
+      - generic: 10/05 17:01
+      - generic: 0/4 步骤
+      - generic: 5 个总账记录
+    - button "编写并独立审核智能体系统软件测试大纲（正式验证） 等待反馈 所属项目 智能体系统工作流验证与优化 任务类型 程序开发 执行智能体 通天晓 当前步骤 根据审核意见修订大纲 10/03 21:28 One or more mission steps failed 4/7 步骤 8 个总账记录":
+      - strong: 编写并独立审核智能体系统软件测试大纲（正式验证）
+      - generic: 等待反馈
+      - generic: 所属项目 智能体系统工作流验证与优化
+      - generic: 任务类型 程序开发
+      - generic: 执行智能体 通天晓
+      - generic: 当前步骤 根据审核意见修订大纲
+      - generic: 10/03 21:28
+      - generic: One or more mission steps failed
+      - generic: 4/7 步骤
+      - generic: 8 个总账记录
+    - button "工作流协议最小闭环验证 已完成 所属项目 智能体系统工作流验证与优化 任务类型 程序开发 执行智能体 救护车 当前步骤 结构化验收与交付报告 10/03 15:41 4/4 步骤 5 个总账记录":
+      - strong: 工作流协议最小闭环验证
+      - generic: 已完成
+      - generic: 所属项目 智能体系统工作流验证与优化
+      - generic: 任务类型 程序开发
+      - generic: 执行智能体 救护车
+      - generic: 当前步骤 结构化验收与交付报告
+      - generic: 10/03 15:41
+      - generic: 4/4 步骤
+      - generic: 5 个总账记录
+    - button "工作流协议最小闭环验证 已取消 所属项目 智能体系统工作流验证与优化 任务类型 程序开发 执行智能体 救护车 当前步骤 事实核查与审校 10/03 15:33 0/4 步骤 5 个总账记录":
+      - strong: 工作流协议最小闭环验证
+      - generic: 已取消
+      - generic: 所属项目 智能体系统工作流验证与优化
+      - generic: 任务类型 程序开发
+      - generic: 执行智能体 救护车
+      - generic: 当前步骤 事实核查与审校
+      - generic: 10/03 15:33
+      - generic: 0/4 步骤
+      - generic: 5 个总账记录
+    - button "工作流协议最小闭环验证 已取消 所属项目 智能体系统工作流验证与优化 任务类型 程序开发 执行智能体 救护车 当前步骤 事实核查与审校 10/03 15:30 0/4 步骤 5 个总账记录":
+      - strong: 工作流协议最小闭环验证
+      - generic: 已取消
+      - generic: 所属项目 智能体系统工作流验证与优化
+      - generic: 任务类型 程序开发
+      - generic: 执行智能体 救护车
+      - generic: 当前步骤 事实核查与审校
+      - generic: 10/03 15:30
+      - generic: 0/4 步骤
+      - generic: 5 个总账记录
+    - button "工作流协议最小闭环验证 等待反馈 所属项目 智能体系统工作流验证与优化 任务类型 程序开发 执行智能体 擎天柱 当前步骤 使用 write 工具创建 protocol-probe.md 10/03 15:27 One or more mission steps failed 1/3 步骤 4 个总账记录":
+      - strong: 工作流协议最小闭环验证
+      - generic: 等待反馈
+      - generic: 所属项目 智能体系统工作流验证与优化
+      - generic: 任务类型 程序开发
+      - generic: 执行智能体 擎天柱
+      - generic: 当前步骤 使用 write 工具创建 protocol-probe.md
+      - generic: 10/03 15:27
+      - generic: One or more mission steps failed
+      - generic: 1/3 步骤
+      - generic: 4 个总账记录
+    - button "工作流协议最小闭环验证 已取消 所属项目 智能体系统工作流验证与优化 任务类型 程序开发 执行智能体 擎天柱 当前步骤 验证文件完整性并输出结构化验收结果 10/03 15:22 0/3 步骤 4 个总账记录":
+      - strong: 工作流协议最小闭环验证
+      - generic: 已取消
+      - generic: 所属项目 智能体系统工作流验证与优化
+      - generic: 任务类型 程序开发
+      - generic: 执行智能体 擎天柱
+      - generic: 当前步骤 验证文件完整性并输出结构化验收结果
+      - generic: 10/03 15:22
+      - generic: 0/3 步骤
+      - generic: 4 个总账记录
+    - button "编写并独立审核智能体系统软件测试大纲 等待反馈 所属项目 智能体系统工作流验证与优化 任务类型 程序开发 执行智能体 米开朗基罗 当前步骤 米开朗基罗只读梳理核心源码/接口并编写场景及覆盖矩阵 10/02 21:29 One or more mission steps failed 0/5 步骤 6 个总账记录":
+      - strong: 编写并独立审核智能体系统软件测试大纲
+      - generic: 等待反馈
+      - generic: 所属项目 智能体系统工作流验证与优化
+      - generic: 任务类型 程序开发
+      - generic: 执行智能体 米开朗基罗
+      - generic: 当前步骤 米开朗基罗只读梳理核心源码/接口并编写场景及覆盖矩阵
+      - generic: 10/02 21:29
+      - generic: One or more mission steps failed
+      - generic: 0/5 步骤
+      - generic: 6 个总账记录
+    - button "One-Sim 产品讲解网站（集群协同能力测试） 已完成 所属项目 one-sim 仿真 任务类型 程序开发 执行智能体 擎天柱 当前步骤 最终交付报告修订与闭环审校 09/20 13:38 3/3 步骤 4 个总账记录":
+      - strong: One-Sim 产品讲解网站（集群协同能力测试）
+      - generic: 已完成
+      - generic: 所属项目 one-sim 仿真
+      - generic: 任务类型 程序开发
+      - generic: 执行智能体 擎天柱
+      - generic: 当前步骤 最终交付报告修订与闭环审校
+      - generic: 09/20 13:38
+      - generic: 3/3 步骤
+      - generic: 4 个总账记录
+    - button "孙总要求实施方案 B：在 3021 团队看板中增加智能体记忆库功能，让所有智能体记忆可以在 3021 前端浏览、搜索、查… 已取消 所属项目 OpenClaw 团队信息看板 任务类型 程序开发 执行智能体 擎天柱 当前步骤 等待擎天柱规划 08/02 13:14 0/0 步骤 1 个总账记录":
+      - strong: 孙总要求实施方案 B：在 3021 团队看板中增加智能体记忆库功能，让所有智能体记忆可以在 3021 前端浏览、搜索、查…
+      - generic: 已取消
+      - generic: 所属项目 OpenClaw 团队信息看板
+      - generic: 任务类型 程序开发
+      - generic: 执行智能体 擎天柱
+      - generic: 当前步骤 等待擎天柱规划
+      - generic: 08/02 13:14
+      - generic: 0/0 步骤
+      - generic: 1 个总账记录
+    - button "孙总要求实施方案 B：在 3021 团队看板中增加智能体记忆库功能，让所有智能体记忆可以在 3021 前端浏览、搜索、查… 已取消 所属项目 OpenClaw 团队信息看板 任务类型 程序开发 执行智能体 擎天柱 当前步骤 等待擎天柱规划 08/02 13:14 0/0 步骤 1 个总账记录":
+      - strong: 孙总要求实施方案 B：在 3021 团队看板中增加智能体记忆库功能，让所有智能体记忆可以在 3021 前端浏览、搜索、查…
+      - generic: 已取消
+      - generic: 所属项目 OpenClaw 团队信息看板
+      - generic: 任务类型 程序开发
+      - generic: 执行智能体 擎天柱
+      - generic: 当前步骤 等待擎天柱规划
+      - generic: 08/02 13:14
+      - generic: 0/0 步骤
+      - generic: 1 个总账记录
+    - button "孙总要求实施方案 B：在 3021 团队看板中增加智能体记忆库功能，让所有智能体记忆可以在 3021 前端浏览、搜索、查… 已完成 所属项目 OpenClaw 团队信息看板 任务类型 程序开发 执行智能体 米开朗基罗 当前步骤 测试、审查与验收 08/04 12:25 4/4 步骤 5 个总账记录":
+      - strong: 孙总要求实施方案 B：在 3021 团队看板中增加智能体记忆库功能，让所有智能体记忆可以在 3021 前端浏览、搜索、查…
+      - generic: 已完成
+      - generic: 所属项目 OpenClaw 团队信息看板
+      - generic: 任务类型 程序开发
+      - generic: 执行智能体 米开朗基罗
+      - generic: 当前步骤 测试、审查与验收
+      - generic: 08/04 12:25
+      - generic: 4/4 步骤
+      - generic: 5 个总账记录
+    - button "按方案执行 用户确认执行：按方案执行 Canvas 执行轨迹可视化，Phase 1-5 共11h，分2天完成。归属项目：… 等待反馈 所属项目 OpenClaw 团队信息看板 任务类型 程序开发 执行智能体 千斤顶 当前步骤 Canvas 集成与渲染 08/02 16:35 One or more mission steps failed 3/7 步骤 8 个总账记录":
+      - strong: 按方案执行 用户确认执行：按方案执行 Canvas 执行轨迹可视化，Phase 1-5 共11h，分2天完成。归属项目：…
+      - generic: 等待反馈
+      - generic: 所属项目 OpenClaw 团队信息看板
+      - generic: 任务类型 程序开发
+      - generic: 执行智能体 千斤顶
+      - generic: 当前步骤 Canvas 集成与渲染
+      - generic: 08/02 16:35
+      - generic: One or more mission steps failed
+      - generic: 3/7 步骤
+      - generic: 8 个总账记录
+    - button "联调验证：请在 OpenClaw 团队信息看板项目中创建一项程序开发任务，仅核对指挥中心的意图路由和项目绑定，不执行代码… 已取消 所属项目 OpenClaw 团队信息看板 任务类型 程序开发 执行智能体 擎天柱 当前步骤 等待擎天柱规划 07/31 19:23 0/0 步骤 1 个总账记录":
+      - strong: 联调验证：请在 OpenClaw 团队信息看板项目中创建一项程序开发任务，仅核对指挥中心的意图路由和项目绑定，不执行代码…
+      - generic: 已取消
+      - generic: 所属项目 OpenClaw 团队信息看板
+      - generic: 任务类型 程序开发
+      - generic: 执行智能体 擎天柱
+      - generic: 当前步骤 等待擎天柱规划
+      - generic: 07/31 19:23
+      - generic: 0/0 步骤
+      - generic: 1 个总账记录
+    - button "课程生产迭代 1-1 已完成 所属项目 水面舰艇作战软件与兵棋推演课程 任务类型 程序开发 执行智能体 通天晓 当前步骤 统一20学时课程口径 07/31 16:19 1/1 步骤 2 个总账记录":
+      - strong: 课程生产迭代 1-1
+      - generic: 已完成
+      - generic: 所属项目 水面舰艇作战软件与兵棋推演课程
+      - generic: 任务类型 程序开发
+      - generic: 执行智能体 通天晓
+      - generic: 当前步骤 统一20学时课程口径
+      - generic: 07/31 16:19
+      - generic: 1/1 步骤
+      - generic: 2 个总账记录
+    - button "第三阶段 Skill 与工作流验收。除指挥中心自身的任务、审批、审计和通知记录外，只执行只读检查，禁止修改项目文件、系统… 已完成 所属项目 未绑定项目 任务类型 程序开发 执行智能体 震荡波 当前步骤 震荡波独立复核 07/31 15:59 5/5 步骤 6 个总账记录":
+      - strong: 第三阶段 Skill 与工作流验收。除指挥中心自身的任务、审批、审计和通知记录外，只执行只读检查，禁止修改项目文件、系统…
+      - generic: 已完成
+      - generic: 所属项目 未绑定项目
+      - generic: 任务类型 程序开发
+      - generic: 执行智能体 震荡波
+      - generic: 当前步骤 震荡波独立复核
+      - generic: 07/31 15:59
+      - generic: 5/5 步骤
+      - generic: 6 个总账记录
+    - button "第二阶段上下文自动传递验收 已完成 所属项目 OpenClaw 团队信息看板 任务类型 程序开发 执行智能体 擎天柱 当前步骤 引用独立核对与证据报告 07/31 08:16 2/2 步骤 3 个总账记录":
+      - strong: 第二阶段上下文自动传递验收
+      - generic: 已完成
+      - generic: 所属项目 OpenClaw 团队信息看板
+      - generic: 任务类型 程序开发
+      - generic: 执行智能体 擎天柱
+      - generic: 当前步骤 引用独立核对与证据报告
+      - generic: 07/31 08:16
+      - generic: 2/2 步骤
+      - generic: 3 个总账记录
+    - button "第二阶段上下文自动传递验收 已取消 所属项目 OpenClaw 团队信息看板 任务类型 程序开发 执行智能体 擎天柱 当前步骤 目标分析与执行 07/31 08:11 0/2 步骤 3 个总账记录":
+      - strong: 第二阶段上下文自动传递验收
+      - generic: 已取消
+      - generic: 所属项目 OpenClaw 团队信息看板
+      - generic: 任务类型 程序开发
+      - generic: 执行智能体 擎天柱
+      - generic: 当前步骤 目标分析与执行
+      - generic: 07/31 08:11
+      - generic: 0/2 步骤
+      - generic: 3 个总账记录
+    - button "异步执行闭环验证 已完成 所属项目 未绑定项目 任务类型 程序开发 执行智能体 李奥纳多 当前步骤 文本一致性复核 07/30 22:23 2/2 步骤 3 个总账记录":
+      - strong: 异步执行闭环验证
+      - generic: 已完成
+      - generic: 所属项目 未绑定项目
+      - generic: 任务类型 程序开发
+      - generic: 执行智能体 李奥纳多
+      - generic: 当前步骤 文本一致性复核
+      - generic: 07/30 22:23
+      - generic: 2/2 步骤
+      - generic: 3 个总账记录
+    - button "指挥中心端到端验证 已取消 所属项目 未绑定项目 任务类型 程序开发 执行智能体 擎天柱 当前步骤 人工审批决策 07/30 22:31 0/7 步骤 8 个总账记录":
+      - strong: 指挥中心端到端验证
+      - generic: 已取消
+      - generic: 所属项目 未绑定项目
+      - generic: 任务类型 程序开发
+      - generic: 执行智能体 擎天柱
+      - generic: 当前步骤 人工审批决策
+      - generic: 07/30 22:31
+      - generic: 0/7 步骤
+      - generic: 8 个总账记录
+  - strong: 智能体空间
+  - generic: CU-P2-20261005-F：重复交付与计划退回测试。纯文档任务，无需研究、无需联网、不开发代码。仅两步：一名智能体写虚构的个人助理晚间复盘，另一名独立审核
+  - generic: 唯一入口：擎天柱
+  - generic: 已完成
+  - generic: 总指挥
+  - generic: 项目经理
+  - generic: 开发执行
+  - generic: 保障能力
+  - button "🐝 大黄蜂 运维":
+    - generic: 🐝
+    - strong: 大黄蜂
+    - generic: 运维
+  - button "🟦 李奥纳多 架构师 / 开发负责人":
+    - generic: 🟦
+    - strong: 李奥纳多
+    - generic: 架构师 / 开发负责人
+  - button "🤖 擎天柱 总经理":
+    - generic: 🤖
+    - strong: 擎天柱
+    - generic: 总经理
+  - button "🔧 千斤顶 看板 V2 PM":
+    - generic: 🔧
+    - strong: 千斤顶
+    - generic: 看板 V2 PM
+  - button "🛡️ 铁皮 one-sim 仿真 PM":
+    - generic: 🛡️
+    - strong: 铁皮
+    - generic: one-sim 仿真 PM
+  - button "🌙 小梦 孙总个人助手":
+    - generic: 🌙
+    - strong: 小梦
+    - generic: 孙总个人助手
+  - button "🚗 感知器 资讯 / 情报":
+    - generic: 🚗
+    - strong: 感知器
+    - generic: 资讯 / 情报
+  - button "🟥 拉斐尔 后端开发":
+    - generic: 🟥
+    - strong: 拉斐尔
+    - generic: 后端开发
+  - button "🟪 多纳泰罗 前端开发":
+    - generic: 🟪
+    - strong: 多纳泰罗
+    - generic: 前端开发
+  - button "🚑 救护车 知识库":
+    - generic: 🚑
+    - strong: 救护车
+    - generic: 知识库
+  - button "🔵 通天晓 博士论文 PM":
+    - generic: 🔵
+    - strong: 通天晓
+    - generic: 博士论文 PM
+  - button "🎷 爵士 销售与客户关系":
+    - generic: 🎷
+    - strong: 爵士
+    - generic: 销售与客户关系
+  - button "🟧 米开朗基罗 测试工程":
+    - generic: 🟧
+    - strong: 米开朗基罗
+    - generic: 测试工程
+  - button "🟣 震荡波 团队优化师":
+    - generic: 🟣
+    - strong: 震荡波
+    - generic: 团队优化师
+  - button "🔷 声波 财务管理":
+    - generic: 🔷
+    - strong: 声波
+    - generic: 财务管理
+  - button "🔎 Inspector 检查与观察":
+    - generic: 🔎
+    - strong: Inspector
+    - generic: 检查与观察
+  - strong: 擎天柱
+  - generic: 总经理
+  - generic: 已完成
+  - paragraph: 任务已完成
+  - generic: 用户只通过擎天柱下达任务
+  - strong: 全员状态
+  - generic: 随自动刷新同步 · 10/05 18:31
+  - generic: "0"
+  - text: 工作中
+  - generic: "0"
+  - text: 已分配
+  - generic: "3"
+  - text: 阻塞
+  - generic: "13"
+  - text: 待命
+  - table "智能体工作状态":
+    - row "智能体 状态 当前任务 项目 进度":
+      - columnheader "智能体"
+      - columnheader "状态"
+      - columnheader "当前任务"
+      - columnheader "项目"
+      - columnheader "进度"
+    - row "🔧 千斤顶 看板 V2 PM 阻塞 Canvas 集成与渲染 OpenClaw 团队信息看板 0 0%":
+      - cell "🔧 千斤顶 看板 V2 PM":
+        - generic: 🔧
+        - strong: 千斤顶
+        - generic: 看板 V2 PM
+      - cell "阻塞":
+        - generic: 阻塞
+      - cell "Canvas 集成与渲染"
+      - cell "OpenClaw 团队信息看板"
+      - cell "0 0%":
+        - progressbar
+        - generic: 0%
+    - row "🔵 通天晓 博士论文 PM 阻塞 通天晓撰写个人助理试点简报 brief.md 关联 3 项 CU-20261005 个人助理验收 0 0%":
+      - cell "🔵 通天晓 博士论文 PM":
+        - generic: 🔵
+        - strong: 通天晓
+        - generic: 博士论文 PM
+      - cell "阻塞":
+        - generic: 阻塞
+      - cell "通天晓撰写个人助理试点简报 brief.md 关联 3 项":
+        - text: 通天晓撰写个人助理试点简报 brief.md
+        - generic: 关联 3 项
+      - cell "CU-20261005 个人助理验收"
+      - cell "0 0%":
+        - progressbar
+        - generic: 0%
+    - row "🟧 米开朗基罗 测试工程 阻塞 米开朗基罗只读梳理核心源码/接口并编写场景及覆盖矩阵 智能体系统工作流验证与优化 0 0%":
+      - cell "🟧 米开朗基罗 测试工程":
+        - generic: 🟧
+        - strong: 米开朗基罗
+        - generic: 测试工程
+      - cell "阻塞":
+        - generic: 阻塞
+      - cell "米开朗基罗只读梳理核心源码/接口并编写场景及覆盖矩阵"
+      - cell "智能体系统工作流验证与优化"
+      - cell "0 0%":
+        - progressbar
+        - generic: 0%
+    - row "🤖 擎天柱 总经理 已完成 任务已完成 CU-20261005 个人助理验收 100 100%":
+      - cell "🤖 擎天柱 总经理":
+        - generic: 🤖
+        - strong: 擎天柱
+        - generic: 总经理
+      - cell "已完成":
+        - generic: 已完成
+      - cell "任务已完成"
+      - cell "CU-20261005 个人助理验收"
+      - cell "100 100%":
+        - progressbar
+        - generic: 100%
+    - row "🟦 李奥纳多 架构师 / 开发负责人 已完成 撰写虚构晚间复盘 brief.md CU-20261005 个人助理验收 100 100%":
+      - cell "🟦 李奥纳多 架构师 / 开发负责人":
+        - generic: 🟦
+        - strong: 李奥纳多
+        - generic: 架构师 / 开发负责人
+      - cell "已完成":
+        - generic: 已完成
+      - cell "撰写虚构晚间复盘 brief.md"
+      - cell "CU-20261005 个人助理验收"
+      - cell "100 100%":
+        - progressbar
+        - generic: 100%
+    - row "🎷 爵士 销售与客户关系 已完成 独立审核 brief.md 并输出 review.md CU-20261005 个人助理验收 100 100%":
+      - cell "🎷 爵士 销售与客户关系":
+        - generic: 🎷
+        - strong: 爵士
+        - generic: 销售与客户关系
+      - cell "已完成":
+        - generic: 已完成
+      - cell "独立审核 brief.md 并输出 review.md"
+      - cell "CU-20261005 个人助理验收"
+      - cell "100 100%":
+        - progressbar
+        - generic: 100%
+    - row "🌙 小梦 孙总个人助手 待命 等待调度 未绑定项目 0 0%":
+      - cell "🌙 小梦 孙总个人助手":
+        - generic: 🌙
+        - strong: 小梦
+        - generic: 孙总个人助手
+      - cell "待命":
+        - generic: 待命
+      - cell "等待调度"
+      - cell "未绑定项目"
+      - cell "0 0%":
+        - progressbar
+        - generic: 0%
+    - row "🛡️ 铁皮 one-sim 仿真 PM 待命 等待调度 未绑定项目 0 0%":
+      - cell "🛡️ 铁皮 one-sim 仿真 PM":
+        - generic: 🛡️
+        - strong: 铁皮
+        - generic: one-sim 仿真 PM
+      - cell "待命":
+        - generic: 待命
+      - cell "等待调度"
+      - cell "未绑定项目"
+      - cell "0 0%":
+        - progressbar
+        - generic: 0%
+    - row "🟪 多纳泰罗 前端开发 待命 等待调度 未绑定项目 0 0%":
+      - cell "🟪 多纳泰罗 前端开发":
+        - generic: 🟪
+        - strong: 多纳泰罗
+        - generic: 前端开发
+      - cell "待命":
+        - generic: 待命
+      - cell "等待调度"
+      - cell "未绑定项目"
+      - cell "0 0%":
+        - progressbar
+        - generic: 0%
+    - row "🟥 拉斐尔 后端开发 待命 等待调度 未绑定项目 0 0%":
+      - cell "🟥 拉斐尔 后端开发":
+        - generic: 🟥
+        - strong: 拉斐尔
+        - generic: 后端开发
+      - cell "待命":
+        - generic: 待命
+      - cell "等待调度"
+      - cell "未绑定项目"
+      - cell "0 0%":
+        - progressbar
+        - generic: 0%
+    - row "🐝 大黄蜂 运维 待命 等待调度 未绑定项目 0 0%":
+      - cell "🐝 大黄蜂 运维":
+        - generic: 🐝
+        - strong: 大黄蜂
+        - generic: 运维
+      - cell "待命":
+        - generic: 待命
+      - cell "等待调度"
+      - cell "未绑定项目"
+      - cell "0 0%":
+        - progressbar
+        - generic: 0%
+    - row "🚗 感知器 资讯 / 情报 待命 等待调度 未绑定项目 0 0%":
+      - cell "🚗 感知器 资讯 / 情报":
+        - generic: 🚗
+        - strong: 感知器
+        - generic: 资讯 / 情报
+      - cell "待命":
+        - generic: 待命
+      - cell "等待调度"
+      - cell "未绑定项目"
+      - cell "0 0%":
+        - progressbar
+        - generic: 0%
+    - row "🚑 救护车 知识库 待命 等待调度 未绑定项目 0 0%":
+      - cell "🚑 救护车 知识库":
+        - generic: 🚑
+        - strong: 救护车
+        - generic: 知识库
+      - cell "待命":
+        - generic: 待命
+      - cell "等待调度"
+      - cell "未绑定项目"
+      - cell "0 0%":
+        - progressbar
+        - generic: 0%
+    - row "🔷 声波 财务管理 待命 等待调度 未绑定项目 0 0%":
+      - cell "🔷 声波 财务管理":
+        - generic: 🔷
+        - strong: 声波
+        - generic: 财务管理
+      - cell "待命":
+        - generic: 待命
+      - cell "等待调度"
+      - cell "未绑定项目"
+      - cell "0 0%":
+        - progressbar
+        - generic: 0%
+    - row "🟣 震荡波 团队优化师 待命 等待调度 未绑定项目 0 0%":
+      - cell "🟣 震荡波 团队优化师":
+        - generic: 🟣
+        - strong: 震荡波
+        - generic: 团队优化师
+      - cell "待命":
+        - generic: 待命
+      - cell "等待调度"
+      - cell "未绑定项目"
+      - cell "0 0%":
+        - progressbar
+        - generic: 0%
+    - row "🔎 Inspector 检查与观察 待命 等待调度 未绑定项目 0 0%":
+      - cell "🔎 Inspector 检查与观察":
+        - generic: 🔎
+        - strong: Inspector
+        - generic: 检查与观察
+      - cell "待命":
+        - generic: 待命
+      - cell "等待调度"
+      - cell "未绑定项目"
+      - cell "0 0%":
+        - progressbar
+        - generic: 0%
+  - heading "CU-P2-20261005-F：重复交付与计划退回测试。纯文档任务，无需研究、无需联网、不开发代码。仅两步：一名智能体写虚构的个人助理晚间复盘，另一名独立审核" [level=2]
+  - generic: 已完成
+  - text: mission-6ff004a0dc02
+  - generic: 目标
+  - paragraph: CU-P2-20261005-F：重复交付与计划退回测试。纯文档任务，无需研究、无需联网、不开发代码。仅两步：一名智能体写虚构的个人助理晚间复盘，另一名独立审核并给出 accepted 或 rejected，只有 accepted 才能完成。brief.md 须有已完成、未完成、明日行动三节，合计120至180个汉字，使用 Unicode 汉字范围实际统计。review.md 须引用实际读取的正文、给出汉字数和审核结论。唯一允许写入 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/F/brief.md 和同目录 review.md，目录已存在。禁止对外发送、删除或修改其他文件。先给计划等待批准，交付两个可下载文件。
+  - region "规范业务流进度":
+    - strong: 规范执行链
+    - generic: 真实状态驱动 · 从任务接收到交付与故障恢复
+    - generic: Run mrun-d76f6a2
+    - generic: Trace mission-504e411a3c
+    - generic: Plan V2
+    - generic: 当前控制点
+    - strong: 交付闭环已完成
+    - paragraph: 计划、执行、证据与恢复状态均已归档
+    - text: 下一步
+    - paragraph: 在顶部任务产物中下载文件，并核对审核结论
+    - article:
+      - generic: 已完成
+      - strong: 任务接收
+      - generic: 目标与项目绑定
+      - paragraph: Mission mission- 已入库
+    - article:
+      - generic: 已完成
+      - strong: 背景冻结
+      - generic: 检索与引用快照
+      - paragraph: 已冻结 · 15 条引用
+    - article:
+      - generic: 已完成
+      - strong: 规范拆解
+      - generic: 合同化步骤与质检
+      - paragraph: V2 · 100 分 · 2 步
+    - article:
+      - generic: 已完成
+      - strong: 风险审批
+      - generic: 计划与高风险步骤
+      - paragraph: 当前计划已授权
+    - article:
+      - generic: 已完成
+      - strong: 受控执行
+      - generic: 依赖、租约与幂等
+      - paragraph: 2/2 个步骤已完成
+    - article:
+      - generic: 已完成
+      - strong: 证据验收
+      - generic: 产物、证据与门禁
+      - paragraph: 2 份产物 · 25 条证据
+    - article:
+      - generic: 已完成
+      - strong: 故障恢复
+      - generic: 副作用与补偿闭环
+      - paragraph: 无未解决恢复项
+    - article:
+      - generic: 已完成
+      - strong: 交付闭环
+      - generic: 总验收与结果回执
+      - paragraph: 已通过交付门禁
+    - generic: 步骤
+    - strong: 2/2
+    - generic: 产物
+    - strong: "2"
+    - generic: 证据
+    - strong: "25"
+    - generic: 验收门禁
+    - strong: 3/3
+    - generic: 副作用
+    - strong: "2"
+    - generic: 未解决补偿
+    - strong: "0"
+  - strong: 统一任务视图
+  - generic: CU-20261005 个人助理验收 · 爵士
+  - generic: 3 个总账记录
+  - generic: 当前步骤
+  - strong: 独立审核 brief.md 并输出 review.md
+  - generic: 爵士 · 评估 · 已完成
+  - article:
+    - strong: CU-P2-20261005-F：重复交付与计划退回测试。纯文档任务，无需研究、无需联网、不开发代码。仅两步：一名智能体写虚构的个人助理晚间复盘，另一名独立审核
+    - generic: v3-command-center-mission-mission-6ff004a0dc02
+    - generic: 指挥中心
+    - generic: 已完成
+    - generic: 擎天柱
+  - article:
+    - strong: 撰写虚构晚间复盘 brief.md
+    - generic: v3-command-center-step-step-8b90cb68551f
+    - generic: 指挥中心
+    - generic: 已完成
+    - generic: 李奥纳多
+  - article:
+    - strong: 独立审核 brief.md 并输出 review.md
+    - generic: v3-command-center-step-step-7c1ac6beddcd
+    - generic: 指挥中心
+    - generic: 已完成
+    - generic: 爵士
+  - strong: 执行计划 V2
+  - generic: 虚构个人助理晚间复盘文档撰写与独立审核，验证重复交付与计划退回流程。brief.md 含已完成、未完成、明日首要行动三节，120–180 汉字；review.md 引用正文、统计汉字数并给出 accepted/rejected 结论。
+  - generic: 质检 100
+  - generic: 风险 低
+  - strong: 计划质检通过
+  - generic: 检查 12 项规则
+  - article:
+    - strong: 撰写虚构晚间复盘 brief.md
+    - generic: 李奥纳多 · 撰写
+    - generic: 已完成
+    - paragraph: 在指定 F 目录写入 brief.md，包含三个小节：「已完成」「未完成」「明日首要行动」。内容为虚构个人助理晚间复盘，不涉及真实业务。汉字数（Unicode 汉字范围 \u4e00-\u9fff 实际统计）合计 120–180 个。
+    - generic: 阶段 production
+    - generic: 风险 L1
+    - generic: 无前置依赖
+    - generic: 有副作用
+    - generic "mission-6ff004a0dc02:plan:2:step:1": 幂等 mission-6ff004a0dc02:plan:…
+    - strong: 工具
+    - generic: 文档工作台
+    - strong: 产物
+    - generic: brief.md
+    - strong: 验收
+    - generic: 文件路径为 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/F/brief.md
+    - generic: 包含且仅包含三个小节标题：已完成、未完成、明日首要行动
+    - generic: UTF-8 文本中 Unicode 汉字范围（\u4e00-\u9fff）字符数在 120–180 之间（含）
+    - generic: 未对外发送、未删除或修改其他文件
+    - strong: 证据
+    - generic: brief.md 完整正文文本
+    - generic: 汉字数统计结果（读取 UTF-8 文本并统计 \u4e00-\u9fff 范围的计数过程）
+    - generic: 文件写入路径确认
+    - strong: Effect Journal
+    - generic: 1 条副作用记录
+    - generic: 已生效
+    - strong: 创建新文件
+    - generic: /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/F/brief.md · exec WRITE_OK 回执 · 1 条证据
+    - strong: 执行证据门禁
+    - generic: 通过 · 92
+    - paragraph: 警告：缺少要求的证据类型：汉字数统计结果（读取 UTF-8 文本并统计 \u4e00-\u9fff 范围的计数过程）
+    - generic: pilot · 10/05 18:26
+    - text: 执行记录 wrun-c79fd366e96b4bee
+    - generic: 证据 92
+    - generic: 背景 context-68e4fda9dbef V1 · 8 条引用
+    - paragraph: "```json { \"outcome\": \"succeeded\", \"summary\": \"虚构晚间复盘 brief.md 已写入指定路径，汉字数 178（符合 120-180 范围），包含三个必需小节\", \"tools_used\": [\"exec\"], \"artifacts\": [ { \"artifact_key\": \"brief-md\", \"artifact_type\": \"document\", \"title\": \"虚构晚间复盘 brief.md\", \"uri\": \"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/F/brief.md\", \"content_hash\"…"
+    - paragraph: 执行证据有警告：缺少要求的证据类型：汉字数统计结果（读取 UTF-8 文本并统计 \u4e00-\u9fff 范围的计数过程）
+  - article:
+    - strong: 独立审核 brief.md 并输出 review.md
+    - generic: 爵士 · 评估
+    - generic: 已完成
+    - paragraph: 独立读取 brief.md 正文，实际统计 Unicode 汉字范围字符数，核验三小节结构（已完成、未完成、明日首要行动）与字数范围，给出 accepted 或 rejected 结论，写入同目录 review.md。
+    - generic: 阶段 verification
+    - generic: 风险 L1
+    - generic: "依赖 #1 撰写虚构晚间复盘 brief.md"
+    - generic: 有副作用
+    - generic "mission-6ff004a0dc02:plan:2:step:2": 幂等 mission-6ff004a0dc02:plan:…
+    - strong: 工具
+    - generic: 文档工作台
+    - generic: 质量检查器
+    - strong: 产物
+    - generic: review.md
+    - strong: 验收
+    - generic: 文件路径为 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/F/review.md
+    - generic: review.md 中引用了 brief.md 的实际正文片段
+    - generic: 明确给出 Unicode 汉字数统计结果（\u4e00-\u9fff 范围）
+    - generic: 明确给出审核结论：accepted 或 rejected
+    - generic: 仅当结论为 accepted 时任务才可完成
+    - generic: 未对外发送、未删除或修改其他文件
+    - strong: 证据
+    - generic: review.md 完整正文
+    - generic: 其中引用的 brief.md 正文片段
+    - generic: 汉字数统计值
+    - generic: 最终审核结论（accepted/rejected）
+    - strong: Effect Journal
+    - generic: 1 条副作用记录
+    - generic: 已生效
+    - strong: 创建新文件
+    - generic: /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/F/review.md · shasum -a 256 输出：d1ed4d120aad3f404ff3a6c5911bca97ce81a2bd778ed1d7f73f9b5e98f64570 · 1 条证据
+    - strong: 执行证据门禁
+    - generic: 通过 · 92
+    - paragraph: 警告：验收标准未逐项通过：review.md 中引用了 brief.md 的实际正文片段
+    - generic: pilot · 10/05 18:28
+    - text: 执行记录 wrun-8313a457c0564f6f
+    - generic: 证据 92
+    - generic: 背景 context-fae2230991d5 V2 · 8 条引用
+    - paragraph: "```json { \"outcome\": \"succeeded\", \"summary\": \"独立审核 brief.md 完成。结构核验通过（三个必需小节均存在），Unicode 汉字数统计为 178（范围 120-180），审核结论为 accepted。review.md 已写入指定路径。\", \"tools_used\": [\"exec\"], \"artifacts\": [ { \"artifact_key\": \"review-md\", \"artifact_type\": \"review_report\", \"title\": \"brief.md 独立审核报告\", \"uri\": \"/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2…"
+    - paragraph: 执行证据有警告：验收标准未逐项通过：review.md 中引用了 brief.md 的实际正文片段
+  - generic: 最终交付门禁
+  - strong: 可交付
+  - generic: 100/100
+  - paragraph: 产物、证据、执行验收和补偿状态已统一评估。
+  - generic: 模式 pilot · 10/05 18:29
+  - strong: 任务动态
+  - generic: 持久化事件记录
+  - list:
+    - generic: 10/05 18:29
+    - strong: 长期记忆候选已生成
+    - paragraph: 擎天柱提炼了 2 条长期记忆候选，等待管理员审核
+    - text: 擎天柱
+    - generic: 10/05 18:29
+    - strong: 任务完成
+    - paragraph: 两步任务全部通过。Step1 李奥纳多写入 brief.md，汉字数 178（符合 120-180），包含已完成/未完成/明日首要行动三节；Step2 Jazz 独立审核，引用实际正文并给出 Unicode 汉字数统计 178，结论 accepted，任务正常完成。两份文件路径、内容、安全边界均符合验收标准，无越权操作。
+    - text: 擎天柱
+    - generic: 10/05 18:28
+    - strong: 开始评估
+    - paragraph: All steps completed; Optimus is evaluating the outcome
+    - text: command-center:api-3021
+    - generic: 10/05 18:28
+    - strong: 步骤完成
+    - paragraph: 独立审核 brief.md 并输出 review.md
+    - text: 爵士
+    - generic: 10/05 18:26
+    - strong: 背景上下文已冻结
+    - paragraph: Bound execution context context-fae2230991d5 to plan V2
+    - text: 爵士
+    - generic: 10/05 18:26
+    - strong: 步骤开始
+    - paragraph: 独立审核 brief.md 并输出 review.md
+    - text: 爵士
+    - generic: 10/05 18:26
+    - strong: 步骤完成
+    - paragraph: 撰写虚构晚间复盘 brief.md
+    - text: 李奥纳多
+    - generic: 10/05 18:22
+    - strong: 背景上下文已冻结
+    - paragraph: Bound execution context context-68e4fda9dbef to plan V2
+    - text: 李奥纳多
+    - generic: 10/05 18:22
+    - strong: 步骤开始
+    - paragraph: 撰写虚构晚间复盘 brief.md
+    - text: 李奥纳多
+    - generic: 10/05 18:22
+    - strong: 状态更新
+    - paragraph: Approved plan entered execution
+    - text: 指挥中心
+    - generic: 10/05 18:22
+    - strong: 计划已批准
+    - paragraph: 批准 V2，按明日首要行动这一修订执行；仅写指定两个文件。
+    - text: admin
+    - generic: 10/05 18:21
+    - strong: 计划已提交
+    - paragraph: 虚构个人助理晚间复盘文档撰写与独立审核，验证重复交付与计划退回流程。brief.md 含已完成、未完成、明日首要行动三节，120–180 汉字；review.md 引用正文、统计汉字数并给出 accepted/rejected 结论。
+    - text: 擎天柱
+    - generic: 10/05 18:21
+    - strong: 背景上下文已冻结
+    - paragraph: Bound planning context context-78fcf8748a2c to plan V2
+    - text: 擎天柱
+    - generic: 10/05 18:21
+    - strong: 继续制定计划
+    - paragraph: Optimus is producing an approval-gated plan
+    - text: command-center:api-3021
+    - generic: 10/05 18:21
+    - strong: 计划已驳回
+    - paragraph: 退回测试：把第三小节“明日行动”改为“明日首要行动”，两个步骤的描述和验收标准都必须同步。保持120至180汉字、两步和F目录不变，不得执行旧版计划。
+    - text: admin
+    - generic: 10/05 18:20
+    - strong: 计划已提交
+    - paragraph: 虚构个人助理晚间复盘文档的撰写与独立审核，验证重复交付与计划退回流程
+    - text: 擎天柱
+    - generic: 10/05 18:19
+    - strong: 背景上下文已冻结
+    - paragraph: Bound planning context context-0235d8b19743 to plan V1
+    - text: 擎天柱
+    - generic: 10/05 18:19
+    - strong: 开始制定计划
+    - paragraph: Optimus is producing an approval-gated plan
+    - text: command-center:worker-2
+    - generic: 10/05 18:19
+    - strong: 任务已接收
+    - paragraph: CU-P2-20261005-F：重复交付与计划退回测试。纯文档任务，无需研究、无需联网、不开发代码。仅两步：一名智能体写虚构的个人助理晚间复盘，另一名独立审核并给出 accepted 或 rejected，只有 accepted 才能完成。brief.md 须有已完成、未完成、明日行动三节，合计120至180个汉字，使用 Unicode 汉字范围实际统计。review.md 须引用实际读取的正文、给出汉字数和审核结论。唯一允许写入 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/F/brief.md 和同目录 review.md，目录已存在。禁止对外发送、删除或修改其他文件。先给计划等待批准，交付两个可下载文件。
+    - text: admin
+  - complementary:
+    - generic: 擎
+    - strong: 擎天柱
+    - generic: 总项目管理 · 唯一任务入口
+    - strong: 最近会话分流
+    - generic: 30 条
+    - article:
+      - generic: 文档撰写
+      - generic: 10/05 18:20
+      - paragraph: CU-P2-20261005-G：取消流程验收。只规划一个虚构个人助理文档任务，无需研究、无需联网、不开发代码。若批准执行，只允许在 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/G/brief.md 写入一句“这是…
+      - text: 由已认证的项目任务入口显式创建
+    - article:
+      - generic: 文档撰写
+      - generic: 10/05 18:19
+      - paragraph: CU-P2-20261005-F：重复交付与计划退回测试。纯文档任务，无需研究、无需联网、不开发代码。仅两步：一名智能体写虚构的个人助理晚间复盘，另一名独立审核并给出 accepted 或 rejected，只有 accepted 才能完成。brief.md 须有已完成、未完成、明日行动三节，合计120至180个汉字，使用 Unicode 汉字范围实际统计。…
+      - text: 由已认证的项目任务入口显式创建
+    - article:
+      - generic: 文档撰写
+      - generic: 10/05 18:17
+      - paragraph: CU-P2-20261005-E：纯文档稳定性验收。请由写作智能体生成一份虚构的个人助理晨间简报，120至180个汉字，包含今日重点、待确认事项、风险提示三个小节；再由另一位独立审核智能体核实内容和实际汉字数，写审核报告并明确通过或不通过。无需研究、无需联网、无需编写或修改软件代码。只允许写入 /Users/apple/工作桌面/Workspace/agen…
+      - text: 由已认证的项目任务入口显式创建
+    - article:
+      - generic: 文档撰写
+      - generic: 10/05 17:53
+      - paragraph: CU-20261005-D 修复回归。只写文档，不开发代码，无需联网或额外资料研究。为虚构的个人助理试点写100至200个汉字的简报，包含目标、三个里程碑、两条风险及应对、验收清单，不含预算。仅两步：通天晓写brief.md；救护车独立审查并写review.md，明确accepted或rejected，只有accepted方可交付。目录已存在：/Users/…
+      - text: 由已认证的项目任务入口显式创建
+    - article:
+      - generic: 文档撰写
+      - generic: 10/05 17:09
+      - paragraph: CU-20261005-C 正常文档交付。使用本提示的虚构信息撰写个人助理试点简报，含目标、三个里程碑、两条风险及应对、验收清单，不含预算，中文正文≤300字。仅两步：通天晓撰写brief.md，救护车独立只读审查brief.md并写review.md，审核明确accepted才能交付。无需联网或额外资料研究。交付目录已创建且可写：/Users/apple/…
+      - text: 由已认证的项目任务入口显式创建
+    - article:
+      - generic: 文档撰写
+      - generic: 10/05 17:02
+      - paragraph: CU-20261005-B 文档交付闭环。为虚构项目“个人工作助理试点”生成一页中文简报，≤400字，包含目标、3个里程碑、2条风险、验收清单，不要预算。先生成计划等待审批。只做文档业务流，2至3个顺序步骤，由通天晓撰写brief.md、救护车独立审核review.md并核验交付；所有必需产物都必须是真实可打开的文件。只允许在 /Users/apple/工作…
+      - text: 由已认证的项目任务入口显式创建
+    - article:
+      - generic: 程序开发
+      - generic: 10/05 16:57
+      - paragraph: 这是独立的 Computer Use 验收任务，只编写文档，不开发代码。请生成一页中文项目简报，主题为“个人工作助理试点”，包含目标、三个里程碑、风险、验收清单、预算章节。总字数不超过600字。先生成计划并等待批准。批准后由一名智能体撰写，另一名独立审核，最后给出真实可打开的文件及验收结果。唯一允许写入目录：/Users/apple/工作桌面/Workspa…
+      - text: 由已认证的项目任务入口显式创建
+    - article:
+      - generic: 程序开发
+      - generic: 10/03 15:45
+      - paragraph: 为智能体系统自身编写并独立审核一份软件测试大纲。最终唯一主交付物必须写入 /Users/apple/工作桌面/Workspace/agent-system/docs/review/workflow-pilot-20261002/deliverables/agent-system-software-test-outline.md。大纲应覆盖：项目中心建项、擎天…
+      - text: 由已认证的项目任务入口显式创建
+    - strong: 任务背景上下文
+    - generic: 已冻结
+    - strong: context-78fcf8748a2c
+    - generic: V2 · 15 条内容 · 15 条引用
+    - generic: 智能体记忆
+    - generic: graph_memory
+    - generic: 用户档案
+    - generic: 关键事实
+    - generic: 项目背景
+    - generic "profile:profile-ed9815cfab9d":
+      - generic: "[C1]"
+      - paragraph: 孙总的工作与业务档案
+    - generic "project:proj-b64156d740":
+      - generic: "[C2]"
+      - paragraph: CU-20261005 个人助理验收
+    - generic "fact:fact-94ba6ec420b6":
+      - generic: "[C3]"
+      - paragraph: workflow.memory_review_gate
+    - generic "agent-memory:agent-memory-db0426c4737b":
+      - generic: "[C4]"
+      - paragraph: command-center 仅分配给 optimus 的架构决策
+    - generic "fact:fact-03c4a95d7014":
+      - generic: "[C5]"
+      - paragraph: workflow.memory_review_gate_profile_fact
+    - strong: 长期记忆候选
+    - generic: 待审核 11
+    - paragraph: 擎天柱从已完成任务中提炼。审核发布后，仅影响后续任务的背景检索。
+    - article:
+      - strong: 写-审分离双人工作流
+      - generic: 项目知识
+      - paragraph: 文档交付采用两名独立智能体分工：一名撰写，另一名独立审核并给出 accepted/rejected 结论，只有 accepted 才能完成任务。审核者必须引用实际正文并给出量化统计。
+      - generic: write-then-independent-review-workflow
+      - generic: 常规
+      - generic: 可信度 90%
+      - generic: step-7c1ac6beddcd
+      - button "驳回":
+        - generic: 驳回
+      - button "审核发布":
+        - generic: 审核发布
+    - article:
+      - strong: Unicode 汉字计数方法
+      - generic: 项目知识
+      - paragraph: 中文汉字计数使用 python3 UTF-8 解码 + Unicode 范围 \u4e00-\u9fff 正则匹配，不使用 word count 或字符长度。适用于任何需要精确汉字数统计的验收场景。
+      - generic: unicode-hanzi-counting-method
+      - generic: 常规
+      - generic: 可信度 85%
+      - generic: step-8b90cb68551f · step-7c1ac6beddcd
+      - button "驳回":
+        - generic: 驳回
+      - button "审核发布":
+        - generic: 审核发布
+    - article:
+      - strong: 写作-审核双人分离验证模式有效
+      - generic: 智能体经验
+      - paragraph: 在纯文档稳定性验收中，采用"写作智能体生成 + 独立审核智能体验证"的双人分离模式，审核智能体实际读取文件、用脚本统计汉字数并逐项核验验收标准，能有效发现字数偏差和内容合规问题。Ratchet 负责生成，Ultra-Magnus 负责审核，分工清晰无冲突。
+      - generic: write-review-separation-pattern
+      - generic: 常规
+      - generic: 可信度 85%
+      - generic: step-8b688b14cdfd · step-e3dc9c372463
+      - button "驳回":
+        - generic: 驳回
+      - button "审核发布":
+        - generic: 审核发布
+    - article:
+      - strong: CU-P2 交付物目录结构
+      - generic: 项目知识
+      - paragraph: "CU-20261005 验收项目的交付物路径为 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase2-20261005/deliverables/{A-Z}/，每个子目录对应一个验收任务（如 E 对应纯文档稳定性验收）。目录已预先创建，智能体只需写入指定文件。"
+      - generic: cu-p2-deliverables-path-structure
+      - generic: 低
+      - generic: 可信度 88%
+      - generic: step-8b688b14cdfd · step-e3dc9c372463
+      - button "驳回":
+        - generic: 驳回
+      - button "审核发布":
+        - generic: 审核发布
+    - article:
+      - strong: 中文汉字数统计使用 Unicode CJK 范围
+      - generic: 项目知识
+      - paragraph: 验收中文文档字数时，使用 Python 正则表达式 [\u4e00-\u9fff] 匹配 Unicode CJK 统一汉字范围进行统计，不得将字节数或字符总数当作汉字数。该方法已在 CU-P2-20261005-E 任务中由写作智能体和审核智能体双重验证。
+      - generic: cu-p2-chinese-char-count-method
+      - generic: 常规
+      - generic: 可信度 92%
+      - generic: step-e3dc9c372463 · step-8b688b14cdfd
+      - button "驳回":
+        - generic: 驳回
+      - button "审核发布":
+        - generic: 审核发布
+    - article:
+      - strong: Python正则统计汉字数的可靠方法
+      - generic: 智能体经验
+      - paragraph: 使用 Python re.findall(r'[\u4e00-\u9fff]', text) 统计汉字数量，不含标点和数字，结果与人工核验一致。本次 brief.md 统计结果为 160 字，在 100-200 范围内。
+      - generic: python-hanzi-count-method
+      - generic: 常规
+      - generic: 可信度 90%
+      - generic: step-3ea886c87f5c
+      - button "驳回":
+        - generic: 驳回
+      - button "审核发布":
+        - generic: 审核发布
+    - strong: 启动项目任务
+    - radiogroup "segmented":
+      - radio "程序开发" [checked]
+      - generic: 程序开发
+      - radio "文档撰写"
+      - generic: 文档撰写
+    - combobox
+    - generic: 选择任务所属项目
+    - textbox "任务名称（可选）"
+    - textbox "描述目标、约束、期望结果和完成标准"
+    - button "交给擎天柱" [disabled]:
+      - generic: 交给擎天柱
+    - strong: 关联对话
+    - text: 用户
+    - paragraph: CU-P2-20261005-F：重复交付与计划退回测试。纯文档任务，无需研究、无需联网、不开发代码。仅两步：一名智能体写虚构的个人助理晚间复盘，另一名独立审核并给出 accepted 或 rejected，只有 accepted 才能完成。brief.md 须有已完成、未完成、明日行动三节，合计120至180个汉字，使用 Unicode 汉字范围实际统计。review.md 须引用实际读取的正文、给出汉字数和审核结论。唯一允许写入 /…
+- textbox
+- button:
+- button:

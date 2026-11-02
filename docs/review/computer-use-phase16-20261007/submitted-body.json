@@ -1,0 +1,6 @@
+{
+  "title": "重新交付：阶段十六交付样本",
+  "project_id": "phase16-project",
+  "mission_type": "document",
+  "objective": "重新交付任务 phase16-delivery 的产物 phase16-artifact。\n原路径：/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase16-20261007/delivery.txt\n原登记 SHA256：9159d1d0d56c6a1ae42b9ba0d878d0a8cf18b02406377d330c8d35d8170f3892\n下载失败原因：文件已变化，与该任务登记的版本不一致\n保留原文件与原证据；先只读核实原因，再提出新版本交付计划，审批后执行。新文件使用独立路径，登记实际内容哈希并重新验收。"
+}

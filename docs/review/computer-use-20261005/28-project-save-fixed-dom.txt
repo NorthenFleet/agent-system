@@ -1,0 +1,127 @@
+- generic: 🤖
+- generic: OpenClaw
+- menubar:
+  - generic: 总览
+  - menuitem "仪表盘":
+    - generic: 仪表盘
+  - menuitem "擎天柱指挥中心":
+    - generic: 擎天柱指挥中心
+  - generic: 产品侧
+  - menuitem "项目中枢":
+    - generic: 项目中枢
+  - menuitem "程序开发":
+    - generic: 程序开发
+  - menuitem "文档管理":
+    - generic: 文档管理
+  - menuitem "财务管理":
+    - generic: 财务管理
+  - menuitem "产品矩阵":
+    - generic: 产品矩阵
+  - generic: 生产侧
+  - menuitem "数据管理":
+    - generic: 数据管理
+  - menuitem "智能体团队":
+    - generic: 智能体团队
+  - menuitem "讨论与研究":
+    - generic: 讨论与研究
+  - menuitem "知识库":
+    - generic: 知识库
+  - menuitem "工具管理":
+    - generic: 工具管理
+  - menuitem "活动社区":
+    - generic: 活动社区
+  - menuitem "情报信息":
+    - generic: 情报信息
+  - menuitem "新闻资讯":
+    - generic: 新闻资讯
+  - menuitem "任务列表":
+    - generic: 任务列表
+  - generic: 系统
+  - menuitem "系统监视":
+    - generic: 系统监视
+  - menuitem "数据分析":
+    - generic: 数据分析
+  - menuitem "记忆评测":
+    - generic: 记忆评测
+  - menuitem "用户管理":
+    - generic: 用户管理
+  - menuitem "调度中心":
+    - generic: 调度中心
+- generic: 文档管理
+- button "🌙":
+  - generic: 🌙
+- button "管 管理员":
+  - generic: 管
+  - generic: 管理员
+- banner:
+  - text: 文档撰写
+  - heading "文档工作台" [level=2]
+  - paragraph: 研究组织、全文写作、证据管理与最终交付
+  - button "新建项目":
+    - generic: 新建项目
+  - button:
+- text: 文档项目
+- heading "5 个撰写项目" [level=3]
+- textbox "搜索文档名称、类型或负责人"
+- article:
+  - strong: 博士论文
+  - generic: 进行中
+  - paragraph: 学术论文撰写、专利申报、技术报告
+  - generic: 博士论文 / 专利申报 / 技术报告
+  - generic: 7 个计划章节
+  - generic: ultra-magnus
+  - progressbar
+  - button "编辑文档信息":
+  - button "归档文档":
+- article:
+  - strong: 谋战·水面舰艇编队战术手工兵棋
+  - generic: 进行中
+  - paragraph: 《谋战·水面舰艇编队战术手工兵棋》文档族中的规则手册，负责想定规则、裁决流程、行动规则和发布验收口径。
+  - generic: 手工兵棋三册式正式文档
+  - generic: 12 个计划章节
+  - generic: ultra-magnus
+  - progressbar
+  - button "编辑文档信息":
+  - button "归档文档":
+- article:
+  - strong: 水面舰艇作战软件与兵棋推演课程
+  - generic: 进行中
+  - paragraph: 面向水面舰艇作战软件运用、智能决策与兵棋推演教学，统一组织课程体系、教学文档、课件和实作训练资源。
+  - generic: 课程教学产品组合
+  - generic: 10 个计划章节
+  - generic: ultra-magnus
+  - progressbar
+  - button "编辑文档信息":
+  - button "归档文档":
+- article:
+  - strong: CU-20261005 保存回归
+  - generic: 规划中
+  - paragraph: 独立测试项目，用于验证创建反馈，不含真实业务数据。
+  - generic: 研究报告
+  - generic: 2 个计划章节
+  - generic: ultra-magnus
+  - progressbar
+  - button "编辑文档信息":
+  - button "归档文档":
+- article:
+  - strong: CU-20261005 个人助理验收
+  - generic: 规划中
+  - paragraph: 独立测试项目，仅用于本轮 Computer Use 用户旅程验收。使用虚构数据，不涉及真实业务。
+  - generic: 研究报告
+  - generic: 4 个计划章节
+  - generic: ultra-magnus
+  - progressbar
+  - button "编辑文档信息":
+  - button "归档文档":
+- text: 项目内文档
+- heading "0 个正文版本 · 0 项交付材料 · 0 项内部数据源" [level=3]
+- switch
+- generic: 显示归档
+- button "导出正式交付包" [disabled]:
+  - generic: 导出正式交付包
+- button "新增文档":
+  - generic: 新增文档
+- paragraph: 项目内暂无文档
+- textbox
+- button:
+- button:

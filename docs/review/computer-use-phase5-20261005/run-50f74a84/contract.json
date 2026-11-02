@@ -1,0 +1,73 @@
+{
+  "id": "step-5d7057bbcee4",
+  "mission_id": "mission-af615f01684a",
+  "plan_version": 1,
+  "order_index": 1,
+  "title": "读取并核验既有修订稿",
+  "description": "",
+  "task_type": "coordination",
+  "agent_id": "ratchet",
+  "executor": "openclaw",
+  "status": "running",
+  "work_run_id": null,
+  "lease_owner": "phase5-real-executor",
+  "lease_token": "lease-d5b8ee0f069746679d1cde7147d60c54",
+  "lease_expires_at": "2026-10-05T15:43:13.180872+00:00",
+  "started_at": "2026-10-05T15:33:13.180872+00:00",
+  "completed_at": null,
+  "updated_at": "2026-10-05T15:33:13.180872+00:00",
+  "attempt_count": 1,
+  "dependencies": [],
+  "input": {},
+  "result": {},
+  "phase": "planning",
+  "objective": "读取并核验既有修订稿",
+  "required_tools": [
+    "test_runner"
+  ],
+  "tool_requirements": [
+    {
+      "name": "测试运行器",
+      "category": "verification",
+      "status": "available",
+      "description": "运行后端、单元或集成测试并回传输出。",
+      "evidence_types": [
+        "test_output"
+      ],
+      "id": "test_runner"
+    }
+  ],
+  "deliverables": [
+    "既有修订稿及只读核验回执"
+  ],
+  "output_contract": {
+    "artifact_types": [
+      "document"
+    ],
+    "required_fields": [
+      "summary",
+      "evidence_refs",
+      "risk_notes"
+    ]
+  },
+  "acceptance_criteria": [
+    "三个小节齐全，汉字数在100至180之间，且返回实际文件SHA-256"
+  ],
+  "evidence_required": [
+    "test_output"
+  ],
+  "risk_level": "medium",
+  "risk_class": "L2",
+  "approval_required": false,
+  "side_effect": false,
+  "resources": [],
+  "idempotency_key": "mission-af615f01684a:plan:1:step:1",
+  "timeout_seconds": 1200,
+  "max_attempts": 1,
+  "rollback_plan": "停止后续步骤，记录失败原因并等待擎天柱重新规划。",
+  "compensation": {
+    "type": "manual",
+    "instructions": "停止后续步骤，记录失败原因并等待擎天柱重新规划。"
+  },
+  "capability_match": true
+}

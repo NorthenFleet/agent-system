@@ -1,0 +1,4 @@
+Browser tab: 2116413059, Title: "智能体集群系统", URL: "http://127.0.0.1:3038/command-center".
+The following is a diff from the previous accessibility tree with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+~					54 text 全员状态 随自动刷新同步 · 10/06 00:36 0 工作中 0 已分配 1 阻塞 15 待命
+The focused UI element is 0 AXWebArea 智能体集群系统, URL: 127.0.0.1:3038/command-center

@@ -1,0 +1,11 @@
+{
+  "backend/services/command_center_service.py": "80964d5479a17c3a4e58264c30e7b60621e1f33fd559404c8de7ce452a2a88f5",
+  "backend/routers/command_center_router.py": "69cf90740edcc7ea055d443a37f937fad3de5f25d326652a876f806c27d60dc4",
+  "backend/tests/test_phase19_mission_idempotency.py": "9e99a31e95c27a27ae1f50893c0254531292f529492ffe9bce857da5f8088f51",
+  "backend/scripts/run_phase19_idempotency_lab.py": "14907d0b5f703bddccada87aecc6191101cfd3f33094fbd7a052e7c4b6623656",
+  "backend/scripts/run_phase19_pg_idempotency_probe.py": "b57ad254aaa53981e5b718789be04f259b41fb1d390f0df4e7d6be473fa3c9ba",
+  "frontend-v2/src/composables/useMissionDraft.ts": "e94e13b2eebcac7598d26622af51b00c4bd692f17e367eff8da5b10b317cf877",
+  "frontend-v2/src/views/CommandCenter.vue": "7ffe1f59b98551fb16d75aed9bf8e47fdaa1616667fe25348f1a99e40c0a470a",
+  "frontend-v2/src/api/commandCenter.ts": "c190a77813e7b89586149ca173fc1c557db30087c374c31c3b54bb4d55be1e3e",
+  "frontend-v2/src/test/missionDraft.spec.ts": "3722a42fbff9ab0d51675c1967f5c9ab8e436001165ccb6f668402acefa16de3"
+}

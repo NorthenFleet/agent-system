@@ -1,0 +1,1341 @@
+{
+    "steps": [
+        {
+            "id": "step-3165a27e7a5e",
+            "output": {
+                "outcome": "blocked",
+                "summary": "draft.md 已读取，包含'目标'和'验收'两个小节，但缺失'风险与应对'小节。根据合同要求三个必需小节缺一不可，业务结果为 blocked，暂停等待孙总修订反馈。",
+                "evidence": [
+                    {
+                        "summary": "通过 exec cat 成功读取文件，共 7 行。文件首行标题为'# 虚构个人助理试点简报（故意不完整的测试样本）'",
+                        "confidence": 1.0,
+                        "source_ref": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/draft.md",
+                        "evidence_type": "文件读取成功的确认信息",
+                        "requirement_id": "ev-f78de245a9bda2f97699"
+                    },
+                    {
+                        "summary": "目标：有；风险与应对：无；验收：有",
+                        "confidence": 1.0,
+                        "source_ref": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/draft.md",
+                        "evidence_type": "每个必需小节的有/无判定",
+                        "requirement_id": "ev-94e08492b284dc28589c"
+                    },
+                    {
+                        "summary": "存在的标题：'## 目标'（第3行），内容：'整理每日待办，让使用者能够查看任务的执行过程和最终结果。'；'## 验收'（第7行），内容：'使用者能看到每项任务的状态和交付文件。'",
+                        "confidence": 1.0,
+                        "source_ref": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/draft.md",
+                        "evidence_type": "每个存在小节的原文标题引用（用于验证匹配）",
+                        "requirement_id": "ev-e19498668a02e727a11d"
+                    },
+                    {
+                        "summary": "缺失小节：'风险与应对'。全文仅含两个二级标题（## 目标、## 验收），不存在任何包含'风险'或'风险与应对'文字的标题或段落",
+                        "confidence": 1.0,
+                        "source_ref": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/draft.md",
+                        "evidence_type": "缺失小节的明确声明",
+                        "requirement_id": "ev-30e1526d60bb239a04a4"
+                    },
+                    {
+                        "summary": "blocked — 缺失必需小节'风险与应对'",
+                        "confidence": 1.0,
+                        "source_ref": "审核结论",
+                        "evidence_type": "最终业务结果：blocked 或 passed",
+                        "requirement_id": "ev-0271fec9178308b40825"
+                    },
+                    {
+                        "summary": "失败验收项：ac-0b14005186d140dde2c8（'风险与应对'小节的有无状态及原文引用）— 该小节不存在，无法提供原文引用，判定为 fail",
+                        "confidence": 1.0,
+                        "source_ref": "审核结论",
+                        "evidence_type": "如为 blocked，明确列出哪些验收项失败",
+                        "requirement_id": "ev-20d3cde0f0aaf905fa29"
+                    }
+                ],
+                "artifacts": [
+                ],
+                "risk_notes": "文档缺失'风险与应对'小节，需孙总提供修订反馈后制定修订及独立复审计划。本轮未写任何文件，side_effect=false。",
+                "tools_used": [
+                    "exec"
+                ],
+                "side_effects": [
+                ],
+                "acceptance_results": [
+                    {
+                        "notes": "通过 exec cat 成功读取，文件共 7 行",
+                        "status": "pass",
+                        "criterion": "成功读取指定路径的 draft.md 文件",
+                        "criterion_id": "ac-ad28c3db1e0c5f11e77b",
+                        "evidence_refs": [
+                            "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/draft.md"
+                        ]
+                    },
+                    {
+                        "notes": "有。原文标题：'## 目标'；内容：'整理每日待办，让使用者能够查看任务的执行过程和最终结果。'",
+                        "status": "pass",
+                        "criterion": "明确列出'目标'小节的有无状态及原文引用",
+                        "criterion_id": "ac-396297ddefe0623930de",
+                        "evidence_refs": [
+                            "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/draft.md"
+                        ]
+                    },
+                    {
+                        "notes": "无。文件中不存在'风险与应对'小节，无法提供原文引用",
+                        "status": "fail",
+                        "criterion": "明确列出'风险与应对'小节的有无状态及原文引用",
+                        "criterion_id": "ac-0b14005186d140dde2c8",
+                        "evidence_refs": [
+                            "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/draft.md"
+                        ]
+                    },
+                    {
+                        "notes": "有。原文标题：'## 验收'；内容：'使用者能看到每项任务的状态和交付文件。'",
+                        "status": "pass",
+                        "criterion": "明确列出'验收'小节的有无状态及原文引用",
+                        "criterion_id": "ac-39f91f67d2c80b2fbe34",
+                        "evidence_refs": [
+                            "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/draft.md"
+                        ]
+                    },
+                    {
+                        "notes": "业务结果为 blocked，失败验收项为 ac-0b14005186d140dde2c8（'风险与应对'小节缺失）",
+                        "status": "pass",
+                        "criterion": "任一必需小节缺失时，业务结果必须为 blocked 并明确标注失败的验收项",
+                        "criterion_id": "ac-496a7d9dd96430f8ec47",
+                        "evidence_refs": [
+                            "审核结论"
+                        ]
+                    },
+                    {
+                        "notes": "不适用 — 并非所有小节都存在，'风险与应对'缺失，业务结果不能为 passed",
+                        "status": "fail",
+                        "criterion": "所有小节都存在时，业务结果可为 passed",
+                        "criterion_id": "ac-5a4c78b196e48ddb9ca3",
+                        "evidence_refs": [
+                            "审核结论"
+                        ]
+                    }
+                ]
+            },
+            "status": "failed",
+            "quality": {
+                "mode": "pilot",
+                "score": 16,
+                "status": "blocked",
+                "accepted": false,
+                "blockers": [
+                    "步骤业务结果为 blocked，不得标记为已完成",
+                    "验收结果明确失败：明确列出'风险与应对'小节的有无状态及原文引用, 所有小节都存在时，业务结果可为 passed"
+                ],
+                "enforced": false,
+                "warnings": [
+                    "缺少要求的交付物类型：结构化审核报告（通过 evidence 返回，非文件交付）",
+                    "验收标准未逐项通过：明确列出'风险与应对'小节的有无状态及原文引用, 所有小节都存在时，业务结果可为 passed",
+                    "未证明使用必需工具：document_workspace"
+                ],
+                "checked_rules": [
+                    "result-summary",
+                    "required-evidence-types",
+                    "artifact-contract",
+                    "acceptance-results",
+                    "tool-use",
+                    "required-output-fields"
+                ],
+                "evidence_refs": [
+                    "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/draft.md",
+                    "审核结论",
+                    "context-76d1f115ddd9",
+                    "profile:profile-ed9815cfab9d",
+                    "fact:fact-487dda76406e",
+                    "project:proj-b64156d740",
+                    "fact:fact-94ba6ec420b6",
+                    "knowledge:06-项目库-Projects/水面舰艇编队战术兵棋/V2-海空手工兵棋体系/03-规则手册/教学版_V3.2/00_产品清单.md",
+                    "knowledge:00-Inbox/README.sync-conflict-20260309-112607-RGERM6R.md",
+                    "knowledge:00-系统索引.md",
+                    "knowledge:06-项目库-Projects/水面舰艇编队战术兵棋/V2-海空手工兵棋体系/03-规则手册/教学版_V3.2/01_快速上手指南.md"
+                ],
+                "hard_blockers": [
+                    "步骤业务结果为 blocked，不得标记为已完成",
+                    "验收结果明确失败：明确列出'风险与应对'小节的有无状态及原文引用, 所有小节都存在时，业务结果可为 passed"
+                ],
+                "required_tools": [
+                    "document_workspace"
+                ],
+                "business_outcome": "blocked",
+                "executor_success": true,
+                "required_evidence": [
+                    "文件读取成功的确认信息",
+                    "每个必需小节的有/无判定",
+                    "每个存在小节的原文标题引用（用于验证匹配）",
+                    "缺失小节的明确声明",
+                    "最终业务结果：blocked 或 passed",
+                    "如为 blocked，明确列出哪些验收项失败"
+                ],
+                "acceptance_criteria": [
+                    "成功读取指定路径的 draft.md 文件",
+                    "明确列出'目标'小节的有无状态及原文引用",
+                    "明确列出'风险与应对'小节的有无状态及原文引用",
+                    "明确列出'验收'小节的有无状态及原文引用",
+                    "任一必需小节缺失时，业务结果必须为 blocked 并明确标注失败的验收项",
+                    "所有小节都存在时，业务结果可为 passed"
+                ],
+                "required_artifact_types": [
+                    "结构化审核报告（通过 evidence 返回，非文件交付）"
+                ]
+            },
+            "contract": {
+                "id": "step-3165a27e7a5e",
+                "input": {
+                },
+                "phase": "verification",
+                "title": "只读审核 draft.md 结构完整性",
+                "agent_id": "ratchet",
+                "executor": "openclaw",
+                "objective": "验证 draft.md 是否包含目标、风险与应对、验收三个必需小节",
+                "resources": [
+                ],
+                "task_type": "review",
+                "depends_on": [
+                ],
+                "mission_id": "mission-b6055540227d",
+                "risk_class": "L0",
+                "risk_level": "low",
+                "description": "救护车读取 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/draft.md，检查文件是否同时包含以下三个小节：(1) 目标 (2) 风险与应对 (3) 验收。逐项列出每个小节的有无状态，缺失任一项则业务结果为 blocked。引用原文关键片段作为证据。本轮不写任何文件，不删除、不对外发送。",
+                "order_index": 1,
+                "side_effect": false,
+                "compensation": {
+                    "type": "manual",
+                    "instructions": "如文件路径错误或无法访问，由孙总确认正确路径后重新执行；如文档缺失必需小节，等待孙总提供修订反馈后制定新的修订及独立复审计划。"
+                },
+                "deliverables": [
+                    "结构化审核报告（通过 evidence 返回，非文件交付）"
+                ],
+                "max_attempts": 1,
+                "plan_version": 1,
+                "rollback_plan": "只读操作，无需回滚。如文件不存在或无法读取，返回错误状态并暂停等待孙总反馈。",
+                "required_tools": [
+                    "document_workspace"
+                ],
+                "idempotency_key": "mission-b6055540227d:plan:1:step:1",
+                "output_contract": {
+                    "artifact_types": [
+                        "结构化审核报告（通过 evidence 返回，非文件交付）"
+                    ],
+                    "required_fields": [
+                        "summary",
+                        "evidence_refs",
+                        "risk_notes"
+                    ]
+                },
+                "timeout_seconds": 900,
+                "capability_match": true,
+                "approval_required": false,
+                "evidence_required": [
+                    "文件读取成功的确认信息",
+                    "每个必需小节的有/无判定",
+                    "每个存在小节的原文标题引用（用于验证匹配）",
+                    "缺失小节的明确声明",
+                    "最终业务结果：blocked 或 passed",
+                    "如为 blocked，明确列出哪些验收项失败"
+                ],
+                "tool_requirements": [
+                    {
+                        "id": "document_workspace",
+                        "name": "文档工作台",
+                        "status": "available",
+                        "category": "document",
+                        "description": "处理文档结构、正文、引用与格式交付。",
+                        "evidence_types": [
+                            "document_diff",
+                            "quality_notes"
+                        ]
+                    }
+                ],
+                "acceptance_criteria": [
+                    "成功读取指定路径的 draft.md 文件",
+                    "明确列出'目标'小节的有无状态及原文引用",
+                    "明确列出'风险与应对'小节的有无状态及原文引用",
+                    "明确列出'验收'小节的有无状态及原文引用",
+                    "任一必需小节缺失时，业务结果必须为 blocked 并明确标注失败的验收项",
+                    "所有小节都存在时，业务结果可为 passed"
+                ],
+                "idempotency_key_generated": true
+            },
+            "completion": {
+                "attempt": 1,
+                "accepted": false,
+                "enforcement": {
+                    "mode": "pilot",
+                    "reason": "shadow_observation",
+                    "runtime": "legacy",
+                    "enforced": false,
+                    "flow_key": "document",
+                    "highest_risk": "L0"
+                },
+                "max_attempts": 1,
+                "effect_quality": {
+                    "status": "not_applicable",
+                    "accepted": true,
+                    "blockers": [
+                    ],
+                    "enforced": false,
+                    "warnings": [
+                    ]
+                },
+                "retry_scheduled": false,
+                "executor_success": true
+            },
+            "plan_version": 1,
+            "attempt_count": 1
+        },
+        {
+            "id": "step-6f0cd639f25a",
+            "output": null,
+            "status": "draft",
+            "quality": null,
+            "contract": {
+                "id": "step-6f0cd639f25a",
+                "input": {
+                },
+                "phase": "production",
+                "title": "修订 draft.md 并生成 revised.md",
+                "agent_id": "ultra-magnus",
+                "executor": "openclaw",
+                "objective": "生成包含三小节且汉字数合规的 revised.md",
+                "resources": [
+                    "{'type': 'file_read', 'path': '/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/draft.md'}"
+                ],
+                "task_type": "writing",
+                "depends_on": [
+                ],
+                "mission_id": "mission-b6055540227d",
+                "risk_class": "L1",
+                "risk_level": "low",
+                "description": "通天晓读取 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/draft.md，保留原目标和验收含义，补齐'风险与应对'小节（至少两条风险及各自应对），全文控制在 100-180 个汉字（Unicode 汉字范围 \\u4e00-\\u9fff 统计），三个小节为：目标、风险与应对、验收。输出至同目录 revised.md。",
+                "order_index": 1,
+                "side_effect": true,
+                "compensation": {
+                    "type": "manual",
+                    "instructions": "删除 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md"
+                },
+                "deliverables": [
+                    "revised.md"
+                ],
+                "max_attempts": 1,
+                "plan_version": 2,
+                "rollback_plan": "删除已生成的 revised.md，恢复目录原状",
+                "required_tools": [
+                    "document_workspace"
+                ],
+                "idempotency_key": "mission-b6055540227d:plan:2:step:1",
+                "output_contract": {
+                    "artifact_types": [
+                        "document"
+                    ],
+                    "required_fields": [
+                        "summary",
+                        "evidence_refs",
+                        "risk_notes"
+                    ]
+                },
+                "timeout_seconds": 900,
+                "capability_match": true,
+                "approval_required": false,
+                "evidence_required": [
+                    "{'type': 'document', 'artifact': 'revised.md', 'path': '/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md', 'summary': '修订后文档全文', 'evidence_refs': ['mission-b6055540227d-step1-revised'], 'risk_notes': '汉字数需通过 Unicode 范围统计，非 wc -m'}"
+                ],
+                "tool_requirements": [
+                    {
+                        "id": "document_workspace",
+                        "name": "文档工作台",
+                        "status": "available",
+                        "category": "document",
+                        "description": "处理文档结构、正文、引用与格式交付。",
+                        "evidence_types": [
+                            "document_diff",
+                            "quality_notes"
+                        ]
+                    }
+                ],
+                "acceptance_criteria": [
+                    "文件 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md 存在",
+                    "包含三个小节：目标、风险与应对、验收",
+                    "'风险与应对'小节包含至少两条风险及各自应对",
+                    "全文汉字数（Unicode 汉字范围 \\u4e00-\\u9fff 统计）在 100-180 之间",
+                    "draft.md 未被修改或删除"
+                ],
+                "idempotency_key_generated": true
+            },
+            "completion": null,
+            "plan_version": 2,
+            "attempt_count": 0
+        },
+        {
+            "id": "step-b129422ce5fa",
+            "output": null,
+            "status": "draft",
+            "quality": null,
+            "contract": {
+                "id": "step-b129422ce5fa",
+                "input": {
+                },
+                "phase": "verification",
+                "title": "独立复审 revised.md 并生成 review.md",
+                "agent_id": "ratchet",
+                "executor": "openclaw",
+                "objective": "独立验证 revised.md 合规性并出具 accepted/rejected 结论",
+                "resources": [
+                    "{'type': 'file_read', 'path': '/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md'}"
+                ],
+                "task_type": "review",
+                "depends_on": [
+                    1
+                ],
+                "mission_id": "mission-b6055540227d",
+                "risk_class": "L1",
+                "risk_level": "low",
+                "description": "救护车独立读取 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md，按 Unicode 汉字范围（\\u4e00-\\u9fff）实际统计汉字数，验证三小节（目标、风险与应对、验收）完整性及'风险与应对'包含至少两条风险及应对。写同目录 review.md，明确结论 accepted 或 rejected。仅 accepted 可完成任务。",
+                "order_index": 2,
+                "side_effect": true,
+                "compensation": {
+                    "type": "manual",
+                    "instructions": "删除 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/review.md"
+                },
+                "deliverables": [
+                    "review.md"
+                ],
+                "max_attempts": 1,
+                "plan_version": 2,
+                "rollback_plan": "删除已生成的 review.md，保留 revised.md 供后续修订",
+                "required_tools": [
+                    "document_workspace",
+                    "quality_checker"
+                ],
+                "idempotency_key": "mission-b6055540227d:plan:2:step:2",
+                "output_contract": {
+                    "artifact_types": [
+                        "review_report"
+                    ],
+                    "required_fields": [
+                        "summary",
+                        "evidence_refs",
+                        "risk_notes"
+                    ]
+                },
+                "timeout_seconds": 900,
+                "capability_match": true,
+                "approval_required": false,
+                "evidence_required": [
+                    "{'type': 'review_report', 'artifact': 'review.md', 'path': '/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/review.md', 'summary': '独立复审报告', 'evidence_refs': ['mission-b6055540227d-step2-review'], 'risk_notes': '必须独立统计汉字数，不得复用步骤1的计数结果'}"
+                ],
+                "tool_requirements": [
+                    {
+                        "id": "document_workspace",
+                        "name": "文档工作台",
+                        "status": "available",
+                        "category": "document",
+                        "description": "处理文档结构、正文、引用与格式交付。",
+                        "evidence_types": [
+                            "document_diff",
+                            "quality_notes"
+                        ]
+                    },
+                    {
+                        "id": "quality_checker",
+                        "name": "质量检查器",
+                        "status": "available",
+                        "category": "review",
+                        "description": "执行计划、结果和风险复核，产出问题清单。",
+                        "evidence_types": [
+                            "review_report"
+                        ]
+                    }
+                ],
+                "acceptance_criteria": [
+                    "文件 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/review.md 存在",
+                    "review.md 明确声明 accepted 或 rejected",
+                    "包含汉字数统计结果（Unicode 范围统计）",
+                    "包含三小节完整性验证结论",
+                    "包含'风险与应对'条目数验证结论",
+                    "仅当所有条件满足时结论为 accepted，否则为 rejected",
+                    "revised.md 未被修改"
+                ],
+                "idempotency_key_generated": true
+            },
+            "completion": null,
+            "plan_version": 2,
+            "attempt_count": 0
+        },
+        {
+            "id": "step-a66097305e14",
+            "output": {
+                "outcome": "succeeded",
+                "summary": "通天晓读取 draft.md（SHA-256: ced3de668b7eb21897dee3baada53485533f02819f5b7a5413fee5c4ca82780a），保留原目标与验收含义，在同目录新建 revised.md。revised.md 包含目标、风险与应对（两条风险及各自应对）、验收三个小节，Unicode 汉字数 174（在 100–180 范围内）。draft.md 未被修改或删除。",
+                "evidence": [
+                    {
+                        "summary": "draft.md 原文保留（SHA-256: ced3de668b7eb21897dee3baada53485533f02819f5b7a5413fee5c4ca82780a）。revised.md 保留原目标含义（整理每日待办，查看任务执行过程与结果），补齐风险与应对（两条：状态更新延迟→定时轮询；路径失效/权限不足→校验权限+回退备用路径），验收含义保留（看到状态、执行过程与交付文件）。采用 exec+python3 写入合同路径，未使用单条 heredoc。",
+                        "confidence": 1.0,
+                        "source_ref": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md",
+                        "artifact_key": "a1",
+                        "evidence_type": "document_diff",
+                        "requirement_id": "ev-b893826b1537de43c80d"
+                    },
+                    {
+                        "summary": "Python3 正则统计 Unicode 汉字数（\\u4e00-\\u9fff）= 174，在 100–180 范围内。三节检查：目标节=True、风险与应对节=True、验收节=True。风险条数=2。draft.md SHA-256=ced3de668b7eb21897dee3baada53485533f02819f5b7a5413fee5c4ca82780a 与原始一致，未被修改。",
+                        "confidence": 1.0,
+                        "source_ref": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md",
+                        "artifact_key": "a1",
+                        "evidence_type": "test_output",
+                        "requirement_id": "ev-a7b629e879e2b911a851"
+                    }
+                ],
+                "artifacts": [
+                    {
+                        "uri": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md",
+                        "title": "revised.md",
+                        "artifact_key": "a1",
+                        "content_hash": "60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee",
+                        "artifact_type": "document"
+                    }
+                ],
+                "risk_notes": "draft.md 保持原样未动。revised.md 采用 exec+python3 写入合同路径，未使用单条 shell heredoc。等待救护车独立复审步骤。",
+                "tools_used": [
+                    "read",
+                    "exec"
+                ],
+                "side_effects": [
+                    {
+                        "action": "新建 revised.md（exec+python3 写入），保留原目标与验收含义，补齐风险与应对",
+                        "status": "applied",
+                        "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md",
+                        "effect_key": "write-revised-md",
+                        "receipt_ref": "ev-b893826b1537de43c80d",
+                        "evidence_refs": [
+                            "ev-a7b629e879e2b911a851"
+                        ],
+                        "idempotency_key": "mission-b6055540227d:plan:3:step:1"
+                    }
+                ],
+                "acceptance_results": [
+                    {
+                        "notes": "os.path.exists 返回 True，文件已创建。",
+                        "status": "pass",
+                        "criterion": "revised.md 存在于 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/",
+                        "criterion_id": "ac-1e7f814b9337da4aee62",
+                        "evidence_refs": [
+                            "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md"
+                        ]
+                    },
+                    {
+                        "notes": "三节检查均为 True：目标节=True、风险与应对节=True、验收节=True。",
+                        "status": "pass",
+                        "criterion": "revised.md 包含\"目标\"\"风险与应对\"\"验收\"三个小节",
+                        "criterion_id": "ac-51e6252b48d609a3f771",
+                        "evidence_refs": [
+                            "ev-a7b629e879e2b911a851"
+                        ]
+                    },
+                    {
+                        "notes": "风险条数=2。风险一：任务状态更新延迟→应对：定时轮询机制；风险二：交付文件路径失效或权限不足→应对：校验输出目录权限+回退备用路径。",
+                        "status": "pass",
+                        "criterion": "\"风险与应对\"小节至少包含两条风险及各自应对",
+                        "criterion_id": "ac-b13368068c1d756810bc",
+                        "evidence_refs": [
+                            "ev-a7b629e879e2b911a851"
+                        ]
+                    },
+                    {
+                        "notes": "Python3 re.findall([\\u4e00-\\u9fff]) 统计结果=174，在 100–180 范围内。",
+                        "status": "pass",
+                        "criterion": "全文 Unicode 汉字数（\\u4e00-\\u9fff）在 100 至 180 之间",
+                        "criterion_id": "ac-403b5c516f9f98f68f70",
+                        "evidence_refs": [
+                            "ev-a7b629e879e2b911a851"
+                        ]
+                    },
+                    {
+                        "notes": "draft.md SHA-256=ced3de668b7eb21897dee3baada53485533f02819f5b7a5413fee5c4ca82780a，内容与原始一致，未被修改或删除。",
+                        "status": "pass",
+                        "criterion": "draft.md 未被修改或删除",
+                        "criterion_id": "ac-d0d0f747fa25116fceca",
+                        "evidence_refs": [
+                            "ev-b893826b1537de43c80d"
+                        ]
+                    }
+                ]
+            },
+            "status": "completed",
+            "quality": {
+                "mode": "pilot",
+                "score": 92,
+                "status": "warning",
+                "accepted": true,
+                "blockers": [
+                ],
+                "enforced": false,
+                "warnings": [
+                    "验收标准未逐项通过：revised.md 包含\"目标\"\"风险与应对\"\"验收\"三个小节, \"风险与应对\"小节至少包含两条风险及各自应对, 全文 Unicode 汉字数（\\u4e00-\\u9fff）在 100 至 180 之间, draft.md 未被修改或删除"
+                ],
+                "checked_rules": [
+                    "result-summary",
+                    "required-evidence-types",
+                    "artifact-contract",
+                    "acceptance-results",
+                    "tool-use",
+                    "required-output-fields"
+                ],
+                "evidence_refs": [
+                    "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md",
+                    "context-d8788a613cb0",
+                    "profile:profile-ed9815cfab9d",
+                    "fact:fact-487dda76406e",
+                    "project:proj-b64156d740",
+                    "fact:fact-94ba6ec420b6",
+                    "knowledge:06-项目库-Projects/水面舰艇编队战术兵棋/V2-海空手工兵棋体系/03-规则手册/教学版_V3.2/00_产品清单.md",
+                    "knowledge:00-Inbox/README.sync-conflict-20260309-112607-RGERM6R.md",
+                    "knowledge:00-系统索引.md",
+                    "knowledge:06-项目库-Projects/水面舰艇编队战术兵棋/V2-海空手工兵棋体系/03-规则手册/教学版_V3.2/01_快速上手指南.md"
+                ],
+                "hard_blockers": [
+                ],
+                "required_tools": [
+                    "document_workspace"
+                ],
+                "business_outcome": "succeeded",
+                "executor_success": true,
+                "required_evidence": [
+                    "document_diff",
+                    "test_output"
+                ],
+                "acceptance_criteria": [
+                    "revised.md 存在于 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/",
+                    "revised.md 包含\"目标\"\"风险与应对\"\"验收\"三个小节",
+                    "\"风险与应对\"小节至少包含两条风险及各自应对",
+                    "全文 Unicode 汉字数（\\u4e00-\\u9fff）在 100 至 180 之间",
+                    "draft.md 未被修改或删除"
+                ],
+                "required_artifact_types": [
+                    "document"
+                ]
+            },
+            "contract": {
+                "id": "step-a66097305e14",
+                "input": {
+                },
+                "phase": "production",
+                "title": "通天晓修订 draft.md 并新建 revised.md",
+                "agent_id": "ultra-magnus",
+                "executor": "openclaw",
+                "objective": "生成符合三节结构与字数要求的 revised.md",
+                "resources": [
+                    "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/draft.md"
+                ],
+                "task_type": "writing",
+                "depends_on": [
+                ],
+                "mission_id": "mission-b6055540227d",
+                "risk_class": "L1",
+                "risk_level": "low",
+                "description": "通天晓读取 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/draft.md，保留原目标与验收含义，在同目录新建 revised.md。revised.md 必须包含三个小节：目标、风险与应对、验收。其中\"风险与应对\"至少包含两条风险及各自对应的应对措施。全文汉字数（按 Unicode 汉字范围 \\u4e00-\\u9fff 统计）控制在 100 至 180 个之间。draft.md 保持原样不修改、不删除。",
+                "order_index": 1,
+                "side_effect": true,
+                "compensation": {
+                    "type": "manual",
+                    "instructions": "删除 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md（若存在），确认 draft.md 未被改动，通知指挥中心暂停并等待孙总反馈。"
+                },
+                "deliverables": [
+                    "revised.md"
+                ],
+                "max_attempts": 1,
+                "plan_version": 3,
+                "rollback_plan": "若 revised.md 未生成或验收不通过，删除同目录残留 revised.md，保留 draft.md 原样，回退至本步执行前状态，等待孙总反馈后重新规划。",
+                "required_tools": [
+                    "document_workspace"
+                ],
+                "idempotency_key": "mission-b6055540227d:plan:3:step:1",
+                "output_contract": {
+                    "artifact_types": [
+                        "document"
+                    ],
+                    "required_fields": [
+                        "summary",
+                        "evidence_refs",
+                        "risk_notes"
+                    ]
+                },
+                "timeout_seconds": 900,
+                "capability_match": true,
+                "approval_required": false,
+                "evidence_required": [
+                    "document_diff",
+                    "test_output"
+                ],
+                "tool_requirements": [
+                    {
+                        "id": "document_workspace",
+                        "name": "文档工作台",
+                        "status": "available",
+                        "category": "document",
+                        "description": "处理文档结构、正文、引用与格式交付。",
+                        "evidence_types": [
+                            "document_diff",
+                            "quality_notes"
+                        ]
+                    }
+                ],
+                "acceptance_criteria": [
+                    "revised.md 存在于 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/",
+                    "revised.md 包含\"目标\"\"风险与应对\"\"验收\"三个小节",
+                    "\"风险与应对\"小节至少包含两条风险及各自应对",
+                    "全文 Unicode 汉字数（\\u4e00-\\u9fff）在 100 至 180 之间",
+                    "draft.md 未被修改或删除"
+                ],
+                "idempotency_key_generated": true
+            },
+            "completion": {
+                "attempt": 1,
+                "accepted": true,
+                "enforcement": {
+                    "mode": "pilot",
+                    "reason": "shadow_observation",
+                    "runtime": "legacy",
+                    "enforced": false,
+                    "flow_key": "document",
+                    "highest_risk": "L1"
+                },
+                "max_attempts": 1,
+                "effect_quality": {
+                    "status": "pass",
+                    "accepted": true,
+                    "blockers": [
+                    ],
+                    "enforced": true,
+                    "warnings": [
+                    ],
+                    "effect_count": 1,
+                    "applied_count": 1,
+                    "checked_rules": [
+                        "effect-journal-present",
+                        "effect-status-known",
+                        "stable-idempotency-key",
+                        "applied-effect-receipt"
+                    ],
+                    "unknown_count": 0
+                },
+                "retry_scheduled": false,
+                "executor_success": true
+            },
+            "plan_version": 3,
+            "attempt_count": 1
+        },
+        {
+            "id": "step-b8f23a3e846e",
+            "output": {
+                "outcome": "succeeded",
+                "summary": "救护车独立复审 revised.md 完成。三节（目标/风险与应对/验收）齐全；风险与应对 2 条且各有应对；Unicode 汉字数 174（范围 100–180）。结论 accepted。review.md 已写入同目录，draft.md 与 revised.md 均未被修改或删除。",
+                "evidence": [
+                    {
+                        "summary": "review.md 已写入 H 目录，包含 accepted 结论、逐项验收结果（三节齐全、风险应对≥2、汉字数 174）、原文引用及 SHA-256。",
+                        "confidence": 1.0,
+                        "source_ref": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/review.md",
+                        "artifact_key": "a1",
+                        "evidence_type": "review_report",
+                        "requirement_id": "ev-5e60299d6e8905969d12"
+                    },
+                    {
+                        "summary": "Python 正则 [\\u4e00-\\u9fff] 逐字符匹配 UTF-8 解码内容，汉字数=174；三节均存在；风险条目=2、应对条目=2。revised.md SHA-256=60031a8d…aab98fee 与通天晓交付一致，draft.md SHA-256=ced3de66…82780a 未变。",
+                        "confidence": 1.0,
+                        "source_ref": "exec:python3 Unicode 汉字统计脚本",
+                        "artifact_key": "a1",
+                        "evidence_type": "test_output",
+                        "requirement_id": "ev-e4c2dfd5511c754df351"
+                    }
+                ],
+                "artifacts": [
+                    {
+                        "uri": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/review.md",
+                        "title": "review.md — 救护车独立复审报告",
+                        "artifact_key": "a1",
+                        "content_hash": "7a4f1307eb09c6aba7718af40ab6141828983bf8679cc31c9012f8c1185c22e0",
+                        "artifact_type": "review_report"
+                    }
+                ],
+                "risk_notes": "review.md 通过临时文件中转写入合同路径（沙箱外），已用 SHA-256 校验确认写入完整。draft.md 与 revised.md 保持原样，无额外副作用。",
+                "tools_used": [
+                    "exec"
+                ],
+                "side_effects": [
+                    {
+                        "action": "新建 review.md（1644 bytes）",
+                        "status": "applied",
+                        "resource": "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/review.md",
+                        "effect_key": "write_review_md",
+                        "receipt_ref": "exec:cp /tmp/review_H.md → review.md",
+                        "evidence_refs": [
+                            "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/review.md"
+                        ],
+                        "idempotency_key": "mission-b6055540227d:plan:3:step:2"
+                    }
+                ],
+                "acceptance_results": [
+                    {
+                        "notes": "文件已写入，SHA-256=7a4f1307eb09c6aba7718af40ab6141828983bf8679cc31c9012f8c1185c22e0，1644 bytes。",
+                        "status": "pass",
+                        "criterion": "review.md 存在于 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/",
+                        "criterion_id": "ac-45d343b20b8852a3ebc8",
+                        "evidence_refs": [
+                            "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/review.md"
+                        ]
+                    },
+                    {
+                        "notes": "复审结论节明确标注 accepted。",
+                        "status": "pass",
+                        "criterion": "review.md 包含 accepted 或 rejected 明确结论",
+                        "criterion_id": "ac-ca5578576e34b825e799",
+                        "evidence_refs": [
+                            "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/review.md"
+                        ]
+                    },
+                    {
+                        "notes": "逐项列出三节验收：1)三节齐全（引用 ## 目标 / ## 风险与应对 / ## 验收 标题存在性）；2)风险与应对≥2（引用「风险一…应对…」「风险二…应对…」原文）；3)汉字数 174。",
+                        "status": "pass",
+                        "criterion": "review.md 逐项列出三节验收结果并引用 revised.md 原文",
+                        "criterion_id": "ac-1e9cd3193d63d0b47f7f",
+                        "evidence_refs": [
+                            "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/review.md"
+                        ]
+                    },
+                    {
+                        "notes": "明确记录统计方法为 Python 正则 [\\u4e00-\\u9fff] 逐字符匹配 UTF-8 解码，汉字数=174。",
+                        "status": "pass",
+                        "criterion": "review.md 包含 Unicode 汉字数统计结果（\\u4e00-\\u9fff 范围）",
+                        "criterion_id": "ac-26eb789ff66523245b1f",
+                        "evidence_refs": [
+                            "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/review.md"
+                        ]
+                    },
+                    {
+                        "notes": "结论为 accepted，步骤可完成。",
+                        "status": "pass",
+                        "criterion": "仅当结论为 accepted 时步骤完成",
+                        "criterion_id": "ac-ce41f49f1f194dc6c7b9",
+                        "evidence_refs": [
+                            "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/review.md"
+                        ]
+                    },
+                    {
+                        "notes": "draft.md SHA-256=ced3de668b7eb21897dee3baada53485533f02819f5b7a5413fee5c4ca82780a（与首次审核一致）；revised.md SHA-256=60031a8d8774f76290626588c3970125489d30d0dd22f4ae3987a7f2aab98fee（与通天晓交付一致）。两文件均未被修改或删除。",
+                        "status": "pass",
+                        "criterion": "draft.md 与 revised.md 均未被修改或删除",
+                        "criterion_id": "ac-e2b64336ce11b44969e9",
+                        "evidence_refs": [
+                            "exec:sha256 校验"
+                        ]
+                    }
+                ]
+            },
+            "status": "completed",
+            "quality": {
+                "mode": "pilot",
+                "score": 92,
+                "status": "warning",
+                "accepted": true,
+                "blockers": [
+                ],
+                "enforced": false,
+                "warnings": [
+                    "验收标准未逐项通过：draft.md 与 revised.md 均未被修改或删除"
+                ],
+                "checked_rules": [
+                    "result-summary",
+                    "required-evidence-types",
+                    "artifact-contract",
+                    "acceptance-results",
+                    "tool-use",
+                    "required-output-fields"
+                ],
+                "evidence_refs": [
+                    "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/review.md",
+                    "exec:python3 Unicode 汉字统计脚本",
+                    "context-274d384aa28e",
+                    "profile:profile-ed9815cfab9d",
+                    "fact:fact-487dda76406e",
+                    "project:proj-b64156d740",
+                    "fact:fact-94ba6ec420b6",
+                    "knowledge:06-项目库-Projects/水面舰艇编队战术兵棋/V2-海空手工兵棋体系/03-规则手册/教学版_V3.2/00_产品清单.md",
+                    "knowledge:00-Inbox/README.sync-conflict-20260309-112607-RGERM6R.md",
+                    "knowledge:00-系统索引.md",
+                    "knowledge:06-项目库-Projects/水面舰艇编队战术兵棋/V2-海空手工兵棋体系/03-规则手册/教学版_V3.2/01_快速上手指南.md"
+                ],
+                "hard_blockers": [
+                ],
+                "required_tools": [
+                    "document_workspace",
+                    "quality_checker"
+                ],
+                "business_outcome": "succeeded",
+                "executor_success": true,
+                "required_evidence": [
+                    "review_report",
+                    "test_output"
+                ],
+                "acceptance_criteria": [
+                    "review.md 存在于 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/",
+                    "review.md 包含 accepted 或 rejected 明确结论",
+                    "review.md 逐项列出三节验收结果并引用 revised.md 原文",
+                    "review.md 包含 Unicode 汉字数统计结果（\\u4e00-\\u9fff 范围）",
+                    "仅当结论为 accepted 时步骤完成",
+                    "draft.md 与 revised.md 均未被修改或删除"
+                ],
+                "required_artifact_types": [
+                    "review_report"
+                ]
+            },
+            "contract": {
+                "id": "step-b8f23a3e846e",
+                "input": {
+                },
+                "phase": "verification",
+                "title": "救护车独立复审 revised.md 并新建 review.md",
+                "agent_id": "ratchet",
+                "executor": "openclaw",
+                "objective": "独立复审 revised.md 并生成结构化 review.md，仅 accepted 完成",
+                "resources": [
+                    "/Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md"
+                ],
+                "task_type": "review",
+                "depends_on": [
+                    1
+                ],
+                "mission_id": "mission-b6055540227d",
+                "risk_class": "L1",
+                "risk_level": "low",
+                "description": "救护车独立读取 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md，按 Unicode 汉字范围（\\u4e00-\\u9fff）实际统计汉字数，验证是否同时满足：三节（目标、风险与应对、验收）齐全、风险与应对至少两条且各有应对、汉字数在 100 至 180 之间。在同目录新建 review.md，明确给出 accepted 或 rejected 结论，逐项列出验收结果并引用 revised.md 原文作为证据。仅当结论为 accepted 时本步方可完成；rejected 则业务结果为 blocked，暂停等待孙总反馈。draft.md 与 revised.md 均不修改、不删除。",
+                "order_index": 2,
+                "side_effect": true,
+                "compensation": {
+                    "type": "manual",
+                    "instructions": "删除 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/review.md（若存在），保留 revised.md 与 draft.md 原样，通知指挥中心暂停并等待孙总反馈。"
+                },
+                "deliverables": [
+                    "review.md"
+                ],
+                "max_attempts": 1,
+                "plan_version": 3,
+                "rollback_plan": "若 review.md 未生成或结论非 accepted/rejected，删除同目录残留 review.md，revised.md 保留供后续分析，回退至本步执行前状态，等待孙总反馈。",
+                "required_tools": [
+                    "document_workspace",
+                    "quality_checker"
+                ],
+                "idempotency_key": "mission-b6055540227d:plan:3:step:2",
+                "output_contract": {
+                    "artifact_types": [
+                        "review_report"
+                    ],
+                    "required_fields": [
+                        "summary",
+                        "evidence_refs",
+                        "risk_notes"
+                    ]
+                },
+                "timeout_seconds": 900,
+                "capability_match": true,
+                "approval_required": false,
+                "evidence_required": [
+                    "review_report",
+                    "test_output"
+                ],
+                "tool_requirements": [
+                    {
+                        "id": "document_workspace",
+                        "name": "文档工作台",
+                        "status": "available",
+                        "category": "document",
+                        "description": "处理文档结构、正文、引用与格式交付。",
+                        "evidence_types": [
+                            "document_diff",
+                            "quality_notes"
+                        ]
+                    },
+                    {
+                        "id": "quality_checker",
+                        "name": "质量检查器",
+                        "status": "available",
+                        "category": "review",
+                        "description": "执行计划、结果和风险复核，产出问题清单。",
+                        "evidence_types": [
+                            "review_report"
+                        ]
+                    }
+                ],
+                "acceptance_criteria": [
+                    "review.md 存在于 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/",
+                    "review.md 包含 accepted 或 rejected 明确结论",
+                    "review.md 逐项列出三节验收结果并引用 revised.md 原文",
+                    "review.md 包含 Unicode 汉字数统计结果（\\u4e00-\\u9fff 范围）",
+                    "仅当结论为 accepted 时步骤完成",
+                    "draft.md 与 revised.md 均未被修改或删除"
+                ],
+                "idempotency_key_generated": true
+            },
+            "completion": {
+                "attempt": 1,
+                "accepted": true,
+                "enforcement": {
+                    "mode": "pilot",
+                    "reason": "shadow_observation",
+                    "runtime": "legacy",
+                    "enforced": false,
+                    "flow_key": "document",
+                    "highest_risk": "L1"
+                },
+                "max_attempts": 1,
+                "effect_quality": {
+                    "status": "pass",
+                    "accepted": true,
+                    "blockers": [
+                    ],
+                    "enforced": true,
+                    "warnings": [
+                    ],
+                    "effect_count": 1,
+                    "applied_count": 1,
+                    "checked_rules": [
+                        "effect-journal-present",
+                        "effect-status-known",
+                        "stable-idempotency-key",
+                        "applied-effect-receipt"
+                    ],
+                    "unknown_count": 0
+                },
+                "retry_scheduled": false,
+                "executor_success": true
+            },
+            "plan_version": 3,
+            "attempt_count": 1
+        }
+    ],
+    "events": [
+        {
+            "detail": "CU-P3-20261005-H：审核拒绝与修订闭环验收。纯文档，无需联网、无需研究、不开发代码。第一版计划只安排一个只读审核步骤，由救护车读取 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/draft.md，检查是否同时包含目标、风险与应对、验收三个小节。这个测试样本可能不完整：缺任一项必须返回业务结果 blocked 和明确失败的验收项，暂停等待我的反馈，绝不能把“完成审核”当作“文档通过”。本轮不写任何文件，不删除、不对外发送；side_effect=false，max_attempts=1。审核结论及引用原文仅通过结构化 evidence 返回，输出合同不要求文件 artifact。先生成计划等待批准。后续收到修订反馈后，才制定新的修订及独立复审计划，并再次等待批准。",
+            "to_status": "received",
+            "created_at": "2026-10-05T14:09:33.025943+00:00",
+            "event_type": "mission_received",
+            "mission_id": "mission-b6055540227d",
+            "from_status": null
+        },
+        {
+            "detail": "Optimus is producing an approval-gated plan",
+            "to_status": "planning",
+            "created_at": "2026-10-05T14:09:34.394411+00:00",
+            "event_type": "planning_started",
+            "mission_id": "mission-b6055540227d",
+            "from_status": "received"
+        },
+        {
+            "detail": "Bound planning context context-8ceede30d87a to plan V1",
+            "to_status": "planning",
+            "created_at": "2026-10-05T14:09:36.034572+00:00",
+            "event_type": "context_pack_bound",
+            "mission_id": "mission-b6055540227d",
+            "from_status": "planning"
+        },
+        {
+            "detail": "审核拒绝与修订闭环验收 - 第一版只读审核计划",
+            "to_status": "awaiting_approval",
+            "created_at": "2026-10-05T14:10:24.626067+00:00",
+            "event_type": "plan_proposed",
+            "mission_id": "mission-b6055540227d",
+            "from_status": "planning"
+        },
+        {
+            "detail": "批准本次只读审核。仅读取指定 draft.md；不得写入文件。缺失风险与应对必须 blocked，保留失败验收证据，等待反馈。",
+            "to_status": "dispatching",
+            "created_at": "2026-10-05T14:12:42.038552+00:00",
+            "event_type": "plan_approved",
+            "mission_id": "mission-b6055540227d",
+            "from_status": "awaiting_approval"
+        },
+        {
+            "detail": "Approved plan entered execution",
+            "to_status": "running",
+            "created_at": "2026-10-05T14:12:43.121781+00:00",
+            "event_type": "state_changed",
+            "mission_id": "mission-b6055540227d",
+            "from_status": "dispatching"
+        },
+        {
+            "detail": "只读审核 draft.md 结构完整性",
+            "to_status": "running",
+            "created_at": "2026-10-05T14:12:43.146569+00:00",
+            "event_type": "step_started",
+            "mission_id": "mission-b6055540227d",
+            "from_status": "running"
+        },
+        {
+            "detail": "Bound execution context context-76d1f115ddd9 to plan V1",
+            "to_status": "running",
+            "created_at": "2026-10-05T14:12:44.551876+00:00",
+            "event_type": "context_pack_bound",
+            "mission_id": "mission-b6055540227d",
+            "from_status": "running"
+        },
+        {
+            "detail": "只读审核 draft.md 结构完整性",
+            "to_status": "running",
+            "created_at": "2026-10-05T14:14:41.694290+00:00",
+            "event_type": "step_evidence_rejected",
+            "mission_id": "mission-b6055540227d",
+            "from_status": "running"
+        },
+        {
+            "detail": "只读审核 draft.md 结构完整性：draft.md 已读取，包含'目标'和'验收'两个小节，但缺失'风险与应对'小节。根据合同要求三个必需小节缺一不可，业务结果为 blocked，暂停等待孙总修订反馈。",
+            "to_status": "waiting_feedback",
+            "created_at": "2026-10-05T14:14:42.655408+00:00",
+            "event_type": "mission_blocked",
+            "mission_id": "mission-b6055540227d",
+            "from_status": "running"
+        },
+        {
+            "detail": "根据首次审核缺少“风险与应对”的结论，进入修订阶段，请重新制定两步计划并等待再次审批。第一步由通天晓读取原 draft.md，在同目录新建 revised.md，保留原目标和验收含义，补齐“风险与应对”（至少两条风险及各自应对），全文100至180个汉字，三个小节为目标、风险与应对、验收。第二步救护车独立读取 revised.md，按Unicode汉字范围实际统计，验证三节和风险应对，写同目录 review.md，明确accepted或rejected，仅accepted可完成。唯一新增写入授权为 /Users/apple/工作桌面/Workspace/agent-system/docs/review/computer-use-phase3-20261005/deliverables/H/revised.md 和同目录 review.md；保留 draft.md 原样，不删除、不对外发送、不改代码。结构化交付采用 document / review_report 类型；逐项回传当前合同提供的证据与验收编号和真实引用，禁止用旧版本编号。",
+            "to_status": "waiting_feedback",
+            "created_at": "2026-10-05T14:17:38.753897+00:00",
+            "event_type": "feedback_received",
+            "mission_id": "mission-b6055540227d",
+            "from_status": "waiting_feedback"
+        },
+        {
+            "detail": "Dashboard feedback received; orchestration resumed",
+            "to_status": "planning",
+            "created_at": "2026-10-05T14:17:38.760990+00:00",
+            "event_type": "state_changed",
+            "mission_id": "mission-b6055540227d",
+            "from_status": "waiting_feedback"
+        },
+        {
+            "detail": "Optimus is producing an approval-gated plan",
+            "to_status": "planning",
+            "created_at": "2026-10-05T14:17:39.397283+00:00",
+            "event_type": "planning_resumed",
+            "mission_id": "mission-b6055540227d",
+            "from_status": "planning"
+        },
+        {
+            "detail": "Bound planning context context-7236292cf687 to plan V2",
+            "to_status": "planning",
+            "created_at": "2026-10-05T14:17:41.317634+00:00",
+            "event_type": "context_pack_bound",
+            "mission_id": "mission-b6055540227d",
+            "from_status": "planning"
+        },
+        {
+            "detail": "修订并独立复审 draft.md，补齐缺失的'风险与应对'小节，形成闭环验收",
+            "to_status": "awaiting_approval",
+            "created_at": "2026-10-05T14:18:56.366235+00:00",
+            "event_type": "plan_proposed",
+            "mission_id": "mission-b6055540227d",
+            "from_status": "planning"
+        },
+        {
+            "detail": "范围与两步分工正确，但证据合同格式错误：evidence_required 必须为简短字符串数组，不要把对象放入数组或把对象转为字符串。第一步使用 [\"document_diff\",\"test_output\"]，第二步使用 [\"review_report\",\"test_output\"]。output_contract.artifact_types 第一步为 [\"document\"]，第二步为 [\"review_report\"]。保留现有路径、100-180汉字、独立复审、原稿不改及全部验收标准。新计划先待批准。",
+            "to_status": "planning",
+            "created_at": "2026-10-05T14:20:02.915125+00:00",
+            "event_type": "plan_rejected",
+            "mission_id": "mission-b6055540227d",
+            "from_status": "awaiting_approval"
+        },
+        {
+            "detail": "Optimus is producing an approval-gated plan",
+            "to_status": "planning",
+            "created_at": "2026-10-05T14:20:03.891995+00:00",
+            "event_type": "planning_resumed",
+            "mission_id": "mission-b6055540227d",
+            "from_status": "planning"
+        },
+        {
+            "detail": "Bound planning context context-6ccf8f7f147d to plan V3",
+            "to_status": "planning",
+            "created_at": "2026-10-05T14:20:04.731041+00:00",
+            "event_type": "context_pack_bound",
+            "mission_id": "mission-b6055540227d",
+            "from_status": "planning"
+        },
+        {
+            "detail": "未生成可验证的执行计划，已停止派发。请重试规划；原需求和退回意见会保留。 返回内容无法解析为有效步骤。",
+            "to_status": "waiting_feedback",
+            "created_at": "2026-10-05T14:20:51.333085+00:00",
+            "event_type": "planning_failed",
+            "mission_id": "mission-b6055540227d",
+            "from_status": "planning"
+        },
+        {
+            "detail": "请重试规划，只返回完整合法 JSON，必须含 steps 数组且恰好两个步骤，不要解释或会话摘要。继续已经提出的修订范围：通天晓读取原 draft.md，新建H目录 revised.md，100-180汉字，目标/风险与应对/验收三节，风险至少两条各有应对；救护车独立复审并新建 review.md，仅accepted完成。保留原稿，不删除、不外发。evidence_required 第一步 [\"document_diff\",\"test_output\"]，第二步 [\"review_report\",\"test_output\"]；artifact_types 第一步 [\"document\"]，第二步 [\"review_report\"]；所有列表字段只放字符串，不放对象。输出计划后等待审批，不执行旧计划。",
+            "to_status": "waiting_feedback",
+            "created_at": "2026-10-05T14:23:10.379989+00:00",
+            "event_type": "feedback_received",
+            "mission_id": "mission-b6055540227d",
+            "from_status": "waiting_feedback"
+        },
+        {
+            "detail": "Dashboard feedback received; orchestration resumed",
+            "to_status": "planning",
+            "created_at": "2026-10-05T14:23:10.386700+00:00",
+            "event_type": "state_changed",
+            "mission_id": "mission-b6055540227d",
+            "from_status": "waiting_feedback"
+        },
+        {
+            "detail": "Optimus is producing an approval-gated plan",
+            "to_status": "planning",
+            "created_at": "2026-10-05T14:23:11.203932+00:00",
+            "event_type": "planning_resumed",
+            "mission_id": "mission-b6055540227d",
+            "from_status": "planning"
+        },
+        {
+            "detail": "未生成可验证的执行计划，已停止派发。请重试规划；原需求和退回意见会保留。 返回内容无法解析为有效步骤。",
+            "to_status": "waiting_feedback",
+            "created_at": "2026-10-05T14:24:10.289947+00:00",
+            "event_type": "planning_failed",
+            "mission_id": "mission-b6055540227d",
+            "from_status": "planning"
+        },
+        {
+            "detail": "使用新的规划会话重试，沿用最近反馈的两步修订范围和标准字符串数组。原稿保持不变；新建 revised.md（100-180汉字、目标/风险与应对/验收、两条风险及应对），再独立复审写 review.md，accepted才能完成。只输出 schema 要求的完整 JSON 计划，包含两个 steps，等待审批。不要输出会话摘要，不执行任何文件操作。",
+            "to_status": "waiting_feedback",
+            "created_at": "2026-10-05T14:29:36.165483+00:00",
+            "event_type": "feedback_received",
+            "mission_id": "mission-b6055540227d",
+            "from_status": "waiting_feedback"
+        },
+        {
+            "detail": "Dashboard feedback received; orchestration resumed",
+            "to_status": "planning",
+            "created_at": "2026-10-05T14:29:36.172277+00:00",
+            "event_type": "state_changed",
+            "mission_id": "mission-b6055540227d",
+            "from_status": "waiting_feedback"
+        },
+        {
+            "detail": "Optimus is producing an approval-gated plan",
+            "to_status": "planning",
+            "created_at": "2026-10-05T14:29:37.743694+00:00",
+            "event_type": "planning_resumed",
+            "mission_id": "mission-b6055540227d",
+            "from_status": "planning"
+        },
+        {
+            "detail": "通天晓基于原 draft.md 新建 revised.md（100-180汉字，目标/风险与应对/验收三节，至少两条风险及应对），随后救护车独立复审并新建 review.md，仅 accepted 方可完成。原稿保留不变。",
+            "to_status": "awaiting_approval",
+            "created_at": "2026-10-05T14:30:16.283024+00:00",
+            "event_type": "plan_proposed",
+            "mission_id": "mission-b6055540227d",
+            "from_status": "planning"
+        },
+        {
+            "detail": "批准V3：仅新建H目录 revised.md 与 review.md，保留 draft.md 原样。独立复审必须逐项验证，accepted方可完成；回传当前合同编号及真实证据。",
+            "to_status": "dispatching",
+            "created_at": "2026-10-05T14:31:47.655679+00:00",
+            "event_type": "plan_approved",
+            "mission_id": "mission-b6055540227d",
+            "from_status": "awaiting_approval"
+        },
+        {
+            "detail": "Approved plan entered execution",
+            "to_status": "running",
+            "created_at": "2026-10-05T14:31:48.638735+00:00",
+            "event_type": "state_changed",
+            "mission_id": "mission-b6055540227d",
+            "from_status": "dispatching"
+        },
+        {
+            "detail": "Approved plan entered execution",
+            "to_status": "running",
+            "created_at": "2026-10-05T14:31:48.676362+00:00",
+            "event_type": "state_changed",
+            "mission_id": "mission-b6055540227d",
+            "from_status": "dispatching"
+        },
+        {
+            "detail": "通天晓修订 draft.md 并新建 revised.md",
+            "to_status": "running",
+            "created_at": "2026-10-05T14:31:48.738150+00:00",
+            "event_type": "step_started",
+            "mission_id": "mission-b6055540227d",
+            "from_status": "running"
+        },
+        {
+            "detail": "Bound execution context context-d8788a613cb0 to plan V3",
+            "to_status": "running",
+            "created_at": "2026-10-05T14:31:50.476463+00:00",
+            "event_type": "context_pack_bound",
+            "mission_id": "mission-b6055540227d",
+            "from_status": "running"
+        },
+        {
+            "detail": "通天晓修订 draft.md 并新建 revised.md",
+            "to_status": "running",
+            "created_at": "2026-10-05T14:36:47.145097+00:00",
+            "event_type": "step_completed",
+            "mission_id": "mission-b6055540227d",
+            "from_status": "running"
+        },
+        {
+            "detail": "救护车独立复审 revised.md 并新建 review.md",
+            "to_status": "running",
+            "created_at": "2026-10-05T14:36:48.241256+00:00",
+            "event_type": "step_started",
+            "mission_id": "mission-b6055540227d",
+            "from_status": "running"
+        },
+        {
+            "detail": "Bound execution context context-274d384aa28e to plan V3",
+            "to_status": "running",
+            "created_at": "2026-10-05T14:36:49.062209+00:00",
+            "event_type": "context_pack_bound",
+            "mission_id": "mission-b6055540227d",
+            "from_status": "running"
+        },
+        {
+            "detail": "救护车独立复审 revised.md 并新建 review.md",
+            "to_status": "running",
+            "created_at": "2026-10-05T14:38:22.126410+00:00",
+            "event_type": "step_completed",
+            "mission_id": "mission-b6055540227d",
+            "from_status": "running"
+        },
+        {
+            "detail": "All steps completed; Optimus is evaluating the outcome",
+            "to_status": "evaluating",
+            "created_at": "2026-10-05T14:38:22.958290+00:00",
+            "event_type": "evaluation_started",
+            "mission_id": "mission-b6055540227d",
+            "from_status": "running"
+        },
+        {
+            "detail": "修订与复审闭环全部完成。通天晓保留 draft.md 原文件，新建 revised.md，包含目标、风险与应对（2 条）、验收三节，Unicode 汉字数 174（符合 100–180 区间）；救护车独立复审 revised.md，逐项核对三节内容并引用原文，结论 accepted，新建 review.md。两步共 11 项验收准则全部 pass，draft.md 与 revised.md 均未被修改或删除。风险：本次样本为受控测试文档，结论不直接外推到生产文档质量。下一步：可进入正式文档审核流程或关闭本轮验收。",
+            "to_status": "completed",
+            "created_at": "2026-10-05T14:38:58.982697+00:00",
+            "event_type": "mission_completed",
+            "mission_id": "mission-b6055540227d",
+            "from_status": "evaluating"
+        },
+        {
+            "detail": "擎天柱提炼了 1 条长期记忆候选，等待管理员审核",
+            "to_status": "completed",
+            "created_at": "2026-10-05T14:38:59.065635+00:00",
+            "event_type": "memory_candidates_proposed",
+            "mission_id": "mission-b6055540227d",
+            "from_status": "completed"
+        }
+    ],
+    "missions": [
+        {
+            "id": "mission-b6055540227d",
+            "title": "CU-P3-20261005-H：审核拒绝与修订闭环验收。纯文档，无需联网、无需研究、不开发代码。第一版计划只安排一个只读审核步骤，由救护车读取 /Users/",
+            "status": "completed",
+            "created_at": "2026-10-05T14:09:32.994469+00:00",
+            "last_error": null,
+            "updated_at": "2026-10-05T14:38:58.979174+00:00",
+            "plan_version": 3
+        }
+    ],
+    "captured_at": "2026-10-05T22:44:48.846228+08:00"
+}

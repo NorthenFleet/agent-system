@@ -1,0 +1,9 @@
+{
+  "backend/scripts/run_phase14_concurrency_soak.py": "1c86a4b7a356390a68bafc1297609c04d25704b6ed03d7968352e97d862b1e09",
+  "backend/tests/test_phase14_artifact_download.py": "f3288b17cf8f7f3bf2eccd294694f9179697360380a6230eef2a2d8d081c258e",
+  "backend/services/command_center_service.py": "97b4b4d899c8a7c00ef7c9fb59b84a1c996b4567606724f333b10ea1f549b8d4",
+  "backend/services/command_center_worker.py": "d779af30e07b82035be3523b3d08e9b3dfbc7257e4fe2a1646865c5dbb7ad97c",
+  "backend/services/compensation_service.py": "6261d4c91214bfad0ff18a28ad9a88c6e4f16686b8b273d3f8223536637f6efb",
+  "backend/services/mission_artifact_reader.py": "519fa3e3ceb40c33ac1dbd36c53a3d316472d5702306fdfe1c3f03c9a4cb79ea",
+  "backend/routers/command_center_router.py": "8c590210ec6c2f9d0450b3b764922b1810af4625e45aa9c7e7649d56de3f445f"
+}

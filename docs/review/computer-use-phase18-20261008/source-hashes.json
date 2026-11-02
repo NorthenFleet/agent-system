@@ -1,0 +1,7 @@
+{
+  "frontend-v2/src/views/CommandCenter.vue": "45fecceb890457e0a09d8ea851bbcdd97b880d71898138e1405ddfeba8d1cbfe",
+  "frontend-v2/src/composables/useMissionDraft.ts": "746d9b6e4df7c7d64b2fa09ece9c838c84e37f71b21868235b3169599ae1c0b5",
+  "frontend-v2/src/test/missionDraft.spec.ts": "4bc8966eedb157541b6804a4260e8f31e2e2055d64adc9b0b03dcf1de2281032",
+  "backend/scripts/prepare_phase18_frontend_release.py": "853eb4ec2278f665f4949faadd1a3c3e3c32ad98aa9ad5610701f3da1000d7ca",
+  "backend/scripts/run_phase18_draft_lab.py": "aadb06e76500c3fc7d9c02a42b47cdf9000be196a7c5b358cf3e3025f8c84e45"
+}

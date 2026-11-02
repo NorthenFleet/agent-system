@@ -1,0 +1,7 @@
+{
+  "backend/services/command_center_service.py": "bcfc10265cb2cae2e1b44723b0e0638a18be6614d241cba6854ff60663673409",
+  "frontend-v2/src/views/CommandCenter.vue": "b72cc5dae521bad7f389951ed45af68c42e4f52611e74f16e527dc6625389cce",
+  "frontend-v2/src/utils/commandCenterLifecycle.ts": "f490c35bb16282973ccf258fe74c7343bfc9a860eedbc73f9ebebe4fc55a2b08",
+  "backend/tests/test_phase9_recovery_verification.py": "de15c208de8c6268217e04995d87041c4844a2a0a935ee1950cefccce778d970",
+  "backend/scripts/run_phase9_recovery_lab.py": "b164901e6142f2faca03d24c18ef966a6a300c58e17c040ad94e020a1cab573d"
+}

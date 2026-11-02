@@ -1,0 +1,18 @@
+{
+  "schema_version": "knowledge-drill-v1",
+  "environment": "disposable-postgresql",
+  "source_name": "design-source.txt",
+  "source_sha256": "957b698eb485923a511e079d92160148d98a424e3f92016a2a5c785be885742f",
+  "source_bytes": 49242,
+  "source_spans": 16,
+  "source_text_preserved": true,
+  "unaudited_query_empty": true,
+  "approval_kind": "isolated_test_fixture_only",
+  "release_created": true,
+  "citation_count": 2,
+  "original_download_matches": true,
+  "duplicate_reuses_version": true,
+  "retraction_blocks_query": true,
+  "projection_status": "pending",
+  "production_modified": false
+}
