@@ -870,6 +870,71 @@ export interface DocumentContentFidelityReport {
   collaboration_revision?: number
 }
 
+export interface GenOfficeReadOnlyStatus {
+  installed: boolean
+  reachable: boolean
+  version: string
+  mcp_version?: string
+  channel: string
+  pilot_gate?: 'limited' | 'accepted' | string
+  mode: 'disabled' | 'read_only' | 'unavailable'
+  capabilities: {
+    docs_read: boolean
+    docs_check: boolean
+    render: boolean
+    docs_apply: false
+    visible_editor: false
+  }
+  reason?: string
+  version_gate?: 'tested' | 'unverified' | 'unsupported' | string
+  release_version_gate?: 'tested' | 'unverified' | 'unsupported' | string
+  mcp_version_gate?: 'tested' | 'unverified' | 'unsupported' | string
+  last_checked_at?: string
+}
+
+export interface GenOfficeReadOnlyCheck {
+  schema: 'openclaw.genoffice-readonly-check.v1'
+  engine: {
+    version: string
+    mcp_version?: string
+    channel: string
+    pilot_gate?: 'limited' | 'accepted' | string
+    mode: 'read_only'
+    version_gate: string
+    release_version_gate?: string
+    mcp_version_gate?: string
+    notice: string
+  }
+  source: {
+    kind: string
+    sha256: string
+    read_only: true
+    authority: 'imported_source_only'
+    notice: string
+  }
+  read: {
+    summary: string
+    blocks: number
+    range: string
+    items: Array<Record<string, any>>
+  }
+  check: {
+    summary: string
+    counts: { error: number; warning: number; info: number }
+    issues: Array<{
+      id?: string
+      code?: string
+      level?: 'error' | 'warning' | 'info' | string
+      path?: string
+      message?: string
+      context?: string
+      blockIndex?: number
+      part?: string
+    }>
+    truncated: boolean
+  }
+}
+
 export interface WritingProjectDocument {
   id: string
   title: string
@@ -1176,9 +1241,10 @@ export interface WritingProjectCreate {
 }
 
 export function createWritingProject(payload: WritingProjectCreate) {
-  return apiClient.post<{ project: { id: string }; workspace: WritingWorkspace }>(
+  return apiClient.post<{ project: { id: string }; workspace: WritingWorkspace | null; warning?: string }>(
     '/api/v3/writing/projects',
-    payload
+    payload,
+    { timeout: 120000 }
   ).then(r => r.data)
 }
 
@@ -1726,6 +1792,28 @@ export function getDocumentFidelityPreview(projectId: string, documentId: string
   return apiClient.get<Blob>(
     `${documentBase(projectId, documentId)}/fidelity/preview.pdf`,
     { responseType: 'blob', timeout: 240000 }
+  ).then(r => r.data)
+}
+
+export function getGenOfficeStatus() {
+  return apiClient.get<GenOfficeReadOnlyStatus>(
+    '/api/v3/writing/genoffice/status',
+    { suppressErrorToast: true }
+  ).then(r => r.data)
+}
+
+export function getDocumentGenOfficeProof(projectId: string, documentId: string) {
+  return apiClient.get<Blob>(
+    `${documentBase(projectId, documentId)}/genoffice/proof.png`,
+    { responseType: 'blob', timeout: 240000, suppressErrorToast: true }
+  ).then(r => r.data)
+}
+
+export function checkDocumentGenOfficeProof(projectId: string, documentId: string) {
+  return apiClient.post<GenOfficeReadOnlyCheck>(
+    `${documentBase(projectId, documentId)}/genoffice/check`,
+    {},
+    { timeout: 240000, suppressErrorToast: true }
   ).then(r => r.data)
 }
 

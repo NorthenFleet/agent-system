@@ -59,6 +59,32 @@ function mission(overrides: Partial<CommandCenterMission> = {}): CommandCenterMi
 }
 
 describe('command center normalized lifecycle', () => {
+  it('keeps evidence warnings visible on pilot completion', () => {
+    const value = mission({ status: 'completed', steps: [{ ...mission().steps[0], status: 'completed', result: {
+      execution_quality: { status: 'warning', score: 92,
+        blockers: [], warnings: ['引用未闭合'], checked_rules: [], evidence_refs: [],
+        required_tools: [], required_evidence: [] }
+    } }] })
+    const point = deriveMissionControlPoint(value)
+    expect(point.tone).toBe('warning')
+    expect(point.title).toContain('证据仍有警告')
+    expect(point.description).toContain('不代表严格验收通过')
+  })
+  it('shows replanning instead of the retained failure from the previous plan', () => {
+    const value = mission({ status: 'planning', steps: [{ ...mission().steps[0], status: 'failed' }] })
+    expect(deriveMissionControlPoint(value).title).toBe('正在制定执行计划')
+    expect(deriveMissionControlPoint(value).description).toContain('历史记录保留')
+  })
+  it('keeps cancellation terminal even when stale execution or approval details remain', () => {
+    const point = deriveMissionControlPoint(mission({ status: 'cancelled' }))
+    expect(point.title).toBe('任务已取消')
+    expect(point.description).toContain('停止调度')
+    expect(point.action).not.toContain('等待')
+  })
+
+  it('does not describe a failed mission as progressing', () => {
+    expect(deriveMissionControlPoint(mission({ status: 'failed', steps: [], last_error: '验收异常' })).title).toBe('任务失败')
+  })
   it('maps the backend state into the complete eight-stage lifecycle', () => {
     const stages = buildMissionLifecycle(mission())
 
@@ -121,4 +147,18 @@ describe('command center normalized lifecycle', () => {
     expect(deriveMissionControlPoint(value).tone).toBe('success')
     expect(buildMissionLifecycle(value).find(stage => stage.id === 'delivery')?.state).toBe('completed')
   })
+})
+
+
+it('does not present partial pilot evidence as completed acceptance', () => {
+  const value = mission({ status: 'waiting_feedback', acceptance_gates: [{
+    id: 'gate', accepted: true, enforced: false, status: 'warning', warnings: ['缺少证据'], blockers: [],
+  } as any] })
+  expect(buildMissionLifecycle(value).find(stage => stage.id === 'evidence')?.state).toBe('warning')
+  expect(deriveMissionControlPoint({ ...value, steps: [], last_error: '规划无法解析' }).description).toBe('规划无法解析')
+})
+
+it('distinguishes unapproved planning from final acceptance', () => {
+  expect(deriveMissionControlPoint(mission({ status: 'planning', steps: [] })).description).toContain('尚未批准')
+  expect(deriveMissionControlPoint(mission({ status: 'evaluating', steps: [] })).title).toBe('正在进行最终验收')
 })

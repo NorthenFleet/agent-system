@@ -5,7 +5,7 @@
         <div class="title-row">
           <el-icon><Platform /></el-icon>
           <h1>擎天柱指挥中心</h1>
-          <span class="live-indicator">运行中</span>
+          <span class="live-indicator">{{ autoRefresh ? '自动更新' : '手动更新' }}</span>
         </div>
         <p>统一任务入口 · 审批后执行 · 异步协作与反馈</p>
       </div>
@@ -15,6 +15,30 @@
       </div>
     </header>
 
+    <section v-if="selectedMission && missionControlPoint" class="lifecycle-panel" aria-label="当前任务与下一步">
+      <p class="current-task-title" :title="selectedMission.title">{{ selectedMission.title }}</p>
+      <strong>{{ missionControlPoint.title }}</strong>
+      <p>{{ missionControlPoint.description }}</p>
+      <p>下一步：{{ missionControlPoint.action }}</p>
+      <a v-if="['awaiting_approval', 'waiting_feedback'].includes(selectedMission.status)" href="#mission-actions">前往审批与反馈</a>
+      <div v-if="selectedMission.artifacts?.length">
+        <strong>任务产物（{{ selectedMission.status === 'completed' ? '已完成' : '尚未完成最终验收' }}）</strong>
+        <div v-for="artifact in selectedMission.artifacts" :key="artifact.id" class="artifact-delivery">
+          {{ artifact.title || artifact.uri.split('/').pop() }}
+          <el-button size="small" :loading="artifactDownloads[artifactKey(artifact)]" @click="downloadArtifact(artifact)">下载文件</el-button>
+          <p>下载时核对登记版本；任务完成记录不代表文件当前仍可用。</p>
+          <details><summary>查看原交付记录</summary><p>{{ artifact.uri }}</p><p>登记 SHA256：{{ artifact.content_hash || '未登记' }}</p></details>
+          <div v-if="artifactErrors[artifactKey(artifact)]" role="alert" class="artifact-download-error">
+            <strong>下载未完成：{{ artifactErrors[artifactKey(artifact)] }}</strong>
+            <p>原交付记录保留。可重试下载；需要新版本时，准备重新交付任务，经新计划审批后执行。</p>
+            <el-button size="small" :disabled="draft.pending.value || !!newMission.objective.trim() || !!newMission.title.trim()" @click="prepareRedelivery(artifact)">准备重新交付任务</el-button>
+            <p v-if="newMission.objective.trim() || newMission.title.trim()">启动任务区已有草稿，请先处理现有草稿。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+    <details class="operations-details">
+      <summary>查看团队统计与运行健康</summary>
     <section class="summary-strip">
       <div class="summary-item">
         <span>全部任务</span>
@@ -112,6 +136,7 @@
       </div>
     </section>
 
+    </details>
     <el-tabs v-model="activeWorkspaceTab" class="command-workshop-tabs">
       <el-tab-pane label="工作坊" name="workshop" />
     </el-tabs>
@@ -335,7 +360,7 @@
               </span>
               <span class="agent-cell task" role="cell" :title="row.currentTask">
                 {{ row.currentTask || (row.node.is_commander ? '统筹待接入任务' : '等待调度') }}
-                <small v-if="row.activeMissionCount > 1">并行 {{ row.activeMissionCount }} 项</small>
+                <small v-if="row.activeMissionCount > 1">关联 {{ row.activeMissionCount }} 项</small>
               </span>
               <span class="agent-cell project" role="cell" :title="row.projectName">{{ row.projectName }}</span>
               <span class="agent-progress-cell" role="cell">
@@ -620,6 +645,21 @@
                     <span>资源：{{ compensation.resource }}</span>
                     <span>补偿幂等键：{{ compensation.idempotency_key }}</span>
                     <span>合同指纹：{{ compensation.contract_hash.slice(0, 12) }}</span>
+                    <p v-if="compensation.last_error === 'Interrupted compensation requires reapproval'" class="error-text">恢复执行已中断，实际操作可能已生效。请先核实资源与回执，确认原方案可安全重复执行后再审批。</p>
+                    <p v-if="compensation.result?.summary">已有核实记录：{{ compensation.result.summary }}</p>
+                    <el-button
+                      v-if="auth.isAdmin && compensation.status === 'failed' && compensation.compensation_type === 'verify_effect'"
+                      size="small"
+                      :loading="compensationLoadingId === compensation.id"
+                      @click="proposeRecovery(compensation)"
+                    >提出恢复方案</el-button>
+                    <el-button
+                      v-if="auth.isAdmin && compensation.status === 'failed' && compensation.compensation_type === 'manual_recovery'"
+                      size="small"
+                      type="warning"
+                      :loading="compensationLoadingId === compensation.id"
+                      @click="approveCompensation(compensation)"
+                    >重新审批补偿</el-button>
                     <div
                       v-if="auth.isAdmin && compensation.status === 'pending_approval'"
                       class="step-approval-actions"
@@ -634,7 +674,7 @@
                         type="warning"
                         :loading="compensationLoadingId === compensation.id"
                         @click="approveCompensation(compensation)"
-                      >批准补偿</el-button>
+                      >{{ compensation.compensation_type === 'verify_effect' ? '批准只读核实' : '批准补偿' }}</el-button>
                     </div>
                   </div>
                   <div v-if="step.effects?.length" class="effect-journal">
@@ -665,6 +705,33 @@
                     <p v-if="step.acceptance_gate.blockers.length">阻断：{{ step.acceptance_gate.blockers.join('；') }}</p>
                     <p v-else-if="step.acceptance_gate.warnings.length">警告：{{ step.acceptance_gate.warnings.join('；') }}</p>
                     <span>{{ step.acceptance_gate.mode }} · {{ formatTime(step.acceptance_gate.evaluated_at) }}</span>
+                  </div>
+                  <div v-if="step.result?.tool_control" class="step-result">
+                    <strong>工具调用控制 · {{ step.result.tool_control.accepted ? '回执完整' : '未通过' }}</strong>
+                    <p>{{ step.result.tool_control.calls }} 次调用 · {{ step.result.tool_control.receipts }} 条回执 · {{ step.result.tool_control.denied }} 次拒绝 · {{ step.result.tool_control.incomplete + step.result.tool_control.unknown }} 项待核验</p>
+                  </div>
+                  <div v-if="step.result?.code_workspace" class="step-result">
+                    <strong>隔离代码候选 · 尚未合并</strong>
+                    <p>{{ step.result.code_workspace.execution_branch }} · {{ step.result.code_workspace.commit_sha || '未形成提交' }}</p>
+                  </div>
+                  <div v-if="step.result?.execution_profile" class="step-result">
+                    <span>请求模型 {{ step.result.execution_profile.requested_model || '默认配置' }} · 实际模型 {{ step.result.execution_profile.actual_model || '回执未提供' }}</span>
+                  </div>
+                  <div v-if="step.executor === 'deterministic-v1'" class="step-result">
+                    <strong>确定性检查 · 无模型调用</strong>
+                    <span>仅校验批准计划中的内联输入</span>
+                  </div>
+                  <div v-if="step.result?.recovery_control?.requires_replan" class="step-result">
+                    <strong>受控修复 · 已停止原步骤重试</strong>
+                    <p>核对失败与副作用回执后，提交反馈重新规划；新计划需要审批。</p>
+                  </div>
+                  <div v-if="step.routing_decision || step.result?.decision_shadow" class="step-result">
+                    <strong>路由观察 · 仅建议，未接管执行</strong>
+                    <p v-if="step.routing_decision">{{ step.routing_decision.detail }} · 实际执行：{{ step.routing_decision.actual_agent_id }} / {{ step.routing_decision.actual_executor }}</p>
+                    <p v-if="step.result?.decision_shadow">
+                      {{ step.result.decision_shadow.detail }}
+                      <span v-if="step.result.decision_shadow.repeated_failure"> · 连续相同失败 {{ step.result.decision_shadow.consecutive_failures }} 次</span>
+                    </p>
                   </div>
                   <div
                     v-if="step.work_run_id || step.context_binding || step.result?.output || step.result?.error"
@@ -709,6 +776,14 @@
             </div>
           </section>
 
+          <section v-if="selectedMission.advisor_reviews?.length" class="timeline-block">
+            <h3>检查点顾问 · 仅建议，不代替审批与验收</h3>
+            <article v-for="review in selectedMission.advisor_reviews" :key="review.checkpoint">
+              <strong>{{ review.checkpoint === 'plan' ? '计划检查' : review.checkpoint === 'delivery' ? '交付检查' : '重复失败检查' }} · {{ review.status === 'completed' ? '已返回建议' : review.status === 'discarded' ? '已丢弃过期意见' : '未完成' }}</strong>
+              <p v-if="review.suggested_action">{{ review.suggested_action }}</p>
+              <p v-for="(finding, index) in review.findings || []" :key="index">{{ finding.message }}</p>
+            </article>
+          </section>
           <section class="timeline-block">
             <div class="section-title">
               <div>
@@ -734,7 +809,7 @@
         <el-empty v-else description="选择一个任务查看执行详情" />
       </section>
 
-      <aside class="optimus-column">
+      <aside id="mission-actions" class="optimus-column">
         <section class="optimus-profile">
           <div class="optimus-avatar">擎</div>
           <div>
@@ -916,23 +991,34 @@
             type="primary"
             :loading="actionLoading"
             :disabled="!feedbackText.trim()"
-            @click="sendFeedback"
+            @click="sendFeedback(false)"
           >
             提交反馈并继续
           </el-button>
+          <el-button :loading="actionLoading" :disabled="!feedbackText.trim()" @click="sendFeedback(true)">
+            反馈并重新规划
+          </el-button>
+          <p>需要修改已完成的内容时，选择重新规划；新计划需再次审批。</p>
         </section>
 
-        <section class="action-panel command-panel">
+        <section id="new-mission-form" class="action-panel command-panel">
           <div class="action-heading">
             <el-icon><Promotion /></el-icon>
             <strong>启动项目任务</strong>
           </div>
-          <el-segmented
+          <p role="status">{{ draft.notice.value }}</p>
+          <div v-if="draft.pending.value">
+            <el-button :disabled="!draft.canRestore()" @click="draft.restore()">恢复草稿</el-button>
+            <el-button @click="draft.discard()">丢弃已保存草稿</el-button>
+          </div>
+          <p v-if="!draft.pending.value && newMission.project_id && !availableProjects.some(project => project.id === newMission.project_id)" role="alert">草稿中的项目当前不可用，请重新选择项目。</p>
+          <p v-if="submissionNotice" role="alert">{{ submissionNotice }}</p>
+          <el-segmented :disabled="draft.pending.value || creating"
             v-model="newMission.mission_type"
             :options="missionTypeOptions"
             size="small"
           />
-          <el-select v-model="newMission.project_id" placeholder="选择任务所属项目" filterable>
+          <el-select :disabled="draft.pending.value || creating" v-model="newMission.project_id" placeholder="选择任务所属项目" filterable>
             <el-option
               v-for="project in availableProjects"
               :key="project.id"
@@ -940,9 +1026,10 @@
               :value="project.id"
             />
           </el-select>
-          <el-input v-model="newMission.title" placeholder="任务名称（可选）" />
+          <el-input :disabled="draft.pending.value || creating" v-model="newMission.title" placeholder="任务名称（可选）" />
           <el-input
             v-model="newMission.objective"
+            :disabled="draft.pending.value || creating"
             type="textarea"
             :rows="6"
             placeholder="描述目标、约束、期望结果和完成标准"
@@ -951,11 +1038,12 @@
             type="primary"
             :icon="Position"
             :loading="creating"
-            :disabled="!newMission.objective.trim() || !newMission.project_id"
+            :disabled="draft.pending.value || !newMission.objective.trim() || !availableProjects.some(project => project.id === newMission.project_id)"
             @click="createMission"
           >
             交给擎天柱
           </el-button>
+          <el-button v-if="!draft.pending.value" :disabled="creating" @click="draft.discard(); submissionNotice = ''">清空草稿</el-button>
         </section>
 
         <section v-if="selectedMission?.messages?.length" class="message-panel">
@@ -998,8 +1086,11 @@ import {
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
+  downloadCommandCenterArtifact,
+  type CommandCenterArtifact,
   approveCommandCenterMission,
   approveCommandCenterCompensation,
+  proposeCommandCenterRecovery,
   approveCommandCenterStep,
   approveCommandCenterMemoryCandidate,
   cancelCommandCenterMission,
@@ -1030,6 +1121,40 @@ import {
   type CommandCenterSummary,
   type CommandCenterWorkbenchItem
 } from '@/api/commandCenter'
+import { artifactDownloadError } from '@/utils/artifactDownload'
+const artifactErrors = reactive<Record<string, string>>({})
+const artifactDownloads = reactive<Record<string, boolean>>({})
+function artifactKey(artifact: CommandCenterArtifact) {
+  return `${selectedMission.value?.id}:${artifact.id}:${artifact.content_hash || ''}`
+}
+function prepareRedelivery(artifact: CommandCenterArtifact) {
+  const mission = selectedMission.value
+  if (!mission || draft.pending.value || newMission.objective.trim() || newMission.title.trim()) return
+  newMission.title = `重新交付：${artifact.title || artifact.uri.split('/').pop()}`
+  newMission.project_id = mission.project_id || ''
+  newMission.mission_type = mission.mission_type === 'document' ? 'document' : 'software'
+  newMission.objective = `重新交付任务 ${mission.id} 的产物 ${artifact.id}。\n原路径：${artifact.uri}\n原登记 SHA256：${artifact.content_hash || '未登记'}\n下载失败原因：${artifactErrors[artifactKey(artifact)]}\n保留原文件与原证据；先只读核实原因，再提出新版本交付计划，审批后执行。新文件使用独立路径，登记实际内容哈希并重新验收。`
+  document.getElementById('new-mission-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  ElMessage.info('已准备草稿，请核对项目和目标后提交；尚未启动任务')
+}
+async function downloadArtifact(artifact: CommandCenterArtifact) {
+  if (!selectedMission.value) return
+  const key = artifactKey(artifact)
+  if (artifactDownloads[key]) return
+  artifactDownloads[key] = true
+  try {
+    const blob = await downloadCommandCenterArtifact(selectedMission.value.id, artifact.id)
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = artifact.uri.split('/').pop() || 'artifact'
+    link.click()
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+    delete artifactErrors[key]
+  } catch (error) {
+    artifactErrors[key] = await artifactDownloadError(error)
+  } finally { artifactDownloads[key] = false }
+}
 import { getProjects, type Project } from '@/api/projects'
 import { useAuthStore } from '@/stores/auth'
 import {
@@ -1090,12 +1215,17 @@ const summary = reactive<CommandCenterSummary>({
   },
   by_status: {}
 })
+import { useMissionDraft } from '@/composables/useMissionDraft'
+const submissionNotice = ref('')
 const newMission = reactive({
   title: '',
   project_id: '',
   mission_type: 'software' as 'software' | 'document',
   objective: ''
 })
+const draftOwner = computed(() => auth.user?.id != null ? `${auth.authMode}:${auth.user.id}` : '')
+const draft = useMissionDraft(newMission, draftOwner)
+
 const terminalStatuses = new Set(['completed', 'failed', 'cancelled'])
 let refreshTimer: number | undefined
 
@@ -1206,7 +1336,11 @@ const agentStatusRows = computed(() => {
   }
   return spaceNodes.value
     .map(node => {
-      const mission = activeMissionByAgent.value.get(node.agent_id)
+      const belongsToSelected = node.agent_id === 'optimus'
+        || selectedMission.value?.steps.some(step => step.agent_id === node.agent_id)
+      const mission = belongsToSelected
+        ? selectedWorkbench.value
+        : activeMissionByAgent.value.get(node.agent_id)
       return {
         node,
         mission,
@@ -1515,6 +1649,12 @@ function eventLabel(type: string) {
     step_completed: '步骤完成',
     step_failed: '步骤失败',
     step_requeued: '步骤已恢复',
+    step_recovery_required: '执行中断，等待核实',
+    compensation_requested: '恢复审批已发起',
+    compensation_approved: '恢复操作已批准',
+    compensation_completed: '恢复核验已完成',
+    compensation_failed: '恢复核验未通过',
+    recovery_plan_proposed: '恢复方案待单独审批',
     feedback_received: '收到反馈',
     evaluation_started: '开始评估',
     mission_completed: '任务完成',
@@ -1719,24 +1859,30 @@ async function selectMission(missionId: string) {
 }
 
 async function createMission() {
-  if (!newMission.project_id) {
-    ElMessage.warning('请先选择任务所属项目')
+  if (creating.value || draft.pending.value) return
+  if (!availableProjects.value.some(project => project.id === newMission.project_id)) {
+    ElMessage.warning('请重新选择当前可用的任务所属项目')
     return
   }
   creating.value = true
+  submissionNotice.value = ''
+  const submittedDraft = { ...newMission }
+  const submittedOwner = draftOwner.value
   try {
-    const response = await createCommandCenterMission({
+    const payload = {
       title: newMission.title.trim() || undefined,
       project_id: newMission.project_id,
       mission_type: newMission.mission_type,
       objective: newMission.objective.trim()
-    })
-    newMission.title = ''
-    newMission.project_id = ''
-    newMission.objective = ''
+    }
+    const response = await createCommandCenterMission({ ...payload, idempotency_key: draft.submissionKey(payload) })
+    if (submittedOwner !== draftOwner.value) return
+    draft.submitted(submittedDraft, submittedOwner)
     selectedMissionId.value = response.mission.id
     ElMessage.success('任务已交给擎天柱，正在生成审批计划')
     await refreshAll(true)
+  } catch {
+    submissionNotice.value = '提交或状态刷新未完成。请先核对任务列表；保留原草稿内容重试会复用同一次提交，修改内容或丢弃草稿后则视为新任务。'
   } finally {
     creating.value = false
   }
@@ -1836,14 +1982,38 @@ async function rejectStepApproval(step: CommandCenterStep) {
   }
 }
 
+async function proposeRecovery(compensation: CommandCenterCompensation) {
+  if (!selectedMission.value) return
+  let instructions = ''
+  try {
+    const result = await ElMessageBox.prompt(
+      `仅针对“${compensation.resource}”描述恢复动作、前置条件和验证方法。提交只生成待审批方案，不会执行。`,
+      '提出恢复方案',
+      { inputType: 'textarea', confirmButtonText: '提交待审批', cancelButtonText: '取消',
+        inputValidator: value => Boolean(value?.trim()) && value.trim().length <= 4000 || '请填写 1 至 4000 字的恢复方案' }
+    )
+    instructions = result.value.trim()
+  } catch { return }
+  compensationLoadingId.value = compensation.id
+  try {
+    await proposeCommandCenterRecovery(selectedMission.value.id, compensation, instructions)
+    ElMessage.success('恢复方案已提交，单独批准后才会执行')
+    await refreshAll(true)
+  } finally { compensationLoadingId.value = '' }
+}
+
 async function approveCompensation(compensation: CommandCenterCompensation) {
   if (!selectedMission.value) return
+  const verifyOnly = compensation.compensation_type === 'verify_effect'
+  const retryNotice = compensation.status === 'failed' || compensation.last_error === 'Interrupted compensation requires reapproval' ? '上次失败不代表没有生效。请先核实实际状态，并确认原方案能安全重复执行；本次仍使用原合同和幂等键。' : ''
   try {
     await ElMessageBox.confirm(
-      `即将执行对“${compensation.resource}”的补偿操作。该操作本身可能产生副作用，请确认补偿说明和合同指纹。`,
-      '确认补偿执行',
+      verifyOnly
+        ? `仅检查“${compensation.resource}”的实际执行结果，不允许写入、覆盖或删除。核实后仍需根据结果决定后续操作。`
+        : `${retryNotice}即将执行对“${compensation.resource}”的补偿操作。方案：${compensation.instructions}。该操作本身可能产生副作用，请确认补偿说明和合同指纹。`,
+      verifyOnly ? '确认只读核实' : '确认补偿执行',
       {
-        confirmButtonText: '批准补偿',
+        confirmButtonText: verifyOnly ? '批准只读核实' : '批准补偿',
         cancelButtonText: '取消',
         type: 'warning'
       }
@@ -1858,7 +2028,7 @@ async function approveCompensation(compensation: CommandCenterCompensation) {
       compensation,
       '已确认当前补偿合同快照'
     )
-    ElMessage.success('补偿已批准，等待恢复执行器处理')
+    ElMessage.success(verifyOnly ? '只读核实已批准，等待检查结果' : '补偿已批准，等待恢复执行器处理')
     await refreshAll(true)
   } finally {
     compensationLoadingId.value = ''
@@ -1898,13 +2068,13 @@ async function rejectCompensation(compensation: CommandCenterCompensation) {
   }
 }
 
-async function sendFeedback() {
+async function sendFeedback(replan = false) {
   if (!selectedMission.value || !feedbackText.value.trim()) return
   actionLoading.value = true
   try {
-    await sendCommandCenterFeedback(selectedMission.value.id, feedbackText.value.trim())
+    const updated = await sendCommandCenterFeedback(selectedMission.value.id, feedbackText.value.trim(), replan)
     feedbackText.value = ''
-    ElMessage.success('反馈已提交，任务继续推进')
+    ElMessage.success(updated.status === 'waiting_feedback' ? '反馈已记录，请先处理未解决的恢复项' : replan ? '反馈已提交，新计划生成后请重新审批' : '反馈已提交，任务继续推进')
     await refreshAll(true)
   } finally {
     actionLoading.value = false
@@ -2024,6 +2194,12 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.lifecycle-panel { padding: 18px 22px; margin-bottom: 16px; border: 1px solid var(--el-border-color); border-radius: 12px; background: var(--el-bg-color); overflow-wrap: anywhere; }
+.lifecycle-panel p { margin: 8px 0; }
+.current-task-title { font-weight: 600; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.operations-details { margin-bottom: 16px; }
+.operations-details summary { cursor: pointer; padding: 8px 0; color: var(--el-text-color-secondary); }
+#mission-actions { scroll-margin-top: 70px; }
 .command-center {
   color: var(--text-primary);
   min-width: 0;
@@ -4082,4 +4258,9 @@ onBeforeUnmount(() => {
   .governance-metrics > div:nth-child(2n) { border-right: 0; }
   .governance-metrics > div:nth-last-child(-n + 2) { border-bottom: 0; }
 }
+</style>
+
+<style scoped>
+.artifact-delivery { margin-top: 12px; overflow-wrap: anywhere; }
+.artifact-download-error { margin-top: 8px; padding: 12px; border: 1px solid #e6a23c; border-radius: 8px; background: #fdf6ec; color: #7d4e0d; }
 </style>

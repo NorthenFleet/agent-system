@@ -1,10 +1,10 @@
 import { flushPromises, mount } from '@vue/test-utils'
-import ElementPlus from 'element-plus'
+import ElementPlus, { ElMessageBox } from 'element-plus'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 const api = vi.hoisted(() => ({
-  approveCommandCenterMission: vi.fn(), approveCommandCenterCompensation: vi.fn(),
+  downloadCommandCenterArtifact: vi.fn(), approveCommandCenterMission: vi.fn(), approveCommandCenterCompensation: vi.fn(),
   approveCommandCenterStep: vi.fn(), approveCommandCenterMemoryCandidate: vi.fn(),
   cancelCommandCenterMission: vi.fn(), createCommandCenterMission: vi.fn(),
   getCommandCenterAgentSpace: vi.fn(), getCommandCenterMission: vi.fn(),
@@ -41,7 +41,8 @@ const mission = {
     acceptance_gate: { id: 'gate-step', step_id: 'step-1', gate_type: 'execution_evidence', mode: 'strict', enforced: true, status: 'blocked', accepted: false, score: 45, blockers: ['健康检查未通过'], warnings: [], evaluated_by: 'command-center', evaluated_at: '2026-09-16T00:09:00Z' },
     effects: [{ id: 'effect-1', step_id: 'step-1', effect_key: 'config-update', resource: 'production-config', action: '更新配置', status: 'applied', idempotency_key: 'mission:step:1', receipt_ref: 'ops:1', evidence_refs: ['health://failed'] }],
     compensations: [{ id: 'comp-1', mission_id: 'mission-12345678', plan_version: 3, step_id: 'step-1', effect_id: 'effect-1', compensation_type: 'restore', instructions: '恢复上一版配置', resource: 'production-config', contract_hash: 'abcdef1234567890', idempotency_key: 'compensate:mission:step:1', status: 'pending_approval', attempts: 0 }],
-    result: { error: '健康检查失败' }
+    routing_decision: { mode: 'shadow', enforced: false, policy_version: 'dr-shadow-v1', phase: 'dispatch', action: 'delegate', reason_code: 'registered_agent_match', detail: '按已批准计划交给具备对应能力的 Agent', attempt: 2, actual_executor: 'openclaw', actual_agent_id: 'optimus' },
+    result: { error: '健康检查失败', decision_shadow: { mode: 'shadow', enforced: false, policy_version: 'dr-shadow-v1', phase: 'completion', action: 'inspect', reason_code: 'effect_requires_inspection', detail: '先核验副作用和回执，再判断恢复方式', attempt: 2, actual_executor: 'openclaw', actual_agent_id: 'optimus', consecutive_failures: 2, repeated_failure: true } }
   }],
   artifacts: [{ id: 'artifact-1', step_id: 'step-1', artifact_type: 'log', title: '发布日志', uri: 'artifact://release', created_at: '2026-09-16T00:08:00Z' }],
   evidence: [{ id: 'evidence-1', step_id: 'step-1', evidence_type: 'healthcheck', source_ref: 'health://failed', summary: '健康检查失败', collected_by: 'optimus', collected_at: '2026-09-16T00:09:00Z', confidence: 1 }],
@@ -76,6 +77,9 @@ describe('Command Center governance presentation', () => {
 
     const text = wrapper.text()
     expect(text).toContain('规范执行链')
+    expect(text).toContain('路由观察 · 仅建议，未接管执行')
+    expect(text).toContain('实际执行：optimus / openclaw')
+    expect(text).toContain('连续相同失败 2 次')
     expect(text).toContain('存在未解决副作用')
     expect(text).toContain('任务接收')
     expect(text).toContain('交付闭环')
@@ -88,6 +92,93 @@ describe('Command Center governance presentation', () => {
     expect(text).toContain('0 个过期')
     expect(wrapper.findAll('.lifecycle-stage')).toHaveLength(8)
 
+    api.sendCommandCenterFeedback.mockResolvedValue(mission)
+    await wrapper.find('textarea[placeholder="补充范围、约束、凭据或处理意见"]').setValue('修订文档后重新复核')
+    const replan = wrapper.findAll('button').find(button => button.text() === '反馈并重新规划')!
+    await replan.trigger('click')
+    await flushPromises()
+    expect(api.sendCommandCenterFeedback).toHaveBeenCalledWith(mission.id, '修订文档后重新复核', true)
+
+    const failed = JSON.parse(JSON.stringify(mission))
+    failed.steps[0].executor = 'deterministic-v1'
+    failed.steps[0].result.tool_control = { enforced: true, calls: 3, receipts: 2, denied: 0, incomplete: 1, unknown: 0, accepted: false }
+    failed.steps[0].result.code_workspace = { workspace_status: 'candidate', execution_branch: 'codex/test-candidate', commit_sha: 'abc123', integrated: false }
+    failed.steps[0].result.execution_profile = { role: 'worker', requested_model: 'provider/model', actual_model: null, usage: null, cost_usd: null }
+    failed.advisor_reviews = [{ checkpoint: 'plan', status: 'completed', verdict: 'concerns', suggested_action: '补齐独立测试', findings: [{ message: '缺少独立测试', evidence_refs: ['step-1'] }] }]
+    failed.steps[0].result.recovery_control = { enforced: true, requires_replan: true, reason_code: 'attempt_budget_exhausted' }
+    for (const item of [...failed.compensations, ...failed.steps.flatMap((step: any) => step.compensations || [])]) {
+      item.status = 'failed'
+      item.compensation_type = 'manual_recovery'
+    }
+    api.getCommandCenterMission.mockResolvedValue(failed)
+    await wrapper.findAll('button').find(button => button.text() === '刷新')!.trigger('click')
+    await flushPromises()
+    expect(wrapper.text()).toContain('确定性检查 · 无模型调用')
+    expect(wrapper.text()).toContain('隔离代码候选 · 尚未合并')
+    expect(wrapper.text()).toContain('工具调用控制 · 未通过')
+    expect(wrapper.text()).toContain('3 次调用 · 2 条回执 · 0 次拒绝 · 1 项待核验')
+    expect(wrapper.text()).toContain('实际模型 回执未提供')
+    expect(wrapper.text()).toContain('检查点顾问 · 仅建议，不代替审批与验收')
+    expect(wrapper.text()).toContain('补齐独立测试')
+    expect(wrapper.text()).toContain('受控修复 · 已停止原步骤重试')
+    const retry = wrapper.findAll('button').find(button => button.text() === '重新审批补偿')!
+    expect(retry).toBeTruthy()
+    expect(api.approveCommandCenterCompensation).not.toHaveBeenCalled()
+    const confirm = vi.spyOn(ElMessageBox, 'confirm').mockRejectedValueOnce('cancel')
+    await retry.trigger('click')
+    await flushPromises()
+    expect(confirm.mock.calls[0][0]).toContain('上次失败不代表没有生效')
+    expect(api.approveCommandCenterCompensation).not.toHaveBeenCalled()
+    confirm.mockResolvedValueOnce('confirm')
+    await retry.trigger('click')
+    await flushPromises()
+    expect(api.approveCommandCenterCompensation).toHaveBeenCalledWith(mission.id, expect.objectContaining({ contract_hash: 'abcdef1234567890', status: 'failed' }), '已确认当前补偿合同快照')
+    for (const item of [...failed.compensations, ...failed.steps.flatMap((step: any) => step.compensations || [])]) {
+      item.status = 'pending_approval'
+      item.last_error = 'Interrupted compensation requires reapproval'
+    }
+    api.getCommandCenterMission.mockResolvedValue(JSON.parse(JSON.stringify(failed)))
+    await wrapper.findAll('button').find(button => button.text() === '刷新')!.trigger('click')
+    await flushPromises()
+    expect(wrapper.text()).toContain('实际操作可能已生效')
+    api.approveCommandCenterCompensation.mockClear()
+    confirm.mockRejectedValueOnce('cancel')
+    await wrapper.findAll('button').find(button => button.text() === '批准补偿')!.trigger('click')
+    await flushPromises()
+    expect(confirm.mock.calls.at(-1)![0]).toContain('上次失败不代表没有生效')
+    expect(api.approveCommandCenterCompensation).not.toHaveBeenCalled()
+    confirm.mockRestore()
+    // Download failures remain attached to the artifact; preparing a draft never submits it.
+    api.downloadCommandCenterArtifact.mockRejectedValueOnce({ response: { status: 409, data: new Blob([JSON.stringify({ detail: '文件已变化，与该任务登记的版本不一致' })]) } })
+    await wrapper.findAll('button').find(button => button.text() === '下载文件')!.trigger('click')
+    await flushPromises()
+    expect(wrapper.find('.artifact-download-error').text()).toContain('文件已变化')
+    const draft = wrapper.findAll('button').find(button => button.text() === '准备重新交付任务')!
+    Element.prototype.scrollIntoView = vi.fn()
+    await draft.trigger('click')
+    await flushPromises()
+    expect(api.createCommandCenterMission).not.toHaveBeenCalled()
+    const goal = wrapper.find('textarea[placeholder="描述目标、约束、期望结果和完成标准"]')
+    expect((goal.element as HTMLTextAreaElement).value).toContain(mission.id)
+    expect((goal.element as HTMLTextAreaElement).value).toContain('artifact-1')
+    expect((goal.element as HTMLTextAreaElement).value).toContain('独立路径')
+    expect(draft.attributes('disabled')).toBeDefined()
+    await goal.setValue('用户编辑的草稿')
+    await wrapper.findAll('button').find(button => button.text() === '刷新')!.trigger('click')
+    await flushPromises()
+    expect((goal.element as HTMLTextAreaElement).value).toBe('用户编辑的草稿')
+    expect(wrapper.find('.artifact-download-error').exists()).toBe(true)
+    URL.createObjectURL = vi.fn(() => 'blob:test')
+    URL.revokeObjectURL = vi.fn()
+    const anchorClick = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    api.downloadCommandCenterArtifact.mockResolvedValueOnce(new Blob(['valid']))
+    await wrapper.findAll('button').find(button => button.text() === '下载文件')!.trigger('click')
+    await flushPromises()
+    expect(wrapper.find('.artifact-download-error').exists()).toBe(false)
+    expect((goal.element as HTMLTextAreaElement).value).toBe('用户编辑的草稿')
+    expect(api.createCommandCenterMission).not.toHaveBeenCalled()
+    expect(anchorClick).toHaveBeenCalledOnce()
+    anchorClick.mockRestore()
     wrapper.unmount()
   })
 })

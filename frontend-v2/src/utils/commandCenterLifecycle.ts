@@ -86,9 +86,9 @@ export function buildMissionLifecycle(mission: CommandCenterMission): LifecycleS
   if (!mission.delivery_gate && gates.length) {
     evidenceState = blockedGates.length
       ? 'blocked'
-      : gates.every(gate => gate.accepted || !gate.enforced)
+      : gates.every(gate => gate.accepted && !gate.warnings.length) && executionState === 'completed'
         ? 'completed'
-        : 'active'
+        : 'warning'
   } else if (!gates.length && executionState === 'completed') {
     evidenceState = 'active'
   }
@@ -141,6 +141,13 @@ export function buildMissionLifecycle(mission: CommandCenterMission): LifecycleS
 }
 
 export function deriveMissionControlPoint(mission: CommandCenterMission): MissionControlPoint {
+  if (mission.status === 'cancelled') {
+    const unresolved = (mission.compensations || []).some(item => ACTIVE_COMPENSATIONS.has(item.status))
+    return { tone: unresolved ? 'warning' : 'info', title: '任务已取消', description: '任务已停止调度，历史记录保留', action: unresolved ? '仍有未解决副作用，请查看恢复记录' : '无需继续审批；需要重新执行时创建新任务' }
+  }
+  if (mission.status === 'planning' || mission.status === 'received') {
+    return { tone: 'primary', title: '正在制定执行计划', description: mission.plan_version ? '正在根据反馈制定新计划；尚未批准执行，历史记录保留' : '任务已接收，尚未批准执行', action: '等待计划生成后审阅和批准' }
+  }
   const planQuality = mission.plan?.plan_quality
   if (planQuality?.status === 'blocked') {
     return { tone: 'danger', title: '计划质检阻断', description: planQuality.blockers.join('；') || '计划未达到可执行标准', action: '修正任务拆解后重新提交审批' }
@@ -154,7 +161,10 @@ export function deriveMissionControlPoint(mission: CommandCenterMission): Missio
   }
   const compensation = (mission.compensations || []).find(item => ACTIVE_COMPENSATIONS.has(item.status))
   if (compensation) {
-    return { tone: 'danger', title: '存在未解决副作用', description: `${compensation.resource} · ${compensationStatusLabel(compensation.status)}`, action: '完成补偿审批、执行及证据验证后才能继续交付' }
+    if (compensation.compensation_type === 'verify_effect') {
+      return { tone: 'danger', title: '执行结果待核实', description: `${compensation.resource} · ${compensationStatusLabel(compensation.status)}`, action: compensation.status === 'failed' ? '核实未确认可以继续；保持暂停，需制定新的恢复方案' : '先审批只读核实；不会写入、覆盖或删除文件，也不会自动重试原步骤' }
+    }
+    return { tone: 'danger', title: '存在未解决副作用', description: `${mission.steps.find(step => step.status === 'failed')?.result?.completion_decision?.effect_quality?.blockers?.join('；') || '需要核实执行结果'} · ${compensation.resource} · ${compensationStatusLabel(compensation.status)}`, action: '完成补偿审批、执行及证据验证后才能继续交付' }
   }
   const blockedGate = (mission.acceptance_gates || []).find(gate => gate.enforced && !gate.accepted)
   if (blockedGate) {
@@ -162,15 +172,26 @@ export function deriveMissionControlPoint(mission: CommandCenterMission): Missio
   }
   const failedStep = mission.steps.find(step => step.status === 'failed')
   if (failedStep) {
-    return { tone: 'danger', title: '执行步骤失败', description: `${failedStep.title}：${failedStep.result?.error || '请查看执行记录'}`, action: '先确认副作用和补偿状态，再决定重试或调整计划' }
+    return { tone: 'danger', title: '执行步骤失败', description: mission.last_error || `${failedStep.title}：${failedStep.result?.error || '请查看执行记录'}`, action: '先确认副作用和补偿状态，再决定重试或调整计划' }
   }
   const runningStep = mission.steps.find(step => step.status === 'running')
+  if (mission.status === 'failed') {
+    return { tone: 'danger', title: '任务失败', description: mission.last_error || '任务未能完成', action: '查看失败原因和执行记录后调整任务' }
+  }
   if (runningStep) {
     return { tone: 'primary', title: '规范流程执行中', description: `${runningStep.title} 由 ${runningStep.agent_id} 执行`, action: '等待执行回执和证据门禁评估' }
   }
   if (mission.status === 'completed') {
-    return { tone: 'success', title: '交付闭环已完成', description: '计划、执行、证据与恢复状态均已归档', action: '可通过 Mission Run 和事件序列进行完整追溯' }
+    const evidenceWarnings = mission.steps.flatMap(step => step.result?.execution_quality?.warnings || [])
+    if (evidenceWarnings.length) {
+      return { tone: 'warning', title: '任务已完成，证据仍有警告', description: `${evidenceWarnings.length} 条证据警告尚需核对；完成状态不代表严格验收通过`, action: '下载交付物，并查看步骤中的证据警告' }
+    }
+    return { tone: 'success', title: '交付闭环已完成', description: '计划、执行、证据与恢复状态均已归档', action: '在顶部任务产物中下载文件，并核对审核结论' }
   }
+  if (mission.status === 'evaluating') {
+    return { tone: 'primary', title: '正在进行最终验收', description: '执行步骤已结束，正在核对最终交付条件', action: '等待验收结论；现有文件可先下载查看' }
+  }
+  if (mission.status === 'waiting_feedback') return { tone: 'warning', title: '需要补充反馈', description: mission.last_error || '任务已暂停', action: '提交处理意见后重新规划或继续' }
   return { tone: TERMINAL_STATUSES.has(mission.status) ? 'info' : 'primary', title: '任务正在推进', description: '系统将按已批准的规范流程继续执行', action: '关注当前阶段和新产生的控制点' }
 }
 

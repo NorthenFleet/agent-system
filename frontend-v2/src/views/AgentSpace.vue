@@ -171,6 +171,8 @@ async function submitMission() {
       project_id: projectId.value,
       mission_type: mode.value
     })
+    objective.value = ''
+    try { sessionStorage.removeItem('agent-space-draft') } catch { /* Optional draft storage. */ }
     ElMessage.success('任务已交给擎天柱，正在生成执行计划')
     await router.push({ path: '/command-center', query: { mission_id: mission.id } })
   } catch {
@@ -180,7 +182,24 @@ async function submitMission() {
   }
 }
 
-watch(mode, selectDefaultProject)
+watch(mode, () => {
+  if (loading.value) return
+  if (projectId.value && !matchingProjects.value.some(project => project.id === projectId.value)) {
+    projectId.value = ''
+    ElMessage.info('任务模式已切换，请重新确认所属项目；需求草稿已保留')
+  }
+})
+try {
+  const draft = JSON.parse(sessionStorage.getItem('agent-space-draft') || 'null')
+  if (draft && typeof draft.objective === 'string') {
+    objective.value = draft.objective
+    mode.value = draft.mode === 'software' ? 'software' : 'document'
+    projectId.value = typeof draft.projectId === 'string' ? draft.projectId : ''
+  }
+} catch { /* Storage may be unavailable or contain an old draft. */ }
+watch([objective, mode, projectId], () => {
+  try { sessionStorage.setItem('agent-space-draft', JSON.stringify({ objective: objective.value, mode: mode.value, projectId: projectId.value })) } catch { /* Keep editing without storage. */ }
+})
 onMounted(loadSpace)
 </script>
 

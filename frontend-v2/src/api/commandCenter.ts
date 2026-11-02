@@ -1,5 +1,10 @@
 import apiClient from './client'
 
+export async function downloadCommandCenterArtifact(missionId: string, artifactId: string) {
+  const response = await apiClient.get(`/api/v3/command-center/missions/${encodeURIComponent(missionId)}/artifacts/${encodeURIComponent(artifactId)}/download`, { responseType: 'blob', suppressErrorToast: true })
+  return response.data as Blob
+}
+
 export interface ContextCitation {
   rank: number
   source_id?: string
@@ -150,6 +155,21 @@ export interface CommandCenterMissionRun {
   ended_at?: string
 }
 
+export interface CommandCenterShadowDecision {
+  mode: 'shadow'
+  enforced: false
+  policy_version: string
+  phase: 'dispatch' | 'completion'
+  action: string
+  reason_code: string
+  detail: string
+  attempt: number
+  actual_executor: string
+  actual_agent_id: string
+  consecutive_failures?: number
+  repeated_failure?: boolean
+}
+
 export interface CommandCenterStep {
   id: string
   mission_id: string
@@ -175,11 +195,19 @@ export interface CommandCenterStep {
   idempotency_key?: string
   rollback_plan?: string
   capability_match?: boolean
+  routing_decision?: CommandCenterShadowDecision
   result?: {
+    tool_control?: { enforced: boolean; calls: number; receipts: number; denied: number; incomplete: number; unknown: number; accepted: boolean }
+    code_workspace?: { workspace_status: string; execution_branch: string; commit_sha?: string; integrated: boolean }
+    execution_profile?: { role: string; requested_model: string | null; actual_model: string | null; usage: Record<string, number> | null; cost_usd: number | null }
+    recovery_control?: { enforced: boolean; requires_replan: boolean; reason_code: string }
+    decision_shadow?: CommandCenterShadowDecision
     success?: boolean
     output?: string
     error?: string
     duration_ms?: number
+    completion_decision?: { effect_quality?: { blockers?: string[] } }
+    structured_output?: { summary?: string }
     execution_quality?: CommandCenterExecutionQuality
     context?: {
       binding_id?: string
@@ -247,6 +275,7 @@ export interface CommandCenterCapabilityCatalog {
 }
 
 export interface CommandCenterMission {
+  advisor_reviews?: Array<{ checkpoint: string; status: string; verdict?: string; suggested_action?: string; findings?: Array<{ message: string; evidence_refs: string[] }> }>
   id: string
   title: string
   objective: string
@@ -598,6 +627,7 @@ export function getCommandCenterMission(missionId: string) {
 }
 
 export function createCommandCenterMission(payload: {
+  idempotency_key?: string
   title?: string
   objective: string
   project_id: string
@@ -688,6 +718,17 @@ export function rejectCommandCenterStep(
     .then(response => response.data)
 }
 
+export function proposeCommandCenterRecovery(
+  missionId: string,
+  compensation: Pick<CommandCenterCompensation, 'id' | 'contract_hash'>,
+  instructions: string
+) {
+  return apiClient.post<{ success: boolean; compensation: CommandCenterCompensation; mission: CommandCenterMission }>(
+    `/api/v3/command-center/missions/${missionId}/compensations/${compensation.id}/recovery-plan`,
+    { contract_hash: compensation.contract_hash, instructions }
+  ).then(response => response.data)
+}
+
 export function approveCommandCenterCompensation(
   missionId: string,
   compensation: Pick<CommandCenterCompensation, 'id' | 'contract_hash'>,
@@ -723,11 +764,11 @@ export function cancelCommandCenterMission(missionId: string, comment = '') {
     .then(response => response.data)
 }
 
-export function sendCommandCenterFeedback(missionId: string, content: string) {
+export function sendCommandCenterFeedback(missionId: string, content: string, replan = false) {
   return apiClient
     .post<CommandCenterMission>(
       `/api/v3/command-center/missions/${missionId}/feedback`,
-      { content }
+      { content, replan }
     )
     .then(response => response.data)
 }

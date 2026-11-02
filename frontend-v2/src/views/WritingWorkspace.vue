@@ -1675,6 +1675,7 @@ function openProjectDialog(project?: Project) {
 }
 
 async function saveProject() {
+  if (projectSaving.value) return
   if (!projectForm.value.name.trim()) {
     ElMessage.warning('请填写文档名称')
     return
@@ -1706,7 +1707,8 @@ async function saveProject() {
         outline
       })
       selectedProjectId.value = result.project.id
-      ElMessage.success('新文档及独立工作区已创建')
+      if (result.warning) ElMessage.warning(result.warning)
+      else ElMessage.success('新文档及独立工作区已创建')
     }
     projectDialogVisible.value = false
     await loadProjects()
