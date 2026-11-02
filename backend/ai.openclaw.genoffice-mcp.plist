@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>ai.openclaw.genoffice-mcp</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/zsh</string>
+    <string>./scripts/run_genoffice_mcp.sh</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/Users/apple/工作桌面/Workspace/agent-system/backend</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>GENOFFICE_RUNTIME_ENV_FILE</key>
+    <string>./data/genoffice-runtime.env</string>
+    <key>AGENT_SYSTEM_RUNTIME_KIND</key>
+    <string>launchd</string>
+  </dict>
+  <key>KeepAlive</key>
+  <dict>
+    <key>SuccessfulExit</key>
+    <false/>
+  </dict>
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>StandardOutPath</key>
+  <string>/Users/apple/工作桌面/Workspace/agent-system/backend/data/genoffice-sidecar-tmp/genoffice-mcp.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/apple/工作桌面/Workspace/agent-system/backend/data/genoffice-sidecar-tmp/genoffice-mcp.log</string>
+</dict>
+</plist>
