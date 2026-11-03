@@ -224,7 +224,7 @@ class ReimbursementItem(Base):
     __tablename__ = "wf_reimbursement_items"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    reimbursement_id = Column(String, ForeignKey("reimbursements.id"))
+    reimbursement_id = Column(String, ForeignKey("wf_reimbursements.id"))
     
     item_date = Column(DateTime, comment="消费日期")
     category = Column(String, comment="明细类别")
