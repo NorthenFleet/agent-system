@@ -280,14 +280,14 @@ class ProductInvocationTimeoutError(ProductInvocationError):
 # 默认产品配置（当注册中心没有时 fallback）
 DEFAULT_PRODUCT_CONFIGS: dict[str, dict[str, Any]] = {
     "one-sim": {
-        "base_url": "http://192.168.31.144:5100",
+        "base_url": "http://192.168.3.66:5130",
         "auth_endpoint": None,
         "auth_payload": None,
         "connect_timeout": 3.0,
         "read_timeout": 30.0,
     },
     "ai-planning-5130": {
-        "base_url": os.getenv("AI_PLANNING_BASE_URL", "http://192.168.31.144:5130"),
+        "base_url": os.getenv("AI_PLANNING_BASE_URL", "http://192.168.3.66:5130"),
         "auth_endpoint": "/api/auth/login",
         "auth_payload": {
             "username": os.getenv("AI_PLANNING_USERNAME", "admin"),

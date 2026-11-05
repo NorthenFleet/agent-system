@@ -1,0 +1,27 @@
+{
+  "entry": "/assets/main-h0UpVYlq.js",
+  "command_center_chunk": "assets/CommandCenter-B5LNeMTj.js",
+  "served_matches_disk": true,
+  "frontend_has_key_persistence": true,
+  "frontend_has_submission_key": true,
+  "backend_schema_accepts_key": true,
+  "index_sha256": "d5dce7439ef6045f70c4baab40cafc87aa541e6f1f5d19312be9c6529aea8714",
+  "chunk_sha256": "ea80299b80364a3f0c09ad5e31c0fd0fbfc0eb994dfe0b70c023139c3a1d0077",
+  "health": {
+    "status": "ok",
+    "port": 3021,
+    "memory_runtime": {
+      "schema_version": "memory-runtime-config.v1",
+      "runtime_kind": "launchd",
+      "configuration_source": "declared_env_file",
+      "env_file_status": "present",
+      "configuration_fingerprint": "sha256:4a98f110fa7eaa41a65c218a78beb402e9efd3d4843c5e97a7d271e82bcdaa18",
+      "vector_enabled": true,
+      "embedding_model": "nomic-embed-text:v1.5",
+      "embedding_dimension": 768,
+      "fusion_mode": "shadow",
+      "graph_enabled": true,
+      "graph_default_mode": "rerank"
+    }
+  }
+}

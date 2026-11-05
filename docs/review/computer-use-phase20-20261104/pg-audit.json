@@ -1,0 +1,10 @@
+{
+  "database": "agent_system_cu_phase19_20261008",
+  "owner": "phase20-7ffc3e0f10e540e3b77cd8c33afbc743",
+  "requests": 8,
+  "unique_tasks": 1,
+  "subsequent_retry_same": true,
+  "conflict_rejected": true,
+  "owner_count": 1,
+  "workers_started": 0
+}

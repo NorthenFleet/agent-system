@@ -1,0 +1,5 @@
+command-center:api-3021|running|2026-11-03T17:23:26.704137+00:00
+command-center:worker-2|running|2026-10-20T01:11:44.355368+00:00
+cancelled|10
+completed|11
+waiting_feedback|6

@@ -1,0 +1,22 @@
+{
+  "workflow_paths": [
+    "/finance/workflow/reimbursements",
+    "/finance/workflow/reimbursements/{reimbursement_id}",
+    "/finance/workflow/reimbursements/{reimbursement_id}/submit",
+    "/finance/workflow/reimbursements/{reimbursement_id}/approve",
+    "/finance/workflow/approvals/pending",
+    "/finance/workflow/definitions",
+    "/finance/workflow/definitions/{definition_id}",
+    "/finance/workflow/statistics"
+  ],
+  "finance_paths": [
+    "/api/finance/reimbursements",
+    "/api/finance/reimbursements/{reimbursement_id}",
+    "/api/finance/reimbursements/{reimbursement_id}/items",
+    "/api/finance/reimbursements/{reimbursement_id}/items/{item_id}",
+    "/api/finance/reimbursements/{reimbursement_id}/submit",
+    "/api/finance/reimbursements/{reimbursement_id}/redraft",
+    "/api/finance/reimbursements/{reimbursement_id}/archive",
+    "/api/finance/reimbursements/{reimbursement_key}/status"
+  ]
+}

@@ -1,0 +1,27 @@
+
+> frontend-v2@0.0.0 build
+> npm run verify:entry && vue-tsc -b && vite build --outDir /private/tmp/agent-system-phase20-dist
+
+
+> frontend-v2@0.0.0 verify:entry
+> node scripts/verify-entry.mjs
+
+frontend entry verification passed
+src/views/finance/FinanceReimbursements.vue(132,70): error TS2339: Property 'code' does not exist on type 'never'.
+src/views/finance/FinanceReimbursements.vue(134,60): error TS2339: Property 'status' does not exist on type 'never'.
+src/views/finance/FinanceReimbursements.vue(135,49): error TS2339: Property 'status' does not exist on type 'never'.
+src/views/finance/FinanceReimbursements.vue(138,80): error TS2339: Property 'title' does not exist on type 'never'.
+src/views/finance/FinanceReimbursements.vue(140,59): error TS2339: Property 'amount' does not exist on type 'never'.
+src/views/finance/FinanceReimbursements.vue(143,70): error TS2339: Property 'category' does not exist on type 'never'.
+src/views/finance/FinanceReimbursements.vue(145,69): error TS2339: Property 'applicant_name' does not exist on type 'never'.
+src/views/finance/FinanceReimbursements.vue(146,70): error TS2339: Property 'department' does not exist on type 'never'.
+src/views/finance/FinanceReimbursements.vue(147,81): error TS2339: Property 'created_at' does not exist on type 'never'.
+src/views/finance/FinanceReimbursements.vue(148,81): error TS2339: Property 'submitted_at' does not exist on type 'never'.
+src/views/finance/FinanceReimbursements.vue(149,80): error TS2339: Property 'description' does not exist on type 'never'.
+src/views/finance/FinanceReimbursements.vue(153,41): error TS2339: Property 'approval_records' does not exist on type 'never'.
+src/views/finance/FinanceReimbursements.vue(157,62): error TS2339: Property 'approval_records' does not exist on type 'never'.
+src/views/finance/FinanceReimbursements.vue(174,41): error TS2339: Property 'status' does not exist on type 'never'.
+src/views/finance/FinanceReimbursements.vue(174,88): error TS2339: Property 'status' does not exist on type 'never'.
+src/views/finance/FinanceReimbursements.vue(188,36): error TS6133: 'computed' is declared but its value is never read.
+src/views/finance/FinanceReimbursements.vue(191,25): error TS2307: Cannot find module '@/utils/request' or its corresponding type declarations.
+src/views/finance/FinanceReimbursements.vue(383,70): error TS2339: Property 'id' does not exist on type 'never'.

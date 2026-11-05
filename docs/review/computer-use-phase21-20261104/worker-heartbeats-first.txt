@@ -1,0 +1,2 @@
+command-center:api-3021|running|2026-11-03T17:33:51.526220+00:00|1
+command-center:worker-2|running|2026-11-03T17:33:51.882603+00:00|1

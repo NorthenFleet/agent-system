@@ -1,0 +1,9 @@
+
+ RUN  v4.1.10 /Users/apple/工作桌面/Workspace/agent-system/frontend-v2
+
+
+ Test Files  4 passed (4)
+      Tests  22 passed (22)
+   Start at  01:21:57
+   Duration  1.53s (transform 272ms, setup 95ms, import 694ms, tests 262ms, environment 2.19s)
+

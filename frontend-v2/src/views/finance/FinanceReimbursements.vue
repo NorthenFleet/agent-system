@@ -185,10 +185,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Refresh } from '@element-plus/icons-vue'
-import { request } from '@/utils/request'
+import request from '@/api/client'
+
+interface WorkflowReimbursement {
+  id: string
+  code: string
+  title: string
+  amount: number
+  category: string
+  status: string
+  applicant_name: string | null
+  department: string | null
+  description: string | null
+  created_at: string | null
+  submitted_at: string | null
+  approval_records?: { action: string; approver_name: string; comment: string | null; created_at: string | null }[]
+}
 
 // 状态映射
 const statusMap: Record<string, string> = {
@@ -239,7 +254,7 @@ const stats = ref([
 ])
 
 // 列表数据
-const reimbursements = ref([])
+const reimbursements = ref<WorkflowReimbursement[]>([])
 const loading = ref(false)
 const page = ref(1)
 const pageSize = ref(20)
@@ -262,7 +277,7 @@ const createForm = reactive({
 
 // 详情
 const showDetailDialog = ref(false)
-const currentReimbursement = ref(null)
+const currentReimbursement = ref<WorkflowReimbursement | null>(null)
 const approvalComment = ref('')
 const approving = ref(false)
 
@@ -395,7 +410,7 @@ const approveReimbursement = async (action: string) => {
 }
 
 // 格式化日期
-const formatDate = (dateStr: string) => {
+const formatDate = (dateStr: string | null) => {
   if (!dateStr) return '-'
   return new Date(dateStr).toLocaleString('zh-CN')
 }

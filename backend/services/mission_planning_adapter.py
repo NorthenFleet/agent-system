@@ -19,8 +19,8 @@ class MissionPlanningError(RuntimeError):
 
 class MissionPlanningAdapter:
     def __init__(self) -> None:
-        self.base_url = os.getenv("AI_PLANNING_BASE_URL", "http://192.168.31.144:5130").rstrip("/")
-        self.public_url = os.getenv("AI_PLANNING_PUBLIC_URL", "http://192.168.31.144:5130").rstrip("/")
+        self.base_url = os.getenv("AI_PLANNING_BASE_URL", "http://192.168.3.66:5130").rstrip("/")
+        self.public_url = os.getenv("AI_PLANNING_PUBLIC_URL", "http://192.168.3.66:5130").rstrip("/")
         self.username = os.getenv("AI_PLANNING_USERNAME", "admin")
         self.password = os.getenv("AI_PLANNING_PASSWORD", "admin123")
         self._access_token = ""

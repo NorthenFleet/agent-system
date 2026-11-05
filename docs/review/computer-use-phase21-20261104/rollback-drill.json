@@ -1,0 +1,10 @@
+{
+  "candidate_files": 575,
+  "production_files": 575,
+  "candidate_install_on_copy": "passed",
+  "rollback_on_copy": "passed",
+  "production_unchanged": true,
+  "production_backup": "/private/tmp/agent-system-phase21-production-frontend.tar.gz",
+  "backup_sha256": "fcbf933a1be9926f1b6437e5ab5b5cf9d41cb1f1a782876ca8902b5b9825bcc0",
+  "scope": "frontend filesystem only; not backend process or database rollback"
+}

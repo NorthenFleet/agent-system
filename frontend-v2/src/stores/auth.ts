@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, onScopeDispose } from 'vue'
 import {
   createDevelopmentSession,
   getAuthSettings,
@@ -22,6 +22,15 @@ export const useAuthStore = defineStore('auth', () => {
   const loginEnabled = ref(localStorage.getItem('auth_login_enabled') !== 'false')
   const authSettingsLoaded = ref(false)
   const loading = ref(false)
+
+  const syncSession = () => {
+    token.value = localStorage.getItem('jwt_token')
+    refreshToken.value = localStorage.getItem('jwt_refresh_token')
+    authMode.value = localStorage.getItem('jwt_auth_mode') === 'development' ? 'development' : 'authenticated'
+    if (!token.value) user.value = null
+  }
+  window.addEventListener('auth-session-updated', syncSession)
+  onScopeDispose(() => window.removeEventListener('auth-session-updated', syncSession))
 
   const isAuthenticated = computed(() => !!token.value)
   const isAdmin = computed(() => user.value?.role === 'admin')
